@@ -97,7 +97,7 @@ Update this section as you learn:
 - Use `bd blocked` to see all blocked tasks with their blockers
 - **IMPORTANT**: If `bd dep remove` doesn't persist, use `bd --no-daemon dep remove`
 - Prefix changed from `bd-` to `ch-` (Chorus)
-- F09 depends on F02b (needs agentStore with task linking)
+- **FIXED**: F09 does NOT depend on F02b - they are independent (Agent types vs ChorusState)
 - F10 depends on F01b (only needs to READ config, not save)
 
 ## Current Task IDs
@@ -123,7 +123,7 @@ Update this section as you learn:
 |---------|-----|--------------|--------|
 | F07 Prompt Builder | ch-wk8 | - | ready |
 | F08 Signal Parser | ch-mpl | - | ready |
-| F09 Agent-Task Linking | ch-3y0 | ch-81x | blocked |
+| F09 Agent-Task Linking | ch-3y0 | - | ready |
 
 ### M3: Task Management
 

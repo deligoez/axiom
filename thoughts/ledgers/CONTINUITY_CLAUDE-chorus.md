@@ -21,7 +21,7 @@ Now:  Phase 4 via Beads tasks
 Next: M1 Infrastructure → M4 Semi-Auto
 ```
 
-**Tasks:** 26 total (7 ready, 19 blocked)
+**Tasks:** 26 total (8 ready, 18 blocked)
 
 ---
 
@@ -38,6 +38,7 @@ bd ready
 | ch-glq | F04 Worktree Create | M1 |
 | ch-wk8 | F07 Prompt Builder | M2 |
 | ch-mpl | F08 Signal Parser | M2 |
+| ch-3y0 | F09 Agent-Task Linking | M2 |
 | ch-zqi | F12 Task Claimer | M3 |
 | ch-8j3 | F19 Orchestration Store | M4 |
 
