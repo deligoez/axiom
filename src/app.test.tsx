@@ -70,6 +70,20 @@ describe('App', () => {
     expect(lastFrame()).toContain('Hello');
   });
 
+  it('shows agent count in status bar', () => {
+    useAgentStore.setState({
+      agents: [
+        createTestAgent({ id: 'a1', name: 'agent-1' }),
+        createTestAgent({ id: 'a2', name: 'agent-2' }),
+      ],
+      selectedAgentId: null,
+    });
+
+    const { lastFrame } = render(<App />);
+
+    expect(lastFrame()).toContain('2 agents');
+  });
+
   it('spawns demo agent when s is pressed', async () => {
     const { stdin } = render(<App />);
 
@@ -131,5 +145,55 @@ describe('App', () => {
       expect(state.agents).toHaveLength(1);
       expect(state.selectedAgentId).toBe(state.agents[0].id);
     });
+  });
+
+  it('wraps to first agent when navigating next from last', async () => {
+    useAgentStore.setState({
+      agents: [
+        createTestAgent({ id: 'a1', name: 'agent-1' }),
+        createTestAgent({ id: 'a2', name: 'agent-2' }),
+      ],
+      selectedAgentId: 'a2', // last agent
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('j'); // next
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().selectedAgentId).toBe('a1'); // wrapped to first
+    });
+  });
+
+  it('wraps to last agent when navigating prev from first', async () => {
+    useAgentStore.setState({
+      agents: [
+        createTestAgent({ id: 'a1', name: 'agent-1' }),
+        createTestAgent({ id: 'a2', name: 'agent-2' }),
+      ],
+      selectedAgentId: 'a1', // first agent
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('k'); // prev
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().selectedAgentId).toBe('a2'); // wrapped to last
+    });
+  });
+
+  it('does nothing when navigating with no agents', () => {
+    useAgentStore.setState({
+      agents: [],
+      selectedAgentId: null,
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('j');
+    stdin.write('k');
+
+    expect(useAgentStore.getState().selectedAgentId).toBeNull();
   });
 });

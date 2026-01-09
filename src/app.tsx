@@ -74,7 +74,7 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
   }
 
   return (
-    <Layout>
+    <Layout agentCount={agents.length}>
       <MainContent agents={agents} selectedAgentId={selectedAgentId} />
     </Layout>
   );
