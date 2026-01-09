@@ -47,13 +47,15 @@ describe('App', () => {
     expect(lastFrame()).toContain('q');
   });
 
-  it('calls onExit when q is pressed', () => {
+  it('calls onExit when q is pressed', async () => {
     const onExit = vi.fn();
     const { stdin } = render(<App onExit={onExit} />);
 
     stdin.write('q');
 
-    expect(onExit).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(onExit).toHaveBeenCalled();
+    });
   });
 
   it('displays agents from store', () => {
@@ -66,5 +68,20 @@ describe('App', () => {
 
     expect(lastFrame()).toContain('my-agent');
     expect(lastFrame()).toContain('Hello');
+  });
+
+  it('spawns demo agent when s is pressed', async () => {
+    const { stdin } = render(<App />);
+
+    expect(useAgentStore.getState().agents).toHaveLength(0);
+
+    stdin.write('s');
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().agents).toHaveLength(1);
+    });
+
+    const agent = useAgentStore.getState().agents[0];
+    expect(agent.name).toMatch(/demo/i);
   });
 });
