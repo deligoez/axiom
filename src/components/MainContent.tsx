@@ -30,13 +30,15 @@ export default function MainContent({ agents, selectedAgentId }: MainContentProp
   }
 
   return (
-    <Box flexDirection="column" gap={1}>
+    <Box flexDirection="row" flexGrow={1} gap={1}>
       {agents.map((agent) => {
         const isSelected = agent.id === selectedAgentId;
         return (
           <Box
             key={agent.id}
             flexDirection="column"
+            flexGrow={1}
+            flexBasis={0}
             borderStyle={isSelected ? 'double' : 'single'}
             borderColor={isSelected ? 'cyan' : undefined}
             paddingX={1}
@@ -46,7 +48,7 @@ export default function MainContent({ agents, selectedAgentId }: MainContentProp
               <StatusIndicator status={agent.status} />
               <Text bold color={isSelected ? 'cyan' : 'green'}>{agent.name}</Text>
             </Box>
-            <Box flexDirection="column">
+            <Box flexDirection="column" flexGrow={1} overflowY="hidden">
               {agent.output.map((line, index) => (
                 <Text key={index}>{line}</Text>
               ))}

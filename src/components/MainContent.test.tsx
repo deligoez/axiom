@@ -104,4 +104,21 @@ describe('MainContent', () => {
     // agent-1 should not have selection indicator
     expect(frame).not.toMatch(/[►>»].*agent-1/);
   });
+
+  it('renders agents in horizontal layout (tiling)', () => {
+    const agents = [
+      createTestAgent({ id: 'a1', name: 'agent-1' }),
+      createTestAgent({ id: 'a2', name: 'agent-2' }),
+    ];
+    const { lastFrame } = render(<MainContent agents={agents} />);
+    const frame = lastFrame()!;
+    const lines = frame.split('\n');
+
+    // Both agents should appear on the same row (horizontal tiling)
+    // At least one line should contain both agent names
+    const hasBothOnSameLine = lines.some(
+      (line) => line.includes('agent-1') && line.includes('agent-2')
+    );
+    expect(hasBothOnSameLine).toBe(true);
+  });
 });
