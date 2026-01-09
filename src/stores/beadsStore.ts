@@ -24,7 +24,15 @@ export const useBeadsStore = create<BeadsStore>((set, get) => ({
   isLoading: false,
   error: null,
 
-  setBeads: (beads) => set({ beads }),
+  setBeads: (beads) =>
+    set((state) => {
+      // Clear selection if selected bead is no longer in the list
+      const selectedStillExists = beads.some((b) => b.id === state.selectedBeadId);
+      return {
+        beads,
+        selectedBeadId: selectedStillExists ? state.selectedBeadId : null,
+      };
+    }),
 
   updateBead: (id, updates) =>
     set((state) => ({

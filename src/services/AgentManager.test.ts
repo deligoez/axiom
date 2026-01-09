@@ -170,4 +170,52 @@ describe('AgentManager', () => {
     expect(agent.pid).toBeDefined();
     expect(typeof agent.pid).toBe('number');
   });
+
+  it('handles concurrent spawn calls without race conditions', async () => {
+    // Spawn multiple agents concurrently
+    const spawnPromises = [
+      manager.spawn({ name: 'concurrent-1', command: 'echo', args: ['1'] }),
+      manager.spawn({ name: 'concurrent-2', command: 'echo', args: ['2'] }),
+      manager.spawn({ name: 'concurrent-3', command: 'echo', args: ['3'] }),
+    ];
+
+    const agents = await Promise.all(spawnPromises);
+
+    // All agents should have unique IDs
+    const ids = agents.map(a => a.id);
+    const uniqueIds = new Set(ids);
+    expect(uniqueIds.size).toBe(3);
+
+    // All agents should be in the manager's list
+    expect(manager.list()).toHaveLength(3);
+
+    // Each agent should be retrievable by its ID
+    for (const agent of agents) {
+      expect(manager.get(agent.id)).toBe(agent);
+    }
+  });
+
+  it('handles concurrent spawn and kill without errors', async () => {
+    // Spawn an agent
+    const agent = await manager.spawn({
+      name: 'spawn-kill-race',
+      command: 'sleep',
+      args: ['10'],
+    });
+
+    // Spawn another and kill the first concurrently
+    const [newAgent] = await Promise.all([
+      manager.spawn({ name: 'spawn-during-kill', command: 'sleep', args: ['10'] }),
+      manager.kill(agent.id),
+    ]);
+
+    // First agent should be stopped
+    expect(manager.get(agent.id)?.status).toBe('stopped');
+
+    // New agent should be running
+    expect(manager.get(newAgent.id)?.status).toBe('running');
+
+    // Both should be in the list
+    expect(manager.list()).toHaveLength(2);
+  });
 });

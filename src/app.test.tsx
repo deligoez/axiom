@@ -196,4 +196,34 @@ describe('App', () => {
 
     expect(useAgentStore.getState().selectedAgentId).toBeNull();
   });
+
+  it('stays on same agent when navigating next with single agent', async () => {
+    useAgentStore.setState({
+      agents: [createTestAgent({ id: 'only-one', name: 'only-agent' })],
+      selectedAgentId: 'only-one',
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('j'); // next
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().selectedAgentId).toBe('only-one'); // stays on same
+    });
+  });
+
+  it('stays on same agent when navigating prev with single agent', async () => {
+    useAgentStore.setState({
+      agents: [createTestAgent({ id: 'only-one', name: 'only-agent' })],
+      selectedAgentId: 'only-one',
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('k'); // prev
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().selectedAgentId).toBe('only-one'); // stays on same
+    });
+  });
 });

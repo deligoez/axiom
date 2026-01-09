@@ -69,6 +69,44 @@ describe('BeadsParser', () => {
       expect(parseBeadLine('{"id":"bd-x"}')).toBeNull();
       expect(parseBeadLine('{"title":"No ID"}')).toBeNull();
     });
+
+    it('returns null for negative priority values', () => {
+      const line = '{"id":"bd-neg","title":"Negative","status":"open","priority":-1,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z"}';
+      expect(parseBeadLine(line)).toBeNull();
+    });
+
+    it('returns null for out-of-range priority values', () => {
+      const line = '{"id":"bd-high","title":"Too High","status":"open","priority":99,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z"}';
+      expect(parseBeadLine(line)).toBeNull();
+    });
+
+    it('returns null when required fields are null', () => {
+      expect(parseBeadLine('{"id":null,"title":"Test","status":"open","priority":2,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z"}')).toBeNull();
+      expect(parseBeadLine('{"id":"bd-x","title":null,"status":"open","priority":2,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z"}')).toBeNull();
+    });
+
+    it('ignores optional fields when null', () => {
+      const line = '{"id":"bd-null","title":"Null optionals","status":"open","priority":2,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z","assignee":null,"description":null}';
+      const bead = parseBeadLine(line);
+
+      expect(bead).not.toBeNull();
+      expect(bead!.assignee).toBeUndefined();
+      expect(bead!.description).toBeUndefined();
+    });
+
+    it('returns null when required fields are empty strings', () => {
+      expect(parseBeadLine('{"id":"","title":"Test","status":"open","priority":2,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z"}')).toBeNull();
+      expect(parseBeadLine('{"id":"bd-x","title":"","status":"open","priority":2,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z"}')).toBeNull();
+    });
+
+    it('ignores optional fields when empty strings', () => {
+      const line = '{"id":"bd-empty","title":"Empty optionals","status":"open","priority":2,"type":"task","created":"2026-01-09T10:00:00Z","updated":"2026-01-09T10:00:00Z","assignee":"","description":""}';
+      const bead = parseBeadLine(line);
+
+      expect(bead).not.toBeNull();
+      expect(bead!.assignee).toBeUndefined();
+      expect(bead!.description).toBeUndefined();
+    });
   });
 
   describe('parseBeadsJSONL', () => {

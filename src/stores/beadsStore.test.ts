@@ -45,6 +45,33 @@ describe('beadsStore', () => {
       expect(useBeadsStore.getState().beads).toHaveLength(1);
       expect(useBeadsStore.getState().beads[0].id).toBe('bd-new');
     });
+
+    it('clears selection when selected bead is no longer in list', () => {
+      useBeadsStore.setState({
+        beads: [createTestBead({ id: 'bd-1' }), createTestBead({ id: 'bd-2' })],
+        selectedBeadId: 'bd-1',
+      });
+
+      // Replace beads with a list that doesn't include the selected bead
+      useBeadsStore.getState().setBeads([createTestBead({ id: 'bd-2' })]);
+
+      expect(useBeadsStore.getState().selectedBeadId).toBeNull();
+    });
+
+    it('preserves selection when selected bead is still in list', () => {
+      useBeadsStore.setState({
+        beads: [createTestBead({ id: 'bd-1' }), createTestBead({ id: 'bd-2' })],
+        selectedBeadId: 'bd-1',
+      });
+
+      // Replace beads with a list that still includes the selected bead
+      useBeadsStore.getState().setBeads([
+        createTestBead({ id: 'bd-1', title: 'Updated' }),
+        createTestBead({ id: 'bd-3' }),
+      ]);
+
+      expect(useBeadsStore.getState().selectedBeadId).toBe('bd-1');
+    });
   });
 
   describe('updateBead', () => {
