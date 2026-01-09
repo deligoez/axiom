@@ -62,12 +62,16 @@ npm install -g @openai/codex
 log "Installing Beads..."
 npm install -g beads-cli || warn "Beads install failed - may need manual install"
 
-# 7. Create workspace directory
+# 7. Install Chorus CLI
+log "Installing Chorus CLI..."
+curl -fsSL https://raw.githubusercontent.com/deligoez/chorus/main/install.sh | bash
+
+# 8. Create workspace directory
 log "Creating workspace..."
 mkdir -p ~/workspace
 mkdir -p ~/workspace/.worktrees
 
-# 8. Setup tmux config
+# 9. Setup tmux config
 log "Configuring tmux..."
 cat > ~/.tmux.conf << 'EOF'
 # Chorus tmux config
@@ -98,7 +102,7 @@ bind k select-pane -U
 bind l select-pane -R
 EOF
 
-# 9. Create environment template
+# 10. Create environment template
 log "Creating environment template..."
 cat > ~/workspace/.env.template << 'EOF'
 # Chorus Environment Variables
@@ -117,7 +121,7 @@ OPENAI_API_KEY=
 GITHUB_TOKEN=
 EOF
 
-# 10. Create session startup script
+# 11. Create session startup script
 log "Creating session startup script..."
 cat > ~/workspace/start-agents.sh << 'EOF'
 #!/bin/bash
@@ -151,7 +155,7 @@ echo "Session '$SESSION' created. Attach with: tmux attach -t $SESSION"
 EOF
 chmod +x ~/workspace/start-agents.sh
 
-# 11. Summary
+# 12. Summary
 echo ""
 echo "=========================================="
 echo "  Setup Complete!"
@@ -161,14 +165,21 @@ log "Installed:"
 echo "    - Node.js $(node --version)"
 echo "    - Claude Code $(claude --version 2>/dev/null || echo 'needs auth')"
 echo "    - Codex CLI $(codex --version 2>/dev/null || echo 'installed')"
+echo "    - Chorus CLI $(chorus --version 2>/dev/null || echo 'installed')"
 echo "    - tmux, git, htop, jq"
 echo ""
 warn "Next steps:"
 echo "    1. Copy .env.template to .env and add API keys"
 echo "    2. Run: source ~/.bashrc"
 echo "    3. Run: claude auth login"
-echo "    4. Clone your repos to ~/workspace/"
-echo "    5. Run: ~/workspace/start-agents.sh"
+echo "    4. Clone your project to ~/workspace/"
+echo "    5. Run: cd ~/workspace/your-project && chorus init --all"
+echo "    6. Run: ~/workspace/start-agents.sh"
+echo ""
+echo "Quick start:"
+echo "    chorus init --all      # Initialize project"
+echo "    chorus loop \"task\"     # Run autonomous loop"
+echo "    chorus squad --agents claude,codex  # Start multi-agent"
 echo ""
 echo "Attach to session: tmux attach -t chorus"
 echo "=========================================="

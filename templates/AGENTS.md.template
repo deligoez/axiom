@@ -1,0 +1,93 @@
+# AGENTS.md Template
+
+Copy this file to your project root as `AGENTS.md` and fill in the sections.
+
+---
+
+# Project: [PROJECT_NAME]
+
+## Overview
+
+[One paragraph describing what this project does]
+
+## Tech Stack
+
+- **Language:** [e.g., PHP 8.2, TypeScript 5.x, Python 3.12]
+- **Framework:** [e.g., Laravel 11, Next.js 15, FastAPI]
+- **Database:** [e.g., PostgreSQL, MySQL, SQLite]
+- **Queue:** [e.g., Redis, RabbitMQ, none]
+- **Other:** [e.g., Docker, AWS, etc.]
+
+## Architecture
+
+```
+project/
+├── src/           # [Description]
+├── tests/         # [Description]
+├── docs/          # [Description]
+└── ...
+```
+
+[Key architectural decisions or patterns used]
+
+## Code Style
+
+- [e.g., PSR-12 for PHP, Prettier for JS]
+- [e.g., Strict typing enabled]
+- [e.g., No abbreviations in variable names]
+
+## Testing
+
+- **Framework:** [e.g., PHPUnit, Jest, pytest]
+- **Run tests:** `[command, e.g., composer test, npm test]`
+- **Run single test:** `[command]`
+
+## Git Conventions
+
+- **Branch naming:** `[e.g., feature/*, fix/*, agent/*]`
+- **Commit format:** `<type>(<scope>): <description> [bd-xxxx]`
+- **Types:** feat, fix, test, docs, refactor, chore
+
+## Task Management
+
+- Use Beads for task tracking
+- See available tasks: `bd ready`
+- Claim task before starting: `bd update <id> --status=in-progress`
+- Close when done: `bd close <id> -m "Description"`
+- Always include task ID in commits: `[bd-xxxx]`
+
+## Security Rules
+
+- NEVER commit files: `.env`, `*.key`, `credentials.*`, `secrets.*`
+- NEVER log API keys or tokens
+- NEVER hardcode secrets in code
+- Use environment variables for all credentials
+
+## Important Files
+
+- `[file]` - [description]
+- `[file]` - [description]
+
+## Common Commands
+
+```bash
+# Development
+[command]
+
+# Build
+[command]
+
+# Lint
+[command]
+
+# Deploy (if applicable)
+[command]
+```
+
+## Notes for Agents
+
+[Any project-specific instructions for AI agents]
+
+- [e.g., "Always run tests before committing"]
+- [e.g., "Check SPEC.md for feature requirements"]
+- [e.g., "Use dependency injection, no static methods"]

@@ -1,0 +1,8 @@
+# Chorus Progress Log
+#
+# This file tracks iteration progress for autonomous loops.
+# Each iteration is logged below with timestamp and status.
+#
+# To mark complete: Write "STATUS: DONE" on its own line
+# To mark blocked:  Write "STATUS: BLOCKED" on its own line
+#
