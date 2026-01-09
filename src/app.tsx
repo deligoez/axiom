@@ -2,24 +2,31 @@ import { useState } from 'react';
 import { Box, Text, useApp } from 'ink';
 import Layout from './components/Layout.js';
 import MainContent from './components/MainContent.js';
+import TaskPanel from './components/TaskPanel.js';
 import HelpPanel from './components/HelpPanel.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAgentManager } from './hooks/useAgentManager.js';
+import { useBeadsManager } from './hooks/useBeadsManager.js';
 import { useAgentStore } from './stores/agentStore.js';
+import { useBeadsStore } from './stores/beadsStore.js';
 
 interface AppProps {
   showVersion?: boolean;
   showHelp?: boolean;
   onExit?: () => void;
+  projectDir?: string;
 }
 
-export default function App({ showVersion, showHelp, onExit }: AppProps) {
+export default function App({ showVersion, showHelp, onExit, projectDir = process.cwd() }: AppProps) {
   const { exit } = useApp();
   const [helpVisible, setHelpVisible] = useState(false);
   const agents = useAgentStore((state) => state.agents);
   const selectedAgentId = useAgentStore((state) => state.selectedAgentId);
   const selectAgent = useAgentStore((state) => state.selectAgent);
+  const beads = useBeadsStore((state) => state.beads);
+  const selectedBeadId = useBeadsStore((state) => state.selectedBeadId);
   const { spawn, killAll } = useAgentManager();
+  useBeadsManager(projectDir);
 
   const handleExit = async () => {
     await killAll();
@@ -86,9 +93,25 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
   }
 
   return (
-    <Layout agentCount={agents.length}>
+    <Layout agentCount={agents.length} taskCount={beads.length}>
       <Box flexGrow={1} position="relative">
-        <MainContent agents={agents} selectedAgentId={selectedAgentId} />
+        <Box flexDirection="row" flexGrow={1}>
+          {/* Task Panel - Left Side */}
+          <Box
+            width={30}
+            borderStyle="single"
+            borderColor="gray"
+            paddingX={1}
+            flexDirection="column"
+          >
+            <TaskPanel beads={beads} selectedBeadId={selectedBeadId} />
+          </Box>
+
+          {/* Agent Panel - Right Side */}
+          <Box flexGrow={1}>
+            <MainContent agents={agents} selectedAgentId={selectedAgentId} />
+          </Box>
+        </Box>
         {helpVisible && (
           <Box
             position="absolute"

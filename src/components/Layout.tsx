@@ -7,10 +7,11 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 interface LayoutProps {
   children: ReactNode;
   agentCount?: number;
+  taskCount?: number;
   status?: string;
 }
 
-export default function Layout({ children, agentCount, status }: LayoutProps) {
+export default function Layout({ children, agentCount, taskCount, status }: LayoutProps) {
   const { height } = useTerminalSize();
   const [isFirstRender, setIsFirstRender] = useState(true);
 
@@ -34,7 +35,7 @@ export default function Layout({ children, agentCount, status }: LayoutProps) {
       height={adjustedHeight}
       marginTop={marginTop}
     >
-      <StatusBar agentCount={agentCount} status={status} />
+      <StatusBar agentCount={agentCount} taskCount={taskCount} status={status} />
       <Box borderStyle="single" borderTop={false} borderLeft={false} borderRight={false}>
         {/* Separator line */}
       </Box>
