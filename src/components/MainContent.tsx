@@ -22,7 +22,7 @@ function StatusIndicator({ status }: { status: AgentStatus }) {
 export default function MainContent({ agents, selectedAgentId }: MainContentProps) {
   if (agents.length === 0) {
     return (
-      <Box flexDirection="column" alignItems="center" justifyContent="center">
+      <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
         <Text dimColor>No agents running</Text>
         <Text dimColor>Press 's' to start an agent</Text>
       </Box>
