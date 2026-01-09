@@ -1,0 +1,40 @@
+# Chorus .gitignore
+
+# Worktrees (agent isolation)
+.worktrees/
+
+# Beads cache (rebuild from JSONL)
+.beads/beads.db
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+
+# Agent scratchpads (per-session, volatile)
+# Note: learnings.md IS tracked (shared knowledge)
+.agent/scratchpad.md
+.agent/*/scratchpad.md
+
+# Usage logs (optional tracking)
+.agent/usage.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+
+# Node (if using npm packages)
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log
+logs/
