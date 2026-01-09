@@ -131,3 +131,15 @@ bd blocked        # Blocked tasks
 - Use `bd --no-daemon` if changes don't persist
 - Task prefix: `ch-` (Chorus)
 - Feature codes (F##) map to plan files
+
+---
+
+## Audit Log
+
+### 2026-01-10: Dependency Audit
+- Verified all 26 tasks against feature plans
+- **Fixed**: F09 (ch-3y0) had incorrect dep on F02b (ch-81x)
+  - F09 = Agent type extension (agentStore)
+  - F02b = ChorusState init (unrelated)
+- All other dependencies verified correct
+- All tasks are TDD-suitable (clear test cases, atomic scope)
