@@ -53,9 +53,9 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 - Done:
   - [x] Bash CLI v0.1.0 (archived to `archive/chorus-bash-v0.1.0/`)
   - [x] Ink rewrite plan (`thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`)
+  - [x] Removed old bash files + submodules (clean repo)
 
 - Now: [→] Phase 1.1 - Project Setup
-  - [ ] Remove old bash files + submodules
   - [ ] Initialize npm project with TypeScript
   - [ ] Setup Vitest
   - [ ] Install Ink + dependencies
