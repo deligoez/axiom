@@ -116,4 +116,122 @@ describe('agentStore', () => {
     const selected = getSelectedAgent();
     expect(selected?.name).toBe('selected-agent');
   });
+
+  // Edge case tests
+
+  it('updateAgent with non-existent id is a no-op', () => {
+    const { addAgent, updateAgent } = useAgentStore.getState();
+
+    addAgent({
+      id: 'agent-1',
+      name: 'test',
+      status: 'idle',
+      output: [],
+      createdAt: new Date(),
+    });
+
+    // Should not throw, should not change anything
+    updateAgent('non-existent', { status: 'running' });
+
+    const { agents } = useAgentStore.getState();
+    expect(agents).toHaveLength(1);
+    expect(agents[0].status).toBe('idle');
+  });
+
+  it('appendOutput with non-existent id is a no-op', () => {
+    const { addAgent, appendOutput } = useAgentStore.getState();
+
+    addAgent({
+      id: 'agent-1',
+      name: 'test',
+      status: 'idle',
+      output: ['existing'],
+      createdAt: new Date(),
+    });
+
+    // Should not throw
+    appendOutput('non-existent', 'new line');
+
+    const { agents } = useAgentStore.getState();
+    expect(agents[0].output).toEqual(['existing']);
+  });
+
+  it('removeAgent clears selection when selected agent is removed', () => {
+    const { addAgent, selectAgent, removeAgent } = useAgentStore.getState();
+
+    addAgent({
+      id: 'agent-1',
+      name: 'test',
+      status: 'idle',
+      output: [],
+      createdAt: new Date(),
+    });
+
+    selectAgent('agent-1');
+    expect(useAgentStore.getState().selectedAgentId).toBe('agent-1');
+
+    removeAgent('agent-1');
+
+    expect(useAgentStore.getState().selectedAgentId).toBeNull();
+  });
+
+  it('removeAgent preserves selection when different agent is removed', () => {
+    const { addAgent, selectAgent, removeAgent } = useAgentStore.getState();
+
+    addAgent({
+      id: 'agent-1',
+      name: 'keep',
+      status: 'idle',
+      output: [],
+      createdAt: new Date(),
+    });
+
+    addAgent({
+      id: 'agent-2',
+      name: 'remove',
+      status: 'idle',
+      output: [],
+      createdAt: new Date(),
+    });
+
+    selectAgent('agent-1');
+    removeAgent('agent-2');
+
+    expect(useAgentStore.getState().selectedAgentId).toBe('agent-1');
+  });
+
+  it('selectAgent with null deselects', () => {
+    const { addAgent, selectAgent } = useAgentStore.getState();
+
+    addAgent({
+      id: 'agent-1',
+      name: 'test',
+      status: 'idle',
+      output: [],
+      createdAt: new Date(),
+    });
+
+    selectAgent('agent-1');
+    expect(useAgentStore.getState().selectedAgentId).toBe('agent-1');
+
+    selectAgent(null);
+    expect(useAgentStore.getState().selectedAgentId).toBeNull();
+  });
+
+  it('getSelectedAgent returns undefined when nothing selected', () => {
+    const { getSelectedAgent } = useAgentStore.getState();
+
+    const selected = getSelectedAgent();
+    expect(selected).toBeUndefined();
+  });
+
+  it('getSelectedAgent returns undefined when selected id does not exist', () => {
+    const { selectAgent, getSelectedAgent } = useAgentStore.getState();
+
+    // Force an invalid selection (edge case)
+    useAgentStore.setState({ selectedAgentId: 'non-existent' });
+
+    const selected = getSelectedAgent();
+    expect(selected).toBeUndefined();
+  });
 });

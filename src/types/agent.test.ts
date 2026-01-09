@@ -60,4 +60,64 @@ describe('Agent types', () => {
     expect(agent.output).toEqual([]);
     expect(agent.createdAt).toBeInstanceOf(Date);
   });
+
+  it('createAgent includes config in returned agent', () => {
+    const config: AgentConfig = {
+      name: 'config-test',
+      command: 'node',
+      args: ['--version'],
+      cwd: '/home',
+    };
+
+    const agent = createAgent(config);
+
+    expect(agent.config).toBeDefined();
+    expect(agent.config?.command).toBe('node');
+    expect(agent.config?.args).toEqual(['--version']);
+    expect(agent.config?.cwd).toBe('/home');
+  });
+
+  it('createAgent generates unique IDs for each call', () => {
+    const agent1 = createAgent({ name: 'a1', command: 'echo' });
+    const agent2 = createAgent({ name: 'a2', command: 'echo' });
+    const agent3 = createAgent({ name: 'a3', command: 'echo' });
+
+    expect(agent1.id).not.toBe(agent2.id);
+    expect(agent2.id).not.toBe(agent3.id);
+    expect(agent1.id).not.toBe(agent3.id);
+  });
+
+  it('Agent optional fields can be set', () => {
+    const agent: Agent = {
+      id: 'agent-1',
+      name: 'test',
+      status: 'stopped',
+      output: ['line1'],
+      createdAt: new Date(),
+      pid: 12345,
+      exitCode: 0,
+      config: {
+        name: 'test',
+        command: 'echo',
+      },
+    };
+
+    expect(agent.pid).toBe(12345);
+    expect(agent.exitCode).toBe(0);
+    expect(agent.config?.command).toBe('echo');
+  });
+
+  it('AgentConfig env field works', () => {
+    const config: AgentConfig = {
+      name: 'env-test',
+      command: 'printenv',
+      env: {
+        MY_VAR: 'my_value',
+        ANOTHER: 'test',
+      },
+    };
+
+    expect(config.env?.MY_VAR).toBe('my_value');
+    expect(config.env?.ANOTHER).toBe('test');
+  });
 });
