@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
-**Session Date:** 2026-01-09
-**Status:** Ink Rewrite - Phase 3 Complete (176 tests)
+**Session Date:** 2026-01-10
+**Status:** Phase 4 Implementation Started - Beads Tasks Ready (176 tests)
 
 ---
 
@@ -12,8 +12,9 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 **Success Criteria:**
 - [ ] `npx chorus` opens full TUI dashboard
 - [ ] Real-time agent output streaming
-- [ ] Multi-agent split pane view (3+ agents)
+- [ ] Tiling agent view (dynamic grid, 3+ agents)
 - [ ] Live Beads task visualization
+- [ ] Two modes: semi-auto + autopilot
 - [ ] Keyboard-driven workflow
 - [ ] < 500ms startup time
 - [ ] Cross-platform (macOS, Linux, Windows)
@@ -46,107 +47,142 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 - Atomic conventional commits
 - No permission prompts for commits
 
+### 5. Phase 4 Orchestration Decisions (v2.0 RESOLVED)
+| Decision | Choice |
+|----------|--------|
+| Multi-agent | YES - claude, codex, opencode (no aider) |
+| Worktrees | REQUIRED - with Background Merge Service |
+| Task management | Beads only (bd CLI - direct calls) |
+| Operating modes | Semi-auto (default) + Autopilot |
+| Conflict resolution | Agent-first, human-fallback |
+| Completion detection | Signal `<chorus>` + Tests (AND logic) |
+| Architecture | Simplified: 2 services (Orchestrator + MergeService) |
+
 ---
 
 ## State
 
 - Done:
-  - [x] Bash CLI v0.1.0 (archived to `archive/chorus-bash-v0.1.0/`)
-  - [x] Ink rewrite plan (`thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`)
-  - [x] Removed old bash files + submodules (clean repo)
-  - [x] Phase 1.1 - Project Setup (10 passing tests)
-    - [x] Initialize npm project with TypeScript
-    - [x] Setup Vitest
-    - [x] Install Ink 6.x + React 19 + dependencies
-    - [x] Create CLI parser (cli.ts)
-    - [x] Create App component (app.tsx)
-    - [x] Create entry point (index.tsx)
+  - [x] Bash CLI v0.1.0 (archived)
+  - [x] Phase 1.1 - Project Setup (10 tests)
+  - [x] Phase 1.2 - Basic TUI Shell (27 tests)
+  - [x] Phase 1.3 - Agent Process Management (63 tests)
+  - [x] Phase 2.1-2.3 - Multi-Agent (89 tests)
+  - [x] Phase 2.4 - Fullscreen TUI Layout (96 tests)
+  - [x] Phase 2.5 - Help Panel (99 tests)
+  - [x] Phase 3 - Beads Integration (159 tests)
+  - [x] Edge Case Tests & Improvements (176 tests)
+  - [x] Phase 4 Planning v2.0 - Optimized workflow, all decisions resolved
 
-- [x] Phase 1.2 - Basic TUI Shell (27 passing tests)
-    - [x] StatusBar component (app name, agent count, quit hint)
-    - [x] Layout component (borders, structure)
-    - [x] MainContent component (agent output, empty state)
-    - [x] useKeyboard hook (q to quit, Ctrl+C)
-    - [x] Wired App with all components
+- Now: [→] Phase 4 Implementation via Beads - M1: Infrastructure
+  - Detailed feature analysis complete (57 features identified)
+  - 12 milestones defined with dependencies
+  - **Beads tracking enabled** - all tasks in `.beads/`
+  - TDD for each task, sequential execution (no worktrees)
+  - **Atomic tasks created** - M1 ready in Beads
+  - Next: `bd ready` → pick task → TDD → close → repeat
 
-- [x] Phase 1.3 - Agent Process Management (63 passing tests)
-    - [x] Agent type definitions (Agent, AgentConfig, AgentStatus)
-    - [x] createAgent factory function
-    - [x] AgentManager service (spawn, kill, killAll, list)
-    - [x] Agent output streaming with EventEmitter
-    - [x] Zustand store (add, update, remove, select agents)
-    - [x] Comprehensive edge case tests (+17 tests)
-      - exit/error events, stderr, invalid IDs, unique IDs
+- Remaining (12 milestones, ~364 new tests):
+  - [ ] M1: Infrastructure + Worktree (F01-F06, ~30 tests) ← START HERE
+  - [ ] M2: Agent Preparation (F07-F09, ~23 tests)
+  - [ ] M3: Task Management (F10-F13, ~28 tests)
+  - [ ] M4: Core Orchestration (F14-F20, ~57 tests) **Semi-Auto**
+  - [ ] M5: Merge Service (F24-F31, ~49 tests)
+  - [ ] M6: Parallelism (F21-F23, ~25 tests)
+  - [ ] M7: Autopilot (F32-F38, ~43 tests) **GOAL**
+  - [ ] M8: Memory System (F39-F42, ~23 tests)
+  - [ ] M9: Human Intervention (F43-F46, ~21 tests)
+  - [ ] M10: Rollback (F47-F51, ~22 tests)
+  - [ ] M11: Hooks (F52-F54, ~18 tests)
+  - [ ] M12: Recovery + Init (F03, F55-F57, ~25 tests)
 
-- [x] Phase 2.1-2.3 - Multi-Agent (89 passing tests)
-    - [x] useAgentManager hook (wires AgentManager events to store)
-    - [x] MainContent uses Agent type from types/agent.ts
-    - [x] Status indicators (●/○/✗ for running/stopped/error)
-    - [x] App reads agents from Zustand store
-    - [x] Press 's' to spawn demo agent
-    - [x] Press 'j/k' to navigate between agents (with wrap-around)
-    - [x] Selection highlight (► indicator, cyan double border)
-    - [x] Auto-select first agent when spawning
-    - [x] StatusBar shows agent count
-
-- [x] Phase 2.4 - Fullscreen TUI Layout (96 passing tests)
-    - [x] Alternate screen buffer (ANSI escape codes)
-    - [x] useTerminalSize hook for dimensions
-    - [x] Center empty state properly
-    - [x] Tiling layout for agent panels (horizontal)
-    - [x] Scrollable output per agent panel (tail behavior)
-    - [x] Terminal resize handling
-    - [x] Restore terminal on exit/SIGINT/SIGTERM
-
-- [x] Phase 2.4 Bug Fix - Top Border Cut Off
-  - [x] Tried manual ANSI escape codes
-  - [x] Tried fullscreen-ink package
-  - [x] Tried FullScreenBox + manual ANSI combo
-  - [x] **RESOLVED**: Workaround for Ink issue #808 (initial render newline bug)
-    - Dynamic marginTop (1 on first render, 0 after) in Layout.tsx
-    - Explicit height calculation based on terminal size
-
-- [x] Phase 2.5 - Help Panel (99 tests)
-  - [x] HelpPanel component with keyboard shortcuts
-  - [x] Toggle with '?' key
-  - [x] Absolute positioned overlay (agents visible behind)
-  - [x] useKeyboard hook extended with onToggleHelp
-
-- [x] Phase 3 - Beads Integration (159 tests)
-  - [x] Phase 3.1: Bead types and JSONL parser (115 tests)
-    - Bead, BeadStatus, BeadType, BeadPriority types
-    - parseBeadLine, parseBeadsJSONL, serializeBeadLine
-  - [x] Phase 3.2: BeadsService with file watching (128 tests)
-    - Watch `.beads/issues.jsonl` for task updates
-    - chokidar for file change detection
-  - [x] Phase 3.3: beadsStore (Zustand) (143 tests)
-    - setBeads, updateBead, selectBead
-    - getBeadsByStatus, getBeadsSortedByPriority, getActiveBeads
-  - [x] Phase 3.4: TaskPanel component (156 tests)
-    - Status indicators (→/●/✓/⊗ for open/in_progress/closed/blocked)
-    - Short IDs, priority badges, assignee display
-  - [x] Phase 3.5: Wire TaskPanel into App (159 tests)
-    - Split layout: TaskPanel (left) + MainContent (right)
-    - StatusBar shows task count
-
-- [x] Edge Case Tests & Improvements (176 tests)
-  - [x] BeadsParser: negative priority, null/empty field handling
-  - [x] beadsStore: clear selection when selected bead removed
-  - [x] AgentManager: concurrent spawn race condition tests
-  - [x] Layout: 0x0 terminal size handling
-  - [x] App: single agent wrap-around navigation
-  - [x] Agent ID: optional bead ID support (bd-xxx or agent-N)
-
-- Now: [→] Phase 4 - Agent Orchestration (PLANNING)
-  - [ ] Task assignment to agents
-  - [ ] Parallel execution (git worktrees)
-  - [ ] Dependency handling
-  - [ ] Task status updates
-  - [ ] Ralph Wiggum pattern (loop until completion)
-
-- Remaining:
+- Future:
   - [ ] Phase 5 - Polish (themes, responsive, error boundaries)
   - [ ] Phase 6 - Advanced (Kanban, DAG)
+
+---
+
+## Phase 4 Workflow Plan v2.0 (READ THIS)
+
+**Plan Location:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v2.0)
+
+### Architecture (Simplified)
+
+```
+ChorusApp (Ink)
+      │
+      ├── TaskPanel ── taskStore (Zustand)
+      ├── AgentTilingView ── agentStore (Zustand)
+      └── StatusBar
+              │
+      ┌───────┴───────┐
+      │               │
+Orchestrator    MergeService
+      │          (background)
+      │
+┌─────┼─────┐
+bd    git   agent CLI
+```
+
+**Key Insight:** Only 2 services needed (down from 7+)
+
+### Operating Modes
+
+| Mode | Behavior |
+|------|----------|
+| **semi-auto** | User selects task, agent completes one, STOPS |
+| **autopilot** | Runs until no ready tasks remain |
+
+### Signal Protocol
+
+```xml
+<chorus>COMPLETE</chorus>
+<chorus>BLOCKED: reason</chorus>
+<chorus>NEEDS_HUMAN: reason</chorus>
+```
+
+### Conflict Resolution Flow
+
+```
+SIMPLE → Auto-resolve (merge drivers)
+MEDIUM → Rebase + retry
+COMPLEX → Spawn Resolver Agent → If fails → Human
+```
+
+### Phase 4.1 MVP Features
+
+- [ ] Semi-auto mode only
+- [ ] Task selection in TUI (Enter key)
+- [ ] Single agent spawn with prompt
+- [ ] Worktree creation
+- [ ] Agent output streaming
+- [ ] Signal detection
+- [ ] Task status update
+- [ ] Manual merge (user runs git merge)
+
+### Key Files to Create (Phase 4.1)
+
+```
+src/services/Orchestrator.ts      (NEW)
+src/types/orchestration.ts        (NEW)
+src/stores/orchestrationStore.ts  (UPDATE)
+src/hooks/useOrchestration.ts     (NEW)
+tests/services/Orchestrator.test.ts (NEW)
+```
+
+---
+
+## v2.0 Changes Summary
+
+From v1.x to v2.0:
+- **Simplified:** 7+ services → 2 (Orchestrator + MergeService)
+- **Phases:** 7 → 6 (~160 tests → ~115 tests)
+- **Modes:** Added semi-auto (default) + autopilot
+- **View:** Tiling agent grid (dynamic rows/cols)
+- **Conflict:** Agent-first resolution
+- **Signal:** `<promise>` → `<chorus>`
+- **Removed:** aider, GitHub Issues import, PRD parsing (v2 scope)
+- **Added:** Custom model per task, user parallel worktree
 
 ---
 
@@ -154,81 +190,83 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 
 - RESOLVED: Use Ink for TUI (not bash + tmux)
 - RESOLVED: Integrate Beads (not rewrite)
-- RESOLVED: Top border cut off - workaround via marginTop + explicit height (Ink issue #808)
+- RESOLVED: All Phase 4 orchestration decisions (v2.0)
 - UNCONFIRMED: npm package name "chorus" availability
-
----
-
-## Phase 4 Planning Context (CRITICAL - READ THESE)
-
-**Orchestration planı tartışılıyor. Aşağıdaki kaynaklar okunmalı:**
-
-### Reference Documents
-1. **`thoughts/shared/plans/2026-01-09-agent-orchestration.md`** - Draft plan with open questions
-2. **`thoughts/shared/plans/2026-01-09-chorus-cli.md`** - Ralph Wiggum pattern, worktrees
-3. **`/Users/deligoez/Developer/github/phonyland/AGENT_WORKFLOW.md`** - COMPREHENSIVE multi-agent guide
-
-### Key Concepts from AGENT_WORKFLOW.md
-- **Multi-Agent Fleet**: Claude (Opus) → Architecture, Codex (GPT-5.2) → Debugging, GLM → Tests/docs
-- **Task Routing Decision Tree**: Route by task type
-- **Git Worktrees**: Each agent works in isolated workspace, merge after completion
-- **Memory System**: `scratchpad.md` (session) + `learnings.md` (permanent, shared)
-- **Atomic Task Claiming**: Git push to prevent race conditions
-- **Ralph Wiggum Pattern**: Loop until completion criteria met
-- **Human Intervention**: Fix-forward (1-2 tasks) vs Full rollback (3+ tasks)
-- **Two-Layer Tasks**: Active (Beads) + Roadmap (SPEC.md)
-
-### Open Decisions (Discuss with User)
-1. **Agent Types**: Single (claude-code) or multi (claude, codex, glm)?
-2. **Execution Model**: Worktree-based, same-directory, or hybrid?
-3. **Task Source**: Beads only, or hybrid with TUI creation?
-4. **Communication**: File-based, pipe-based (current), or IPC?
-
-### Test Beads File Created
-`.beads/issues.jsonl` with sample tasks for manual testing
 
 ---
 
 ## Working Set
 
-**Plan:** `thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`
+**Plans:**
+- `thoughts/shared/plans/2026-01-10-chorus-phase4-master.md` ← MASTER TRACKER
+- `thoughts/shared/plans/2026-01-10-feature-dependency-analysis.md` ← ALL 57 FEATURES
+- `thoughts/shared/plans/features/` ← Individual feature plans
+- `thoughts/shared/plans/2026-01-09-chorus-workflow.md` ← Original workflow (v2.0)
 
 **Current Structure:**
 ```
 src/
-├── index.tsx              # Entry point (alternate screen buffer)
-├── cli.ts                 # CLI parsing (--version, --help)
-├── app.tsx                # Main component (wires everything together)
+├── index.tsx              # Entry point
+├── cli.ts                 # CLI parsing
+├── app.tsx                # Main component
 ├── components/
-│   ├── StatusBar.tsx      # App name, agent/task counts, quit hint
-│   ├── Layout.tsx         # Border box, fullscreen (dynamic marginTop for Ink bug)
-│   ├── MainContent.tsx    # Agent panels (tiling layout, scrollable output)
-│   ├── TaskPanel.tsx      # Beads task list (status icons, priorities)
-│   └── HelpPanel.tsx      # Keyboard shortcuts overlay (press ?)
+│   ├── StatusBar.tsx      # App name, counts, quit hint
+│   ├── Layout.tsx         # Border box, fullscreen
+│   ├── MainContent.tsx    # Agent panels
+│   ├── TaskPanel.tsx      # Beads task list
+│   └── HelpPanel.tsx      # Keyboard shortcuts
 ├── hooks/
-│   ├── useKeyboard.ts     # q/s/j/k/? key handling
-│   ├── useAgentManager.ts # Wires AgentManager to store
-│   ├── useBeadsManager.ts # Wires BeadsService to beadsStore
-│   └── useTerminalSize.ts # Terminal width/height with resize handling
+│   ├── useKeyboard.ts     # Key handling
+│   ├── useAgentManager.ts # AgentManager → store
+│   ├── useBeadsManager.ts # BeadsService → store
+│   └── useTerminalSize.ts # Terminal dimensions
 ├── services/
-│   ├── AgentManager.ts    # Process spawn/kill/stream
-│   ├── BeadsService.ts    # Watch .beads/issues.jsonl
-│   └── BeadsParser.ts     # Parse JSONL format
+│   ├── AgentManager.ts    # Process spawn/kill
+│   ├── BeadsService.ts    # Watch .beads/
+│   └── BeadsParser.ts     # Parse JSONL
 ├── stores/
-│   ├── agentStore.ts      # Zustand agent state
-│   └── beadsStore.ts      # Zustand beads state
+│   ├── agentStore.ts      # Agent state
+│   └── beadsStore.ts      # Beads state
 └── types/
-    ├── agent.ts           # Agent, AgentConfig, AgentStatus
-    └── bead.ts            # Bead, BeadStatus, BeadType, BeadPriority
+    ├── agent.ts           # Agent types
+    └── bead.ts            # Bead types
 ```
 
 **Commands:**
 ```bash
-npm test               # Run Vitest
+npm test               # Run Vitest (176 tests)
 npm run dev            # Dev mode
 npm run build          # Build
 npx chorus             # Run TUI
+bd ready               # Show ready tasks
+bd show <id>           # Task details
 ```
+
+---
+
+## NEXT SESSION: Start Here
+
+### Immediate Action
+```bash
+bd ready               # See: bd-2n6 (F01a Config Types)
+bd update bd-2n6 --status=in_progress
+```
+
+### TDD Workflow
+1. Read task: `bd show bd-2n6`
+2. Write tests first (RED)
+3. Implement (GREEN)
+4. Commit: `git add . && git commit -m "feat: F01a config types"`
+5. Close: `bd close bd-2n6`
+6. Next: `bd ready` → pick next
+
+### Current Ready Tasks
+- `bd-2n6`: F01a Config Types ← START
+- `bd-ah6`: F02a State Types
+- `bd-glq`: F04 Worktree Create
+
+### Task Tracking Rules
+See: `.claude/rules/beads-task-tracking.md`
 
 **Remote:** git@github.com:deligoez/chorus.git
 
@@ -237,7 +275,7 @@ npx chorus             # Run TUI
 ## Origin
 
 Bash CLI v0.1.0 completed 2026-01-09 with 53 tests.
-Rewrite decision made after tmux integration proved too complex for good UX.
+Rewrite decision made after tmux integration proved too complex.
 Ink chosen for native TUI capabilities and React paradigm.
 
 Archived: `archive/chorus-bash-v0.1.0/`
