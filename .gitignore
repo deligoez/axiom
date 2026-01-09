@@ -38,3 +38,4 @@ npm-debug.log*
 # Logs
 *.log
 logs/
+.claude/
