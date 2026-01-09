@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-09
-**Status:** Ink Rewrite - Phase 3 Complete (159 tests)
+**Status:** Ink Rewrite - Phase 3 Complete (176 tests)
 
 ---
 
@@ -129,14 +129,24 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
     - Split layout: TaskPanel (left) + MainContent (right)
     - StatusBar shows task count
 
-- Now: [→] Phase 4 - Polish
-  - [ ] Color themes
-  - [ ] Responsive layout
-  - [ ] Error boundaries
-  - [ ] Loading states
+- [x] Edge Case Tests & Improvements (176 tests)
+  - [x] BeadsParser: negative priority, null/empty field handling
+  - [x] beadsStore: clear selection when selected bead removed
+  - [x] AgentManager: concurrent spawn race condition tests
+  - [x] Layout: 0x0 terminal size handling
+  - [x] App: single agent wrap-around navigation
+  - [x] Agent ID: optional bead ID support (bd-xxx or agent-N)
+
+- Now: [→] Phase 4 - Agent Orchestration (PLANNING)
+  - [ ] Task assignment to agents
+  - [ ] Parallel execution (git worktrees)
+  - [ ] Dependency handling
+  - [ ] Task status updates
+  - [ ] Ralph Wiggum pattern (loop until completion)
 
 - Remaining:
-  - [ ] Phase 5 - Advanced (Kanban, DAG)
+  - [ ] Phase 5 - Polish (themes, responsive, error boundaries)
+  - [ ] Phase 6 - Advanced (Kanban, DAG)
 
 ---
 
@@ -146,6 +156,36 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 - RESOLVED: Integrate Beads (not rewrite)
 - RESOLVED: Top border cut off - workaround via marginTop + explicit height (Ink issue #808)
 - UNCONFIRMED: npm package name "chorus" availability
+
+---
+
+## Phase 4 Planning Context (CRITICAL - READ THESE)
+
+**Orchestration planı tartışılıyor. Aşağıdaki kaynaklar okunmalı:**
+
+### Reference Documents
+1. **`thoughts/shared/plans/2026-01-09-agent-orchestration.md`** - Draft plan with open questions
+2. **`thoughts/shared/plans/2026-01-09-chorus-cli.md`** - Ralph Wiggum pattern, worktrees
+3. **`/Users/deligoez/Developer/github/phonyland/AGENT_WORKFLOW.md`** - COMPREHENSIVE multi-agent guide
+
+### Key Concepts from AGENT_WORKFLOW.md
+- **Multi-Agent Fleet**: Claude (Opus) → Architecture, Codex (GPT-5.2) → Debugging, GLM → Tests/docs
+- **Task Routing Decision Tree**: Route by task type
+- **Git Worktrees**: Each agent works in isolated workspace, merge after completion
+- **Memory System**: `scratchpad.md` (session) + `learnings.md` (permanent, shared)
+- **Atomic Task Claiming**: Git push to prevent race conditions
+- **Ralph Wiggum Pattern**: Loop until completion criteria met
+- **Human Intervention**: Fix-forward (1-2 tasks) vs Full rollback (3+ tasks)
+- **Two-Layer Tasks**: Active (Beads) + Roadmap (SPEC.md)
+
+### Open Decisions (Discuss with User)
+1. **Agent Types**: Single (claude-code) or multi (claude, codex, glm)?
+2. **Execution Model**: Worktree-based, same-directory, or hybrid?
+3. **Task Source**: Beads only, or hybrid with TUI creation?
+4. **Communication**: File-based, pipe-based (current), or IPC?
+
+### Test Beads File Created
+`.beads/issues.jsonl` with sample tasks for manual testing
 
 ---
 
