@@ -1,7 +1,7 @@
 # F15: Orchestrator Core
 
 **Milestone:** 4 - Core Orchestration
-**Dependencies:** F04 (Worktree Create), F07 (Prompt Builder), F09 (Agent-Task Linking), F12 (Task Claimer)
+**Dependencies:** F06 (Worktree Service), F07 (Prompt Builder), F09 (Agent-Task Linking), F12 (Task Claimer)
 **Estimated Tests:** 15
 
 ---
