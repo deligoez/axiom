@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-09
-**Status:** Ink Rewrite - Phase 3 Ready (99 tests)
+**Status:** Ink Rewrite - Phase 3 Complete (159 tests)
 
 ---
 
@@ -112,13 +112,30 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
   - [x] Absolute positioned overlay (agents visible behind)
   - [x] useKeyboard hook extended with onToggleHelp
 
-- Now: [→] Phase 3 - Beads Integration
-  - [ ] Watch `.beads/issues.jsonl` for task updates
-  - [ ] Display tasks in TUI
-  - [ ] Task status visualization
+- [x] Phase 3 - Beads Integration (159 tests)
+  - [x] Phase 3.1: Bead types and JSONL parser (115 tests)
+    - Bead, BeadStatus, BeadType, BeadPriority types
+    - parseBeadLine, parseBeadsJSONL, serializeBeadLine
+  - [x] Phase 3.2: BeadsService with file watching (128 tests)
+    - Watch `.beads/issues.jsonl` for task updates
+    - chokidar for file change detection
+  - [x] Phase 3.3: beadsStore (Zustand) (143 tests)
+    - setBeads, updateBead, selectBead
+    - getBeadsByStatus, getBeadsSortedByPriority, getActiveBeads
+  - [x] Phase 3.4: TaskPanel component (156 tests)
+    - Status indicators (→/●/✓/⊗ for open/in_progress/closed/blocked)
+    - Short IDs, priority badges, assignee display
+  - [x] Phase 3.5: Wire TaskPanel into App (159 tests)
+    - Split layout: TaskPanel (left) + MainContent (right)
+    - StatusBar shows task count
+
+- Now: [→] Phase 4 - Polish
+  - [ ] Color themes
+  - [ ] Responsive layout
+  - [ ] Error boundaries
+  - [ ] Loading states
 
 - Remaining:
-  - [ ] Phase 4 - Polish
   - [ ] Phase 5 - Advanced (Kanban, DAG)
 
 ---
@@ -143,20 +160,26 @@ src/
 ├── cli.ts                 # CLI parsing (--version, --help)
 ├── app.tsx                # Main component (wires everything together)
 ├── components/
-│   ├── StatusBar.tsx      # App name, agent count, quit hint
+│   ├── StatusBar.tsx      # App name, agent/task counts, quit hint
 │   ├── Layout.tsx         # Border box, fullscreen (dynamic marginTop for Ink bug)
 │   ├── MainContent.tsx    # Agent panels (tiling layout, scrollable output)
+│   ├── TaskPanel.tsx      # Beads task list (status icons, priorities)
 │   └── HelpPanel.tsx      # Keyboard shortcuts overlay (press ?)
 ├── hooks/
 │   ├── useKeyboard.ts     # q/s/j/k/? key handling
 │   ├── useAgentManager.ts # Wires AgentManager to store
+│   ├── useBeadsManager.ts # Wires BeadsService to beadsStore
 │   └── useTerminalSize.ts # Terminal width/height with resize handling
 ├── services/
-│   └── AgentManager.ts    # Process spawn/kill/stream
+│   ├── AgentManager.ts    # Process spawn/kill/stream
+│   ├── BeadsService.ts    # Watch .beads/issues.jsonl
+│   └── BeadsParser.ts     # Parse JSONL format
 ├── stores/
-│   └── agentStore.ts      # Zustand state management
+│   ├── agentStore.ts      # Zustand agent state
+│   └── beadsStore.ts      # Zustand beads state
 └── types/
-    └── agent.ts           # Agent, AgentConfig, AgentStatus
+    ├── agent.ts           # Agent, AgentConfig, AgentStatus
+    └── bead.ts            # Bead, BeadStatus, BeadType, BeadPriority
 ```
 
 **Commands:**
