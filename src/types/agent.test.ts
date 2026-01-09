@@ -120,4 +120,38 @@ describe('Agent types', () => {
     expect(config.env?.MY_VAR).toBe('my_value');
     expect(config.env?.ANOTHER).toBe('test');
   });
+
+  it('createAgent uses provided id when specified (bead ID)', () => {
+    const agent = createAgent({
+      id: 'bd-a1b2',
+      name: 'bead-task',
+      command: 'claude-code',
+    });
+
+    expect(agent.id).toBe('bd-a1b2');
+  });
+
+  it('createAgent auto-generates id when not provided', () => {
+    const agent = createAgent({
+      name: 'demo-agent',
+      command: 'echo',
+    });
+
+    expect(agent.id).toMatch(/^agent-\d+$/);
+  });
+
+  it('createAgent with provided id does not affect counter for next agent', () => {
+    const beadAgent = createAgent({
+      id: 'bd-custom',
+      name: 'bead-task',
+      command: 'echo',
+    });
+    const autoAgent = createAgent({
+      name: 'auto-task',
+      command: 'echo',
+    });
+
+    expect(beadAgent.id).toBe('bd-custom');
+    expect(autoAgent.id).toMatch(/^agent-\d+$/);
+  });
 });

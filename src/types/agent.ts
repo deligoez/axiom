@@ -12,6 +12,7 @@ export interface Agent {
 }
 
 export interface AgentConfig {
+  id?: string;  // Optional: use bead ID if spawning for a task
   name: string;
   command: string;
   args?: string[];
@@ -23,7 +24,7 @@ let idCounter = 0;
 
 export function createAgent(config: AgentConfig): Agent {
   return {
-    id: `agent-${++idCounter}`,
+    id: config.id ?? `agent-${++idCounter}`,
     name: config.name,
     status: 'idle',
     output: [],
