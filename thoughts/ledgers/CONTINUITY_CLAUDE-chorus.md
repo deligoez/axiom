@@ -1,118 +1,106 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-09
-**Status:** CLI v0.1.0 Complete
+**Status:** Ink Rewrite - Phase 1
 
 ---
 
 ## Goal
 
-Create a reusable multi-agent development workflow system that can be applied to any project.
+Create a unified TUI for multi-agent development orchestration using Ink (React for CLI).
 
 **Success Criteria:**
-- [x] Generic WORKFLOW.md (no project-specific references)
-- [x] AGENTS.md.template for projects to customize
-- [x] VPS setup scripts
-- [x] README with quick start guide
-- [x] Memory system structure (.agent/)
-- [x] CLI: `chorus init`
-- [x] CLI: `chorus loop`
-- [x] CLI: `chorus squad`
-- [x] CLI: `chorus status`
-- [x] 53 passing tests (Bats)
-- [ ] Test on a real project (Phony Cloud)
-- [ ] Gather feedback and iterate
+- [ ] `npx chorus` opens full TUI dashboard
+- [ ] Real-time agent output streaming
+- [ ] Multi-agent split pane view (3+ agents)
+- [ ] Live Beads task visualization
+- [ ] Keyboard-driven workflow
+- [ ] < 500ms startup time
+- [ ] Cross-platform (macOS, Linux, Windows)
 
 ---
 
 ## Key Decisions
 
-### 1. Project Name: Chorus
-- **Reason:** "Many agents, one song" - fits the multi-agent coordination concept
+### 1. Rewrite in Ink (not bash)
+- **Reason:** Better TUI capabilities, native split panes, real-time updates
+- **Archived:** `archive/chorus-bash-v0.1.0/` (53 passing Bats tests)
 
-### 2. Distribution: CLI Tool (bash)
-- **Reason:** Simple, no dependencies, works everywhere
-- **Install:** `curl -fsSL .../install.sh | bash`
+### 2. Tech Stack
+| Layer | Choice | Reason |
+|-------|--------|--------|
+| Runtime | Node.js 20+ | LTS, widespread |
+| Language | TypeScript | Type safety |
+| TUI | Ink 5.x | React paradigm, mature |
+| State | Zustand | Lightweight |
+| Process | execa | Better child_process |
+| Testing | Vitest | Fast, TS-native |
 
-### 3. Testing: Bats-core
-- **Reason:** Most popular bash testing framework, simple syntax
-- **Helpers:** bats-assert, bats-file for assertions
+### 3. Beads Integration (not rewrite)
+- Use existing Beads CLI/MCP
+- Watch `.beads/issues.jsonl` for live updates
+- Display tasks in Chorus TUI
 
-### 4. Ralph Wiggum Pattern
-- **Inspiration:** aihero.dev article
-- **Implementation:** `chorus loop` with dry-run support
-- **Key insight:** Define end state (completion criteria), not steps
-
-### 5. Project Structure
-```
-chorus/
-├── bin/chorus              # Main CLI entry point
-├── lib/
-│   ├── common.sh           # Shared functions
-│   ├── init.sh             # chorus init
-│   ├── loop.sh             # chorus loop
-│   ├── squad.sh            # chorus squad
-│   └── status.sh           # chorus status
-├── templates/
-│   ├── AGENTS.md.template
-│   ├── hooks/
-│   └── *.template
-├── test/
-│   ├── bats/ (submodule)
-│   ├── test_helper/
-│   └── *.bats
-├── vps-setup/
-│   └── bootstrap.sh
-├── install.sh
-└── Makefile
-```
+### 4. TDD Approach
+- Write tests first (Vitest)
+- Atomic conventional commits
+- No permission prompts for commits
 
 ---
 
 ## State
 
 - Done:
-  - [x] Phase 1: Initial repo structure
-  - [x] Phase 2: WORKFLOW.md documentation
-  - [x] Phase 3: VPS setup scripts
-  - [x] Phase 4: CLI implementation with TDD
-    - [x] chorus init (20 tests)
-    - [x] chorus loop (19 tests)
-    - [x] chorus squad (14 tests)
-  - [x] Phase 5: Install scripts
+  - [x] Bash CLI v0.1.0 (archived to `archive/chorus-bash-v0.1.0/`)
+  - [x] Ink rewrite plan (`thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`)
 
-- Now: [→] Ready for testing on real project
+- Now: [→] Phase 1.1 - Project Setup
+  - [ ] Remove old bash files + submodules
+  - [ ] Initialize npm project with TypeScript
+  - [ ] Setup Vitest
+  - [ ] Install Ink + dependencies
+  - [ ] Create basic CLI entry point
 
-- Next:
-  - [ ] Apply to Phony Cloud project
-  - [ ] Test full workflow
-  - [ ] Add examples/ with reference configurations
-  - [ ] Consider: npm package (`npx chorus`)
+- Remaining:
+  - [ ] Phase 1.2 - Basic TUI Shell
+  - [ ] Phase 1.3 - Agent Process Management
+  - [ ] Phase 2 - Multi-Agent
+  - [ ] Phase 3 - Beads Integration
+  - [ ] Phase 4 - Polish
+  - [ ] Phase 5 - Advanced (Kanban, DAG)
 
 ---
 
 ## Open Questions
 
-- UNCONFIRMED: Is "chorus" available as npm package name?
-- UNCONFIRMED: Best distribution method for non-technical users?
-- RESOLVED: Use bash for CLI (simple, no deps)
-- RESOLVED: Use Bats-core for testing
+- RESOLVED: Use Ink for TUI (not bash + tmux)
+- RESOLVED: Integrate Beads (not rewrite)
+- UNCONFIRMED: npm package name "chorus" availability
 
 ---
 
 ## Working Set
 
-**Key Files:**
-- `bin/chorus` - CLI entry point
-- `lib/*.sh` - Command implementations
-- `test/*.bats` - Test files
-- `Makefile` - Build/test runner
+**Plan:** `thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`
+
+**New Structure:**
+```
+src/
+├── index.tsx          # Entry point
+├── cli.ts             # CLI parsing
+├── app.tsx            # Main component
+├── components/        # UI components
+├── hooks/             # React hooks
+├── services/          # Business logic
+└── types/             # TypeScript types
+```
 
 **Commands:**
 ```bash
-make test              # Run all tests
-./bin/chorus --help    # Show CLI help
-./bin/chorus init      # Initialize project
+npm test               # Run Vitest
+npm run dev            # Dev mode
+npm run build          # Build
+npx chorus             # Run TUI
 ```
 
 **Remote:** git@github.com:deligoez/chorus.git
@@ -121,8 +109,8 @@ make test              # Run all tests
 
 ## Origin
 
-This workflow was developed during the Phony Cloud planning sessions (Jan 2026).
-The original AGENT_WORKFLOW.md was project-specific; Chorus is the generic extraction.
-CLI was implemented on 2026-01-09 with TDD approach using Bats-core.
+Bash CLI v0.1.0 completed 2026-01-09 with 53 tests.
+Rewrite decision made after tmux integration proved too complex for good UX.
+Ink chosen for native TUI capabilities and React paradigm.
 
-Source: `/Users/deligoez/Developer/github/phonyland/AGENT_WORKFLOW.md` (v2.3)
+Archived: `archive/chorus-bash-v0.1.0/`
