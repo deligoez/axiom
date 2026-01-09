@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-10
-**Status:** Phase 4 - M1/M2/M3/M4 Beads Tasks Ready (176 tests, 18 tasks)
+**Status:** Phase 4 - M1/M2/M3/M4 Beads Tasks Complete (176 tests, 26 tasks)
 
 ---
 
@@ -74,14 +74,13 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
   - [x] Edge Case Tests & Improvements (176 tests)
   - [x] Phase 4 Planning v2.0 - Optimized workflow, all decisions resolved
 
-- Now: [→] Phase 4 Implementation via Beads - Tasks Reorganized
-  - **Beads prefix**: `ch-` (Chorus) - renamed from `bd-`
-  - **18 tasks total** (6 ready, 12 blocked)
-  - **Dependencies corrected**:
-    - F09 → F02b (needs state system)
-    - F06 → F04, F05 (worktree chain)
-    - F10 → F01b (only needs config load)
-  - **F15 Orchestrator Core added** (ch-0e7)
+- Now: [→] Phase 4 Implementation via Beads - All M4 Tasks Created
+  - **Beads prefix**: `ch-` (Chorus)
+  - **26 tasks total** (7 ready, 19 blocked)
+  - **M4 Orchestration complete**: F14, F15, F16a/b, F17, F18a/b, F19, F20
+  - **Atomic task splits**:
+    - F16 → F16a (Success), F16b (Retry)
+    - F18 → F18a (Hook), F18b (UI)
   - Next: `bd ready` → pick task → TDD → close → repeat
   - **Daemon sync note**: Use `bd --no-daemon` if changes don't persist
 
@@ -263,7 +262,7 @@ bd update ch-2n6 --status=in_progress
 5. Close: `bd close ch-2n6`
 6. Next: `bd ready` → pick next
 
-### Current Ready Tasks (6)
+### Current Ready Tasks (7)
 **M1 - Infrastructure:**
 - `ch-2n6`: F01a Config Types ← START
 - `ch-ah6`: F02a State Types
@@ -275,6 +274,9 @@ bd update ch-2n6 --status=in_progress
 
 **M3 - Task Management:**
 - `ch-zqi`: F12 Task Claimer
+
+**M4 - Orchestration:**
+- `ch-8j3`: F19 Orchestration Store (no dependencies)
 
 ### Task Tracking Rules
 See: `.claude/rules/beads-task-tracking.md` (updated with ch- prefix)

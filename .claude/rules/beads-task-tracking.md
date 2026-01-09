@@ -138,4 +138,12 @@ Update this section as you learn:
 
 | Feature | ID | Dependencies | Status |
 |---------|-----|--------------|--------|
+| F14 Dependency Resolver | ch-7ju | ch-zqi | blocked |
 | F15 Orchestrator Core | ch-0e7 | ch-iel, ch-wk8, ch-3y0, ch-zqi | blocked |
+| F16a Completion Handler Success | ch-7jw | ch-uoa, ch-dzz | blocked |
+| F16b Completion Handler Retry | ch-lhm | ch-7jw | blocked |
+| F17 Semi-Auto Mode | ch-7gx | ch-0e7, ch-lhm | blocked |
+| F18a useTaskSelection Hook | ch-9fq | ch-7gx | blocked |
+| F18b TaskPanel Selection UI | ch-e7f | ch-9fq | blocked |
+| F19 Orchestration Store | ch-8j3 | - | ready |
+| F20 useOrchestration Hook | ch-g6z | ch-0e7, ch-lhm, ch-7gx, ch-8j3 | blocked |
