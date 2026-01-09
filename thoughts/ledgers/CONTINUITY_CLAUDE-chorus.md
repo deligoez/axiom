@@ -74,14 +74,16 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
   - [x] Edge Case Tests & Improvements (176 tests)
   - [x] Phase 4 Planning v2.0 - Optimized workflow, all decisions resolved
 
-- Now: [→] Phase 4 Implementation via Beads - M1-M4 Tasks Ready
-  - Detailed feature analysis complete (57 features identified)
-  - 12 milestones defined with dependencies
-  - **Beads tracking enabled** - all tasks in `.beads/` with `ch-` prefix
-  - TDD for each task, sequential execution (no worktrees)
-  - **M1 + M2 + M3 + M4 tasks created** (18 tasks total)
-  - **Dependency chains verified and corrected**
+- Now: [→] Phase 4 Implementation via Beads - Tasks Reorganized
+  - **Beads prefix**: `ch-` (Chorus) - renamed from `bd-`
+  - **18 tasks total** (6 ready, 12 blocked)
+  - **Dependencies corrected**:
+    - F09 → F02b (needs state system)
+    - F06 → F04, F05 (worktree chain)
+    - F10 → F01b (only needs config load)
+  - **F15 Orchestrator Core added** (ch-0e7)
   - Next: `bd ready` → pick task → TDD → close → repeat
+  - **Daemon sync note**: Use `bd --no-daemon` if changes don't persist
 
 - Remaining (12 milestones, ~364 new tests):
   - [ ] M1: Infrastructure + Worktree (F01-F06, ~30 tests) ← START HERE
