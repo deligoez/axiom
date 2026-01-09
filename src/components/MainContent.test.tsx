@@ -78,4 +78,30 @@ describe('MainContent', () => {
 
     expect(lastFrame()).toMatch(/error|✗/i);
   });
+
+  it('highlights selected agent', () => {
+    const agents = [
+      createTestAgent({ id: 'a1', name: 'agent-1' }),
+      createTestAgent({ id: 'a2', name: 'agent-2' }),
+    ];
+    const { lastFrame } = render(<MainContent agents={agents} selectedAgentId="a2" />);
+    const frame = lastFrame()!;
+
+    // The selected agent should have some visual distinction
+    // Check that agent-2 appears with selection indicator
+    expect(frame).toContain('agent-2');
+    expect(frame).toMatch(/[►>»].*agent-2|agent-2.*selected/i);
+  });
+
+  it('does not highlight unselected agents', () => {
+    const agents = [
+      createTestAgent({ id: 'a1', name: 'agent-1' }),
+      createTestAgent({ id: 'a2', name: 'agent-2' }),
+    ];
+    const { lastFrame } = render(<MainContent agents={agents} selectedAgentId="a2" />);
+    const frame = lastFrame()!;
+
+    // agent-1 should not have selection indicator
+    expect(frame).not.toMatch(/[►>»].*agent-1/);
+  });
 });

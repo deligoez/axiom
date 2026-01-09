@@ -6,11 +6,13 @@ import { useKeyboard } from './useKeyboard.js';
 function TestComponent({
   onQuit,
   onSpawn,
+  onNavigate,
 }: {
   onQuit: () => void;
   onSpawn?: () => void;
+  onNavigate?: (direction: 'next' | 'prev') => void;
 }) {
-  useKeyboard({ onQuit, onSpawn });
+  useKeyboard({ onQuit, onSpawn, onNavigate });
   return null;
 }
 
@@ -60,5 +62,25 @@ describe('useKeyboard', () => {
     const { stdin } = render(<TestComponent onQuit={onQuit} />);
 
     expect(() => stdin.write('s')).not.toThrow();
+  });
+
+  it('calls onNavigate with "next" when j is pressed', () => {
+    const onQuit = vi.fn();
+    const onNavigate = vi.fn();
+    const { stdin } = render(<TestComponent onQuit={onQuit} onNavigate={onNavigate} />);
+
+    stdin.write('j');
+
+    expect(onNavigate).toHaveBeenCalledWith('next');
+  });
+
+  it('calls onNavigate with "prev" when k is pressed', () => {
+    const onQuit = vi.fn();
+    const onNavigate = vi.fn();
+    const { stdin } = render(<TestComponent onQuit={onQuit} onNavigate={onNavigate} />);
+
+    stdin.write('k');
+
+    expect(onNavigate).toHaveBeenCalledWith('prev');
   });
 });

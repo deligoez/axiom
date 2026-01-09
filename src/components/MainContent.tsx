@@ -3,6 +3,7 @@ import type { Agent, AgentStatus } from '../types/agent.js';
 
 interface MainContentProps {
   agents: Agent[];
+  selectedAgentId?: string | null;
 }
 
 function StatusIndicator({ status }: { status: AgentStatus }) {
@@ -18,7 +19,7 @@ function StatusIndicator({ status }: { status: AgentStatus }) {
   }
 }
 
-export default function MainContent({ agents }: MainContentProps) {
+export default function MainContent({ agents, selectedAgentId }: MainContentProps) {
   if (agents.length === 0) {
     return (
       <Box flexDirection="column" alignItems="center" justifyContent="center">
@@ -30,19 +31,29 @@ export default function MainContent({ agents }: MainContentProps) {
 
   return (
     <Box flexDirection="column" gap={1}>
-      {agents.map((agent) => (
-        <Box key={agent.id} flexDirection="column" borderStyle="single" paddingX={1}>
-          <Box gap={1}>
-            <StatusIndicator status={agent.status} />
-            <Text bold color="green">{agent.name}</Text>
+      {agents.map((agent) => {
+        const isSelected = agent.id === selectedAgentId;
+        return (
+          <Box
+            key={agent.id}
+            flexDirection="column"
+            borderStyle={isSelected ? 'double' : 'single'}
+            borderColor={isSelected ? 'cyan' : undefined}
+            paddingX={1}
+          >
+            <Box gap={1}>
+              {isSelected && <Text color="cyan">►</Text>}
+              <StatusIndicator status={agent.status} />
+              <Text bold color={isSelected ? 'cyan' : 'green'}>{agent.name}</Text>
+            </Box>
+            <Box flexDirection="column">
+              {agent.output.map((line, index) => (
+                <Text key={index}>{line}</Text>
+              ))}
+            </Box>
           </Box>
-          <Box flexDirection="column">
-            {agent.output.map((line, index) => (
-              <Text key={index}>{line}</Text>
-            ))}
-          </Box>
-        </Box>
-      ))}
+        );
+      })}
     </Box>
   );
 }
