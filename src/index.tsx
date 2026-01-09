@@ -7,6 +7,8 @@ const ENTER_ALT_SCREEN = '\x1b[?1049h';
 const LEAVE_ALT_SCREEN = '\x1b[?1049l';
 const HIDE_CURSOR = '\x1b[?25l';
 const SHOW_CURSOR = '\x1b[?25h';
+const CURSOR_HOME = '\x1b[H';  // Move cursor to top-left (1,1)
+const CLEAR_SCREEN = '\x1b[2J';  // Clear entire screen
 
 export async function run(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
@@ -27,7 +29,7 @@ export async function run(args: string[]): Promise<void> {
   };
 
   if (useAltScreen) {
-    process.stdout.write(ENTER_ALT_SCREEN + HIDE_CURSOR);
+    process.stdout.write(ENTER_ALT_SCREEN + CLEAR_SCREEN + CURSOR_HOME + HIDE_CURSOR);
     process.on('SIGINT', handleExit);
     process.on('SIGTERM', handleExit);
   }
