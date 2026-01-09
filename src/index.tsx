@@ -1,7 +1,13 @@
 import { render } from 'ink';
-import { withFullScreen } from 'fullscreen-ink';
+import { FullScreenBox } from 'fullscreen-ink';
 import App from './app.js';
 import { parseArgs } from './cli.js';
+
+// ANSI escape codes
+const ENTER_ALT_SCREEN = '\x1b[?1049h';
+const LEAVE_ALT_SCREEN = '\x1b[?1049l';
+const CURSOR_HOME = '\x1b[H';
+const CLEAR_SCREEN = '\x1b[2J';
 
 export async function run(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
@@ -15,10 +21,17 @@ export async function run(args: string[]): Promise<void> {
     return;
   }
 
-  // Use fullscreen mode for main TUI
-  const app = withFullScreen(<App />);
-  await app.start();
-  await app.waitUntilExit();
+  // Enter alternate screen and position cursor at top-left
+  process.stdout.write(ENTER_ALT_SCREEN + CLEAR_SCREEN + CURSOR_HOME);
+
+  const { waitUntilExit } = render(
+    <FullScreenBox>
+      <App />
+    </FullScreenBox>
+  );
+
+  await waitUntilExit();
+  process.stdout.write(LEAVE_ALT_SCREEN);
 }
 
 // Run if called directly
