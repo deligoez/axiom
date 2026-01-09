@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# Chorus CLI - Multi-Agent Development Workflow
+# https://github.com/deligoez/chorus
+
+set -euo pipefail
+
+VERSION="0.1.0"
+
+# Resolve script directory (handles symlinks)
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [[ -L "$SCRIPT_PATH" ]]; do
+    SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
+    SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+    [[ "$SCRIPT_PATH" != /* ]] && SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH"
+done
+CHORUS_ROOT="$(cd -P "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+
+# Source library files
+source "$CHORUS_ROOT/lib/common.sh"
+
+# =============================================================================
+# Commands
+# =============================================================================
+
+cmd_init() {
+    source "$CHORUS_ROOT/lib/init.sh"
+    init_main "$@"
+}
+
+cmd_loop() {
+    source "$CHORUS_ROOT/lib/loop.sh"
+    loop_main "$@"
+}
+
+cmd_squad() {
+    source "$CHORUS_ROOT/lib/squad.sh"
+    squad_main "$@"
+}
+
+cmd_status() {
+    source "$CHORUS_ROOT/lib/status.sh"
+    status_main "$@"
+}
+
+cmd_monitor() {
+    source "$CHORUS_ROOT/lib/monitor.sh"
+    attach_monitor "$@"
+}
+
+cmd_version() {
+    echo "chorus $VERSION"
+}
+
+cmd_help() {
+    cat << EOF
+Chorus - Multi-Agent Development Workflow
+
+Usage: chorus <command> [options]
+
+Commands:
+  init          Initialize project for multi-agent development
+  loop          Run autonomous loop (Ralph Wiggum pattern)
+  squad         Start multiple agents in parallel
+  monitor       Attach to tmux dashboard (after squad --monitor)
+  status        Show current state
+
+Options:
+  --version     Show version number
+  --help        Show this help message
+
+Examples:
+  chorus init --all                    # Full setup with hooks and beads
+  chorus loop "Implement feature X"    # Run autonomous loop
+  chorus squad --agents claude,codex   # Start multiple agents
+
+Documentation: https://github.com/deligoez/chorus
+EOF
+}
+
+# =============================================================================
+# Main
+# =============================================================================
+
+main() {
+    local cmd="${1:-}"
+
+    case "$cmd" in
+        init)
+            shift
+            cmd_init "$@"
+            ;;
+        loop)
+            shift
+            cmd_loop "$@"
+            ;;
+        squad)
+            shift
+            cmd_squad "$@"
+            ;;
+        status)
+            shift
+            cmd_status "$@"
+            ;;
+        monitor)
+            shift
+            cmd_monitor "$@"
+            ;;
+        --version|-v)
+            cmd_version
+            ;;
+        --help|-h|"")
+            cmd_help
+            ;;
+        *)
+            echo "Error: Unknown command '$cmd'"
+            echo "Run 'chorus --help' for usage."
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
