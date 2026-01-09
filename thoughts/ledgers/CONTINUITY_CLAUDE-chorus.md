@@ -98,14 +98,14 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
     - [x] Terminal resize handling
     - [x] Restore terminal on exit/SIGINT/SIGTERM
 
-- Now: [→] Phase 2.4 Bug Fix - Top Border Cut Off
+- [x] Phase 2.4 Bug Fix - Top Border Cut Off
   - [x] Tried manual ANSI escape codes
   - [x] Tried fullscreen-ink package
   - [x] Tried FullScreenBox + manual ANSI combo
-  - [ ] **UNRESOLVED**: Top border row cut off in all terminals (Ghostty, WezTerm, Mac Terminal)
-  - [ ] Need to investigate Ink rendering behavior or try different approach
+  - [x] **RESOLVED**: Workaround for Ink issue #808 (initial render newline bug)
+    - marginTop: 1 + explicit height (height - 1) in Layout.tsx
 
-- Next: Phase 3 - Beads Integration
+- Now: [→] Phase 3 - Beads Integration
   - [ ] Watch `.beads/issues.jsonl` for task updates
   - [ ] Display tasks in TUI
   - [ ] Task status visualization
@@ -120,16 +120,8 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 
 - RESOLVED: Use Ink for TUI (not bash + tmux)
 - RESOLVED: Integrate Beads (not rewrite)
+- RESOLVED: Top border cut off - workaround via marginTop + explicit height (Ink issue #808)
 - UNCONFIRMED: npm package name "chorus" availability
-- **ACTIVE BUG**: Top border row cut off in fullscreen mode
-  - Happens in ALL terminals (Ghostty, WezTerm, Mac Terminal)
-  - Tried: manual ANSI codes, fullscreen-ink, FullScreenBox
-  - The rounded corner `╭` and top border are not visible
-  - Possible causes to investigate:
-    1. Ink's Yoga layout starting at row 1 instead of row 0
-    2. Some implicit newline being added before render
-    3. Terminal rows count off by 1
-  - Command to test: `npx tsx src/index.tsx`
 
 ---
 

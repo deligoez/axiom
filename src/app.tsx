@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Box, Text, useApp } from 'ink';
 import Layout from './components/Layout.js';
 import MainContent from './components/MainContent.js';
+import HelpPanel from './components/HelpPanel.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
 import { useAgentManager } from './hooks/useAgentManager.js';
 import { useAgentStore } from './stores/agentStore.js';
@@ -13,6 +15,7 @@ interface AppProps {
 
 export default function App({ showVersion, showHelp, onExit }: AppProps) {
   const { exit } = useApp();
+  const [helpVisible, setHelpVisible] = useState(false);
   const agents = useAgentStore((state) => state.agents);
   const selectedAgentId = useAgentStore((state) => state.selectedAgentId);
   const selectAgent = useAgentStore((state) => state.selectAgent);
@@ -55,7 +58,16 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
     selectAgent(agents[nextIndex].id);
   };
 
-  useKeyboard({ onQuit: handleExit, onSpawn: handleSpawn, onNavigate: handleNavigate });
+  const handleToggleHelp = () => {
+    setHelpVisible((prev) => !prev);
+  };
+
+  useKeyboard({
+    onQuit: handleExit,
+    onSpawn: handleSpawn,
+    onNavigate: handleNavigate,
+    onToggleHelp: handleToggleHelp,
+  });
 
   if (showVersion) {
     return <Text>0.1.0</Text>;
@@ -75,7 +87,13 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
 
   return (
     <Layout agentCount={agents.length}>
-      <MainContent agents={agents} selectedAgentId={selectedAgentId} />
+      {helpVisible ? (
+        <Box justifyContent="center" alignItems="center" flexGrow={1}>
+          <HelpPanel visible={helpVisible} />
+        </Box>
+      ) : (
+        <MainContent agents={agents} selectedAgentId={selectedAgentId} />
+      )}
     </Layout>
   );
 }

@@ -4,9 +4,10 @@ interface UseKeyboardOptions {
   onQuit: () => void;
   onSpawn?: () => void;
   onNavigate?: (direction: 'next' | 'prev') => void;
+  onToggleHelp?: () => void;
 }
 
-export function useKeyboard({ onQuit, onSpawn, onNavigate }: UseKeyboardOptions): void {
+export function useKeyboard({ onQuit, onSpawn, onNavigate, onToggleHelp }: UseKeyboardOptions): void {
   useInput((input, key) => {
     if (input === 'q' || (key.ctrl && input === 'c')) {
       onQuit();
@@ -19,6 +20,9 @@ export function useKeyboard({ onQuit, onSpawn, onNavigate }: UseKeyboardOptions)
     }
     if (input === 'k') {
       onNavigate?.('prev');
+    }
+    if (input === '?') {
+      onToggleHelp?.();
     }
   });
 }
