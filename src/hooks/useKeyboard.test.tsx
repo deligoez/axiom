@@ -3,8 +3,14 @@ import { render } from 'ink-testing-library';
 import { useKeyboard } from './useKeyboard.js';
 
 // Test component that uses the hook
-function TestComponent({ onQuit }: { onQuit: () => void }) {
-  useKeyboard({ onQuit });
+function TestComponent({
+  onQuit,
+  onSpawn,
+}: {
+  onQuit: () => void;
+  onSpawn?: () => void;
+}) {
+  useKeyboard({ onQuit, onSpawn });
   return null;
 }
 
@@ -36,5 +42,23 @@ describe('useKeyboard', () => {
     stdin.write('x');
 
     expect(onQuit).not.toHaveBeenCalled();
+  });
+
+  it('calls onSpawn when s is pressed', () => {
+    const onQuit = vi.fn();
+    const onSpawn = vi.fn();
+    const { stdin } = render(<TestComponent onQuit={onQuit} onSpawn={onSpawn} />);
+
+    stdin.write('s');
+
+    expect(onSpawn).toHaveBeenCalledTimes(1);
+    expect(onQuit).not.toHaveBeenCalled();
+  });
+
+  it('does not error when s is pressed without onSpawn handler', () => {
+    const onQuit = vi.fn();
+    const { stdin } = render(<TestComponent onQuit={onQuit} />);
+
+    expect(() => stdin.write('s')).not.toThrow();
   });
 });
