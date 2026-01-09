@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from 'ink-testing-library';
 import App from './app.js';
 
@@ -19,5 +19,26 @@ describe('App', () => {
     const { lastFrame } = render(<App showHelp />);
 
     expect(lastFrame()).toContain('Usage');
+  });
+
+  it('shows empty state in TUI mode', () => {
+    const { lastFrame } = render(<App />);
+
+    expect(lastFrame()).toContain('No agents running');
+  });
+
+  it('shows quit hint in TUI mode', () => {
+    const { lastFrame } = render(<App />);
+
+    expect(lastFrame()).toContain('q');
+  });
+
+  it('calls onExit when q is pressed', () => {
+    const onExit = vi.fn();
+    const { stdin } = render(<App onExit={onExit} />);
+
+    stdin.write('q');
+
+    expect(onExit).toHaveBeenCalled();
   });
 });

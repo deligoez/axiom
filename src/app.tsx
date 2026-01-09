@@ -1,11 +1,24 @@
-import { Box, Text } from 'ink';
+import { Box, Text, useApp } from 'ink';
+import Layout from './components/Layout.js';
+import MainContent from './components/MainContent.js';
+import { useKeyboard } from './hooks/useKeyboard.js';
 
 interface AppProps {
   showVersion?: boolean;
   showHelp?: boolean;
+  onExit?: () => void;
 }
 
-export default function App({ showVersion, showHelp }: AppProps) {
+export default function App({ showVersion, showHelp, onExit }: AppProps) {
+  const { exit } = useApp();
+
+  const handleExit = () => {
+    onExit?.();
+    exit();
+  };
+
+  useKeyboard({ onQuit: handleExit });
+
   if (showVersion) {
     return <Text>0.1.0</Text>;
   }
@@ -23,9 +36,8 @@ export default function App({ showVersion, showHelp }: AppProps) {
   }
 
   return (
-    <Box flexDirection="column">
-      <Text bold color="cyan">Chorus</Text>
-      <Text dimColor>Multi-agent development orchestration</Text>
-    </Box>
+    <Layout>
+      <MainContent agents={[]} />
+    </Layout>
   );
 }
