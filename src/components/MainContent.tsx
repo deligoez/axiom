@@ -4,7 +4,10 @@ import type { Agent, AgentStatus } from '../types/agent.js';
 interface MainContentProps {
   agents: Agent[];
   selectedAgentId?: string | null;
+  maxOutputLines?: number;
 }
+
+const DEFAULT_MAX_OUTPUT_LINES = 20;
 
 function StatusIndicator({ status }: { status: AgentStatus }) {
   switch (status) {
@@ -19,7 +22,11 @@ function StatusIndicator({ status }: { status: AgentStatus }) {
   }
 }
 
-export default function MainContent({ agents, selectedAgentId }: MainContentProps) {
+export default function MainContent({
+  agents,
+  selectedAgentId,
+  maxOutputLines = DEFAULT_MAX_OUTPUT_LINES,
+}: MainContentProps) {
   if (agents.length === 0) {
     return (
       <Box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
@@ -33,6 +40,9 @@ export default function MainContent({ agents, selectedAgentId }: MainContentProp
     <Box flexDirection="row" flexGrow={1} gap={1}>
       {agents.map((agent) => {
         const isSelected = agent.id === selectedAgentId;
+        // Show only the last N lines (tail behavior)
+        const visibleOutput = agent.output.slice(-maxOutputLines);
+
         return (
           <Box
             key={agent.id}
@@ -49,7 +59,7 @@ export default function MainContent({ agents, selectedAgentId }: MainContentProp
               <Text bold color={isSelected ? 'cyan' : 'green'}>{agent.name}</Text>
             </Box>
             <Box flexDirection="column" flexGrow={1} overflowY="hidden">
-              {agent.output.map((line, index) => (
+              {visibleOutput.map((line, index) => (
                 <Text key={index}>{line}</Text>
               ))}
             </Box>

@@ -121,4 +121,20 @@ describe('MainContent', () => {
     );
     expect(hasBothOnSameLine).toBe(true);
   });
+
+  it('shows only last N lines of output (scrolling behavior)', () => {
+    const manyLines = Array.from({ length: 100 }, (_, i) => `Output-${i + 1}-end`);
+    const agents = [
+      createTestAgent({ id: 'a1', name: 'agent-1', output: manyLines }),
+    ];
+    const { lastFrame } = render(<MainContent agents={agents} maxOutputLines={10} />);
+    const frame = lastFrame()!;
+
+    // Should show the last lines (91-100)
+    expect(frame).toContain('Output-100-end');
+    expect(frame).toContain('Output-91-end');
+    // Should not show early lines
+    expect(frame).not.toContain('Output-1-end');
+    expect(frame).not.toContain('Output-50-end');
+  });
 });
