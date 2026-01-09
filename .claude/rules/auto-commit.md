@@ -4,6 +4,8 @@
 
 When committing changes, commit immediately without asking. This applies to ALL commits, not just TDD.
 
+When practicing TDD, commit automatically after each GREEN phase.
+
 ## Pattern
 
 ```
