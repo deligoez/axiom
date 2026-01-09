@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Box } from 'ink';
 import type { ReactNode } from 'react';
 import StatusBar from './StatusBar.js';
@@ -11,11 +12,18 @@ interface LayoutProps {
 
 export default function Layout({ children, agentCount, status }: LayoutProps) {
   const { height } = useTerminalSize();
+  const [isFirstRender, setIsFirstRender] = useState(true);
 
-  // Compensate for Ink's initial render newline bug (GitHub issue #808)
-  // - marginTop: 1 pushes content down so top border is visible
-  // - height - 1: accounts for top margin
-  const adjustedHeight = Math.max(height - 1, 10);
+  // Workaround for Ink's initial render newline bug (GitHub issue #808)
+  // Initial render has extra newline that scrolls content up.
+  // After first render, Ink behaves correctly so we remove the compensation.
+  useEffect(() => {
+    const timer = setTimeout(() => setIsFirstRender(false), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const marginTop = isFirstRender ? 1 : 0;
+  const adjustedHeight = Math.max(height - marginTop, 10);
 
   return (
     <Box
@@ -24,7 +32,7 @@ export default function Layout({ children, agentCount, status }: LayoutProps) {
       paddingX={1}
       width="100%"
       height={adjustedHeight}
-      marginTop={1}
+      marginTop={marginTop}
     >
       <StatusBar agentCount={agentCount} status={status} />
       <Box borderStyle="single" borderTop={false} borderLeft={false} borderRight={false}>

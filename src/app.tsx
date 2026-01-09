@@ -87,13 +87,20 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
 
   return (
     <Layout agentCount={agents.length}>
-      {helpVisible ? (
-        <Box justifyContent="center" alignItems="center" flexGrow={1}>
-          <HelpPanel visible={helpVisible} />
-        </Box>
-      ) : (
+      <Box flexGrow={1} position="relative">
         <MainContent agents={agents} selectedAgentId={selectedAgentId} />
-      )}
+        {helpVisible && (
+          <Box
+            position="absolute"
+            justifyContent="center"
+            alignItems="center"
+            width="100%"
+            height="100%"
+          >
+            <HelpPanel visible={helpVisible} />
+          </Box>
+        )}
+      </Box>
     </Layout>
   );
 }

@@ -17,31 +17,34 @@ interface HelpPanelProps {
   visible: boolean;
 }
 
+const WIDTH = 32;
+
+function row(text: string): string {
+  return ` ${text} `.padEnd(WIDTH).slice(0, WIDTH);
+}
+
 export default function HelpPanel({ visible }: HelpPanelProps) {
   if (!visible) return null;
+
+  const lines = [
+    row(''),
+    row('Keyboard Shortcuts'),
+    row(''),
+    ...shortcuts.map((s) => row(`${s.key.padEnd(4)}${s.description}`)),
+    row(''),
+    row('Press ? to close'),
+    row(''),
+  ];
 
   return (
     <Box
       flexDirection="column"
       borderStyle="round"
       borderColor="yellow"
-      paddingX={2}
-      paddingY={1}
     >
-      <Box marginBottom={1}>
-        <Text bold color="yellow">Keyboard Shortcuts</Text>
-      </Box>
-      {shortcuts.map((shortcut) => (
-        <Box key={shortcut.key}>
-          <Box width={6}>
-            <Text color="cyan" bold>{shortcut.key}</Text>
-          </Box>
-          <Text dimColor>{shortcut.description}</Text>
-        </Box>
+      {lines.map((line, i) => (
+        <Text key={i}>{line}</Text>
       ))}
-      <Box marginTop={1}>
-        <Text dimColor italic>Press ? to close</Text>
-      </Box>
     </Box>
   );
 }
