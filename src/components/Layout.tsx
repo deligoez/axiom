@@ -1,4 +1,4 @@
-import { Box } from 'ink';
+import { Box, useInput } from 'ink';
 import type { ReactNode } from 'react';
 import StatusBar from './StatusBar.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
@@ -11,6 +11,9 @@ interface LayoutProps {
 
 export default function Layout({ children, agentCount, status }: LayoutProps) {
   const { width, height } = useTerminalSize();
+
+  // Prevent input from rendering and shifting the layout (fullscreen-ink trick)
+  useInput(() => {});
 
   return (
     <Box
