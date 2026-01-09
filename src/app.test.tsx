@@ -84,4 +84,52 @@ describe('App', () => {
     const agent = useAgentStore.getState().agents[0];
     expect(agent.name).toMatch(/demo/i);
   });
+
+  it('navigates to next agent with j key', async () => {
+    useAgentStore.setState({
+      agents: [
+        createTestAgent({ id: 'a1', name: 'agent-1' }),
+        createTestAgent({ id: 'a2', name: 'agent-2' }),
+      ],
+      selectedAgentId: 'a1',
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('j');
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().selectedAgentId).toBe('a2');
+    });
+  });
+
+  it('navigates to previous agent with k key', async () => {
+    useAgentStore.setState({
+      agents: [
+        createTestAgent({ id: 'a1', name: 'agent-1' }),
+        createTestAgent({ id: 'a2', name: 'agent-2' }),
+      ],
+      selectedAgentId: 'a2',
+    });
+
+    const { stdin } = render(<App />);
+
+    stdin.write('k');
+
+    await vi.waitFor(() => {
+      expect(useAgentStore.getState().selectedAgentId).toBe('a1');
+    });
+  });
+
+  it('auto-selects first agent when spawning with no selection', async () => {
+    const { stdin } = render(<App />);
+
+    stdin.write('s');
+
+    await vi.waitFor(() => {
+      const state = useAgentStore.getState();
+      expect(state.agents).toHaveLength(1);
+      expect(state.selectedAgentId).toBe(state.agents[0].id);
+    });
+  });
 });

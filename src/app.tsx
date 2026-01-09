@@ -14,6 +14,8 @@ interface AppProps {
 export default function App({ showVersion, showHelp, onExit }: AppProps) {
   const { exit } = useApp();
   const agents = useAgentStore((state) => state.agents);
+  const selectedAgentId = useAgentStore((state) => state.selectedAgentId);
+  const selectAgent = useAgentStore((state) => state.selectAgent);
   const { spawn, killAll } = useAgentManager();
 
   const handleExit = async () => {
@@ -22,16 +24,38 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
     exit();
   };
 
-  const handleSpawn = () => {
+  const handleSpawn = async () => {
     const agentNumber = agents.length + 1;
-    spawn({
+    const agent = await spawn({
       name: `demo-agent-${agentNumber}`,
       command: 'bash',
       args: ['-c', 'for i in {1..5}; do echo "Output line $i"; sleep 1; done'],
     });
+    // Auto-select the new agent if none selected
+    if (!selectedAgentId) {
+      selectAgent(agent.id);
+    }
   };
 
-  useKeyboard({ onQuit: handleExit, onSpawn: handleSpawn });
+  const handleNavigate = (direction: 'next' | 'prev') => {
+    if (agents.length === 0) return;
+
+    const currentIndex = agents.findIndex((a) => a.id === selectedAgentId);
+    let nextIndex: number;
+
+    if (currentIndex === -1) {
+      // No selection, select first
+      nextIndex = 0;
+    } else if (direction === 'next') {
+      nextIndex = (currentIndex + 1) % agents.length;
+    } else {
+      nextIndex = (currentIndex - 1 + agents.length) % agents.length;
+    }
+
+    selectAgent(agents[nextIndex].id);
+  };
+
+  useKeyboard({ onQuit: handleExit, onSpawn: handleSpawn, onNavigate: handleNavigate });
 
   if (showVersion) {
     return <Text>0.1.0</Text>;
@@ -51,7 +75,7 @@ export default function App({ showVersion, showHelp, onExit }: AppProps) {
 
   return (
     <Layout>
-      <MainContent agents={agents} />
+      <MainContent agents={agents} selectedAgentId={selectedAgentId} />
     </Layout>
   );
 }
