@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-09
-**Status:** Ink Rewrite - Phase 3 Ready (96 tests)
+**Status:** Ink Rewrite - Phase 3 Ready (99 tests)
 
 ---
 
@@ -103,7 +103,14 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
   - [x] Tried fullscreen-ink package
   - [x] Tried FullScreenBox + manual ANSI combo
   - [x] **RESOLVED**: Workaround for Ink issue #808 (initial render newline bug)
-    - marginTop: 1 + explicit height (height - 1) in Layout.tsx
+    - Dynamic marginTop (1 on first render, 0 after) in Layout.tsx
+    - Explicit height calculation based on terminal size
+
+- [x] Phase 2.5 - Help Panel (99 tests)
+  - [x] HelpPanel component with keyboard shortcuts
+  - [x] Toggle with '?' key
+  - [x] Absolute positioned overlay (agents visible behind)
+  - [x] useKeyboard hook extended with onToggleHelp
 
 - Now: [→] Phase 3 - Beads Integration
   - [ ] Watch `.beads/issues.jsonl` for task updates
@@ -137,10 +144,11 @@ src/
 ├── app.tsx                # Main component (wires everything together)
 ├── components/
 │   ├── StatusBar.tsx      # App name, agent count, quit hint
-│   ├── Layout.tsx         # Border box, fullscreen (uses useTerminalSize)
-│   └── MainContent.tsx    # Agent panels (tiling layout, scrollable output)
+│   ├── Layout.tsx         # Border box, fullscreen (dynamic marginTop for Ink bug)
+│   ├── MainContent.tsx    # Agent panels (tiling layout, scrollable output)
+│   └── HelpPanel.tsx      # Keyboard shortcuts overlay (press ?)
 ├── hooks/
-│   ├── useKeyboard.ts     # q/s/j/k key handling
+│   ├── useKeyboard.ts     # q/s/j/k/? key handling
 │   ├── useAgentManager.ts # Wires AgentManager to store
 │   └── useTerminalSize.ts # Terminal width/height with resize handling
 ├── services/
