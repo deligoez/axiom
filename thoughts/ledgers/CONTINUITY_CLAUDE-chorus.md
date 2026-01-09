@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-09
-**Status:** Ink Rewrite - Phase 3 Ready (89 tests)
+**Status:** Ink Rewrite - Phase 3 Ready (96 tests)
 
 ---
 
@@ -78,7 +78,7 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
     - [x] Comprehensive edge case tests (+17 tests)
       - exit/error events, stderr, invalid IDs, unique IDs
 
-- [x] Phase 2 - Multi-Agent (89 passing tests)
+- [x] Phase 2.1-2.3 - Multi-Agent (89 passing tests)
     - [x] useAgentManager hook (wires AgentManager events to store)
     - [x] MainContent uses Agent type from types/agent.ts
     - [x] Status indicators (●/○/✗ for running/stopped/error)
@@ -88,7 +88,15 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
     - [x] Selection highlight (► indicator, cyan double border)
     - [x] Auto-select first agent when spawning
     - [x] StatusBar shows agent count
-    - [x] Review: no dead code, APIs ready for Phase 3+
+
+- [x] Phase 2.4 - Fullscreen TUI Layout (96 passing tests)
+    - [x] Alternate screen buffer (ANSI escape codes)
+    - [x] useTerminalSize hook for dimensions
+    - [x] Center empty state properly
+    - [x] Tiling layout for agent panels (horizontal)
+    - [x] Scrollable output per agent panel (tail behavior)
+    - [x] Terminal resize handling
+    - [x] Restore terminal on exit/SIGINT/SIGTERM
 
 - Now: [→] Phase 3 - Beads Integration
   - [ ] Watch `.beads/issues.jsonl` for task updates
@@ -116,16 +124,17 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 **Current Structure:**
 ```
 src/
-├── index.tsx              # Entry point
+├── index.tsx              # Entry point (alternate screen buffer)
 ├── cli.ts                 # CLI parsing (--version, --help)
 ├── app.tsx                # Main component (wires everything together)
 ├── components/
 │   ├── StatusBar.tsx      # App name, agent count, quit hint
-│   ├── Layout.tsx         # Border box with StatusBar
-│   └── MainContent.tsx    # Agent output display with selection
+│   ├── Layout.tsx         # Border box, fullscreen (uses useTerminalSize)
+│   └── MainContent.tsx    # Agent panels (tiling layout, scrollable output)
 ├── hooks/
 │   ├── useKeyboard.ts     # q/s/j/k key handling
-│   └── useAgentManager.ts # Wires AgentManager to store
+│   ├── useAgentManager.ts # Wires AgentManager to store
+│   └── useTerminalSize.ts # Terminal width/height with resize handling
 ├── services/
 │   └── AgentManager.ts    # Process spawn/kill/stream
 ├── stores/

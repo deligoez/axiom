@@ -127,17 +127,18 @@ src/
 - [x] Spawn multiple agents
 - [x] j/k to switch focus (with wrap-around)
 - [x] Parallel execution
-- [ ] Split pane output (tiling layout)
+- [x] Split pane output (tiling layout)
 
 ### 2.4 Fullscreen TUI Layout
-- [ ] Enable fullscreen mode in Ink render
-- [ ] useTerminalSize hook for dimensions
-- [ ] Center empty state properly
-- [ ] Tiling layout for agent panels (horizontal/grid)
-- [ ] Scrollable output per agent panel
-- [ ] Terminal resize handling
+- [x] Alternate screen buffer (ANSI escape codes)
+- [x] useTerminalSize hook for dimensions
+- [x] Center empty state properly
+- [x] Tiling layout for agent panels (horizontal)
+- [x] Scrollable output per agent panel (tail behavior)
+- [x] Terminal resize handling
+- [x] Restore terminal on exit/SIGINT/SIGTERM
 
-**Deliverable:** `npx chorus squad -a claude,codex` shows both agents in tiled fullscreen
+**Deliverable:** `npx chorus` shows fullscreen TUI with tiled agents (96 tests)
 
 ---
 
