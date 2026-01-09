@@ -88,23 +88,23 @@ src/
 ## Phase 1: Foundation (MVP)
 
 ### 1.1 Project Setup
-- [ ] Initialize npm project
-- [ ] Configure TypeScript
-- [ ] Setup Vitest
-- [ ] Install Ink + dependencies
-- [ ] Create basic CLI entry point
+- [x] Initialize npm project
+- [x] Configure TypeScript
+- [x] Setup Vitest
+- [x] Install Ink + dependencies
+- [x] Create basic CLI entry point
 
 ### 1.2 Basic TUI Shell
-- [ ] Main App component
-- [ ] Layout grid (3 sections)
-- [ ] Static placeholder panels
-- [ ] Keyboard quit (q)
+- [x] Main App component
+- [x] Layout grid (3 sections)
+- [x] Static placeholder panels
+- [x] Keyboard quit (q)
 
 ### 1.3 Agent Process Management
-- [ ] Spawn single agent (claude)
-- [ ] Capture stdout/stderr
-- [ ] Stream to OutputPanel
-- [ ] Handle process exit
+- [x] Spawn single agent (claude)
+- [x] Capture stdout/stderr
+- [x] Stream to OutputPanel
+- [x] Handle process exit
 
 **Deliverable:** `npx chorus run "task"` shows agent output in TUI
 
@@ -113,10 +113,10 @@ src/
 ## Phase 2: Multi-Agent
 
 ### 2.1 Agent Panel
-- [ ] Agent status component
-- [ ] Progress indicator
-- [ ] Current task display
-- [ ] Multiple agent cards
+- [x] Agent status component
+- [x] Progress indicator (status icons)
+- [x] Current task display
+- [x] Multiple agent cards
 
 ### 2.2 Git Worktree Integration
 - [ ] Create worktree for agent
@@ -124,12 +124,20 @@ src/
 - [ ] Cleanup on exit
 
 ### 2.3 Multi-Agent Orchestration
-- [ ] Spawn multiple agents
-- [ ] Split pane output
-- [ ] Tab/arrow to switch focus
-- [ ] Parallel execution
+- [x] Spawn multiple agents
+- [x] j/k to switch focus (with wrap-around)
+- [x] Parallel execution
+- [ ] Split pane output (tiling layout)
 
-**Deliverable:** `npx chorus squad -a claude,codex` shows both agents
+### 2.4 Fullscreen TUI Layout
+- [ ] Enable fullscreen mode in Ink render
+- [ ] useTerminalSize hook for dimensions
+- [ ] Center empty state properly
+- [ ] Tiling layout for agent panels (horizontal/grid)
+- [ ] Scrollable output per agent panel
+- [ ] Terminal resize handling
+
+**Deliverable:** `npx chorus squad -a claude,codex` shows both agents in tiled fullscreen
 
 ---
 
