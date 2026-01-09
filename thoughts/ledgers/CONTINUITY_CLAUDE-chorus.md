@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-10
-**Status:** Phase 4 - M1/M2/M3 Beads Tasks Ready (176 tests, 20 tasks)
+**Status:** Phase 4 - M1/M2/M3/M4 Beads Tasks Ready (176 tests, 18 tasks)
 
 ---
 
@@ -74,13 +74,13 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
   - [x] Edge Case Tests & Improvements (176 tests)
   - [x] Phase 4 Planning v2.0 - Optimized workflow, all decisions resolved
 
-- Now: [→] Phase 4 Implementation via Beads - M1-M3 Tasks Ready
+- Now: [→] Phase 4 Implementation via Beads - M1-M4 Tasks Ready
   - Detailed feature analysis complete (57 features identified)
   - 12 milestones defined with dependencies
-  - **Beads tracking enabled** - all tasks in `.beads/`
+  - **Beads tracking enabled** - all tasks in `.beads/` with `ch-` prefix
   - TDD for each task, sequential execution (no worktrees)
-  - **M1 + M2 + M3 tasks created** (20 tasks total)
-  - **Dependency chains verified** - F02c/F02d now depend on F02b
+  - **M1 + M2 + M3 + M4 tasks created** (18 tasks total)
+  - **Dependency chains verified and corrected**
   - Next: `bd ready` → pick task → TDD → close → repeat
 
 - Remaining (12 milestones, ~364 new tests):
@@ -249,34 +249,33 @@ bd show <id>           # Task details
 
 ### Immediate Action
 ```bash
-bd ready               # See: bd-2n6 (F01a Config Types)
-bd update bd-2n6 --status=in_progress
+bd ready               # See: ch-2n6 (F01a Config Types)
+bd update ch-2n6 --status=in_progress
 ```
 
 ### TDD Workflow
-1. Read task: `bd show bd-2n6`
+1. Read task: `bd show ch-2n6`
 2. Write tests first (RED)
 3. Implement (GREEN)
 4. Commit: `git add . && git commit -m "feat: F01a config types"`
-5. Close: `bd close bd-2n6`
+5. Close: `bd close ch-2n6`
 6. Next: `bd ready` → pick next
 
-### Current Ready Tasks (7)
+### Current Ready Tasks (6)
 **M1 - Infrastructure:**
-- `bd-2n6`: F01a Config Types ← START
-- `bd-ah6`: F02a State Types
-- `bd-glq`: F04 Worktree Create
+- `ch-2n6`: F01a Config Types ← START
+- `ch-ah6`: F02a State Types
+- `ch-glq`: F04 Worktree Create
 
 **M2 - Agent Preparation:**
-- `bd-wk8`: F07 Prompt Builder
-- `bd-mpl`: F08 Signal Parser
-- `bd-3y0`: F09 Agent-Task Linking
+- `ch-wk8`: F07 Prompt Builder
+- `ch-mpl`: F08 Signal Parser
 
 **M3 - Task Management:**
-- `bd-zqi`: F12 Task Claimer
+- `ch-zqi`: F12 Task Claimer
 
 ### Task Tracking Rules
-See: `.claude/rules/beads-task-tracking.md` (updated with full task table)
+See: `.claude/rules/beads-task-tracking.md` (updated with ch- prefix)
 
 **Remote:** git@github.com:deligoez/chorus.git
 

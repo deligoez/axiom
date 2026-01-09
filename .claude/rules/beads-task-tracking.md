@@ -58,10 +58,10 @@ EOF
 
 ```bash
 # Add dependency (F04 depends on nothing, F05 depends on F04)
-bd create "F05: Worktree Cleanup" --deps bd-xxxx  # where xxxx is F04's ID
+bd create "F05: Worktree Cleanup" --deps ch-xxxx  # where xxxx is F04's ID
 
 # Multiple dependencies
-bd create "F15: Orchestrator" --deps bd-xxx,bd-yyy,bd-zzz
+bd create "F15: Orchestrator" --deps ch-xxx,ch-yyy,ch-zzz
 ```
 
 ## Workflow
@@ -95,6 +95,10 @@ Update this section as you learn:
 - Use `bd dep add <blocked> <blocker>` to add deps after creation
 - Use `bd dep remove <blocked> <blocker>` to remove deps
 - Use `bd blocked` to see all blocked tasks with their blockers
+- **IMPORTANT**: If `bd dep remove` doesn't persist, use `bd --no-daemon dep remove`
+- Prefix changed from `bd-` to `ch-` (Chorus)
+- F09 depends on F02b (needs agentStore with task linking)
+- F10 depends on F01b (only needs to READ config, not save)
 
 ## Current Task IDs
 
@@ -102,30 +106,36 @@ Update this section as you learn:
 
 | Feature | ID | Dependencies | Status |
 |---------|-----|--------------|--------|
-| F01a Config Types | bd-2n6 | - | ready |
-| F01b Config Load | bd-sro | bd-2n6 | blocked |
-| F01c Config Save | bd-y43 | bd-sro | blocked |
-| F02a State Types | bd-ah6 | - | ready |
-| F02b State Init | bd-81x | bd-ah6 | blocked |
-| F02c State Agent | bd-cg0 | bd-ah6, bd-81x | blocked |
-| F02d State Persist | bd-r12 | bd-ah6, bd-81x | blocked |
-| F04 Worktree Create | bd-glq | - | ready |
-| F05 Worktree Remove | bd-112 | bd-glq | blocked |
-| F06 Worktree Query | bd-iel | bd-112 | blocked |
+| F01a Config Types | ch-2n6 | - | ready |
+| F01b Config Load | ch-sro | ch-2n6 | blocked |
+| F01c Config Save | ch-y43 | ch-sro | blocked |
+| F02a State Types | ch-ah6 | - | ready |
+| F02b State Init | ch-81x | ch-ah6 | blocked |
+| F02c State Agent | ch-cg0 | ch-ah6, ch-81x | blocked |
+| F02d State Persist | ch-r12 | ch-ah6, ch-81x | blocked |
+| F04 Worktree Create | ch-glq | - | ready |
+| F05 Worktree Remove | ch-112 | ch-glq | blocked |
+| F06 Worktree Query | ch-iel | ch-glq, ch-112 | blocked |
 
 ### M2: Agent Preparation
 
 | Feature | ID | Dependencies | Status |
 |---------|-----|--------------|--------|
-| F07 Prompt Builder | bd-wk8 | - | ready |
-| F08 Signal Parser | bd-mpl | - | ready |
-| F09 Agent-Task Linking | bd-3y0 | - | ready |
+| F07 Prompt Builder | ch-wk8 | - | ready |
+| F08 Signal Parser | ch-mpl | - | ready |
+| F09 Agent-Task Linking | ch-3y0 | ch-81x | blocked |
 
 ### M3: Task Management
 
 | Feature | ID | Dependencies | Status |
 |---------|-----|--------------|--------|
-| F10 Test Runner | bd-k3d | bd-y43 | blocked |
-| F11 Completion Checker | bd-uoa | bd-mpl, bd-k3d | blocked |
-| F12 Task Claimer | bd-zqi | - | ready |
-| F13 Task Closer | bd-dzz | bd-zqi | blocked |
+| F10 Test Runner | ch-k3d | ch-sro | blocked |
+| F11 Completion Checker | ch-uoa | ch-mpl, ch-k3d | blocked |
+| F12 Task Claimer | ch-zqi | - | ready |
+| F13 Task Closer | ch-dzz | ch-zqi | blocked |
+
+### M4: Core Orchestration
+
+| Feature | ID | Dependencies | Status |
+|---------|-----|--------------|--------|
+| F15 Orchestrator Core | ch-0e7 | ch-iel, ch-wk8, ch-3y0, ch-zqi | blocked |
