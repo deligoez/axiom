@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Session Date:** 2026-01-09
-**Status:** Ink Rewrite - Phase 1
+**Status:** Ink Rewrite - Phase 3 Ready (89 tests)
 
 ---
 
@@ -31,7 +31,7 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 |-------|--------|--------|
 | Runtime | Node.js 20+ | LTS, widespread |
 | Language | TypeScript | Type safety |
-| TUI | Ink 5.x | React paradigm, mature |
+| TUI | Ink 6.x | React paradigm, mature |
 | State | Zustand | Lightweight |
 | Process | execa | Better child_process |
 | Testing | Vitest | Fast, TS-native |
@@ -54,18 +54,48 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
   - [x] Bash CLI v0.1.0 (archived to `archive/chorus-bash-v0.1.0/`)
   - [x] Ink rewrite plan (`thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`)
   - [x] Removed old bash files + submodules (clean repo)
+  - [x] Phase 1.1 - Project Setup (10 passing tests)
+    - [x] Initialize npm project with TypeScript
+    - [x] Setup Vitest
+    - [x] Install Ink 6.x + React 19 + dependencies
+    - [x] Create CLI parser (cli.ts)
+    - [x] Create App component (app.tsx)
+    - [x] Create entry point (index.tsx)
 
-- Now: [→] Phase 1.1 - Project Setup
-  - [ ] Initialize npm project with TypeScript
-  - [ ] Setup Vitest
-  - [ ] Install Ink + dependencies
-  - [ ] Create basic CLI entry point
+- [x] Phase 1.2 - Basic TUI Shell (27 passing tests)
+    - [x] StatusBar component (app name, agent count, quit hint)
+    - [x] Layout component (borders, structure)
+    - [x] MainContent component (agent output, empty state)
+    - [x] useKeyboard hook (q to quit, Ctrl+C)
+    - [x] Wired App with all components
+
+- [x] Phase 1.3 - Agent Process Management (63 passing tests)
+    - [x] Agent type definitions (Agent, AgentConfig, AgentStatus)
+    - [x] createAgent factory function
+    - [x] AgentManager service (spawn, kill, killAll, list)
+    - [x] Agent output streaming with EventEmitter
+    - [x] Zustand store (add, update, remove, select agents)
+    - [x] Comprehensive edge case tests (+17 tests)
+      - exit/error events, stderr, invalid IDs, unique IDs
+
+- [x] Phase 2 - Multi-Agent (89 passing tests)
+    - [x] useAgentManager hook (wires AgentManager events to store)
+    - [x] MainContent uses Agent type from types/agent.ts
+    - [x] Status indicators (●/○/✗ for running/stopped/error)
+    - [x] App reads agents from Zustand store
+    - [x] Press 's' to spawn demo agent
+    - [x] Press 'j/k' to navigate between agents (with wrap-around)
+    - [x] Selection highlight (► indicator, cyan double border)
+    - [x] Auto-select first agent when spawning
+    - [x] StatusBar shows agent count
+    - [x] Review: no dead code, APIs ready for Phase 3+
+
+- Now: [→] Phase 3 - Beads Integration
+  - [ ] Watch `.beads/issues.jsonl` for task updates
+  - [ ] Display tasks in TUI
+  - [ ] Task status visualization
 
 - Remaining:
-  - [ ] Phase 1.2 - Basic TUI Shell
-  - [ ] Phase 1.3 - Agent Process Management
-  - [ ] Phase 2 - Multi-Agent
-  - [ ] Phase 3 - Beads Integration
   - [ ] Phase 4 - Polish
   - [ ] Phase 5 - Advanced (Kanban, DAG)
 
@@ -83,16 +113,25 @@ Create a unified TUI for multi-agent development orchestration using Ink (React 
 
 **Plan:** `thoughts/shared/plans/2026-01-09-chorus-ink-rewrite.md`
 
-**New Structure:**
+**Current Structure:**
 ```
 src/
-├── index.tsx          # Entry point
-├── cli.ts             # CLI parsing
-├── app.tsx            # Main component
-├── components/        # UI components
-├── hooks/             # React hooks
-├── services/          # Business logic
-└── types/             # TypeScript types
+├── index.tsx              # Entry point
+├── cli.ts                 # CLI parsing (--version, --help)
+├── app.tsx                # Main component (wires everything together)
+├── components/
+│   ├── StatusBar.tsx      # App name, agent count, quit hint
+│   ├── Layout.tsx         # Border box with StatusBar
+│   └── MainContent.tsx    # Agent output display with selection
+├── hooks/
+│   ├── useKeyboard.ts     # q/s/j/k key handling
+│   └── useAgentManager.ts # Wires AgentManager to store
+├── services/
+│   └── AgentManager.ts    # Process spawn/kill/stream
+├── stores/
+│   └── agentStore.ts      # Zustand state management
+└── types/
+    └── agent.ts           # Agent, AgentConfig, AgentStatus
 ```
 
 **Commands:**
