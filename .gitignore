@@ -39,4 +39,5 @@ npm-debug.log*
 *.log
 logs/
 .claude/
+!.claude/rules/
 dist/
