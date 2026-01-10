@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-10
-**Status:** Task Audit Complete - All TDD-Ready - Ready for Implementation
+**Status:** Re-Audit Complete - 32 Tasks Need Fixes Before Implementation
 
 ---
 
@@ -16,12 +16,13 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: Master Plan Review complete, All 90 tasks in Beads
-Now:  [→] Ready to start implementation
-Next: Pick tasks from `bd ready` and implement with TDD
+Done: Re-audit of all 95 tasks complete
+Now:  [→] Apply 32 task fixes (5 critical splits, 27 minor fixes)
+Next: Start TDD implementation with fixed tasks
 ```
 
 **Tasks:** 95 total (32 ready, 63 blocked including 3 deferred)
+**Audit Result:** 63 OK, 32 need fixes (5 critical, 27 minor)
 
 **Architecture:**
 - Beads CLI = single source of truth (no feature plan files)
@@ -130,6 +131,154 @@ bd list -n 0 | grep m12-tui  # TUI tasks only
 ---
 
 ## Audit Log
+
+### 2026-01-10: Comprehensive Re-Audit (95 Tasks)
+
+**Goal:** Verify all tasks are atomic, testable, and TDD-ready.
+
+**Summary:**
+| Milestone | Total | OK | Needs Fix | Critical |
+|-----------|-------|----|-----------| ---------|
+| M1 Infrastructure | 13 | 10 | 3 | ch-mdj (28 tests) |
+| M2-M3 | 8 | 5 | 3 | ch-zqi (18 tests) |
+| M4 Orchestration | 10 | 6 | 4 | ch-0e7 (23 tests) |
+| M5-M7 | 12 | 7 | 5 | ch-9sj, ch-3pa |
+| M8-M11 | 22 | 14 | 8 | ch-di6 (18 tests) |
+| M12 TUI | 30 | 21 | 9 | Minor |
+| **TOTAL** | **95** | **63** | **32** | **5** |
+
+---
+
+#### CRITICAL: Tasks Requiring Split/Redesign
+
+**1. ch-mdj (F03b) Init Scaffold - 28 tests - SPLIT**
+```
+Problem: 6 operations in one task (directories, detect, beads, agents.md, gitignore, config)
+Fix: Split into F03b-1 (Directories+Detect, 13 tests) + F03b-2 (Beads+Templates, 15 tests)
+```
+
+**2. ch-0e7 (F15) Orchestrator Core - 23 tests - SPLIT**
+```
+Problem: Core assignment + timeout handling mixed
+Fix: Split into F15a (Core Assignment, ~15 tests) + F15b (Timeout Management, ~5 tests)
+```
+
+**3. ch-9sj (F29) Resolver Agent - REDESIGN**
+```
+Problem: Subprocess spawning is not testable
+Fix: Use AgentSpawner interface with DI for testability (already documented in prior fix)
+Verify: Task spec must use DI pattern, not subprocess
+```
+
+**4. ch-3pa (F32b) RalphLoop Processing - 19 tests - SPLIT**
+```
+Problem: Task assignment + error handling + deadlock detection mixed
+Fix: Split into:
+  - F32b Core (8 tests) - task assignment loop
+  - F32c Error Handling (6 tests) - thresholds, recovery
+  - F32d Deadlock Detection (5 tests) - idle timeout, stuck agent
+```
+
+**5. ch-di6 (F46c) Intervention Panel - 18 tests, 6 modes - SPLIT**
+```
+Problem: TUI component with 6 distinct modes is too complex
+Modes: main, stop-select, redirect-select, redirect-task, edit-select, block-select
+Fix: Split into:
+  - F46c-a Main mode + list (7 tests)
+  - F46c-b Stop/Block modes (4 tests)
+  - F46c-c Redirect flow (4 tests)
+  - F46c-d Edit task with subprocess (3 tests)
+```
+
+---
+
+#### MEDIUM: Test Count Mismatches
+
+| Task | Problem | Current | Correct |
+|------|---------|---------|---------|
+| ch-2n6 (F01a) | Criteria=18, tests=5 | 5 | 18 or consolidate |
+| ch-y43 (F01c) | Criteria=13, tests=7 | 7 | 8-9 |
+| ch-cg0 (F02c) | Missing edge cases | 8 | 10 |
+| ch-112 (F05) | Missing edge case | 9 | 10 |
+| ch-wk8 (F07) | Criteria=11, tests=9 | 9 | 11 |
+| ch-k3d (F10) | Criteria=10, tests=6 | 6 | 9-10 |
+| ch-fe5 (F25) | Missing mergeStart event | 9 | 10 |
+| ch-t31 (F27) | Missing error case | 10 | 11 |
+| ch-4oz (F63i) | Missing empty/refresh tests | 6 | 8 |
+| ch-n6d (F53) | 16 criteria, 15 tests | 15 | 16 |
+
+---
+
+#### MEDIUM: Clarification Needed
+
+| Task | Issue | Fix |
+|------|-------|-----|
+| ch-02h (F63e) | Tests are integration-level | Rewrite as unit tests |
+| ch-ddk (F45) | Too many validation steps | Clarify: validate vs redirect |
+| ch-a6h (F41) | append/commit atomicity | Specify file format |
+| ch-c8j (F49) | Iteration concept unclear | Commit with [ch-xxx] = iteration |
+| ch-ofm (F50) | L2/L3 mixed | Separate dependency order |
+| ch-jxp (F51) | PID check OS-dependent | Add error recovery flow |
+| ch-9fq (F18a) | BeadsCLI injection unclear | Clarify service DI |
+| ch-g6z (F20) | Service init unclear | Clarify service factory |
+| ch-3ji (F63c) | Depends on F32a (M7) | Mark as deferred |
+
+---
+
+#### MINOR: M12 TUI Fixes
+
+| Task | Issue |
+|------|-------|
+| ch-nvo (F57b) | Separator pipe color test missing |
+| ch-8w5 (F58a) | Pending color criterion missing |
+| ch-7ki (F59c) | Test descriptions swapped |
+| ch-49w (F59d) | Zero test result edge case |
+| ch-c2p (F59e) | Starting behavior unclear |
+| ch-70p (F60b) | useMemo is impl detail |
+| ch-akb (F63a) | Test count 3→4 |
+| ch-im6 (F63d) | Error handling test missing |
+| ch-0vb (F63f) | Scroll bounds test missing |
+| ch-555 (F63h) | Scroll bounds test missing |
+
+---
+
+#### OK Tasks (63 total - Ready for TDD)
+
+**M1:** ch-sro, ch-ah6, ch-81x, ch-r12, ch-tpj, ch-0z7, ch-glq, ch-iel
+**M2:** ch-mpl, ch-3y0
+**M3:** ch-uoa, ch-dzz
+**M4:** ch-7ju, ch-7jw, ch-lhm, ch-7gx, ch-e7f, ch-8j3
+**M5:** ch-glf, ch-7pb, ch-xn6, ch-26c, ch-8ee
+**M6:** ch-i9i
+**M7:** ch-5tj
+**M8:** ch-uxk, ch-1gi, ch-9yl, ch-g2h
+**M9:** ch-ahq, ch-fna, ch-cwy, ch-sb7, ch-xe8
+**M10:** ch-2r5, ch-k9y, ch-ofm (after L2/L3 clarify)
+**M11:** ch-b5x, ch-nn6 (after default test)
+**M12:** ch-mnd, ch-3na, ch-8vk, ch-aap, ch-amw, ch-105, ch-if9, ch-j0z, ch-hhh, ch-73t, ch-0ok, ch-2po, ch-sl9, ch-gk7, ch-dff, ch-tdt, ch-96v
+
+---
+
+#### Fix Phases
+
+**Phase 1 - Critical Splits (creates new tasks):**
+1. ch-mdj → F03b-1 + F03b-2
+2. ch-0e7 → F15a + F15b
+3. ch-3pa → F32b + F32c + F32d
+4. ch-di6 → F46c-a + F46c-b + F46c-c + F46c-d
+5. ch-3ji → add `deferred` label
+
+**Phase 2 - Verify ch-9sj uses DI pattern**
+
+**Phase 3 - Test count fixes (update bd descriptions)**
+
+**Phase 4 - Clarification fixes (update bd descriptions)**
+
+**Phase 5 - Minor TUI fixes (update bd descriptions)**
+
+**Estimated new tasks after splits:** 95 → ~103
+
+---
 
 ### 2026-01-10: Task Audit Fix Complete (60/60 Fixed)
 
@@ -755,23 +904,63 @@ Layer 3: F60a (depends on Layer 2)
 
 ## Next Session
 
-Master plan review complete. Ready to start implementation.
+Re-audit complete. Apply 32 task fixes before implementation.
 
+### Action Plan
+
+**Phase 1 - Critical Splits (5 tasks → ~11 tasks):**
 ```bash
-# Get first task to implement (excludes deferred)
-bd ready -n 0 | grep -v "deferred" | head -5
+# 1. ch-mdj (F03b) → F03b-1 + F03b-2
+bd update ch-mdj --title "F03b-1: Init Scaffold - Directories & Detect"
+# Create F03b-2 as new task
 
-# Recommended starting points:
-# - ch-2n6 (F01a) Config Types - foundation
-# - ch-ah6 (F02a) State Types - foundation
-# - ch-mpl (F08) Signal Parser - standalone
+# 2. ch-0e7 (F15) → F15a + F15b
+bd update ch-0e7 --title "F15a: Orchestrator Core - Assignment"
+# Create F15b as new task
+
+# 3. ch-3pa (F32b) → F32b + F32c + F32d
+# Keep ch-3pa as core, create F32c and F32d
+
+# 4. ch-di6 (F46c) → 4 subtasks
+# Split into F46c-a, F46c-b, F46c-c, F46c-d
+
+# 5. ch-3ji (F63c) → deferred
+bd label add ch-3ji deferred
 ```
 
-**Implementation Approach:**
-1. Pick task from `bd ready -n 0 | grep -v "deferred"`
-2. Use TDD: Write tests → RED → Implement → GREEN
-3. Commit with `[ch-xxx]` suffix
-4. Close task: `bd close <id>`
+**Phase 2 - Verify ch-9sj DI pattern**
+```bash
+bd show ch-9sj  # Verify uses AgentSpawner interface
+```
+
+**Phase 3 - Test count fixes (10 tasks)**
+```bash
+# Update: ch-2n6, ch-y43, ch-cg0, ch-112, ch-wk8, ch-k3d, ch-fe5, ch-t31, ch-4oz, ch-n6d
+```
+
+**Phase 4 - Clarification fixes (9 tasks)**
+```bash
+# Update: ch-02h, ch-ddk, ch-a6h, ch-c8j, ch-ofm, ch-jxp, ch-9fq, ch-g6z
+```
+
+**Phase 5 - Minor TUI fixes (10 tasks)**
+```bash
+# Update: ch-nvo, ch-8w5, ch-7ki, ch-49w, ch-c2p, ch-70p, ch-akb, ch-im6, ch-0vb, ch-555
+```
+
+### After Fixes Complete
+
+```bash
+# Verify all ready tasks
+bd ready -n 0 | grep -v "deferred"
+
+# Start TDD implementation
+# 1. Pick task
+# 2. Write tests → RED
+# 3. Implement → GREEN
+# 4. Commit with [ch-xxx]
+# 5. Close: bd close <id>
+```
 
 **Key Files:**
 - Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md`
