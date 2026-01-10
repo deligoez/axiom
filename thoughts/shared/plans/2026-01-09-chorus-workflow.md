@@ -1,8 +1,8 @@
 # Chorus Workflow: End-to-End Multi-Agent Orchestration
 
 **Date:** 2026-01-09
-**Status:** DRAFT - v2.0 (Optimized)
-**Version:** 2.0
+**Status:** APPROVED - Implementation in Progress
+**Version:** 2.1
 
 ---
 
@@ -163,11 +163,11 @@ See [Conflict Resolution Strategy](#conflict-resolution-strategy) for details.
                ┌───────────────┼───────────────┐
                │               │               │
                ▼               ▼               ▼
-        ┌──────────┐    ┌──────────┐    ┌──────────┐
-        │TaskPanel │    │AgentTile │    │StatusBar │
-        └────┬─────┘    └────┬─────┘    └────┬─────┘
-             │               │               │
-             └───────────────┼───────────────┘
+        ┌──────────┐    ┌──────────┐    ┌───────────┐
+        │TaskPanel │    │AgentGrid │    │HeaderBar  │
+        └────┬─────┘    └────┬─────┘    │FooterBar  │
+             │               │          └─────┬─────┘
+             └───────────────┼────────────────┘
                              │
                  ┌───────────┴───────────┐
                  │                       │
@@ -500,7 +500,7 @@ Simplified configuration with sensible defaults:
 │     bd create "Task description" -p 1 -l feature                 │
 │     → .beads/issues.jsonl                                        │
 │     → Full dependency support                                    │
-│     → Hash-based IDs (bd-xxxx)                                   │
+│     → Hash-based IDs (ch-xxxx)                                   │
 │                                                                  │
 │  2. TUI Quick-Add                                                │
 │     Press 'n' → Enter task details → Creates Beads task          │
@@ -614,13 +614,13 @@ Beads tasks can include custom fields for Chorus:
 
 ```json
 {
-  "id": "bd-a1b2",
+  "id": "ch-a1b2",
   "title": "Implement JWT authentication",
   "description": "Replace session-based auth with JWT tokens",
   "priority": 1,
   "labels": ["feature", "auth"],
   "status": "open",
-  "dependencies": ["bd-x1y2"],
+  "dependencies": ["ch-x1y2"],
   "custom": {
     "model": "opus-4.5",
     "agent": "claude",
@@ -686,30 +686,30 @@ Beads tasks can include custom fields for Chorus:
 └─────────────────────────────────────────────────────────────────┘
 
 Beads format:
-{"id":"bd-001","dependencies":["bd-000"]}
+{"id":"ch-001","dependencies":["ch-000"]}
 
 Chorus behavior:
 
 1. BLOCK if dependencies not closed:
-   bd-001 depends on bd-000 (open) → bd-001 status = BLOCKED
+   ch-001 depends on ch-000 (open) → ch-001 status = BLOCKED
 
 2. AUTO-UNBLOCK when dependencies close:
-   bd-000 closed → Chorus checks dependents → bd-001 → PENDING
+   ch-000 closed → Chorus checks dependents → ch-001 → PENDING
 
 3. VISUALIZE in TUI:
    ┌───────────────────────────────────────┐
-   │ ⊗ bd-001 Implement API [BLOCKED]      │
-   │   └─ Waiting: bd-000 (in_progress)    │
+   │ ⊗ ch-001 Implement API [BLOCKED]      │
+   │   └─ Waiting: ch-000 (in_progress)    │
    └───────────────────────────────────────┘
 
 4. CIRCULAR DETECTION:
-   bd-001 → bd-002 → bd-001 = ERROR
+   ch-001 → ch-002 → ch-001 = ERROR
    → Show warning in TUI
    → Refuse to assign either
 
 5. CASCADE on completion:
-   When bd-000 closes:
-   - Check all tasks depending on bd-000
+   When ch-000 closes:
+   - Check all tasks depending on ch-000
    - Update their status to PENDING
    - If autopilot: auto-assign if slots available
 ```
@@ -872,9 +872,9 @@ Agent completes (signal + tests pass)
 │ ENQUEUE                                                          │
 │                                                                  │
 │ mergeQueue.enqueue({                                             │
-│   taskId: 'bd-001',                                              │
-│   branch: 'agent/claude/bd-001',                                 │
-│   worktree: '.worktrees/claude-bd-001',                          │
+│   taskId: 'ch-001',                                              │
+│   branch: 'agent/claude/ch-001',                                 │
+│   worktree: '.worktrees/claude-ch-001',                          │
 │   priority: task.priority,                                       │
 │   timestamp: Date.now()                                          │
 │ })                                                               │
@@ -974,7 +974,7 @@ When complex conflicts need agent resolution:
 # Merge Conflict Resolution Task
 
 ## Conflict Details
-- Your Branch: agent/claude/bd-001
+- Your Branch: agent/claude/ch-001
 - Target: main
 - Conflicting Files: {list}
 
@@ -1007,7 +1007,7 @@ When complex conflicts need agent resolution:
 
 ```
 1. DEPENDENCY ORDER (highest priority)
-   If bd-002 depends on bd-001, bd-001 must merge first.
+   If ch-002 depends on ch-001, ch-001 must merge first.
 
 2. PRIORITY BOOST
    P1: +100 queue position
@@ -1192,11 +1192,11 @@ interface CompletionCheck {
 │                                                                  │
 │  ## Performance                                                  │
 │  - mb_str_split() > preg_split() for Unicode (3x faster)         │
-│    Source: bd-001 (2026-01-09, claude)                           │
+│    Source: ch-001 (2026-01-09, claude)                           │
 │                                                                  │
 │  ## Testing                                                      │
 │  - Use Pest's dataset() for parameterized tests                  │
-│    Source: bd-003 (2026-01-09, codex)                            │
+│    Source: ch-003 (2026-01-09, codex)                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
           Extracted on task completion
@@ -1220,7 +1220,7 @@ interface CompletionCheck {
 └─────────────────────────────────────────────────────────────────┘
 
 Timeline:
-T=0:  Claude starts bd-001 (string optimization)
+T=0:  Claude starts ch-001 (string optimization)
       │
 T=30: Claude discovers mb_str_split trick
       │
@@ -1228,9 +1228,9 @@ T=45: Claude completes, outputs <chorus>COMPLETE</chorus>
       │
       ├─► Chorus extracts "## Learnings" from scratchpad
       ├─► Appends to .agent/learnings.md with attribution
-      └─► Commits: "learn: extract from bd-001 (claude)"
+      └─► Commits: "learn: extract from ch-001 (claude)"
       │
-T=46: Codex starts bd-003 (Unicode handling)
+T=46: Codex starts ch-003 (Unicode handling)
       │
       └─► Chorus injects learnings into Codex prompt:
           "Relevant learnings: mb_str_split > preg_split..."
@@ -1304,12 +1304,12 @@ Location: .chorus/hooks/
 {
   "event": "post-iteration",
   "agent": {
-    "id": "claude-bd-001",
+    "id": "claude-ch-001",
     "type": "claude",
-    "worktree": ".worktrees/claude-bd-001"
+    "worktree": ".worktrees/claude-ch-001"
   },
   "task": {
-    "id": "bd-001",
+    "id": "ch-001",
     "title": "Implement feature X",
     "status": "in_progress"
   },
@@ -1389,8 +1389,8 @@ During operation, human can:
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │ Active Agents:                                                   │
-│   1. claude (bd-001) - iter 7/50 - running 12m                   │
-│   2. codex (bd-002) - iter 3/50 - running 5m                     │
+│   1. claude (ch-001) - iter 7/50 - running 12m                   │
+│   2. codex (ch-002) - iter 3/50 - running 5m                     │
 │                                                                  │
 │ Actions:                                                         │
 │   [p] Pause all      - Stop after current iterations             │
@@ -1418,9 +1418,9 @@ main branch
     ├── .worktrees/user-feature     (user's manual work)
     │   └── NOT managed by Chorus
     │
-    ├── .worktrees/claude-bd-001    (agent work)
-    ├── .worktrees/codex-bd-002     (agent work)
-    └── .worktrees/codex-bd-003     (agent work)
+    ├── .worktrees/claude-ch-001    (agent work)
+    ├── .worktrees/codex-ch-002     (agent work)
+    └── .worktrees/codex-ch-003     (agent work)
 
 When user wants to merge their work:
 1. Option A: Pause Chorus, merge manually, resume
@@ -1525,28 +1525,28 @@ Config:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ CHORUS v2.0                      semi-auto ● 3/50              ? for help   │
+│ CHORUS v2.1 │ semi-auto │ ● 2/3 agents │ 12 tasks              │ ? help    │  ← HeaderBar
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ TASKS (4)                      │ AGENTS (Tiling View)                        │
 │─────────────────────────────── │──────────────────────────────────────────── │
-│ → bd-001 [P1] Implement auth   │ ┌───────────────────┬───────────────────┐  │
-│   ● claude | iter 7            │ │ CLAUDE (bd-001)   │ CODEX (bd-002)    │  │
+│ → ch-2n6 [P1] Config Types     │ ┌───────────────────┬───────────────────┐  │
+│   ● claude | iter 7            │ │ CLAUDE (ch-2n6)   │ CLAUDE (ch-ah6)   │  │
 │                                │ │ iter 7/50 | 12m   │ iter 3/50 | 5m    │  │
-│ ● bd-002 [P1] Add login UI     │ │ ▓▓▓▓░░░░░░ 35%    │ ▓░░░░░░░░░ 6%     │  │
-│   ● codex | iter 3             │ │                   │                   │  │
-│                                │ │ Reading auth...   │ Creating form...  │  │
-│ ✓ bd-003 [P2] Write tests      │ │ $ npm test        │ Adding valid...   │  │
+│ ● ch-ah6 [P1] State Types      │ │ ▓▓▓▓░░░░░░ 35%    │ ▓░░░░░░░░░ 6%     │  │
+│   ● claude | iter 3            │ │                   │                   │  │
+│                                │ │ Reading config... │ Creating types... │  │
+│ ✓ ch-mpl [P2] Signal Parser    │ │ $ npm test        │ Adding valid...   │  │
 │   closed 5m ago                │ │ ✓ 47 tests passed │                   │  │
 │                                │ ├───────────────────┼───────────────────┤  │
-│ ○ bd-004 [P2] Add docs         │ │ GLM (bd-003)      │ [empty slot]      │  │
-│   pending                      │ │ iter 12/50 | 8m   │                   │  │
-│                                │ │ ▓▓▓▓▓░░░░░ 48%    │                   │  │
-│ ⊗ bd-005 [P3] Refactor         │ │                   │                   │  │
-│   blocked by bd-001            │ │ Writing docs...   │                   │  │
+│ ○ ch-3y0 [P2] Agent-Task Link  │ │ [empty slot]      │ [empty slot]      │  │
+│   pending                      │ │                   │                   │  │
+│                                │ │                   │                   │  │
+│ ⊗ ch-wk8 [P3] Prompt Builder   │ │                   │                   │  │
+│   blocked by ch-2n6            │ │                   │                   │  │
 │                                │ │                   │                   │  │
 │                                │ └───────────────────┴───────────────────┘  │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ Tasks: 1 done, 3 running, 1 pending, 1 blocked | Merge: 1 queued | ? help   │
+│ ✓1 ●2 ○1 ⊗1 │ Merge: 0 queued │ Runtime: 15m                      │ ? help │  ← FooterBar
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1633,6 +1633,13 @@ PRIORITY BADGES:
 ---
 
 ## Changelog
+
+- **v2.1 (2026-01-10):** Documentation cleanup
+  - Task ID format: `bd-xxx` → `ch-xxx` (Chorus prefix)
+  - Architecture: StatusBar → HeaderBar + FooterBar
+  - TUI layout example updated with real task IDs
+  - Status: DRAFT → APPROVED (implementation in progress)
+  - 95 tasks in Beads (32 ready, 63 blocked including 3 deferred)
 
 - **v2.0 (2026-01-10):** Major optimization and refinement
   - Simplified architecture: 7+ services → 2 (Orchestrator + MergeService)
