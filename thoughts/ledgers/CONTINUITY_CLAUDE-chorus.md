@@ -16,13 +16,13 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: Full audit + all fixes applied
+Done: [x] Comprehensive audit of 102 tasks (2026-01-11)
 Now:  [→] Start TDD Implementation - M1 Infrastructure
 Next: Complete M1, unblock M2-M4 dependencies
 ```
 
-**Tasks:** 101 open (32 ready, 66 blocked, 3 deferred)
-**Audit:** All tasks verified atomic, testable, TDD-ready
+**Tasks:** 102 open (36 ready, 62 blocked, 4 deferred)
+**Audit:** All 102 tasks verified atomic, testable, TDD-ready (1 fix applied: ch-n6d)
 
 **Architecture:**
 - Beads CLI = single source of truth (no feature plan files)
@@ -51,7 +51,7 @@ Next: Complete M1, unblock M2-M4 dependencies
 
 ---
 
-## Ready Tasks (32)
+## Ready Tasks (36)
 
 ```bash
 bd ready -n 0
@@ -121,10 +121,10 @@ bd ready -n 0
 
 ```bash
 npm test          # 176 tests
-bd ready -n 0     # All ready tasks (29)
+bd ready -n 0     # All ready tasks (36)
 bd show <id>      # Full task spec
 bd blocked        # Blocked tasks with deps
-bd list -n 0      # All 81 tasks
+bd list -n 0      # All 102 tasks
 bd list -n 0 | grep m12-tui  # TUI tasks only
 ```
 
@@ -171,10 +171,11 @@ bd list -n 0 | grep m12-tui  # TUI tasks only
 - M12 TUI tasks (7-10 tests each): Appropriate size, files properly separated
 - No further splitting required
 
-**Deferred Tasks (3):**
+**Deferred Tasks (4):**
 - ch-q1j (F07b) - Non-Claude Context Injection
 - ch-jbe (F03c) - Non-Claude CLI Detection
 - ch-eyd (F42) - Learning Injector
+- ch-3ji (F63c) - Mode Toggle (depends on F32a)
 
 #### Key Findings
 
