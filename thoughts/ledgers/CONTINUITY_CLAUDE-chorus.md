@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-10
-**Status:** Master Plan Review In Progress
+**Status:** Master Plan Review Complete - Ready for Implementation
 
 ---
 
@@ -16,17 +16,18 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: Phases 1-3 (176 tests), All task audits, Beads migration, M8-M11 tasks, M12 TUI tasks
-Now:  [→] Master Plan Review - Section 14 complete
-Next: Section 15: Implementation Phases
+Done: Master Plan Review complete, All 90 tasks in Beads
+Now:  [→] Ready to start implementation
+Next: Pick tasks from `bd ready` and implement with TDD
 ```
 
-**Tasks:** 81 total (29 ready, 52 blocked)
+**Tasks:** 90 total (29 ready, 61 blocked)
 
 **Architecture:**
 - Beads CLI = single source of truth (no feature plan files)
 - `bd show <id>` = full spec for any task
 - `bd ready` = next available tasks
+- Master plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (design only)
 
 ---
 
@@ -36,16 +37,16 @@ Next: Section 15: Implementation Phases
 |---|-----------|----------|--------|
 | M1 | Infrastructure | F01-F06 | Ready to start |
 | M2 | Agent Prep | F07-F09 | F07 blocked by F01a |
-| M3 | Task Mgmt | F10-F13 | Partially ready |
-| M4 | Orchestration | F14-F20 | Blocked |
-| M5 | Merge Service | F24-F31 | F24 ready |
+| M3 | Task Mgmt | F10-F13, F63e | Partially ready |
+| M4 | Orchestration | F14-F20, F63c | Blocked |
+| M5 | Merge Service | F24-F31, F63i | F24 ready |
 | M6 | Parallelism | F22 | Ready |
 | M7 | Autopilot | F32a-b | Blocked |
 | M8 | Memory System | F39-F42b | F39a ready |
 | M9 | Intervention | F43-F46c | F43a ready |
 | M10 | Rollback | F47-F51 | F47 ready |
 | M11 | Hooks | F52-F54 | F52 ready |
-| M12 | TUI Visualization | F55-F62 | 14 ready |
+| M12 | TUI + Shortcuts | F55-F63 | 14 ready |
 
 ---
 
@@ -124,6 +125,37 @@ bd list -n 0 | grep m12-tui  # TUI tasks only
 ---
 
 ## Audit Log
+
+### 2026-01-10: Keyboard Shortcuts Gap Analysis & Tasks
+
+**Missing Shortcuts Identified:**
+- Tab, 1-9, m, n, d, f, g, l, M (9 total)
+
+**New Tasks Created (F63a-F63i):**
+
+| Task | Shortcut | Function | Depends On |
+|------|----------|----------|------------|
+| ch-akb | Tab | Panel switch | F61a |
+| ch-4ow | 1-9 | Quick select | F18b |
+| ch-3ji | m | Mode toggle | F17, F32a |
+| ch-im6 | n | New task | F12 |
+| ch-02h | d | Mark done | F13 |
+| ch-0vb | f | Fullscreen | F59e |
+| ch-kyx | g | Grid settings | F60b |
+| ch-555 | l | View logs | F59e |
+| ch-4oz | M | Merge queue | F24 |
+
+**Total:** 9 tasks, 51 tests added
+
+---
+
+### 2026-01-10: Implementation Phases Section Removed
+
+- Deleted redundant Section 15 (Implementation Phases) from master plan
+- All content migrated to Beads milestones M1-M12
+- Master plan now design-only document
+
+---
 
 ### 2026-01-10: M12 TUI Task Review & Fix
 
