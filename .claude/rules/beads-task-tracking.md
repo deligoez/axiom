@@ -64,6 +64,42 @@ bd create "F05: Worktree Cleanup" --deps ch-xxxx  # where xxxx is F04's ID
 bd create "F15: Orchestrator" --deps ch-xxx,ch-yyy,ch-zzz
 ```
 
+## TDD Design Requirements
+
+Every task MUST be designed for Test-Driven Development:
+
+### Required in Acceptance Criteria
+1. **Explicit test count**: "X tests pass" (not "tests pass")
+2. **Testable methods**: Each method/function listed with expected behavior
+3. **Edge cases**: Error handling, null returns, empty arrays explicitly stated
+4. **No vague criteria**: "Works correctly" → "Returns X when Y"
+
+### Task Structure Checklist
+```markdown
+## Acceptance Criteria
+- [ ] `methodName()` does X           ← Specific behavior
+- [ ] `methodName()` returns Y when Z ← Edge case
+- [ ] `methodName()` throws on error  ← Error handling
+- [ ] N tests pass                    ← Explicit count
+```
+
+### Anti-patterns to Avoid
+| Bad | Good |
+|-----|------|
+| "Works correctly" | "`parse()` returns Signal object" |
+| "Handles errors" | "`run()` throws on non-zero exit" |
+| "Tests pass" | "6 tests pass" |
+| "Returns result" | "Returns `null` for invalid ID" |
+
+### Before Creating/Updating Task
+Ask yourself:
+1. Can I write a failing test for each criterion?
+2. Is the expected behavior specific enough?
+3. Are edge cases (null, empty, error) covered?
+4. Is the test count accurate?
+
+---
+
 ## Workflow
 
 1. **Pick task**: `bd ready` shows available tasks
@@ -98,7 +134,7 @@ Update this section as you learn:
 - **IMPORTANT**: If `bd dep remove` doesn't persist, use `bd --no-daemon dep remove`
 - Prefix changed from `bd-` to `ch-` (Chorus)
 - **FIXED**: F09 does NOT depend on F02b - they are independent (Agent types vs ChorusState)
-- F10 depends on F01b (only needs to READ config, not save)
+- **FIXED**: F10 does NOT depend on F01b - TestRunner receives testCommand as constructor arg, caller provides it
 
 ## Current Task IDs
 
@@ -113,6 +149,7 @@ Update this section as you learn:
 | F02b State Init | ch-81x | ch-ah6 | blocked |
 | F02c State Agent | ch-cg0 | ch-ah6, ch-81x | blocked |
 | F02d State Persist | ch-r12 | ch-ah6, ch-81x | blocked |
+| F02e State Merge Queue | ch-tpj | ch-ah6, ch-81x | blocked |
 | F04 Worktree Create | ch-glq | - | ready |
 | F05 Worktree Remove | ch-112 | ch-glq | blocked |
 | F06 Worktree Query | ch-iel | ch-glq, ch-112 | blocked |
@@ -129,7 +166,7 @@ Update this section as you learn:
 
 | Feature | ID | Dependencies | Status |
 |---------|-----|--------------|--------|
-| F10 Test Runner | ch-k3d | ch-sro | blocked |
+| F10 Test Runner | ch-k3d | - | ready |
 | F11 Completion Checker | ch-uoa | ch-mpl, ch-k3d | blocked |
 | F12 Task Claimer | ch-zqi | - | ready |
 | F13 Task Closer | ch-dzz | ch-zqi | blocked |
