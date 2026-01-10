@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-10
-**Status:** Re-Audit Complete - 32 Tasks Need Fixes Before Implementation
+**Status:** All Fixes Complete - Ready for TDD Implementation
 
 ---
 
@@ -16,13 +16,13 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: Re-audit of all 95 tasks complete
-Now:  [→] Apply 32 task fixes (5 critical splits, 27 minor fixes)
-Next: Start TDD implementation with fixed tasks
+Done: All 60 task fixes applied (audit complete)
+Now:  [→] TDD Implementation - start with M1 Infrastructure
+Next: Complete M1, unblock M2-M4 dependencies
 ```
 
 **Tasks:** 95 total (32 ready, 63 blocked including 3 deferred)
-**Audit Result:** 63 OK, 32 need fixes (5 critical, 27 minor)
+**Ready for TDD:** All tasks have clear acceptance criteria and test counts
 
 **Architecture:**
 - Beads CLI = single source of truth (no feature plan files)
@@ -51,7 +51,7 @@ Next: Start TDD implementation with fixed tasks
 
 ---
 
-## Ready Tasks (29)
+## Ready Tasks (32)
 
 ```bash
 bd ready -n 0
@@ -904,63 +904,47 @@ Layer 3: F60a (depends on Layer 2)
 
 ## Next Session
 
-Re-audit complete. Apply 32 task fixes before implementation.
+All fixes complete. Start TDD implementation.
 
-### Action Plan
-
-**Phase 1 - Critical Splits (5 tasks → ~11 tasks):**
-```bash
-# 1. ch-mdj (F03b) → F03b-1 + F03b-2
-bd update ch-mdj --title "F03b-1: Init Scaffold - Directories & Detect"
-# Create F03b-2 as new task
-
-# 2. ch-0e7 (F15) → F15a + F15b
-bd update ch-0e7 --title "F15a: Orchestrator Core - Assignment"
-# Create F15b as new task
-
-# 3. ch-3pa (F32b) → F32b + F32c + F32d
-# Keep ch-3pa as core, create F32c and F32d
-
-# 4. ch-di6 (F46c) → 4 subtasks
-# Split into F46c-a, F46c-b, F46c-c, F46c-d
-
-# 5. ch-3ji (F63c) → deferred
-bd label add ch-3ji deferred
-```
-
-**Phase 2 - Verify ch-9sj DI pattern**
-```bash
-bd show ch-9sj  # Verify uses AgentSpawner interface
-```
-
-**Phase 3 - Test count fixes (10 tasks)**
-```bash
-# Update: ch-2n6, ch-y43, ch-cg0, ch-112, ch-wk8, ch-k3d, ch-fe5, ch-t31, ch-4oz, ch-n6d
-```
-
-**Phase 4 - Clarification fixes (9 tasks)**
-```bash
-# Update: ch-02h, ch-ddk, ch-a6h, ch-c8j, ch-ofm, ch-jxp, ch-9fq, ch-g6z
-```
-
-**Phase 5 - Minor TUI fixes (10 tasks)**
-```bash
-# Update: ch-nvo, ch-8w5, ch-7ki, ch-49w, ch-c2p, ch-70p, ch-akb, ch-im6, ch-0vb, ch-555
-```
-
-### After Fixes Complete
+### TDD Workflow
 
 ```bash
-# Verify all ready tasks
+# 1. Pick task from ready list
 bd ready -n 0 | grep -v "deferred"
 
-# Start TDD implementation
-# 1. Pick task
-# 2. Write tests → RED
-# 3. Implement → GREEN
-# 4. Commit with [ch-xxx]
-# 5. Close: bd close <id>
+# 2. View full spec
+bd show <id>
+
+# 3. TDD cycle
+#    - Write failing tests (RED)
+#    - Implement minimal code (GREEN)
+#    - Refactor if needed
+#    - Commit: git commit -m "feat: <desc> [ch-xxx]"
+
+# 4. Close task
+bd close <id>
 ```
+
+### Recommended Start Order (M1 Infrastructure)
+
+| Order | Task | Feature | Unblocks |
+|-------|------|---------|----------|
+| 1 | ch-2n6 | F01a Config Types | F01b, F07 |
+| 2 | ch-ah6 | F02a State Types | F02b, F02c, F02d, F02e |
+| 3 | ch-glq | F04 Worktree Create | F05 |
+| 4 | ch-0z7 | F03a Init Prerequisites | F03b |
+
+### Parallel Work (Independent Tasks)
+
+These can be done in any order:
+- ch-mpl (F08 Signal Parser)
+- ch-3y0 (F09 Agent-Task Linking)
+- ch-k3d (F10 Test Runner)
+- ch-zqi (F12 Task Claimer)
+- ch-8j3 (F19 Orchestration Store)
+- ch-i9i (F22 Slot Manager)
+- ch-glf (F24 Merge Queue)
+- All M12 TUI components (14 ready)
 
 **Key Files:**
 - Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md`
