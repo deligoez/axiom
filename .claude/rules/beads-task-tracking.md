@@ -184,3 +184,28 @@ Update this section as you learn:
 | F18b TaskPanel Selection UI | ch-e7f | ch-9fq | blocked |
 | F19 Orchestration Store | ch-8j3 | - | ready |
 | F20 useOrchestration Hook | ch-g6z | ch-0e7, ch-lhm, ch-7gx, ch-8j3 | blocked |
+
+### M5: Merge Service
+
+| Feature | ID | Dependencies | Status |
+|---------|-----|--------------|--------|
+| F24 Merge Queue | ch-glf | - | ready |
+| F25 Merge Worker | ch-fe5 | ch-glf | blocked |
+| F26 Conflict Classifier | ch-7pb | ch-fe5 | blocked |
+| F27 Auto-Resolver | ch-t31 | ch-7pb | blocked |
+| F28 Rebase-Retry | ch-xn6 | ch-7pb | blocked |
+| F29 Resolver Agent | ch-9sj | ch-xn6 | blocked |
+| F30 Human Escalation | ch-26c | ch-9sj | blocked |
+| F31 Merge Service | ch-8ee | ch-glf, ch-fe5, ch-7pb, ch-t31, ch-xn6, ch-9sj, ch-26c | blocked |
+
+### M6: Parallelism
+
+| Feature | ID | Dependencies | Status |
+|---------|-----|--------------|--------|
+| F22 Slot Manager | ch-i9i | - | ready |
+
+### M7: Autopilot
+
+| Feature | ID | Dependencies | Status |
+|---------|-----|--------------|--------|
+| F32 Ralph Loop Core | ch-5tj | ch-lhm, ch-i9i, ch-8ee | blocked |

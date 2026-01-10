@@ -101,7 +101,7 @@ Phase 4 implements full orchestration for Chorus - from semi-auto mode (user ass
 
 | ID | Feature | Plan | Tests | Status |
 |----|---------|------|-------|--------|
-| F32 | Ralph Loop Core | [plan](./features/F32-ralph-loop.md) | 15 | [ ] |
+| F32 | Ralph Loop Core | [plan](./features/F32-ralph-loop.md) | 18 | [ ] |
 | F33 | Iteration Counter | [plan](./features/F33-iteration-counter.md) | 5 | [ ] |
 | F34 | Timeout Manager | [plan](./features/F34-timeout-manager.md) | 5 | [ ] |
 | F35 | Stuck Detection | [plan](./features/F35-stuck-detection.md) | 5 | [ ] |

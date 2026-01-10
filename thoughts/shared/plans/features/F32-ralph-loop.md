@@ -1,8 +1,8 @@
 # F32: Ralph Loop Core
 
 **Milestone:** 7 - Autopilot
-**Dependencies:** F16 (Single Task Completion), F31 (Merge Service), F22 (Slot Manager)
-**Estimated Tests:** 15
+**Dependencies:** F15 (Orchestrator Core), F16b (Completion Handler Retry), F31 (Merge Service), F22 (Slot Manager)
+**Estimated Tests:** 18
 
 ---
 
@@ -340,17 +340,42 @@ describe('RalphLoop', () => {
 
 ## Acceptance Criteria
 
-- [ ] Starts and processes task queue
-- [ ] Respects maxParallel limit
-- [ ] Picks tasks by priority (P1 > P2 > P3 > P4)
-- [ ] Waits for slots when full
-- [ ] Handles task completion (merge + close)
-- [ ] Stops when no tasks remain
-- [ ] Can be paused and resumed
-- [ ] Can be stopped gracefully
-- [ ] Emits appropriate events
-- [ ] Error handling doesn't crash loop
-- [ ] All 15 tests pass
+### start() - 3 tests
+- [ ] `start()` emits "started" event
+- [ ] `start()` begins processing task queue
+- [ ] `start()` is idempotent (calling twice doesn't restart)
+
+### stop() - 3 tests
+- [ ] `stop()` stops accepting new tasks
+- [ ] `stop()` waits for active agents to complete before returning
+- [ ] `stop()` emits "stopped" event
+
+### pause() / resume() - 2 tests
+- [ ] `pause()` stops new task assignment without killing agents
+- [ ] `resume()` continues task assignment
+
+### Task Processing - 6 tests
+- [ ] Assigns tasks to available slots from SlotManager
+- [ ] Respects maxParallel limit (never exceeds)
+- [ ] Picks tasks by priority order (P1 > P2 > P3 > P4)
+- [ ] Handles task completion event from Orchestrator
+- [ ] Queues merge via MergeService on completion
+- [ ] Closes task via TaskClaimer on completion
+
+### Completion - 2 tests
+- [ ] Emits "allDone" when readyTasks=0 AND activeAgents=0
+- [ ] Stops loop automatically after emitting "allDone"
+
+### Error Handling - 2 tests
+- [ ] Emits "error" event on assignment failure
+- [ ] Continues loop after error (doesn't crash)
+
+### Status Methods (implicit, no separate tests)
+- [ ] `getStatus()` returns LoopStatus object
+- [ ] `isRunning()` returns boolean
+- [ ] `isPaused()` returns boolean
+
+**Total: 18 tests**
 
 ---
 

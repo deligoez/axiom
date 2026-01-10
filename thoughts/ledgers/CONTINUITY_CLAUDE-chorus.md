@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-10
-**Status:** Phase 4 Task Audit Complete - Ready to Implement
+**Status:** M5-M7 Plans Complete - Ready to Implement
 
 ---
 
@@ -9,25 +9,25 @@
 
 Multi-agent TUI orchestrator using Ink (React for CLI).
 
-**MVP:** Semi-auto mode - user selects task, agent completes, stops.
+**MVP:** Semi-auto mode → **Autopilot (F32 Ralph Loop)**
 
 ---
 
 ## Current State
 
 ```
-Done: Phases 1-3 (176 tests), F01-F20 Task Audit
+Done: Phases 1-3 (176 tests), F01-F32 Task Audit
 Now:  [→] Ready to implement - pick from bd ready
-Next: M1 Infrastructure → M4 Semi-Auto
+Next: M1 Infrastructure → M7 Autopilot
 ```
 
-**Tasks:** 27 total (9 ready, 18 blocked)
+**Tasks:** 37 total (11 ready, 26 blocked)
 
-**Audit Summary:**
-- All 20 features (F01-F20) verified against plans
-- Test counts corrected (many were underestimated)
-- 2 incorrect dependencies removed (F09, F10)
-- All tasks now TDD-ready with explicit criteria
+**Session Summary (M5-M7 Audit):**
+- Created 9 new plans: F22, F24-F31
+- Created 10 new tasks for M5-M7
+- Audited all M5-M7 features for TDD
+- Fixed test counts and dependencies
 
 ---
 
@@ -39,7 +39,7 @@ bd ready
 
 | ID | Feature | Milestone |
 |----|---------|-----------|
-| ch-2n6 | F01a Config Types | M1 ← START |
+| ch-2n6 | F01a Config Types | M1 |
 | ch-ah6 | F02a State Types | M1 |
 | ch-glq | F04 Worktree Create | M1 |
 | ch-wk8 | F07 Prompt Builder | M2 |
@@ -48,25 +48,34 @@ bd ready
 | ch-k3d | F10 Test Runner | M3 |
 | ch-zqi | F12 Task Claimer | M3 |
 | ch-8j3 | F19 Orchestration Store | M4 |
+| ch-i9i | F22 Slot Manager | M6 |
+| ch-glf | F24 Merge Queue | M5 |
 
 ---
 
-## Workflow
+## New M5-M7 Tasks
 
-```bash
-# 1. Pick task
-bd ready
-bd update ch-2n6 --status=in_progress
+### M5: Merge Service
+| Feature | ID | Tests | Deps |
+|---------|-----|-------|------|
+| F24 Merge Queue | ch-glf | 9 | - |
+| F25 Merge Worker | ch-fe5 | 9 | F24 |
+| F26 Conflict Classifier | ch-7pb | 11 | F25 |
+| F27 Auto-Resolver | ch-t31 | 6 | F26 |
+| F28 Rebase-Retry | ch-xn6 | 6 | F26 |
+| F29 Resolver Agent | ch-9sj | 9 | F28 |
+| F30 Human Escalation | ch-26c | 7 | F29 |
+| F31 Merge Service | ch-8ee | 5 | F24-F30 |
 
-# 2. TDD
-# Write tests (RED) → Implement (GREEN) → Commit
+### M6: Parallelism
+| Feature | ID | Tests | Deps |
+|---------|-----|-------|------|
+| F22 Slot Manager | ch-i9i | 8 | - |
 
-# 3. Close
-bd close ch-2n6
-
-# 4. Next
-bd ready
-```
+### M7: Autopilot
+| Feature | ID | Tests | Deps |
+|---------|-----|-------|------|
+| F32 Ralph Loop | ch-5tj | 18 | F15,F16b,F22,F31 |
 
 ---
 
@@ -83,47 +92,8 @@ bd ready
 
 ---
 
-## Architecture
+## Commands
 
-```
-ChorusApp (Ink)
-    ├── TaskPanel ── beadsStore
-    ├── AgentTilingView ── agentStore
-    └── StatusBar
-            │
-    ┌───────┴───────┐
-Orchestrator    MergeService
-    │
-┌───┼───┐
-bd  git  agent
-```
-
----
-
-## Milestones
-
-| # | Name | Features | Tests | Status |
-|---|------|----------|-------|--------|
-| 1 | Infrastructure | F01-F06 | ~30 | [ ] ← NOW |
-| 2 | Agent Prep | F07-F09 | ~23 | [ ] |
-| 3 | Task Mgmt | F10-F13 | ~28 | [ ] |
-| 4 | Orchestration | F14-F20 | ~50 | [ ] **Semi-Auto** |
-| 5 | Merge Service | F24-F31 | ~49 | [ ] |
-| 6 | Parallelism | F21-F23 | ~25 | [ ] |
-| 7 | Autopilot | F32-F38 | ~43 | [ ] **Goal** |
-
----
-
-## Files
-
-**Plans:**
-- `thoughts/shared/plans/features/` - Feature plans
-- `thoughts/shared/plans/2026-01-10-chorus-phase4-master.md` - Master tracker
-
-**Task Tracking:**
-- `.claude/rules/beads-task-tracking.md` - All task IDs
-
-**Commands:**
 ```bash
 npm test          # 176 tests
 bd ready          # Available tasks
@@ -133,138 +103,39 @@ bd blocked        # Blocked tasks
 
 ---
 
-## Notes
-
-- Use `bd --no-daemon` if changes don't persist
-- Task prefix: `ch-` (Chorus)
-- Feature codes (F##) map to plan files
-
----
-
 ## Audit Log
 
-### 2026-01-10: Feature Plan → Task Alignment Audit
+### 2026-01-10: M5-M7 Plans & Tasks Created
 
-**Session Goal:** Ensure all feature plans are fully represented in Beads tasks
+**Session Goal:** Create plans and tasks for F22, F24-F32 (Ralph Loop dependencies)
 
-**Verified Features:** F01-F20 (M1-M4) ✅ COMPLETE
+**New Plans Created:**
+- F22-slot-manager.md (8 tests)
+- F24-merge-queue.md (9 tests)
+- F25-merge-worker.md (9 tests)
+- F26-conflict-classifier.md (11 tests)
+- F27-auto-resolver.md (6 tests)
+- F28-rebase-retry.md (6 tests)
+- F29-resolver-agent.md (9 tests)
+- F30-human-escalation.md (7 tests)
+- F31-merge-service.md (5 tests)
 
-**Changes Made:**
+**Test Count Fixes:**
+| Feature | Old | New |
+|---------|-----|-----|
+| F22 | 5 | 8 |
+| F24 | 8 | 9 |
+| F25 | 8 | 9 |
+| F26 | 10 | 11 |
+| F27 | 5 | 6 |
+| F28 | 5 | 6 |
+| F29 | 8 | 9 |
+| F30 | 5 | 7 |
+| F31 | 0 | 5 |
+| F32 | 15 | 18 |
 
-1. **F01 Config System**
-   - F01b (ch-sro): Added `get()`, `exists()` methods, +1 test
-   - F01c (ch-y43): Added `update(partial)`, +2 validation tests
+**Dependency Fixes:**
+- F32: Added F15 (Orchestrator) - was missing!
+- F32 now has 4 deps: F15, F16b, F22, F31
 
-2. **F02 State System**
-   - F02b (ch-81x): Added `load() validates structure` test
-   - **NEW F02e (ch-tpj)**: Created for merge queue ops
-     - `enqueueMerge()`, `dequeueMerge()`, `updateMergeItem()`
-     - `incrementStat()`, `update(partial)`
-     - 5 tests
-
-3. **F04 Worktree Create**
-   - Added `exists()`, `getPath()`, `getBranch()`, `list()` methods
-   - Tests: 5 → 7
-
-4. **F05 Worktree Cleanup**
-   - Added `isBranchMerged()`, `prune()` methods
-   - Tests: 5 → 6
-
-5. **F06 Worktree Query**
-   - Added `removeAll()` method
-   - Cleaned up overlapping methods (moved to F04/F05)
-
-6. **F07 Prompt Builder**
-   - Added explicit API: `buildTaskSection()`, `buildCompletionSection()`, `loadAgentsMd()`, `loadLearnings()`, `needsContextInjection()`
-
-7. **F08 Signal Parser**
-   - Added explicit API: `parse()`, `parseAll()`, `hasSignal()`
-
-8. **F09 Agent-Task Linking**
-   - Verified complete (no changes needed)
-
-9. **F10 Test Runner**
-   - Removed scope creep: "Parses test count if possible"
-   - Removed wrong responsibility: "Reads testCommand from ChorusConfig"
-   - Fixed: TestRunner receives testCommand as constructor arg (caller provides)
-   - Fixed test count: 8 → 6 tests
-   - Added missing criteria: duration tracking, exit code 124 on timeout
-   - **Removed dependency on F01b** - TestRunner is generic, doesn't need config
-
-10. **F11 Completion Checker**
-    - Fixed test count: 10 → 9 tests
-    - Added missing method: `hasCompletionSignal()` quick check
-    - Added CompletionResult fields to acceptance criteria
-    - Dependencies verified correct: F08 + F10
-
-11. **F12 Task Claimer**
-    - Fixed test count: 5 → 8 tests
-    - Added error handling: `claimTask()` throws on bd error
-    - Added edge cases: getTask null, getReadyTasks empty
-    - Added `isInitialized()` test (method existed in API but no test)
-    - No dependencies (correct)
-
-12. **F13 Task Closer**
-    - Fixed test count: 5 → 8 tests
-    - Added 4 missing methods: `reopenTask()`, `getTaskStatus()`, `getInProgressTasks()`, `getClosedTasks()`
-    - Added error handling: `closeTask()` throws on bd error
-    - Removed wrong criteria: "Returns success/failure" (void return)
-    - Dependency verified correct: F12
-
-13. **F14 Dependency Resolver**
-    - Fixed test count: 8 → 13 tests
-    - Added 2 missing methods from API: `isDependencySatisfied()`, `getDependents()`
-    - Organized acceptance criteria by method (TDD-friendly)
-    - Dependency verified correct: F12
-
-14. **F15 Orchestrator Core** (largest feature)
-    - Fixed test count: 15 → 18 tests
-    - Added types to criteria: AssignmentResult, OrchestratorConfig, TaskAssignment
-    - Organized by method: assignTask (9), canAssign (5), getAgentType (2), helpers (2)
-    - Added missing helper tests: getTask, getReadyTasks, getAgentConfig
-    - Dependencies verified correct: F06, F07, F09, F12
-    - Kept as single task (methods tightly coupled)
-
-15. **F16 Completion Handler** (split into F16a + F16b)
-    - F16a (ch-7jw): Added types to criteria, organized by method, 5 tests
-    - F16b (ch-lhm): Fixed test count 5 → 6, organized by method
-    - Total: 11 tests (5 + 6)
-    - Dependencies verified: F16a→F11,F13; F16b→F16a
-
-16. **F17 Semi-Auto Mode**
-    - Fixed test count: 8 → 11 tests
-    - Added types: SemiAutoConfig, SemiAutoStatus
-    - Added missing methods: getStatus(), isIdle()
-    - Organized by method: startTask (4), cancelTask (3), completion (4)
-    - Dependencies verified: F15, F16b
-
-17. **F18 Task Selection UI** (split into F18a + F18b)
-    - F18a (ch-9fq): Fixed test count 4 → 6, added interface + methods
-    - F18b (ch-e7f): Adjusted test count, added visual + keyboard + components
-    - Total: 10 tests (6 + 4)
-    - Dependencies verified: F18a→F17; F18b→F18a
-
-18. **F19 Orchestration Store**
-    - Fixed test count: 8 → 12 tests
-    - Added types: OperatingMode, OrchestrationStatus, State, Actions
-    - Organized by method groups (mode, status, task, stats, autopilot)
-    - No dependencies (correct)
-
-19. **F20 useOrchestration Hook**
-    - Fixed test count: 8 → 10 tests
-    - Added interface: UseOrchestrationResult
-    - Organized: initialization, actions, events, derived
-    - Dependencies verified: F15, F16b, F17, F19
-
-**AUDIT COMPLETE:** All F01-F20 verified and updated
-
-### 2026-01-10: Dependency Audit
-- Verified all 26 tasks against feature plans
-- **Fixed**: F09 (ch-3y0) had incorrect dep on F02b (ch-81x)
-  - F09 = Agent type extension (agentStore)
-  - F02b = ChorusState init (unrelated)
-- **Fixed**: F10 (ch-k3d) had incorrect dep on F01b (ch-sro)
-  - F10 = Generic TestRunner (receives testCommand as arg)
-  - F01b = Config loading (caller's responsibility)
-  - Now: 9 ready, 18 blocked
-- All tasks are TDD-suitable (clear test cases, atomic scope)
+**AUDIT COMPLETE:** F22-F32 verified and TDD-ready
