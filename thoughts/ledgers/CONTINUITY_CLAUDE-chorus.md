@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-10
-**Status:** Master Plan Review Complete - Ready for Implementation
+**Status:** Task Audit Complete - All TDD-Ready - Ready for Implementation
 
 ---
 
@@ -130,6 +130,47 @@ bd list -n 0 | grep m12-tui  # TUI tasks only
 ---
 
 ## Audit Log
+
+### 2026-01-10: Task Audit Fix Complete (60/60 Fixed)
+
+**Goal:** Fix all 60 tasks identified in audit for TDD readiness.
+
+**Phases Completed:**
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Phase 1: Critical Fixes | 7 | ✅ |
+| Phase 2: M1 Infrastructure | 11 | ✅ |
+| Phase 3: M2-M4 | 4 | ✅ |
+| Phase 4: M5 Merge | 4 | ✅ |
+| Phase 5: M8-M11 | 8 | ✅ |
+| Phase 6: M12 TUI | 26 | ✅ |
+
+**Key Fixes Applied:**
+
+| Category | Fix |
+|----------|-----|
+| Critical Clarifications | F17 retry=event-driven, F46 blocked=label, F49 iteration=commits with [ch-xxx] |
+| F29 Redesign | Subprocess → DI with AgentSpawner interface for testability |
+| M1 Types | Field-level tests, edge cases, error handling |
+| M5 Merge | GitService/FileService DI for testing, special file strategies defined |
+| M8-M11 | Scratchpad path, markdown parsing rules, hook discovery rules |
+| M12 TUI | Ink color specs, useInput patterns, child prop verification |
+
+**Decisions Made:**
+- F44/F51 split NOT needed - tasks are cohesive at 12/11 tests
+- "blocked" = label (not status) for task management
+- "iteration" = commits with `[ch-xxx]` marker in worktree
+- F29 testable via AgentSpawner DI (not HTTP API)
+
+**Test Count Changes:**
+- Multiple tasks updated with corrected test counts
+- Added error boundary tests to TUI components
+- Precedence/priority documentation added where needed
+
+**Handoff:** `thoughts/shared/handoffs/chorus/2026-01-10_23-15-48_task-audit-fix-all.md` → COMPLETE
+
+---
 
 ### 2026-01-10: Non-Claude Agent Support Split to Deferred
 
