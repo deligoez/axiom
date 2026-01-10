@@ -62,10 +62,14 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
 | 7 | Prompt construction? | Inject task context + learnings |
 | 8 | Conflict resolution? | Agent-first, human-fallback |
 | 9 | Operating modes? | Semi-auto (default) + Autopilot |
+| **10** | **MVP Scope?** | **Claude-only (codex/opencode deferred)** |
 
 ### Decision Details
 
 #### 1. Multi-Agent Support: claude, codex, opencode
+
+> **MVP SCOPE:** Claude-only. Codex and OpenCode support deferred.
+> See deferred tasks: F07b (context injection), F03c (CLI detection), F42 (learning injector)
 
 **Rationale:**
 - All support autonomous/non-interactive mode
@@ -511,20 +515,45 @@ Simplified configuration with sensible defaults:
 Note: GitHub Issues import and PRD parsing planned for v2.
 ```
 
-### bd CLI Integration
+### BeadsCLI Integration
 
-Chorus calls bd directly - no wrapper layer:
+**IMPORTANT:** All Chorus components MUST access Beads through `BeadsCLI` service. Direct `bd` CLI calls are prohibited.
 
 ```typescript
-class Orchestrator {
+// src/services/BeadsCLI.ts - Single point of Beads access
 
-  async getReadyTasks(): Promise<Task[]> {
+interface GetReadyOptions {
+  excludeLabels?: string[];  // e.g., ['deferred', 'v2']
+  includeLabels?: string[];  // e.g., ['m1-infrastructure']
+}
+
+class BeadsCLI {
+
+  async getReadyTasks(options?: GetReadyOptions): Promise<Task[]> {
     const { stdout } = await exec('bd ready --json');
-    return JSON.parse(stdout);
+    let tasks = JSON.parse(stdout);
+
+    // Apply label filtering (in-memory)
+    if (options?.excludeLabels?.length) {
+      tasks = tasks.filter(t =>
+        !t.labels.some(l => options.excludeLabels!.includes(l))
+      );
+    }
+    if (options?.includeLabels?.length) {
+      tasks = tasks.filter(t =>
+        t.labels.some(l => options.includeLabels!.includes(l))
+      );
+    }
+
+    return tasks;
   }
 
   async claimTask(taskId: string, agentId: string): Promise<void> {
     await exec(`bd update ${taskId} --status=in_progress --assignee=${agentId}`);
+  }
+
+  async releaseTask(taskId: string): Promise<void> {
+    await exec(`bd update ${taskId} --status=open --assignee=`);
   }
 
   async closeTask(taskId: string): Promise<void> {
@@ -541,8 +570,43 @@ class Orchestrator {
     const { stdout } = await exec(args.join(' '));
     return stdout.trim();
   }
+
+  async getTask(taskId: string): Promise<Task | null> {
+    try {
+      const { stdout } = await exec(`bd show ${taskId} --json`);
+      return JSON.parse(stdout);
+    } catch {
+      return null;
+    }
+  }
+
+  isAvailable(): boolean { /* check bd in PATH */ }
+  isInitialized(): boolean { /* check .beads/ exists */ }
 }
 ```
+
+### Deferred Tasks
+
+Tasks can be marked as `deferred` to exclude them from active development:
+
+```bash
+# Mark task as deferred
+bd label add ch-xxx deferred
+
+# Remove deferred label
+bd label remove ch-xxx deferred
+```
+
+**Behavior:**
+- `getReadyTasks()` excludes `deferred` by default in production
+- TUI shows deferred tasks grayed out (not selectable)
+- Autopilot mode never picks deferred tasks
+- Deferred tasks remain in dependency graph (can still block others)
+
+**Use cases:**
+- Features planned for v2
+- Non-Claude agent support (until ready)
+- Experimental features
 
 ### Task Format with Custom Fields
 

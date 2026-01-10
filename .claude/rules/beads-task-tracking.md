@@ -53,8 +53,39 @@ EOF
 | m11-hooks | Milestone 11: Hooks System |
 | m12-tui | Milestone 12: TUI Visualization |
 | bug | Bug fix |
+| **deferred** | **Not for MVP - future implementation** |
 
 Note: Keep labels minimal - just milestone. Avoid verbose labels like `feature`, `critical-path`.
+
+## Deferred Tasks
+
+Tasks marked with `deferred` label are excluded from active development:
+
+```bash
+# Mark task as deferred
+bd label add ch-xxx deferred
+
+# Remove deferred label when ready to implement
+bd label remove ch-xxx deferred
+
+# List deferred tasks
+bd list -n 0 | grep "deferred"
+```
+
+**IMPORTANT:** When getting ready tasks, ALWAYS exclude deferred:
+
+```bash
+# WRONG - includes deferred tasks
+bd ready -n 0
+
+# CORRECT - excludes deferred tasks
+bd ready -n 0 | grep -v "deferred"
+```
+
+**Current Deferred Tasks (non-Claude agent support):**
+- ch-q1j (F07b) - Non-Claude Context Injection
+- ch-jbe (F03c) - Non-Claude CLI Detection
+- ch-eyd (F42) - Learning Injector
 
 ## Dependencies
 
@@ -104,18 +135,20 @@ Ask yourself:
 
 ## Workflow
 
-1. **Pick task**: `bd ready` shows available tasks
+1. **Pick task**: `bd ready -n 0 | grep -v "deferred"` shows available tasks (excluding deferred)
 2. **Start task**: `bd update <id> --status=in_progress`
 3. **TDD**: Write tests → RED → Implement → GREEN → Commit
 4. **Complete**: `bd close <id>`
 5. **Dependencies auto-unblock**: Dependents become ready
 
+**CRITICAL:** Always filter out deferred tasks when picking work. Deferred tasks are for future implementation.
+
 ## Progress Check
 
 ```bash
-bd list                    # All tasks
-bd ready                   # Ready to work
-bd list --status=closed    # Completed
+bd list -n 0                         # All tasks
+bd ready -n 0 | grep -v "deferred"   # Ready to work (active only)
+bd list --status=closed              # Completed
 bd show <id>               # Task details
 ```
 
@@ -282,3 +315,6 @@ Update this section as you learn:
 | F61c HelpPanel Enhanced | ch-2po | ch-0ok | blocked |
 | F62a BlockedTaskInfo | ch-sl9 | - | ready |
 | F62b TaskIterationDisplay | ch-gk7 | - | ready |
+| F63j Task Failed Status | ch-dff | - | ready |
+| F63k Agent Paused Status | ch-tdt | - | ready |
+| F63l Priority Badge Colors | ch-96v | - | ready |

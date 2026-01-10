@@ -21,7 +21,7 @@ Now:  [→] Ready to start implementation
 Next: Pick tasks from `bd ready` and implement with TDD
 ```
 
-**Tasks:** 90 total (29 ready, 61 blocked)
+**Tasks:** 95 total (32 ready, 63 blocked including 3 deferred)
 
 **Architecture:**
 - Beads CLI = single source of truth (no feature plan files)
@@ -92,6 +92,9 @@ bd ready -n 0
 | ch-0ok | F61b ShortcutCategory | 5 |
 | ch-sl9 | F62a BlockedTaskInfo | 6 |
 | ch-gk7 | F62b TaskIterationDisplay | 6 |
+| ch-dff | F63j TaskFailedStatus | 3 |
+| ch-tdt | F63k AgentPausedStatus | 4 |
+| ch-96v | F63l PriorityBadgeColors | 5 |
 
 **Note:** F07 (ch-wk8) blocked by F01a (uses ChorusConfig)
 
@@ -104,6 +107,8 @@ bd ready -n 0
 | TUI Framework | Ink 6.x (React) |
 | State | Zustand |
 | Task Management | Beads CLI |
+| Beads Access | **BeadsCLI service only** (no direct bd calls) |
+| Deferred Tasks | `deferred` label excludes from ready |
 | Operating Mode | Semi-auto first, then autopilot |
 | Completion | Signal `<chorus>` + Tests (AND) |
 | Agent Isolation | Git worktrees |
@@ -125,6 +130,117 @@ bd list -n 0 | grep m12-tui  # TUI tasks only
 ---
 
 ## Audit Log
+
+### 2026-01-10: Non-Claude Agent Support Split to Deferred
+
+**Goal:** MVP supports Claude only. Non-Claude agent support deferred.
+
+**Tasks Split:**
+
+| Original | Claude-Only | New Deferred |
+|----------|-------------|--------------|
+| F07 Prompt Builder | ch-wk8 (8 tests) | ch-q1j F07b (6 tests) |
+| F03a Init Prerequisites | ch-0z7 (10 tests) | ch-jbe F03c (4 tests) |
+| F42 Learning Injector | - | ch-eyd (entire task, 6 tests) |
+
+**Changes Applied:**
+
+| Task | Change |
+|------|--------|
+| ch-wk8 (F07) | Removed non-Claude injection, 10→8 tests |
+| ch-0z7 (F03a) | Claude CLI only, 11→10 tests |
+| ch-2n6 (F01a) | Added MVP Claude-only note |
+| ch-q1j (F07b) | NEW - Non-Claude context injection (deferred) |
+| ch-jbe (F03c) | NEW - Non-Claude CLI detection (deferred) |
+| ch-eyd (F42) | Marked deferred (entire task) |
+
+**beads-task-tracking.md Updated:**
+- Added `deferred` label documentation
+- Workflow now uses `grep -v "deferred"` for ready tasks
+- Listed current deferred tasks
+
+**Master Plan Updated:**
+- Key Decisions #10: MVP Scope = Claude-only
+- Multi-Agent Support section: Added MVP scope note with deferred task references
+
+**Deferred Tasks (3):**
+- ch-q1j (F07b) - Non-Claude Context Injection
+- ch-jbe (F03c) - Non-Claude CLI Detection
+- ch-eyd (F42) - Learning Injector
+
+**Tasks:** 93 → 95 (+2 new deferred)
+
+---
+
+### 2026-01-10: BeadsCLI Centralization & Deferred Task Filtering
+
+**Problem:**
+- Master plan showed direct `bd` CLI calls
+- No mechanism for deferring tasks (non-Claude agent support, v2 features)
+- Multiple components would need independent filtering logic
+
+**Solution: BeadsCLI as Single Access Point**
+
+All Chorus components MUST access Beads through `BeadsCLI` service:
+
+```typescript
+// Label filtering added to getReadyTasks()
+interface GetReadyOptions {
+  excludeLabels?: string[];  // ['deferred', 'v2']
+  includeLabels?: string[];  // ['m1-infrastructure']
+}
+```
+
+**Master Plan Updated:**
+- Section 6: "bd CLI Integration" → "BeadsCLI Integration"
+- Added "Deferred Tasks" subsection
+
+**Tasks Updated:**
+
+| Task | Change | Tests |
+|------|--------|-------|
+| ch-zqi (F12) | +excludeLabels, +includeLabels filtering | 14→17 |
+| ch-0e7 (F15) | Uses BeadsCLI.getReadyTasks({ excludeLabels: ['deferred'] }) | unchanged |
+| ch-3pa (F32b) | +deferred filtering test | 17→18 |
+| ch-9fq (F18a) | +deferredTasks list, +canAssign deferred check | 6→10 |
+| ch-ddk (F45) | +deferred validation in canRedirect | 8→10 |
+
+**Key Decisions:**
+- `deferred` label excludes tasks from active development
+- TUI shows deferred tasks grayed out (informational only)
+- Deferred tasks remain in dependency graph
+
+**Total Test Change:** +8 tests across 5 tasks
+
+---
+
+### 2026-01-10: Status Indicators Gap Analysis & Tasks
+
+**Gap Analysis (Master Plan Section 14 vs Implementation):**
+
+| Category | Plan | Implementation | Gap |
+|----------|------|----------------|-----|
+| Task Status | →●✓⊗✗ | →●✓⊗ | `✗ failed` missing |
+| Agent Status | ●○⏸✗ | ●○✗ | `⏸ paused` missing (only `stopped`) |
+| Priority | P1-P4 colors | P0 only | P1-P4 colors not tested |
+
+**New Tasks Created (F63j-F63l):**
+
+| Task | Feature | Tests |
+|------|---------|-------|
+| ch-dff | F63j Task Failed Status | 3 |
+| ch-tdt | F63k Agent Paused Status | 4 |
+| ch-96v | F63l Priority Badge Colors | 5 |
+
+**Type Updates Required:**
+- `BeadStatus`: add `'failed'`
+- `AgentStatus`: add `'paused'`
+
+**Total:** 3 tasks, 12 tests added
+**Tasks:** 90 → 93 (+3)
+**Ready:** 29 → 32 (+3)
+
+---
 
 ### 2026-01-10: Keyboard Shortcuts Gap Analysis & Tasks
 
@@ -598,13 +714,25 @@ Layer 3: F60a (depends on Layer 2)
 
 ## Next Session
 
-Continue master plan review:
+Master plan review complete. Ready to start implementation.
 
 ```bash
-# Section 15: Implementation Phases (final section)
+# Get first task to implement (excludes deferred)
+bd ready -n 0 | grep -v "deferred" | head -5
+
+# Recommended starting points:
+# - ch-2n6 (F01a) Config Types - foundation
+# - ch-ah6 (F02a) State Types - foundation
+# - ch-mpl (F08) Signal Parser - standalone
 ```
 
-**Master Plan Location:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md`
+**Implementation Approach:**
+1. Pick task from `bd ready -n 0 | grep -v "deferred"`
+2. Use TDD: Write tests → RED → Implement → GREEN
+3. Commit with `[ch-xxx]` suffix
+4. Close task: `bd close <id>`
 
-**Remaining Sections:**
-- 15. Implementation Phases (final)
+**Key Files:**
+- Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md`
+- Task Rules: `.claude/rules/beads-task-tracking.md`
+- This Ledger: `thoughts/ledgers/CONTINUITY_CLAUDE-chorus.md`
