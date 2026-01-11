@@ -132,3 +132,30 @@ it('should transition from idle to preparing on START', () => {
 | Context Update | `createActor(machine, { input })` | `actor.send({ type: 'EVENT', data })` | `getSnapshot().context` |
 | Guard Behavior | Set context that fails guard | `actor.send({ type: 'EVENT' })` | State unchanged |
 | Final State | Navigate to final state | Check status | `getSnapshot().status === 'done'` |
+
+## Skipped Test Policy
+
+**When you skip a test with `it.skip()`, you MUST create a bug task immediately:**
+
+```bash
+bd create "BUG: <brief description of why test is skipped>" -p 3 -l <milestone> --body "..."
+```
+
+**Bug task must include:**
+- Which test(s) are skipped and file:line locations
+- Root cause explanation
+- Possible solutions
+- Acceptance criteria: "Remove `.skip` from test method"
+
+**Reference the task in the skip comment:**
+```typescript
+// SKIPPED: <reason> - see ch-xxxx
+it.skip("test description", async () => {
+```
+
+**Current skipped tests with tasks:**
+| File | Test | Bug Task |
+|------|------|----------|
+| `beads-cli.e2e.test.ts` | 6 tests (no-db mode) | ch-5imz |
+| `fresh-init.e2e.test.ts` | file watcher flaky | ch-211i |
+| `e2e-helpers.test.ts` | hasExited timing | ch-a2zx |

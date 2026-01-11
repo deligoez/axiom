@@ -66,15 +66,15 @@ describe("E2E: BeadsCLI", () => {
 	// Note: bd show has limited support in no-db JSONL-only mode
 
 	describe("getTask()", () => {
+		// SKIPPED: bd show doesn't work in no-db mode - see ch-5imz
 		it.skip("returns task object for existing task", async () => {
-			// Skip: bd show doesn't work reliably in no-db JSONL-only mode
 			// Arrange
 			const taskId = await cli.createTask("Get Task Test");
 
 			// Act
 			const task = await cli.getTask(taskId);
 
-			// Assert - bd show returns some task object in no-db mode
+			// Assert
 			expect(task).not.toBeNull();
 		});
 
@@ -91,8 +91,8 @@ describe("E2E: BeadsCLI", () => {
 	// Note: bd update doesn't resolve task IDs in no-db JSONL-only mode
 
 	describe("claimTask() and releaseTask()", () => {
+		// SKIPPED: bd update doesn't resolve task IDs in no-db mode - see ch-5imz
 		it.skip("claims task without error", async () => {
-			// Skip: bd update doesn't resolve task IDs in no-db mode
 			// Arrange
 			const taskId = await cli.createTask("Claim Test");
 
@@ -100,13 +100,13 @@ describe("E2E: BeadsCLI", () => {
 			await expect(cli.claimTask(taskId, "test-agent")).resolves.not.toThrow();
 		});
 
+		// SKIPPED: bd update doesn't resolve task IDs in no-db mode - see ch-5imz
 		it.skip("releases task without error", async () => {
-			// Skip: bd update doesn't resolve task IDs in no-db mode
 			// Arrange
 			const taskId = await cli.createTask("Release Test");
 			await cli.claimTask(taskId, "test-agent");
 
-			// Act & Assert - should not throw
+			// Act & Assert
 			await expect(cli.releaseTask(taskId)).resolves.not.toThrow();
 		});
 	});
@@ -115,21 +115,21 @@ describe("E2E: BeadsCLI", () => {
 	// Note: bd close/update have limited support in no-db JSONL-only mode
 
 	describe("closeTask() and reopenTask()", () => {
+		// SKIPPED: bd close doesn't resolve task IDs in no-db mode - see ch-5imz
 		it.skip("closes task without error", async () => {
-			// Skip: bd close doesn't resolve task IDs in no-db mode
 			// Arrange
 			const taskId = await cli.createTask("Close Test");
 
-			// Act & Assert - should not throw
+			// Act & Assert
 			await expect(cli.closeTask(taskId)).resolves.not.toThrow();
 		});
 
+		// SKIPPED: bd update doesn't resolve task IDs in no-db mode - see ch-5imz
 		it.skip("reopens task without error", async () => {
-			// Skip: bd update doesn't resolve task IDs in no-db mode
 			// Arrange
 			const taskId = await cli.createTask("Reopen Test");
 
-			// Act & Assert - should not throw
+			// Act & Assert
 			await expect(cli.reopenTask(taskId)).resolves.not.toThrow();
 		});
 	});
@@ -156,8 +156,8 @@ describe("E2E: BeadsCLI", () => {
 	// Note: claimTask depends on bd update which has issues in no-db mode
 
 	describe("getInProgressTasks()", () => {
+		// SKIPPED: claimTask uses bd update which doesn't work in no-db mode - see ch-5imz
 		it.skip("returns list of in-progress tasks", async () => {
-			// Skip: claimTask uses bd update which doesn't work in no-db mode
 			// Arrange
 			const taskId = await cli.createTask("In Progress Task");
 			await cli.claimTask(taskId, "test-agent");

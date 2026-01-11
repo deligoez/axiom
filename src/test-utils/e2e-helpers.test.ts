@@ -40,8 +40,8 @@ describe("E2E Helpers", () => {
 	});
 
 	describe("hasExited", () => {
+		// SKIPPED: timing-dependent test, process may not exit within 1000ms - see ch-a2zx
 		it.skip("detects process exit", async () => {
-			// Skip: timing-dependent test, process may not exit within 1000ms
 			// Arrange
 			const result = await renderApp(["--version"]);
 
