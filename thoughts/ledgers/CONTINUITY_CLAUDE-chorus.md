@@ -1,8 +1,8 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-11T21:30:00Z
-**Status:** Memory Daemon Pattern Adaptation COMPLETE
+**Updated:** 2026-01-11T23:00:00Z
+**Status:** XState Migration IN PROGRESS
 
 ---
 
@@ -10,7 +10,7 @@
 
 Multi-agent TUI orchestrator using Ink (React for CLI).
 
-**Architecture:** Planning-first (Ralph-inspired) → Implementation
+**Architecture:** XState v5 Actor Model (crash recovery enabled)
 
 ---
 
@@ -21,13 +21,65 @@ Done: [x] Master plan v3.11 complete
       [x] First-Seventh Task Audits (cumulative 119 fixes)
       [x] Memory Daemon pattern analysis (from Continuous-Claude)
       [x] Learning path decision: .agent/ → .claude/rules/
-      [x] ch-7jw dependency fix (added ch-9yl)
-      [x] ch-a6h (LearningStore) path updated
-Now:  [→] TDD implementation ready to begin
-Next: Pick first ready task from `bd ready -n 0 | grep -v deferred`
+      [x] XState architecture decision (v4.0)
+      [x] XState migration plan created
+      [x] Master plan updated with XState architecture
+Now:  [→] Creating M-1 (XState Foundation) tasks in Beads
+      [→] Updating affected existing tasks
+Next: TDD implementation starting with M-1 (XState Foundation)
 ```
 
-**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.11)
+**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
+**XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md`
+
+---
+
+## XState Migration (2026-01-11 23:00)
+
+### Architecture Decision
+
+**APPROVED:** Full migration to XState v5 actor model.
+
+| Aspect | Before (Zustand) | After (XState) |
+|--------|-----------------|----------------|
+| State stores | taskStore + agentStore (fragmented) | Single ChorusMachine (unified) |
+| Agent lifecycle | Manual process management | Spawned child actors |
+| Crash recovery | Manual `recover()` function | Deep persistence + event sourcing |
+| Type safety | Partial | Full (XState v5 TypeScript) |
+| Debugging | Console logs | Stately.ai inspector |
+
+### New Milestone: M-1 (XState Foundation)
+
+Inserted BEFORE M0. All other milestones depend on M-1.
+
+| Feature | Description | Tests |
+|---------|-------------|-------|
+| FX01 | XState Setup | 4 |
+| FX02 | XState Types | 8 |
+| FX03 | Root Machine (ChorusMachine) | 12 |
+| FX04 | Agent Machine (child actor) | 10 |
+| FX05 | Persistence Layer | 8 |
+| FX06 | Event Sourcing (backup) | 6 |
+| FX07 | React Integration | 6 |
+| FX08 | Migration Bridge | 4 |
+
+**Total: 8 tasks, ~58 tests**
+
+### Affected Existing Tasks
+
+| Task | Change |
+|------|--------|
+| ch-8j3 (F19: OrchestrationStore) | **DELETE** - Replaced by XState |
+| ch-g6z (F20: useOrchestration) | **MODIFY** - Use `useMachine` |
+| ch-0e7 (F15: Orchestrator) | **MODIFY** - Machine transitions |
+| ch-7jw (F16a: CompletionHandler) | **MODIFY** - XState action |
+| ch-i9i (F22: Slot Manager) | **MODIFY** - Orchestration region |
+
+### Key Files
+
+- Migration Plan: `thoughts/shared/plans/2026-01-11-xstate-migration.md`
+- Root Machine: `src/machines/chorus.machine.ts` (to create)
+- Agent Machine: `src/machines/agent.machine.ts` (to create)
 
 ---
 
@@ -210,29 +262,44 @@ Comprehensive M5-M12 review with 5 parallel review agents + 6 parallel fix agent
 | 17 | Worktree Path | `.worktrees/` at project root (canonical) |
 | 18 | Conflict Classification | SIMPLE/MEDIUM/COMPLEX (not trivial/semantic) |
 | 19 | State Extensions | paused, priority, enqueuedAt, totalIterations |
-| 20 | Iteration Boundaries | State-based tracking in ChorusState.agents |
+| 20 | Iteration Boundaries | State-based tracking in XState agent context |
 | 21 | Phantom Dependencies | ch-999 (F15b) is valid task |
 | 22 | Focus State | TwoColumnLayout owns focus, exposes callback |
 | 23 | Merge Approve Key | 'a' (not 'm' to avoid mode toggle conflict) |
-| **24** | **Learning Review Key** | **'Ctrl+L' (not 'L' - 'L' is view-only)** |
-| **25** | **Keyboard Router Deps** | **Router depends on OrchestrationStore, handlers depend on Router** |
-| **26** | **Learning Storage Path** | **`.claude/rules/learnings.md` (Claude reads natively)** |
+| 24 | Learning Review Key | 'Ctrl+L' (not 'L' - 'L' is view-only) |
+| 25 | Keyboard Router Deps | Router depends on XState machine, handlers depend on Router |
+| 26 | Learning Storage Path | `.claude/rules/learnings.md` (Claude reads natively) |
+| **27** | **State Management** | **XState v5 actor model (replaces Zustand)** |
+| **28** | **Crash Recovery** | **Hybrid: snapshot + event sourcing fallback** |
+| **29** | **Agent Model** | **Spawned child actors (not invoked)** |
+| **30** | **M-1 Milestone** | **XState Foundation blocks all other milestones** |
 
 ---
 
 ## Task Statistics
 
 ```
-Total Tasks:     164
-Active:          161 (non-deferred)
-Deferred:        3   (non-Claude agent support)
-Ready:           52  (dependencies satisfied)
+Total Tasks:     172 (164 existing + 8 new M-1)
+Active:          168 (non-deferred)
+Deferred:        4   (3 non-Claude + 1 OrchestrationStore replaced)
+Ready:           8   (M-1 XState Foundation - blocks everything else)
 ```
+
+### New M-1 Tasks (XState Foundation)
+- FX01: XState Setup
+- FX02: XState Types
+- FX03: Root Machine
+- FX04: Agent Machine
+- FX05: Persistence Layer
+- FX06: Event Sourcing
+- FX07: React Integration
+- FX08: Migration Bridge
 
 ### Deferred Tasks
 - ch-q1j (F07b) - Non-Claude Context Injection
 - ch-jbe (F03c) - Non-Claude CLI Detection
 - ch-eyd (F42) - Learning Injector
+- ch-8j3 (F19) - OrchestrationStore (REPLACED by XState)
 
 ---
 
@@ -266,8 +333,9 @@ bd list -n 0 --status=open | wc -l    # Should be 164
 
 After `/clear`:
 1. Read this ledger (auto-loaded by hook)
-2. Seven audits complete - 164 tasks, 52 ready for TDD implementation
-3. Pick first ready task: `bd ready -n 0 | grep -v deferred | head -5`
+2. **XState Migration in progress** - Start with M-1 tasks
+3. M-1 ready tasks: `bd list -l m-1-xstate | grep -v deferred`
 4. Start with: `bd update <id> --status=in_progress`
 5. Follow TDD: RED → GREEN → COMMIT
 6. Close task: `bd close <id>`
+7. After M-1 complete, M0+ tasks become unblocked

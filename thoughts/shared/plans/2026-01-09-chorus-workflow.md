@@ -2,8 +2,8 @@
 
 **Date:** 2026-01-09
 **Updated:** 2026-01-11
-**Status:** APPROVED - Implementation in Progress
-**Version:** 3.11
+**Status:** APPROVED - XState Migration in Progress
+**Version:** 4.0
 
 ---
 
@@ -69,6 +69,7 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
 | **12** | **Config format?** | **JSON (config) + Markdown (rules, patterns)** |
 | **13** | **Quality gates?** | **Flexible commands (not just test/lint)** |
 | **14** | **Context strategy?** | **MVP: Claude compact; Post-MVP: custom ledger** |
+| **15** | **State Management?** | **XState v5 (actor model, crash recovery)** - See [XState Migration Plan](./2026-01-11-xstate-migration.md) |
 
 ### Decision Details
 
@@ -199,11 +200,15 @@ See [Conflict Resolution Strategy](#conflict-resolution-strategy) for details.
 
 ## Architecture
 
-### Simplified Service Architecture
+### XState-Based Actor Architecture (v4)
+
+> **Major Change (v4.0):** Migrated from Zustand stores to XState v5 actor model.
+> See [XState Migration Plan](./2026-01-11-xstate-migration.md) for details.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CHORUS ARCHITECTURE (v2)                      │
+│                    CHORUS ARCHITECTURE (v4)                      │
+│                      XState Actor Model                          │
 └─────────────────────────────────────────────────────────────────┘
 
                       ┌─────────────────┐
@@ -211,104 +216,105 @@ See [Conflict Resolution Strategy](#conflict-resolution-strategy) for details.
                       │   (Ink root)    │
                       └────────┬────────┘
                                │
-               ┌───────────────┼───────────────┐
-               │               │               │
-               ▼               ▼               ▼
-        ┌──────────┐    ┌──────────┐    ┌───────────┐
-        │TaskPanel │    │AgentGrid │    │HeaderBar  │
-        └────┬─────┘    └────┬─────┘    │FooterBar  │
-             │               │          └─────┬─────┘
-             └───────────────┼────────────────┘
-                             │
-                 ┌───────────┴───────────┐
-                 │                       │
-                 ▼                       ▼
-         ┌───────────────┐       ┌───────────────┐
-         │  taskStore    │       │  agentStore   │
-         │  (Zustand)    │       │  (Zustand)    │
-         └───────┬───────┘       └───────┬───────┘
-                 │                       │
-                 └───────────┬───────────┘
-                             │
-                 ┌───────────┴───────────┐
-                 │                       │
-                 ▼                       ▼
-         ┌───────────────┐       ┌───────────────┐
-         │ Orchestrator  │◄─────►│ MergeService  │
-         │ (coordinator) │       │ (background)  │
-         └───────────────┘       └───────────────┘
-                 │
-     ┌───────────┼───────────┐
-     │           │           │
-     ▼           ▼           ▼
-┌─────────┐ ┌─────────┐ ┌─────────┐
-│ bd CLI  │ │ git CLI │ │ agent   │
-│ (tasks) │ │(worktree)│ │ CLI     │
-└─────────┘ └─────────┘ └─────────┘
+                      useMachine(chorusMachine)
+                               │
+                               ▼
+         ┌─────────────────────────────────────────────┐
+         │              CHORUS MACHINE                  │
+         │              type: 'parallel'                │
+         │                                              │
+         │  ┌─────────────┐ ┌─────────────┐ ┌────────┐  │
+         │  │orchestration│ │ mergeQueue  │ │monitor │  │
+         │  │   region    │ │   region    │ │ region │  │
+         │  └─────────────┘ └─────────────┘ └────────┘  │
+         │                                              │
+         │  ┌────────────────────────────────────────┐  │
+         │  │         SPAWNED CHILD ACTORS           │  │
+         │  │                                        │  │
+         │  │  ┌──────────┐ ┌──────────┐ ┌────────┐  │  │
+         │  │  │ Agent[1] │ │ Agent[2] │ │Agent[n]│  │  │
+         │  │  │ Machine  │ │ Machine  │ │Machine │  │  │
+         │  │  └──────────┘ └──────────┘ └────────┘  │  │
+         │  └────────────────────────────────────────┘  │
+         └─────────────────────────────────────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+         ▼                     ▼                     ▼
+    ┌─────────┐          ┌─────────┐          ┌─────────┐
+    │ bd CLI  │          │ git CLI │          │ agent   │
+    │ (tasks) │          │(worktree)│          │ CLI     │
+    └─────────┘          └─────────┘          └─────────┘
 ```
 
-**Key Insight:** Only 2 services needed:
-- **Orchestrator**: Coordinates everything (tasks, agents, worktrees)
-- **MergeService**: Background merge queue with conflict resolution
+**Key Architecture Benefits:**
+- **Single state tree** - All state in one machine, always consistent
+- **Actor isolation** - Each agent is a spawned child actor with own lifecycle
+- **Crash recovery** - Deep persistence of entire actor hierarchy
+- **Type safety** - XState v5's TypeScript-first design
+- **Visualization** - Stately.ai inspector for debugging
 
-### State Management
+### State Management (XState)
 
-Single source of truth: `.chorus/state.json`
+**Primary:** XState machine state (in-memory actor hierarchy)
+**Persistence:** `.chorus/state.xstate.json` (snapshot) + `.chorus/events.jsonl` (event sourcing)
 
 ```typescript
-interface ChorusState {
-  version: string;
-  mode: 'autopilot' | 'semi-auto';
+// Root machine context
+interface ChorusMachineContext {
+  config: ChorusConfig;
+  mode: 'semi-auto' | 'autopilot';
+  agents: ActorRefFrom<typeof agentMachine>[];  // Spawned actors
+  maxAgents: number;
+  mergeQueue: MergeQueueItem[];
+  stats: SessionStats;
+  planningState?: PlanningState;
+}
 
-  agents: {
-    [id: string]: {
-      type: 'claude' | 'codex' | 'opencode';
-      pid: number;
-      taskId: string;
-      worktree: string;
-      branch: string;
-      iteration: number;
-      startedAt: number;
-    };
-  };
-
-  mergeQueue: {
-    taskId: string;
-    branch: string;
-    status: 'pending' | 'merging' | 'conflict' | 'resolving';
-    retries: number;
-  }[];
-
-  checkpoint: string;  // git tag for recovery
-
-  stats: {
-    tasksCompleted: number;
-    tasksFailed: number;
-    mergesAuto: number;
-    mergesManual: number;
-    totalRuntime: number;
-  };
+// Agent machine context (child actor)
+interface AgentMachineContext {
+  taskId: string;
+  agentId: string;
+  parentRef: AnyActorRef;  // For sendTo parent
+  iteration: number;
+  maxIterations: number;
+  worktree: string;
+  branch: string;
+  pid?: number;
+  startedAt?: number;
+  lastSignal?: ChorusSignal;
+  error?: Error;
 }
 ```
 
-**Recovery on restart:**
+**Hybrid Recovery Strategy:**
 ```typescript
-function recover(): void {
-  const state = loadState('.chorus/state.json');
+async function recover(): Promise<AnyActorRef> {
+  try {
+    // Primary: Snapshot restore (fast)
+    const snapshot = JSON.parse(
+      await fs.readFile('.chorus/state.xstate.json', 'utf-8')
+    );
+    const actor = createActor(chorusMachine, { snapshot }).start();
 
-  // Kill orphan processes
-  for (const [id, agent] of Object.entries(state.agents)) {
-    if (!processExists(agent.pid)) {
-      // Agent crashed, task goes back to pending
-      exec(`bd update ${agent.taskId} --status=pending`);
-      delete state.agents[id];
+    // Validate actor hierarchy is alive
+    if (actor.getSnapshot().status !== 'active') {
+      throw new Error('Snapshot restoration failed');
     }
+    return actor;
+  } catch {
+    // Fallback: Event sourcing replay (reliable)
+    const events = (await fs.readFile('.chorus/events.jsonl', 'utf-8'))
+      .split('\n')
+      .filter(Boolean)
+      .map(line => JSON.parse(line).event);
+
+    const actor = createActor(chorusMachine).start();
+    for (const event of events) {
+      actor.send(event);
+    }
+    return actor;
   }
-
-  // Resume merge queue
-  mergeService.resumeQueue(state.mergeQueue);
-
-  saveState(state);
 }
 ```
 

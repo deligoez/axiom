@@ -40,6 +40,7 @@ EOF
 
 | Label | Meaning |
 |-------|---------|
+| **m-1-xstate** | **Milestone -1: XState Foundation (BLOCKS ALL)** |
 | m0-planning | Milestone 0: Planning Phase (Init, Plan Agent, Validation) |
 | m1-infrastructure | Milestone 1: Config, State, Worktree |
 | m2-agent-prep | Milestone 2: Prompt, Signal, Linking |
@@ -157,6 +158,23 @@ bd show <id>               # Task details
 
 Update this section as you learn:
 
+### 2026-01-11 (XState Migration - v4.0)
+- **MAJOR ARCHITECTURE CHANGE:** Migrated from Zustand to XState v5 actor model
+- **New Milestone M-1 (XState Foundation):** 8 tasks, blocks ALL other milestones
+- **Key Decisions:**
+  - XState v5 for state management (actor model fits multi-agent orchestration)
+  - Hybrid persistence: snapshot + event sourcing fallback
+  - Spawned child actors for agents (not invoked)
+- **Tasks Created:** ch-lxxb, ch-j321, ch-kjae, ch-qz9m, ch-134l, ch-5gxg, ch-vskx, ch-mzi3
+- **Tasks Deferred:** ch-8j3 (OrchestrationStore - replaced by XState)
+- **Dependencies Updated:** 7 tasks moved from ch-8j3 → ch-vskx
+- **Root Tasks Blocked:** 47 tasks now depend on ch-mzi3 (FX08)
+- **Total Tasks:** 172 (8 new M-1 + 164 existing)
+- **Ready Tasks:** 1 (ch-lxxb - FX01: XState Setup)
+- **Plan Documents:**
+  - Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
+  - XState Plan: `thoughts/shared/plans/2026-01-11-xstate-migration.md`
+
 ### 2026-01-11 (Seventh Audit - M8-M12 Deep Review)
 - **92 tasks reviewed** across M8-M12 with 7 parallel review agents
 - **Key Conflict Resolution:**
@@ -218,33 +236,48 @@ Update this section as you learn:
 
 ## Current Task IDs
 
-### M0: Planning Phase
+### M-1: XState Foundation (BLOCKS ALL OTHER MILESTONES)
 
 | Feature | ID | Dependencies | Status |
 |---------|-----|--------------|--------|
-| F87 Session Logger | ch-73s | - | ready |
-| F88 PATTERNS.md Manager | ch-j40 | - | ready |
-| F80a Project Detector | ch-06m | - | ready |
+| FX01 XState Setup | ch-lxxb | - | **ready** |
+| FX02 XState Types | ch-j321 | ch-lxxb | blocked |
+| FX03 Root Machine | ch-kjae | ch-j321 | blocked |
+| FX04 Agent Machine | ch-qz9m | ch-j321 | blocked |
+| FX05 Persistence Layer | ch-134l | ch-kjae,ch-qz9m | blocked |
+| FX06 Event Sourcing | ch-5gxg | ch-kjae | blocked |
+| FX07 React Integration | ch-vskx | ch-134l,ch-5gxg | blocked |
+| FX08 Migration Bridge | ch-mzi3 | ch-vskx | blocked |
+
+### M0: Planning Phase
+
+> **Note:** All M0 tasks now depend on ch-mzi3 (FX08 - XState Migration Bridge)
+
+| Feature | ID | Dependencies | Status |
+|---------|-----|--------------|--------|
+| F87 Session Logger | ch-73s | ch-mzi3 | blocked |
+| F88 PATTERNS.md Manager | ch-j40 | ch-mzi3 | blocked |
+| F80a Project Detector | ch-06m | ch-mzi3 | blocked |
 | F80b Config Wizard | ch-4ba | ch-06m | blocked |
-| F80c Quality Commands Manager | ch-h0s | - | ready |
+| F80c Quality Commands Manager | ch-h0s | ch-mzi3 | blocked |
 | F80d Plan Review Config Wizard | ch-uwx | ch-h0s | blocked |
 | F80 Init Mode Controller | ch-m9y | ch-06m,ch-4ba,ch-h0s,ch-uwx,ch-73s,ch-mdj | blocked |
-| F81a Planning TUI Layout | ch-7h5 | - | ready |
-| F81b Chat Input | ch-3i0 | - | ready |
+| F81a Planning TUI Layout | ch-7h5 | ch-mzi3 | blocked |
+| F81b Chat Input | ch-3i0 | ch-mzi3 | blocked |
 | F81 Planning Mode Controller | ch-o5z | ch-7h5,ch-3i0 | blocked |
 | F82a Plan Agent Prompt Builder | ch-rmg | ch-j40 | blocked |
-| F82b Conversation Manager | ch-0el | - | ready |
+| F82b Conversation Manager | ch-0el | ch-mzi3 | blocked |
 | F82 Plan Agent Controller | ch-z8g | ch-rmg,ch-0el | blocked |
-| F83a Spec Chunker | ch-3xt | - | ready |
+| F83a Spec Chunker | ch-3xt | ch-mzi3 | blocked |
 | F83b Task Generator | ch-8le | ch-3xt,ch-z8g | blocked |
 | F83 Auto-Decomposition | ch-r1p | ch-3xt,ch-8le,ch-2hw | blocked |
-| F84a Validation Rules Engine | ch-171 | - | ready |
-| F84b Dependency Checker | ch-32r | - | ready |
+| F84a Validation Rules Engine | ch-171 | ch-mzi3 | blocked |
+| F84b Dependency Checker | ch-32r | ch-mzi3 | blocked |
 | F84 Task Validator | ch-2hw | ch-171,ch-32r | blocked |
 | F85a Review TUI | ch-5bd | ch-2hw | blocked |
 | F85b Fix Applier | ch-6oy | ch-2hw | blocked |
 | F85 Review Loop | ch-a0a | ch-5bd,ch-6oy,ch-2hw,ch-to7 | blocked |
-| F86 Planning State Persistence | ch-to7 | - | ready |
+| F86 Planning State Persistence | ch-to7 | ch-mzi3 | blocked |
 | F89 App Router | ch-eq5 | ch-m9y,ch-o5z,ch-to7 | blocked |
 | F90 CLI Parser | ch-nrr | - | ready |
 | F91 Implementation Mode | ch-8er | ch-eq5,ch-a0a | blocked |
