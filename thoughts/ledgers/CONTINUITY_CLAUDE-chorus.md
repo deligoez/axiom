@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-11T23:30:00Z
+**Updated:** 2026-01-12T00:30:00Z
 **Status:** XState Migration COMPLETE - Ready for TDD
 
 ---
@@ -20,21 +20,23 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 Done: [x] Master plan v4.0 complete (XState architecture)
       [x] First-Seventh Task Audits (cumulative 119 fixes)
       [x] XState migration plan created
-      [x] M-1 milestone created (8 tasks)
+      [x] M-1 milestone created (9 tasks including FX09 TUI Machine)
       [x] 54 task dependencies updated to block on M-1
-      [x] ch-8j3 deferred (replaced by XState)
-      [x] Committed: df50432
+      [x] ch-8j3 deferred + dependency removed from 7 tasks
+      [x] Zustand references updated to XState in all tasks
+      [x] FX09 TUI Machine added (ch-g3of)
+      [x] Committed: 2a36045
 Now:  [→] Ready for TDD implementation
 Next: Start ch-lxxb (FX01: XState Setup) - ONLY READY TASK
 ```
 
 **Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
-**XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md`
-**Commit:** `df50432` feat: migrate to XState v5 actor model architecture
+**XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md` (v1.1)
+**Latest Commit:** `2a36045` feat: add TUI Machine (FX09) to XState architecture
 
 ---
 
-## XState Migration (2026-01-11 23:00)
+## XState Migration (2026-01-11 23:00 → 2026-01-12 00:30)
 
 ### Architecture Decision
 
@@ -47,33 +49,52 @@ Next: Start ch-lxxb (FX01: XState Setup) - ONLY READY TASK
 | Crash recovery | Manual `recover()` function | Deep persistence + event sourcing |
 | Type safety | Partial | Full (XState v5 TypeScript) |
 | Debugging | Console logs | Stately.ai inspector |
+| **TUI State** | Individual hooks | **TUI region in machine** |
+
+### Root Machine Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CHORUS ROOT MACHINE                              │
+│                           type: 'parallel'                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │ orchestration│  │  mergeQueue  │  │  monitoring  │  │     TUI      │ │
+│  │    region    │  │    region    │  │    region    │  │    region    │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘ │
+│                                                                          │
+│  TUI Region (parallel): focus | modal | selection                        │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                       SPAWNED CHILD ACTORS                               │
+│  AgentMachine × n                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ### New Milestone: M-1 (XState Foundation)
 
 Inserted BEFORE M0. All other milestones depend on M-1.
 
-| Feature | Description | Tests |
-|---------|-------------|-------|
-| FX01 | XState Setup | 4 |
-| FX02 | XState Types | 8 |
-| FX03 | Root Machine (ChorusMachine) | 12 |
-| FX04 | Agent Machine (child actor) | 10 |
-| FX05 | Persistence Layer | 8 |
-| FX06 | Event Sourcing (backup) | 6 |
-| FX07 | React Integration | 6 |
-| FX08 | Migration Bridge | 4 |
+| Feature | ID | Description | Tests |
+|---------|-----|-------------|-------|
+| FX01 | ch-lxxb | XState Setup | 4 |
+| FX02 | ch-j321 | XState Types | 8 |
+| FX03 | ch-kjae | Root Machine (ChorusMachine) | 12 |
+| FX04 | ch-qz9m | Agent Machine (child actor) | 10 |
+| FX05 | ch-134l | Persistence Layer | 8 |
+| FX06 | ch-5gxg | Event Sourcing (backup) | 6 |
+| FX07 | ch-vskx | React Integration | 6 |
+| FX08 | ch-mzi3 | Migration Bridge | 4 |
+| **FX09** | **ch-g3of** | **TUI Machine** | **14** |
 
-**Total: 8 tasks, ~58 tests**
+**Total: 9 tasks, ~72 tests**
 
-### Affected Existing Tasks
+### TUI Machine Benefits
 
-| Task | Change |
-|------|--------|
-| ch-8j3 (F19: OrchestrationStore) | **DELETE** - Replaced by XState |
-| ch-g6z (F20: useOrchestration) | **MODIFY** - Use `useMachine` |
-| ch-0e7 (F15: Orchestrator) | **MODIFY** - Machine transitions |
-| ch-7jw (F16a: CompletionHandler) | **MODIFY** - XState action |
-| ch-i9i (F22: Slot Manager) | **MODIFY** - Orchestration region |
+- Centralized keyboard routing (guards check modal/focus state)
+- UI state persisted with app state (crash recovery)
+- Predictable modal transitions (no race conditions)
+- Easy to visualize in Stately.ai inspector
 
 ### Key Files
 
@@ -83,13 +104,23 @@ Inserted BEFORE M0. All other milestones depend on M-1.
 
 ---
 
-## Historical: Task Audits (Summary)
+## Session Changes (2026-01-12)
 
-> **7 audits completed (2026-01-10 to 2026-01-11)**
-> - 119 cumulative fixes applied
-> - Key conflicts resolved ('L', 'a', 'r' keys)
-> - All dependency issues fixed
-> - Final count before XState: 164 tasks, 52 ready
+### 1. Fixed ch-8j3 Dependency Issue
+Removed ch-8j3 as dependency from 7 tasks that were incorrectly blocked:
+- ch-89dk, ch-g6z, ch-3ji, ch-555, ch-di6, ch-jx9, ch-zsn
+
+### 2. Updated Zustand References
+5 tasks updated to reference XState instead of Zustand:
+- ch-9fq: useTaskSelection → XState selectors
+- ch-zsn: Undo Key → XState machine context
+- ch-1gi, ch-9yl, ch-wk8: Example learning text updated
+
+### 3. Added FX09 TUI Machine
+Created ch-g3of with 14 tests. Key simplifications:
+- F64c Keyboard Router: Just sends KEY_PRESS events
+- Modal handlers: Send OPEN_*/CLOSE_MODAL events
+- Navigation: Sends SELECT_NEXT/PREV events
 
 ---
 
@@ -101,19 +132,18 @@ Inserted BEFORE M0. All other milestones depend on M-1.
 | 28 | **Crash Recovery** | **Snapshot + event sourcing fallback** |
 | 29 | **Agent Model** | **Spawned child actors** |
 | 30 | **M-1 Milestone** | **XState Foundation blocks all** |
+| **31** | **TUI State** | **TUI region in ChorusMachine** |
 | 26 | Learning Storage | `.claude/rules/learnings.md` |
 | 17 | Worktree Path | `.worktrees/` |
 | 10 | MVP Scope | Claude-only |
-
-> Full decision history: See master plan v4.0
 
 ---
 
 ## Task Statistics
 
 ```
-Total Tasks:     172 (164 existing + 8 new M-1)
-Active:          168 (non-deferred)
+Total Tasks:     173 (164 existing + 9 new M-1)
+Active:          169 (non-deferred)
 Deferred:        4   (3 non-Claude + 1 OrchestrationStore replaced)
 Ready:           1   (ch-lxxb - FX01: XState Setup)
 ```
@@ -128,7 +158,8 @@ Ready:           1   (ch-lxxb - FX01: XState Setup)
 | FX04 Agent Machine | ch-qz9m | ch-j321 | blocked |
 | FX05 Persistence | ch-134l | ch-kjae,ch-qz9m | blocked |
 | FX06 Event Sourcing | ch-5gxg | ch-kjae | blocked |
-| FX07 React Integration | ch-vskx | ch-134l,ch-5gxg | blocked |
+| **FX09 TUI Machine** | **ch-g3of** | **ch-kjae** | **blocked** |
+| FX07 React Integration | ch-vskx | ch-134l,ch-5gxg,**ch-g3of** | blocked |
 | FX08 Migration Bridge | ch-mzi3 | ch-vskx | blocked |
 
 **ch-mzi3 blocks 47 tasks** (all M0+ root tasks)
@@ -149,7 +180,7 @@ bd update ch-lxxb --status=in_progress  # Start FX01
 bd close ch-lxxb                        # Complete FX01 (unblocks FX02)
 
 # Check progress
-bd list -l m-1-xstate -n 0              # M-1 tasks
+bd list -l m-1-xstate -n 0              # M-1 tasks (9 total)
 bd ready -n 0 | grep -v deferred        # What's ready next
 ```
 
@@ -160,7 +191,7 @@ bd ready -n 0 | grep -v deferred        # What's ready next
 | File | Purpose |
 |------|---------|
 | Master Plan | `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0) |
-| XState Plan | `thoughts/shared/plans/2026-01-11-xstate-migration.md` |
+| XState Plan | `thoughts/shared/plans/2026-01-11-xstate-migration.md` (v1.1) |
 | Task Rules | `.claude/rules/beads-task-tracking.md` |
 
 ---
