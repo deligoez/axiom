@@ -1,5 +1,5 @@
 import { Box, Text, useApp } from "ink";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import HelpPanel from "./components/HelpPanel.js";
 import Layout from "./components/Layout.js";
 import MainContent from "./components/MainContent.js";
@@ -34,6 +34,31 @@ export default function App({
 	const selectedBeadId = useBeadsStore((state) => state.selectedBeadId);
 	const { spawn, killAll } = useAgentManager();
 	useBeadsManager(projectDir);
+
+	// Compute task stats from beads
+	const taskStats = useMemo(() => {
+		return beads.reduce(
+			(stats, bead) => {
+				switch (bead.status) {
+					case "closed":
+						stats.done++;
+						break;
+					case "in_progress":
+						stats.running++;
+						break;
+					case "open":
+						stats.pending++;
+						break;
+					case "blocked":
+					case "failed":
+						stats.blocked++;
+						break;
+				}
+				return stats;
+			},
+			{ done: 0, running: 0, pending: 0, blocked: 0 },
+		);
+	}, [beads]);
 
 	const handleExit = async () => {
 		await killAll();
@@ -102,7 +127,12 @@ export default function App({
 	}
 
 	return (
-		<Layout agentCount={agents.length} taskCount={beads.length}>
+		<Layout
+			agentCount={agents.length}
+			taskCount={beads.length}
+			taskStats={taskStats}
+			mergeQueue={{ queued: 0 }}
+		>
 			<Box flexGrow={1} position="relative">
 				<Box flexDirection="row" flexGrow={1}>
 					{/* Task Panel - Left Side */}

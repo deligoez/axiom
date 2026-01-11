@@ -1,5 +1,3 @@
-// SKIPPED: FooterBar not integrated into main app - see ch-lqp6
-// These tests require FooterBar to be visible in the app layout
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
@@ -13,7 +11,7 @@ import {
 	waitForText,
 } from "../test-utils/e2e-helpers.js";
 
-describe.skip("E2E: FooterBar Shows Stats", () => {
+describe("E2E: FooterBar Shows Stats", () => {
 	let projectDir: string;
 
 	beforeEach(() => {
@@ -39,9 +37,9 @@ describe.skip("E2E: FooterBar Shows Stats", () => {
 			createStatusBead("ch-block1", "Blocked Task", "blocked"),
 		]);
 
-		// Act
+		// Act - wait for tasks to load (shown in task panel), then check footer stats
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "2 done", 5000);
+		await waitForText(result, "Done Task 1", 5000);
 
 		// Assert
 		const output = getOutput(result);
@@ -55,9 +53,9 @@ describe.skip("E2E: FooterBar Shows Stats", () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-test1", title: "Test Task" }]);
 
-		// Act
+		// Act - wait for footer to show with merge queue
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "queued", 5000);
+		await waitForText(result, "Merge:", 5000);
 
 		// Assert
 		const output = getOutput(result);
@@ -68,12 +66,12 @@ describe.skip("E2E: FooterBar Shows Stats", () => {
 		// Arrange
 		projectDir = createTestProject([]);
 
-		// Act
+		// Act - wait for footer to show with help hint
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "?", 5000);
+		await waitForText(result, "? help", 5000);
 
 		// Assert
 		const output = getOutput(result);
-		expect(output).toContain("?");
+		expect(output).toContain("? help");
 	});
 });

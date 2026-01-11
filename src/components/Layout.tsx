@@ -2,13 +2,29 @@ import { Box } from "ink";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
+import { FooterBar } from "./FooterBar.js";
 import StatusBar from "./StatusBar.js";
+
+interface TaskStats {
+	done: number;
+	running: number;
+	pending: number;
+	blocked: number;
+}
+
+interface MergeQueue {
+	queued: number;
+	merging?: boolean;
+	conflict?: boolean;
+}
 
 interface LayoutProps {
 	children: ReactNode;
 	agentCount?: number;
 	taskCount?: number;
 	status?: string;
+	taskStats?: TaskStats;
+	mergeQueue?: MergeQueue;
 }
 
 export default function Layout({
@@ -16,6 +32,8 @@ export default function Layout({
 	agentCount,
 	taskCount,
 	status,
+	taskStats = { done: 0, running: 0, pending: 0, blocked: 0 },
+	mergeQueue = { queued: 0 },
 }: LayoutProps) {
 	const { height } = useTerminalSize();
 	const [isFirstRender, setIsFirstRender] = useState(true);
@@ -56,6 +74,7 @@ export default function Layout({
 			<Box flexGrow={1} paddingY={1}>
 				{children}
 			</Box>
+			<FooterBar taskStats={taskStats} mergeQueue={mergeQueue} />
 		</Box>
 	);
 }
