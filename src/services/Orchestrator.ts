@@ -31,8 +31,11 @@ interface ActiveAgent {
 	pid: number;
 }
 
+const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 export class Orchestrator {
 	private activeAgents: Map<string, ActiveAgent> = new Map();
+	private timeoutTimers: Map<string, NodeJS.Timeout> = new Map();
 
 	constructor(private deps: OrchestratorDeps) {}
 
@@ -96,6 +99,9 @@ export class Orchestrator {
 			pid: agentProcess.pid,
 		};
 		this.activeAgents.set(agentId, activeAgent);
+
+		// Start timeout timer
+		this.startTimeout(agentId, taskId);
 
 		// Emit event
 		this.deps.eventEmitter.emit("assigned", {
@@ -169,5 +175,43 @@ export class Orchestrator {
 
 	getActiveAgentCount(): number {
 		return this.activeAgents.size;
+	}
+
+	// Timeout management
+	startTimeout(agentId: string, taskId: string): void {
+		const timeoutMs =
+			this.deps.config.completion?.taskTimeout ?? DEFAULT_TIMEOUT_MS;
+
+		const timer = setTimeout(() => {
+			void this.handleTimeout(agentId, taskId);
+		}, timeoutMs);
+
+		this.timeoutTimers.set(agentId, timer);
+	}
+
+	clearTimeout(agentId: string): void {
+		const timer = this.timeoutTimers.get(agentId);
+		if (timer) {
+			clearTimeout(timer);
+			this.timeoutTimers.delete(agentId);
+		}
+	}
+
+	async handleTimeout(agentId: string, taskId: string): Promise<void> {
+		// Clear the timer
+		this.timeoutTimers.delete(agentId);
+
+		// Kill the agent process
+		const agent = this.activeAgents.get(agentId);
+		if (agent) {
+			await this.deps.agentSpawner.kill(agent.pid);
+			this.activeAgents.delete(agentId);
+		}
+
+		// Release the task back to pending
+		await this.deps.beadsCLI.releaseTask(taskId);
+
+		// Emit timeout event
+		this.deps.eventEmitter.emit("timeout", { agentId, taskId });
 	}
 }

@@ -38,6 +38,7 @@ describe("Orchestrator", () => {
 					dependencies: [],
 				}),
 				claimTask: vi.fn().mockResolvedValue(undefined),
+				releaseTask: vi.fn().mockResolvedValue(undefined),
 				getReadyTasks: vi.fn().mockResolvedValue([
 					{
 						id: "ch-123",
@@ -431,6 +432,89 @@ describe("Orchestrator", () => {
 				}),
 			);
 			// Note: env vars are set in the spawn call
+		});
+	});
+
+	// Timeout management - 5 tests
+	describe("timeout management", () => {
+		it("sets timeout timer when agent spawns", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			const assignment = { taskId: "ch-123" };
+
+			// Act
+			await orchestrator.assignTask(assignment);
+
+			// Assert - timer is set (we can't directly inspect the map, but we can check behavior)
+			expect(vi.getTimerCount()).toBe(1);
+
+			vi.useRealTimers();
+		});
+
+		it("kills agent process on timeout", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			const assignment = { taskId: "ch-123" };
+			await orchestrator.assignTask(assignment);
+
+			// Act
+			await vi.advanceTimersByTimeAsync(30 * 60 * 1000); // 30 minutes
+
+			// Assert
+			expect(deps.agentSpawner.kill).toHaveBeenCalledWith(12345);
+
+			vi.useRealTimers();
+		});
+
+		it("returns task to pending status on timeout", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			const assignment = { taskId: "ch-123" };
+			await orchestrator.assignTask(assignment);
+
+			// Act
+			await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+
+			// Assert
+			expect(deps.beadsCLI.releaseTask).toHaveBeenCalledWith("ch-123");
+
+			vi.useRealTimers();
+		});
+
+		it("emits 'timeout' event with agentId and taskId", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			const timeoutSpy = vi.fn();
+			deps.eventEmitter.on("timeout", timeoutSpy);
+			const assignment = { taskId: "ch-123" };
+			await orchestrator.assignTask(assignment);
+
+			// Act
+			await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+
+			// Assert
+			expect(timeoutSpy).toHaveBeenCalledWith({
+				agentId: "claude-ch-123",
+				taskId: "ch-123",
+			});
+
+			vi.useRealTimers();
+		});
+
+		it("clears timeout timer when agent exits normally", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			const assignment = { taskId: "ch-123" };
+			await orchestrator.assignTask(assignment);
+			expect(vi.getTimerCount()).toBe(1);
+
+			// Act
+			orchestrator.clearTimeout("claude-ch-123");
+
+			// Assert
+			expect(vi.getTimerCount()).toBe(0);
+
+			vi.useRealTimers();
 		});
 	});
 });
