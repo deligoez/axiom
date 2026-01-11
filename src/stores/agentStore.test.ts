@@ -235,4 +235,122 @@ describe("agentStore", () => {
 		const selected = getSelectedAgent();
 		expect(selected).toBeUndefined();
 	});
+
+	// Task linking tests (F09)
+	it("getAgentByTaskId returns Agent when agent with taskId exists", () => {
+		// Arrange
+		const { addAgent, getAgentByTaskId } = useAgentStore.getState();
+		addAgent({
+			id: "agent-1",
+			name: "test",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			taskId: "ch-abc",
+			agentType: "claude",
+		});
+
+		// Act
+		const agent = getAgentByTaskId("ch-abc");
+
+		// Assert
+		expect(agent).not.toBeNull();
+		expect(agent?.taskId).toBe("ch-abc");
+	});
+
+	it("getAgentByTaskId returns null when no agent has that taskId", () => {
+		// Arrange
+		const { addAgent, getAgentByTaskId } = useAgentStore.getState();
+		addAgent({
+			id: "agent-1",
+			name: "test",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			taskId: "ch-abc",
+		});
+
+		// Act
+		const agent = getAgentByTaskId("ch-xyz");
+
+		// Assert
+		expect(agent).toBeNull();
+	});
+
+	it("getAgentsByType returns array of agents with matching agentType", () => {
+		// Arrange
+		const { addAgent, getAgentsByType } = useAgentStore.getState();
+		addAgent({
+			id: "agent-1",
+			name: "claude-1",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			agentType: "claude",
+		});
+		addAgent({
+			id: "agent-2",
+			name: "claude-2",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			agentType: "claude",
+		});
+		addAgent({
+			id: "agent-3",
+			name: "aider-1",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			agentType: "aider",
+		});
+
+		// Act
+		const claudeAgents = getAgentsByType("claude");
+
+		// Assert
+		expect(claudeAgents).toHaveLength(2);
+		expect(claudeAgents[0].agentType).toBe("claude");
+		expect(claudeAgents[1].agentType).toBe("claude");
+	});
+
+	it("getAgentsByType returns empty array when no agents of that type exist", () => {
+		// Arrange
+		const { addAgent, getAgentsByType } = useAgentStore.getState();
+		addAgent({
+			id: "agent-1",
+			name: "claude-1",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			agentType: "claude",
+		});
+
+		// Act
+		const aiderAgents = getAgentsByType("aider");
+
+		// Assert
+		expect(aiderAgents).toEqual([]);
+	});
+
+	it("incrementIteration increments agent iteration by 1", () => {
+		// Arrange
+		const { addAgent, incrementIteration } = useAgentStore.getState();
+		addAgent({
+			id: "agent-1",
+			name: "test",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			taskId: "ch-abc",
+			iteration: 1,
+		});
+
+		// Act
+		incrementIteration("ch-abc");
+
+		// Assert
+		const { agents } = useAgentStore.getState();
+		expect(agents[0].iteration).toBe(2);
+	});
 });

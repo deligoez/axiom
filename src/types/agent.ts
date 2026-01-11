@@ -1,4 +1,5 @@
 export type AgentStatus = "idle" | "running" | "stopped" | "error";
+export type AgentType = "claude" | "aider" | "codex";
 
 export interface Agent {
 	id: string;
@@ -9,6 +10,13 @@ export interface Agent {
 	config?: AgentConfig;
 	pid?: number;
 	exitCode?: number;
+	// Task linking fields
+	taskId?: string;
+	agentType?: AgentType;
+	worktree?: string;
+	branch?: string;
+	iteration?: number;
+	startedAt?: Date;
 }
 
 export interface AgentConfig {

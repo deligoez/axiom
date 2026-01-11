@@ -159,4 +159,44 @@ describe("Agent types", () => {
 		expect(beadAgent.id).toBe("bd-custom");
 		expect(autoAgent.id).toMatch(/^agent-\d+$/);
 	});
+
+	// Task linking tests (F09)
+	it("Agent interface has task linking fields: taskId, agentType, worktree, branch", () => {
+		// Arrange & Act
+		const agent: Agent = {
+			id: "agent-1",
+			name: "test-agent",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			taskId: "ch-abc",
+			agentType: "claude",
+			worktree: "/path/to/worktree",
+			branch: "feature/ch-abc",
+		};
+
+		// Assert
+		expect(agent.taskId).toBe("ch-abc");
+		expect(agent.agentType).toBe("claude");
+		expect(agent.worktree).toBe("/path/to/worktree");
+		expect(agent.branch).toBe("feature/ch-abc");
+	});
+
+	it("Agent interface has task linking fields: iteration, startedAt", () => {
+		// Arrange & Act
+		const now = new Date();
+		const agent: Agent = {
+			id: "agent-1",
+			name: "test-agent",
+			status: "running",
+			output: [],
+			createdAt: new Date(),
+			iteration: 5,
+			startedAt: now,
+		};
+
+		// Assert
+		expect(agent.iteration).toBe(5);
+		expect(agent.startedAt).toBe(now);
+	});
 });
