@@ -1,8 +1,8 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-11T19:00:00Z
-**Status:** Seventh Task Audit COMPLETE - M8-M12 Deep Review
+**Updated:** 2026-01-11T21:30:00Z
+**Status:** Memory Daemon Pattern Adaptation COMPLETE
 
 ---
 
@@ -17,16 +17,54 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: [x] Master plan v3.10 complete
-      [x] First-Sixth Task Audits (cumulative 116 fixes)
-      [x] Seventh Task Audit (19:00) - M8-M12 deep review
-      [x] 3 critical fixes applied
-      [x] Verified 52 ready tasks have correct dependencies
+Done: [x] Master plan v3.11 complete
+      [x] First-Seventh Task Audits (cumulative 119 fixes)
+      [x] Memory Daemon pattern analysis (from Continuous-Claude)
+      [x] Learning path decision: .agent/ → .claude/rules/
+      [x] ch-7jw dependency fix (added ch-9yl)
+      [x] ch-a6h (LearningStore) path updated
 Now:  [→] TDD implementation ready to begin
 Next: Pick first ready task from `bd ready -n 0 | grep -v deferred`
 ```
 
-**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.10)
+**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.11)
+
+---
+
+## Memory Daemon Pattern Adaptation (2026-01-11 21:30)
+
+Analyzed Continuous-Claude v3 for architectural ideas applicable to Chorus.
+
+### Key Insight: Memory Daemon → Event-Driven
+
+| Continuous-Claude | Chorus Adaptation |
+|-------------------|-------------------|
+| Polling daemon (60s) | CompletionHandler event |
+| JSONL thinking blocks | Scratchpad learnings |
+| pgvector embeddings | File-based store |
+| Semantic recall | Claude native read |
+
+### Changes Applied
+
+| # | Change | Rationale |
+|---|--------|-----------|
+| 1 | ch-7jw → ch-9yl dependency | BUG FIX: CompletionHandler uses LearningExtractor |
+| 2 | `.agent/learnings.md` → `.claude/rules/learnings.md` | Claude reads `.claude/rules/` natively |
+| 3 | ch-a6h paths updated | Reflect new storage location |
+| 4 | Master plan v3.11 | Document daemon pattern adaptation |
+
+### Architecture Decision
+
+**Why `.claude/rules/` instead of `.agent/`?**
+- Claude Code auto-loads `.claude/rules/*.md`
+- No injection needed for Claude agents (MVP scope)
+- ch-eyd (Learning Injector) stays deferred - only needed for non-Claude
+
+### New Key Decision
+
+| # | Decision | Choice |
+|---|----------|--------|
+| **26** | **Learning Storage Path** | **`.claude/rules/learnings.md`** (Claude reads natively) |
 
 ---
 
@@ -178,6 +216,7 @@ Comprehensive M5-M12 review with 5 parallel review agents + 6 parallel fix agent
 | 23 | Merge Approve Key | 'a' (not 'm' to avoid mode toggle conflict) |
 | **24** | **Learning Review Key** | **'Ctrl+L' (not 'L' - 'L' is view-only)** |
 | **25** | **Keyboard Router Deps** | **Router depends on OrchestrationStore, handlers depend on Router** |
+| **26** | **Learning Storage Path** | **`.claude/rules/learnings.md` (Claude reads natively)** |
 
 ---
 

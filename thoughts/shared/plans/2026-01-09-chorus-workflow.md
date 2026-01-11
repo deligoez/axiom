@@ -3,7 +3,7 @@
 **Date:** 2026-01-09
 **Updated:** 2026-01-11
 **Status:** APPROVED - Implementation in Progress
-**Version:** 3.10
+**Version:** 3.11
 
 ---
 
@@ -13,7 +13,7 @@
 2. [Key Decisions (Resolved)](#key-decisions-resolved)
 3. [Architecture](#architecture)
 4. [Operating Modes](#operating-modes)
-5. [Planning Phase (M0)](#planning-phase-m0) ← **NEW**
+5. [Planning Phase (M0)](#planning-phase-m0)
 6. [Initialization Flow](#initialization-flow)
 7. [Task Creation & Management](#task-creation--management)
 8. [Agent Lifecycle](#agent-lifecycle)
@@ -425,7 +425,7 @@ Config (.chorus/config.json):
 
 ## Planning Phase (M0)
 
-> **NEW in v3.0:** Planning-first architecture inspired by Ralph pattern.
+> Planning-first architecture inspired by Ralph pattern.
 
 ### Overview
 
@@ -1931,6 +1931,9 @@ interface CompletionCheck {
 
 ### Architecture
 
+> **Design Pattern:** Inspired by Continuous-Claude's Memory Daemon pattern, but adapted to event-driven architecture.
+> Instead of a polling daemon, Chorus uses CompletionHandler (F16a) to trigger learning extraction.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     MEMORY ARCHITECTURE                          │
@@ -1939,13 +1942,13 @@ interface CompletionCheck {
 ┌─────────────────────────────────────────────────────────────────┐
 │                    PERMANENT (Shared) - PROJECT ROOT             │
 │                                                                  │
-│  .agent/learnings.md                                             │
+│  .claude/rules/learnings.md                                      │
 │  ├── Append-only                                                 │
 │  ├── Survives all sessions                                       │
-│  ├── Shared across ALL agents (claude, codex, opencode)          │
+│  ├── Claude reads natively (no injection needed)                 │
 │  └── Git-tracked (versioned)                                     │
 │                                                                  │
-│  .agent/learnings-meta.json                                      │
+│  .claude/rules/learnings-meta.json                               │
 │  ├── Review status (which learnings reviewed by Plan Review)     │
 │  ├── Dedup hashes (prevent duplicate learnings)                  │
 │  └── Git-tracked (metadata for learning system)                  │
@@ -1954,15 +1957,15 @@ interface CompletionCheck {
 │  # Project Learnings                                             │
 │                                                                  │
 │  ## Performance                                                  │
-│  - mb_str_split() > preg_split() for Unicode (3x faster)         │
+│  - [LOCAL] mb_str_split() > preg_split() for Unicode (3x faster) │
 │    Source: ch-001 (2026-01-09, claude)                           │
 │                                                                  │
 │  ## Testing                                                      │
-│  - Use Pest's dataset() for parameterized tests                  │
-│    Source: ch-003 (2026-01-09, codex)                            │
+│  - [CROSS-CUTTING] Use Pest's dataset() for parameterized tests  │
+│    Source: ch-003 (2026-01-09, claude)                           │
 └─────────────────────────────────────────────────────────────────┘
                               │
-          Extracted on task completion
+          Extracted on task completion (F16a triggers)
                               │
 ┌─────────────────────────────────────────────────────────────────┐
 │                   SESSION (Per-Agent) - WORKTREE                 │
@@ -1980,7 +1983,7 @@ interface CompletionCheck {
 
 ```
 project-root/
-├── .agent/                              # SHARED - Project root (git-tracked)
+├── .claude/rules/                       # SHARED - Claude reads natively (git-tracked)
 │   ├── learnings.md                     # Permanent shared learnings
 │   └── learnings-meta.json              # Review status, dedup hashes
 │
@@ -1992,12 +1995,43 @@ project-root/
             └── scratchpad.md            # Session notes, cleared on completion
 ```
 
-**⚠️ Important: `.agent/` exists in TWO locations with different purposes:**
+**Path Choice Rationale:**
+- `.claude/rules/*.md` is auto-loaded by Claude Code
+- No injection needed for Claude agents (MVP scope)
+- Non-Claude agents (post-MVP) require F07b for injection
 
 | Location | Purpose | Git Status | Lifetime |
 |----------|---------|------------|----------|
-| Project root `.agent/` | Shared learnings across all agents | Tracked | Permanent |
+| `.claude/rules/` | Shared learnings (Claude reads natively) | Tracked | Permanent |
 | Worktree `.agent/` | Per-agent scratchpad | Gitignored | Task duration |
+
+### Automatic Learning Trigger (Daemon Pattern)
+
+**Continuous-Claude Pattern:**
+```
+Session ends → Daemon polls for stale heartbeat → Spawns headless Claude →
+Extracts from JSONL thinking blocks → Stores in pgvector → Next session recalls
+```
+
+**Chorus Adaptation (Event-Driven):**
+```
+Agent completes → CompletionHandler (F16a) triggered →
+Reads scratchpad → LearningExtractor (F40) parses →
+LearningStore (F41) persists → Next agent reads natively
+```
+
+| Continuous-Claude | Chorus |
+|-------------------|--------|
+| Polling daemon | Event-driven (CompletionHandler) |
+| JSONL thinking blocks | Scratchpad learnings section |
+| pgvector + embeddings | File-based (.claude/rules/learnings.md) |
+| Semantic recall | Claude native + label-based retrieval |
+
+**Why Event-Driven?**
+- Immediate extraction (no 5-min stale delay)
+- Simpler architecture (no daemon process)
+- Works with worktree isolation
+- Claude reads learnings natively
 
 ### Cross-Agent Knowledge Sharing
 
@@ -2006,78 +2040,89 @@ project-root/
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              CROSS-AGENT KNOWLEDGE FLOW (Post-MVP)               │
+│              CROSS-AGENT KNOWLEDGE FLOW                          │
 └─────────────────────────────────────────────────────────────────┘
 
 Timeline:
 T=0:  Claude starts ch-001 (string optimization)
       │
-T=30: Claude discovers mb_str_split trick
+T=30: Claude discovers mb_str_split trick, writes to scratchpad
       │
 T=45: Claude completes, outputs <chorus>COMPLETE</chorus>
       │
-      ├─► Chorus extracts "## Learnings" from scratchpad
-      ├─► Appends to .agent/learnings.md with attribution
-      └─► Commits: "learn: extract from ch-001 (claude)"
+      ├─► CompletionHandler (F16a) triggered
+      ├─► LearningExtractor (F40) parses scratchpad
+      ├─► LearningStore (F41) appends to .claude/rules/learnings.md
+      └─► Git commit: "learn: extract from ch-001 (claude)"
       │
 T=46: Another Claude agent starts ch-003 (Unicode handling)
       │                       ↑ MVP: Claude only
       │                       ↓ Post-MVP: codex/opencode too
-      └─► Claude reads .agent/learnings.md natively
-          (Post-MVP: Chorus injects for non-Claude agents)
+      └─► Claude reads .claude/rules/learnings.md natively
+          (Post-MVP: Chorus injects via F07b for non-Claude agents)
       │
 T=60: Agent uses pattern directly (saved rediscovery time)
 ```
 
 **MVP Behavior:**
-- Claude agents read `.agent/learnings.md` natively (no injection needed)
-- Learning extraction works for all agents
+- Claude agents read `.claude/rules/learnings.md` natively (no injection needed)
+- Learning extraction triggered by CompletionHandler (F16a)
 - Non-Claude agents work but don't receive injected context
 
 **Post-MVP Behavior (F07b):**
 - Non-Claude agents receive learnings via prompt injection
 - Full cross-agent knowledge sharing enabled
-```
 
 ### Learning Extraction
 
 ```typescript
+// Called by CompletionHandler (F16a) on successful task completion
 async function extractLearnings(task: Task, agent: Agent): Promise<void> {
   const scratchpad = path.join(agent.worktree, '.agent/scratchpad.md');
   const content = await fs.readFile(scratchpad, 'utf-8');
 
-  // Look for learnings section
-  const learningsMatch = content.match(/## Learnings[\s\S]*?(?=\n## |$)/);
-  if (!learningsMatch) return;
+  // F40: LearningExtractor parses scratchpad
+  const learnings = learningExtractor.parse(content, task.id, agent.type);
+  if (learnings.length === 0) return;
 
-  const learnings = learningsMatch[0];
-  const formatted = formatLearnings(learnings, task.id, agent.type);
+  // F41: LearningStore appends with deduplication
+  const result = await learningStore.append(learnings);
+  await learningStore.commit(task.id, agent.type);
 
-  // Append to shared learnings
-  await fs.appendFile('.agent/learnings.md', formatted);
-
-  // Commit
-  await exec('git add .agent/learnings.md');
-  await exec(`git commit -m "learn: extract from ${task.id} (${agent.type})"`);
+  // Log extraction result
+  console.log(`Extracted ${result.added.length} learnings, skipped ${result.skipped.length} duplicates`);
 }
+
+// LearningStore persists to .claude/rules/ for native Claude access
+// Path: .claude/rules/learnings.md
 ```
 
-**Learning Pipeline (F40 → F41 → learnings.md):**
+**Learning Pipeline (F16a → F40 → F41 → learnings.md):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                   LEARNING PIPELINE                              │
+│          (Event-Driven: Continuous-Claude Daemon Alternative)    │
 └─────────────────────────────────────────────────────────────────┘
 
 Agent writes to scratchpad during task
        │
        ▼
 ┌─────────────────────────────────────────────────────────────────┐
+│ F16a: Completion Handler (TRIGGER)                               │
+│                                                                  │
+│ Event:  Agent exit with COMPLETE signal + tests pass             │
+│ Action: Orchestrates learning extraction flow                    │
+│ Called: Automatically on successful task completion              │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
 │ F40: Learning Extractor                                          │
 │                                                                  │
 │ Input:  .worktrees/{agent}/.agent/scratchpad.md                 │
-│ Action: Parse "## Learnings" section                            │
-│ Output: Structured Learning objects                              │
+│ Action: Parse "## Learnings" section with scope detection        │
+│ Output: Structured Learning objects with scope/category          │
 │                                                                  │
 │ interface Learning {                                             │
 │   content: string;        // The actual learning                │
@@ -2092,15 +2137,15 @@ Agent writes to scratchpad during task
 │ F41: Learning Store                                              │
 │                                                                  │
 │ Responsibilities:                                                │
-│ 1. Append to .agent/learnings.md (human-readable, git-tracked)  │
+│ 1. Append to .claude/rules/learnings.md (Claude reads natively) │
 │ 2. Index in memory for fast retrieval (by label, category)      │
 │ 3. Track "reviewed" status for Plan Review trigger              │
 │ 4. Deduplicate similar learnings                                │
 │                                                                  │
 │ Storage:                                                         │
-│ - Primary: .agent/learnings.md (append-only, survives sessions) │
+│ - Primary: .claude/rules/learnings.md (Claude reads natively)   │
 │ - Index: In-memory during runtime (rebuilt on startup)          │
-│ - Metadata: .agent/learnings-meta.json (review status, etc.)    │
+│ - Metadata: .claude/rules/learnings-meta.json (review status)   │
 └─────────────────────────────────────────────────────────────────┘
        │
        ▼
@@ -3652,6 +3697,16 @@ PRIORITY BADGES:
 
 ## Changelog
 
+- **v3.11 (2026-01-11):** Memory Daemon Pattern Adaptation
+  - CHANGED: Learning storage path `.agent/learnings.md` → `.claude/rules/learnings.md`
+  - CHANGED: Learning metadata path `.agent/learnings-meta.json` → `.claude/rules/learnings-meta.json`
+  - ADDED: Automatic Learning Trigger section (Continuous-Claude daemon pattern adapted to event-driven)
+  - ADDED: Memory Architecture comparison table (daemon vs event-driven)
+  - ADDED: Learning Pipeline trigger (F16a CompletionHandler as entry point)
+  - FIXED: ch-7jw dependency - added ch-9yl (LearningExtractor) to dependencies
+  - RATIONALE: `.claude/rules/` is auto-loaded by Claude Code, eliminating need for injection (MVP)
+  - PURPOSE: Adopts Continuous-Claude's Memory Daemon "compound learning" pattern via event-driven trigger
+
 - **v3.10 (2026-01-11):** Comprehensive Review Fixes
   - ADDED: `pattern_expired` event to Session Logger Event Reference
   - ADDED: Hook Timeout & Error Handling section (timeout, retry, continueOnFailure config)
@@ -3777,15 +3832,15 @@ PRIORITY BADGES:
   - 127 tasks in Beads (48 ready, 4 deferred)
 
 - **v3.0 (2026-01-11):** Planning-First Architecture (Ralph-inspired)
-  - NEW: M0 Planning Phase - interactive task planning before implementation
-  - NEW: Plan Agent - helps create/validate tasks via conversation
-  - NEW: Task Review Loop - iterate until all tasks valid (Ralph pattern)
-  - NEW: Auto-Decomposition - parse large specs into atomic tasks
-  - NEW: Task Validation Rules - built-in + configurable rules
-  - NEW: `.chorus/task-rules.md` - agent-readable validation rules
-  - NEW: `.chorus/PATTERNS.md` - cross-agent learned patterns
-  - NEW: `.chorus/session-log.jsonl` - append-only session logging
-  - NEW: Flexible quality commands (not just test/lint/typecheck)
+  - ADDED: M0 Planning Phase - interactive task planning before implementation
+  - ADDED: Plan Agent - helps create/validate tasks via conversation
+  - ADDED: Task Review Loop - iterate until all tasks valid (Ralph pattern)
+  - ADDED: Auto-Decomposition - parse large specs into atomic tasks
+  - ADDED: Task Validation Rules - built-in + configurable rules
+  - ADDED: `.chorus/task-rules.md` - agent-readable validation rules
+  - ADDED: `.chorus/PATTERNS.md` - cross-agent learned patterns
+  - ADDED: `.chorus/session-log.jsonl` - append-only session logging
+  - ADDED: Flexible quality commands (not just test/lint/typecheck)
   - CHANGED: Interactive Init Mode with conversational setup
   - CHANGED: Config v3.0 with qualityCommands[], taskIdPrefix
   - CHANGED: TUI layout - 80% agent window + chat input
