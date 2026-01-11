@@ -42,11 +42,13 @@ npm run lint:fix && npm run quality
 
 ## Rules
 
-1. **Quality checks on GREEN**: After tests pass, run typecheck + lint before commit
-2. **NEVER ask permission**: Don't ask "shall I commit?" or "Shall I proceed?" - JUST DO IT
-3. **Conventional commits**: Use `feat:`, `fix:`, `test:`, `refactor:` prefixes
-4. **Atomic commits**: Each commit = one logical unit of work
-5. **Include test count**: Mention passing tests in commit message
+1. **One test at a time**: Write one test, run RED, implement GREEN, repeat. Don't write all tests upfront.
+2. **Atomic tests**: Each test should test ONE thing (single assertion focus). Multiple tests per file is fine.
+3. **Quality checks on GREEN**: After tests pass, run typecheck + lint before commit
+4. **NEVER ask permission**: Don't ask "shall I commit?" or "Shall I proceed?" - JUST DO IT
+5. **Conventional commits**: Use `feat:`, `fix:`, `test:`, `refactor:` prefixes
+6. **Atomic commits**: Each commit = one logical unit of work
+7. **Include test count**: Mention passing tests in commit message
 
 ## CRITICAL: No Permission Prompts (survives /clear)
 
