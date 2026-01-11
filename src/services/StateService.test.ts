@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentState } from "../types/state.js";
+import type { AgentState, MergeQueueItem } from "../types/state.js";
 import {
 	AgentNotFoundError,
 	DuplicateAgentError,
@@ -448,6 +448,152 @@ describe("StateService", () => {
 			// Act & Assert
 			expect(() => service.clear()).not.toThrow();
 			expect(mockUnlinkSync).not.toHaveBeenCalled();
+		});
+	});
+
+	// F02e: Merge Queue tests (9)
+	describe("Merge Queue", () => {
+		const createMergeItem = (
+			taskId: string,
+			priority: number,
+		): MergeQueueItem => ({
+			taskId,
+			branch: `agent/claude/${taskId}`,
+			worktree: `/test/worktree/${taskId}`,
+			priority,
+			status: "pending",
+			retries: 0,
+			enqueuedAt: Date.now(),
+		});
+
+		beforeEach(() => {
+			mockExistsSync.mockReturnValue(true);
+		});
+
+		it("enqueueMerge() adds item to mergeQueue", () => {
+			// Arrange
+			service.init();
+			const item = createMergeItem("task-1", 1);
+
+			// Act
+			service.enqueueMerge(item);
+
+			// Assert
+			const state = service.get();
+			expect(state.mergeQueue).toHaveLength(1);
+			expect(state.mergeQueue[0].taskId).toBe("task-1");
+		});
+
+		it("enqueueMerge() sorts by priority descending", () => {
+			// Arrange
+			service.init();
+			const lowPriority = createMergeItem("task-low", 3);
+			const highPriority = createMergeItem("task-high", 1);
+
+			// Act
+			service.enqueueMerge(lowPriority);
+			service.enqueueMerge(highPriority);
+
+			// Assert
+			const state = service.get();
+			expect(state.mergeQueue[0].taskId).toBe("task-high");
+			expect(state.mergeQueue[1].taskId).toBe("task-low");
+		});
+
+		it("enqueueMerge() uses task-derived priority correctly", () => {
+			// Arrange
+			service.init();
+			const p1Task = createMergeItem("task-p1", 1);
+			const p2Task = createMergeItem("task-p2", 2);
+			const p3Task = createMergeItem("task-p3", 3);
+
+			// Act
+			service.enqueueMerge(p3Task);
+			service.enqueueMerge(p1Task);
+			service.enqueueMerge(p2Task);
+
+			// Assert
+			const state = service.get();
+			expect(state.mergeQueue.map((i) => i.taskId)).toEqual([
+				"task-p1",
+				"task-p2",
+				"task-p3",
+			]);
+		});
+
+		it("dequeueMerge() returns highest priority item", () => {
+			// Arrange
+			service.init();
+			service.enqueueMerge(createMergeItem("task-low", 3));
+			service.enqueueMerge(createMergeItem("task-high", 1));
+
+			// Act
+			const item = service.dequeueMerge();
+
+			// Assert
+			expect(item?.taskId).toBe("task-high");
+		});
+
+		it("dequeueMerge() removes returned item from queue", () => {
+			// Arrange
+			service.init();
+			service.enqueueMerge(createMergeItem("task-1", 1));
+			service.enqueueMerge(createMergeItem("task-2", 2));
+
+			// Act
+			service.dequeueMerge();
+
+			// Assert
+			const state = service.get();
+			expect(state.mergeQueue).toHaveLength(1);
+			expect(state.mergeQueue[0].taskId).toBe("task-2");
+		});
+
+		it("dequeueMerge() returns undefined when queue is empty", () => {
+			// Arrange
+			service.init();
+
+			// Act
+			const item = service.dequeueMerge();
+
+			// Assert
+			expect(item).toBeUndefined();
+		});
+
+		it("updateMergeItem() modifies item matching taskId", () => {
+			// Arrange
+			service.init();
+			service.enqueueMerge(createMergeItem("task-1", 1));
+
+			// Act
+			service.updateMergeItem("task-1", { status: "merging", retries: 2 });
+
+			// Assert
+			const state = service.get();
+			expect(state.mergeQueue[0].status).toBe("merging");
+			expect(state.mergeQueue[0].retries).toBe(2);
+		});
+
+		it("updateMergeItem() does not throw when taskId not found", () => {
+			// Arrange
+			service.init();
+
+			// Act & Assert
+			expect(() =>
+				service.updateMergeItem("nonexistent", { status: "conflict" }),
+			).not.toThrow();
+		});
+
+		it("incrementStat() increases counter from 0 to 1", () => {
+			// Arrange
+			service.init();
+
+			// Act
+			service.incrementStat("tasksCompleted");
+
+			// Assert
+			const state = service.get();
+			expect(state.stats.tasksCompleted).toBe(1);
 		});
 	});
 });

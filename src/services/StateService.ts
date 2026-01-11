@@ -1,7 +1,13 @@
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AgentState, AgentStatus, ChorusState } from "../types/state.js";
+import type {
+	AgentState,
+	AgentStatus,
+	ChorusState,
+	MergeQueueItem,
+	SessionStats,
+} from "../types/state.js";
 
 export interface IterationRecord {
 	number: number;
@@ -166,5 +172,44 @@ export class StateService {
 			fs.unlinkSync(this.statePath);
 		}
 		this.state = null;
+	}
+
+	// Merge queue operations
+	enqueueMerge(item: MergeQueueItem): void {
+		const state = this.get();
+		state.mergeQueue.push(item);
+		// Sort by priority ascending (P1=1 is highest, should come first)
+		state.mergeQueue.sort((a, b) => a.priority - b.priority);
+		this.saveDebounced();
+	}
+
+	dequeueMerge(): MergeQueueItem | undefined {
+		const state = this.get();
+		const item = state.mergeQueue.shift();
+		if (item) {
+			this.saveDebounced();
+		}
+		return item;
+	}
+
+	updateMergeItem(taskId: string, partial: Partial<MergeQueueItem>): void {
+		const state = this.get();
+		const item = state.mergeQueue.find((i) => i.taskId === taskId);
+		if (item) {
+			Object.assign(item, partial);
+			this.saveDebounced();
+		}
+	}
+
+	incrementStat(key: keyof SessionStats): void {
+		const state = this.get();
+		(state.stats[key] as number)++;
+		this.saveDebounced();
+	}
+
+	update(partial: Partial<ChorusState>): void {
+		const state = this.get();
+		Object.assign(state, partial);
+		this.saveDebounced();
 	}
 }
