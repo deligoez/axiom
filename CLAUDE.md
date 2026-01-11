@@ -72,6 +72,8 @@ npm run quality   # Runs all checks:
 | `.claude/rules/beads-task-tracking.md` | Task tracking rules |
 | `.claude/rules/auto-commit.md` | TDD commit rules |
 
+> **Note:** Master plans in `thoughts/shared/plans/` are large files. Don't read at conversation start. When stuck or need architectural decisions, search first (`grep`) before reading full files to save context.
+
 ## Architecture (XState v5)
 
 ```
