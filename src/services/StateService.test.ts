@@ -11,10 +11,16 @@ import {
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn(),
 	readFileSync: vi.fn(),
+	writeFileSync: vi.fn(),
+	unlinkSync: vi.fn(),
+	mkdirSync: vi.fn(),
 }));
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
+const mockWriteFileSync = vi.mocked(fs.writeFileSync);
+const mockUnlinkSync = vi.mocked(fs.unlinkSync);
+const mockMkdirSync = vi.mocked(fs.mkdirSync);
 
 // UUID regex pattern
 const UUID_REGEX =
@@ -345,6 +351,103 @@ describe("StateService", () => {
 			// Assert
 			expect(running).toHaveLength(2);
 			expect(running.map((a) => a.id)).toEqual(["agent-2", "agent-3"]);
+		});
+	});
+
+	// F02d: Persistence tests (6)
+	describe("Persistence", () => {
+		it("save() creates state.json file with valid JSON content", () => {
+			// Arrange
+			mockExistsSync.mockReturnValue(true); // directory exists
+			service.init();
+
+			// Act
+			service.save();
+
+			// Assert
+			expect(mockWriteFileSync).toHaveBeenCalledWith(
+				"/test/project/.chorus/state.json",
+				expect.any(String),
+			);
+			const savedContent = mockWriteFileSync.mock.calls[0][1] as string;
+			const parsed = JSON.parse(savedContent);
+			expect(parsed.sessionId).toBeDefined();
+			expect(parsed.startedAt).toBeDefined();
+		});
+
+		it("save() creates .chorus directory if missing", () => {
+			// Arrange
+			mockExistsSync.mockReturnValue(false); // directory does not exist
+			service.init();
+
+			// Act
+			service.save();
+
+			// Assert
+			expect(mockMkdirSync).toHaveBeenCalledWith("/test/project/.chorus", {
+				recursive: true,
+			});
+		});
+
+		it("saveDebounced() called 3x in 50ms results in only 1 file write", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			mockExistsSync.mockReturnValue(true);
+			service.init();
+
+			// Act
+			service.saveDebounced();
+			await vi.advanceTimersByTimeAsync(20);
+			service.saveDebounced();
+			await vi.advanceTimersByTimeAsync(20);
+			service.saveDebounced();
+			await vi.advanceTimersByTimeAsync(150);
+
+			// Assert
+			expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
+			vi.useRealTimers();
+		});
+
+		it("saveDebounced() writes file after 100ms debounce period", async () => {
+			// Arrange
+			vi.useFakeTimers();
+			mockExistsSync.mockReturnValue(true);
+			service.init();
+
+			// Act
+			service.saveDebounced();
+			await vi.advanceTimersByTimeAsync(50);
+			expect(mockWriteFileSync).not.toHaveBeenCalled();
+
+			await vi.advanceTimersByTimeAsync(60);
+
+			// Assert
+			expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
+			vi.useRealTimers();
+		});
+
+		it("clear() removes existing state file", () => {
+			// Arrange
+			mockExistsSync.mockReturnValue(true);
+			service.init();
+
+			// Act
+			service.clear();
+
+			// Assert
+			expect(mockUnlinkSync).toHaveBeenCalledWith(
+				"/test/project/.chorus/state.json",
+			);
+		});
+
+		it("clear() does not throw when file does not exist", () => {
+			// Arrange
+			mockExistsSync.mockReturnValue(false);
+			service.init();
+
+			// Act & Assert
+			expect(() => service.clear()).not.toThrow();
+			expect(mockUnlinkSync).not.toHaveBeenCalled();
 		});
 	});
 });

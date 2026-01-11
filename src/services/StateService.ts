@@ -26,6 +26,8 @@ export class StateService {
 	private statePath: string;
 	private state: ChorusState | null = null;
 	private iterations: Map<string, IterationRecord[]> = new Map();
+	private saveTimeout: NodeJS.Timeout | null = null;
+	private readonly DEBOUNCE_MS = 100;
 
 	constructor(projectDir: string) {
 		this.statePath = path.join(projectDir, ".chorus", "state.json");
@@ -141,5 +143,28 @@ export class StateService {
 	getRunningAgents(): AgentState[] {
 		const state = this.get();
 		return Object.values(state.agents).filter((a) => a.status === "running");
+	}
+
+	// Persistence methods
+	save(): void {
+		const dir = path.dirname(this.statePath);
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir, { recursive: true });
+		}
+		fs.writeFileSync(this.statePath, JSON.stringify(this.state, null, 2));
+	}
+
+	saveDebounced(): void {
+		if (this.saveTimeout) {
+			clearTimeout(this.saveTimeout);
+		}
+		this.saveTimeout = setTimeout(() => this.save(), this.DEBOUNCE_MS);
+	}
+
+	clear(): void {
+		if (fs.existsSync(this.statePath)) {
+			fs.unlinkSync(this.statePath);
+		}
+		this.state = null;
 	}
 }
