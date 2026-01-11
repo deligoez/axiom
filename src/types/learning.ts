@@ -58,3 +58,39 @@ export interface LearningsMeta {
 	reviewed: Set<string>;
 	lastUpdated: Date;
 }
+
+/**
+ * Configuration for deduplication behavior
+ */
+export interface DeduplicationConfig {
+	algorithm: "exact" | "similarity";
+	threshold: number;
+	action: "skip" | "merge";
+}
+
+/**
+ * Result of appending learnings to store
+ */
+export interface AppendResult {
+	added: Learning[];
+	skipped: Learning[];
+	merged: Learning[];
+}
+
+/**
+ * Result of checking if a learning is a duplicate
+ */
+export interface DuplicateCheck {
+	isDuplicate: boolean;
+	reason?: "exact" | "similar";
+	similarTo?: string;
+	similarity?: number;
+}
+
+/**
+ * Result of similarity check
+ */
+export interface SimilarityResult {
+	learningId: string;
+	similarity: number;
+}
