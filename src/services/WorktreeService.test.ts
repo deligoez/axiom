@@ -528,4 +528,193 @@ branch refs/heads/agent/aider/ch-x1y2
 			BranchNotFoundError,
 		);
 	});
+
+	// F06: getInfo() tests (4)
+	it("getInfo() returns complete WorktreeInfo with headSha", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "abc123def456\n",
+			stderr: "",
+		} as never);
+
+		// Act
+		const info = await service.getInfo("claude", "ch-abc");
+
+		// Assert
+		expect(info).toEqual({
+			path: "/test/project/.worktrees/claude-ch-abc",
+			branch: "agent/claude/ch-abc",
+			agentType: "claude",
+			taskId: "ch-abc",
+			headSha: "abc123def456",
+		});
+	});
+
+	it("getInfo() retrieves headSha via git rev-parse", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "deadbeef123\n",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.getInfo("claude", "ch-xyz");
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith(
+			"git",
+			["-C", "/test/project/.worktrees/claude-ch-xyz", "rev-parse", "HEAD"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("getInfo() throws WorktreeNotFoundError for non-existent worktree", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(false);
+
+		// Act & Assert
+		await expect(service.getInfo("claude", "ch-abc")).rejects.toThrow(
+			WorktreeNotFoundError,
+		);
+	});
+
+	it("getInfo() correctly parses agentType and taskId", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "sha123\n",
+			stderr: "",
+		} as never);
+
+		// Act
+		const info = await service.getInfo("codex", "ch-task123");
+
+		// Assert
+		expect(info.agentType).toBe("codex");
+		expect(info.taskId).toBe("ch-task123");
+	});
+
+	// F06: removeAll() tests (3)
+	it("removeAll() removes all agent worktrees", async () => {
+		// Arrange
+		mockExecaSync.mockReturnValue({
+			exitCode: 0,
+			stdout: `worktree /test/project
+HEAD abc123
+branch refs/heads/main
+
+worktree /test/project/.worktrees/claude-ch-a1b2
+HEAD def456
+branch refs/heads/agent/claude/ch-a1b2
+
+worktree /test/project/.worktrees/aider-ch-x1y2
+HEAD 789abc
+branch refs/heads/agent/aider/ch-x1y2
+`,
+			stderr: "",
+		} as never);
+
+		// For each remove() call
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.removeAll();
+
+		// Assert - should call remove for each agent worktree (not main)
+		const worktreeRemoveCalls = (mockExeca.mock.calls as unknown[][]).filter(
+			(call) => {
+				const args = call[1] as string[];
+				return args[0] === "worktree" && args[1] === "remove";
+			},
+		);
+		expect(worktreeRemoveCalls.length).toBeGreaterThanOrEqual(2);
+	});
+
+	it("removeAll() skips non-agent worktrees (main, manual)", async () => {
+		// Arrange
+		mockExecaSync.mockReturnValue({
+			exitCode: 0,
+			stdout: `worktree /test/project
+HEAD abc123
+branch refs/heads/main
+
+worktree /test/project/.worktrees/manual-test
+HEAD def456
+branch refs/heads/feature/manual
+`,
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.removeAll();
+
+		// Assert - no remove calls should be made (no agent worktrees)
+		const worktreeRemoveCalls = (mockExeca.mock.calls as unknown[][]).filter(
+			(call) => {
+				const args = call[1] as string[];
+				return args[0] === "worktree" && args[1] === "remove";
+			},
+		);
+		expect(worktreeRemoveCalls).toHaveLength(0);
+	});
+
+	it("removeAll() with force: true passes force to remove()", async () => {
+		// Arrange
+		mockExecaSync.mockReturnValue({
+			exitCode: 0,
+			stdout: `worktree /test/project/.worktrees/claude-ch-a1b2
+HEAD def456
+branch refs/heads/agent/claude/ch-a1b2
+`,
+			stderr: "",
+		} as never);
+
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.removeAll({ force: true });
+
+		// Assert - should have --force flag
+		expect(mockExeca).toHaveBeenCalledWith(
+			"git",
+			[
+				"worktree",
+				"remove",
+				"--force",
+				"/test/project/.worktrees/claude-ch-a1b2",
+			],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	// F06: Edge case (1)
+	it("removeAll() completes successfully with empty worktree list", async () => {
+		// Arrange
+		mockExecaSync.mockReturnValue({
+			exitCode: 0,
+			stdout: `worktree /test/project
+HEAD abc123
+branch refs/heads/main
+`,
+			stderr: "",
+		} as never);
+
+		// Act & Assert - should not throw
+		await expect(service.removeAll()).resolves.toBeUndefined();
+	});
 });

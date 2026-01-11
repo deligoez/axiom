@@ -7,6 +7,7 @@ export interface WorktreeInfo {
 	branch: string;
 	agentType: string;
 	taskId: string;
+	headSha?: string;
 }
 
 export class WorktreeExistsError extends Error {
@@ -197,6 +198,50 @@ export class WorktreeService {
 			cwd: this.projectDir,
 			reject: false,
 		});
+	}
+
+	async getInfo(agentType: string, taskId: string): Promise<WorktreeInfo> {
+		// Check worktree exists
+		if (!this.exists(agentType, taskId)) {
+			throw new WorktreeNotFoundError(agentType, taskId);
+		}
+
+		const worktreePath = this.getPath(agentType, taskId);
+		const branch = this.getBranch(agentType, taskId);
+
+		// Get HEAD sha
+		const result = await execa(
+			"git",
+			["-C", worktreePath, "rev-parse", "HEAD"],
+			{
+				cwd: this.projectDir,
+				reject: false,
+			},
+		);
+
+		const headSha = result.stdout.trim();
+
+		return {
+			path: worktreePath,
+			branch,
+			agentType,
+			taskId,
+			headSha,
+		};
+	}
+
+	async removeAll(options?: { force?: boolean }): Promise<void> {
+		const worktrees = this.list();
+
+		for (const worktree of worktrees) {
+			// Only remove agent worktrees (those with agent/ prefix in branch)
+			if (worktree.branch.startsWith("agent/")) {
+				await this.remove(worktree.agentType, worktree.taskId, {
+					deleteBranch: false,
+					force: options?.force ?? false,
+				});
+			}
+		}
 	}
 
 	private loadTemplate(): string {
