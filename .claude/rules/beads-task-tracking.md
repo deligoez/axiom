@@ -118,6 +118,76 @@ Every task MUST be designed for Test-Driven Development:
 - [ ] N tests pass                    ← Explicit count
 ```
 
+### AAA Pattern (MANDATORY)
+
+ALL tests MUST follow the **Arrange-Act-Assert** pattern:
+
+```typescript
+// REQUIRED: Every test follows this structure
+it('should transition from idle to preparing on START', () => {
+  // Arrange - Set up the test conditions
+  const actor = createActor(agentMachine, {
+    input: { taskId: 'task-1', parentRef: mockParentRef }
+  });
+  actor.start();
+
+  // Act - Perform the action being tested
+  actor.send({ type: 'START' });
+
+  // Assert - Verify the expected outcome
+  expect(actor.getSnapshot().value).toBe('preparing');
+});
+```
+
+**XState-Specific Testing Patterns:**
+
+| Test Type | Arrange | Act | Assert |
+|-----------|---------|-----|--------|
+| **State Transition** | `createActor(machine).start()` | `actor.send({ type: 'EVENT' })` | `getSnapshot().value` |
+| **Context Update** | `createActor(machine, { input }).start()` | `actor.send({ type: 'EVENT', data })` | `getSnapshot().context` |
+| **Guard Behavior** | Set context that fails guard | `actor.send({ type: 'EVENT' })` | State unchanged |
+| **Action Execution** | `vi.fn()` mock for action | `actor.send({ type: 'EVENT' })` | `expect(mock).toHaveBeenCalled()` |
+| **Async (Promise)** | `createActor(machine).start()` | `actor.send({ type: 'FETCH' })` | `await waitFor(actor, s => s.matches('done'))` |
+
+**Anti-patterns in Tests:**
+```typescript
+// BAD - No clear sections
+it('test', () => {
+  const actor = createActor(machine);
+  actor.start();
+  actor.send({ type: 'A' });
+  expect(actor.getSnapshot().value).toBe('b');
+  actor.send({ type: 'C' });
+  expect(actor.getSnapshot().value).toBe('d');
+});
+
+// GOOD - Each test has ONE act and ONE assert
+it('should transition to B on A', () => {
+  // Arrange
+  const actor = createActor(machine);
+  actor.start();
+
+  // Act
+  actor.send({ type: 'A' });
+
+  // Assert
+  expect(actor.getSnapshot().value).toBe('b');
+});
+
+it('should transition to D on C from B', () => {
+  // Arrange
+  const actor = createActor(machine);
+  actor.start();
+  actor.send({ type: 'A' }); // Get to state B
+
+  // Act
+  actor.send({ type: 'C' });
+
+  // Assert
+  expect(actor.getSnapshot().value).toBe('d');
+});
+```
+
 ### Anti-patterns to Avoid
 | Bad | Good |
 |-----|------|
@@ -125,6 +195,8 @@ Every task MUST be designed for Test-Driven Development:
 | "Handles errors" | "`run()` throws on non-zero exit" |
 | "Tests pass" | "6 tests pass" |
 | "Returns result" | "Returns `null` for invalid ID" |
+| Multiple acts in one test | One act per test |
+| No comments for sections | `// Arrange`, `// Act`, `// Assert` |
 
 ### Before Creating/Updating Task
 Ask yourself:
@@ -132,6 +204,8 @@ Ask yourself:
 2. Is the expected behavior specific enough?
 3. Are edge cases (null, empty, error) covered?
 4. Is the test count accurate?
+5. **NEW:** Does each test have clear AAA sections?
+6. **NEW:** Is each test testing ONE thing?
 
 ---
 

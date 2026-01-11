@@ -2,7 +2,8 @@
 
 **Date:** 2026-01-11
 **Status:** APPROVED
-**Version:** 1.0
+**Version:** 1.2
+**Updated:** 2026-01-12 (Testing Strategy + CLI Architecture)
 
 ---
 
@@ -568,6 +569,112 @@ function AgentTile({ agentRef }) {
 
 ---
 
+## CLI Architecture (Non-TUI Commands)
+
+### Command Categories
+
+Chorus CLI has 3 types of commands:
+
+| Category | Example | XState Relationship |
+|----------|---------|---------------------|
+| **Stateless** | `--version`, `--help` | No machine, direct output |
+| **Event Sender** | `pause`, `resume`, `stop-agent <id>` | Load snapshot → send event → persist → exit |
+| **Headless Actor** | `merge-user`, `daemon` | Own actor instance, no TUI |
+
+### Event Sender Pattern
+
+```typescript
+// chorus pause
+async function handlePauseCommand(): Promise<void> {
+  // 1. Load persisted snapshot
+  const snapshot = await loadSnapshot('.chorus/state.xstate.json');
+
+  // 2. Create actor from snapshot
+  const actor = createActor(chorusMachine, { snapshot });
+  actor.start();
+
+  // 3. Send event
+  actor.send({ type: 'PAUSE' });
+
+  // 4. Persist new state
+  await persistSnapshot(actor.getPersistedSnapshot());
+
+  // 5. Exit
+  console.log('Chorus paused.');
+  process.exit(0);
+}
+```
+
+### TUI vs CLI State Synchronization
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    CHORUS ACTOR SYSTEM                        │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│   ┌─────────────────────────────────────────────────────┐    │
+│   │         ChorusMachine (Core - TUI Independent)       │    │
+│   │  orchestration │ mergeQueue │ monitoring            │    │
+│   └─────────────────────────────────────────────────────┘    │
+│                           │                                   │
+│            ┌──────────────┼──────────────┐                   │
+│            ▼              ▼              ▼                    │
+│     ┌──────────┐   ┌──────────┐   ┌──────────┐              │
+│     │ TUI App  │   │ CLI Cmd  │   │ Headless │              │
+│     │ (React)  │   │ (oneshot)│   │ (daemon) │              │
+│     └──────────┘   └──────────┘   └──────────┘              │
+│         │                │                                    │
+│         │ subscribe      │ load/persist                       │
+│         ▼                ▼                                    │
+│     ┌─────────────────────────────────────────┐              │
+│     │        .chorus/state.xstate.json         │              │
+│     │        (Shared Persistence Layer)        │              │
+│     └─────────────────────────────────────────┘              │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Synchronization Options:**
+
+1. **Polling** (Simple) - TUI checks snapshot file every N seconds
+2. **File Watcher** (Better) - fs.watch on state file
+3. **IPC** (Best) - Unix socket for real-time updates
+
+**MVP Decision:** Use file watcher for CLI→TUI sync. Simple, reliable.
+
+### Minimal TUI Region
+
+TUI region only contains **behavior-affecting state**:
+
+```typescript
+// INCLUDE in machine (affects behavior)
+tui: {
+  type: 'parallel',
+  states: {
+    focus: {  // Keyboard routing depends on this
+      initial: 'agentGrid',
+      states: { agentGrid: {}, taskPanel: {} }
+    },
+    modal: {  // Keyboard routing depends on this
+      initial: 'closed',
+      states: { closed: {}, help: {}, intervention: {}, confirm: {} }
+    }
+  }
+}
+
+// EXCLUDE from machine (pure UI)
+// - Scroll position (React state)
+// - Hover states (CSS/React)
+// - Animation frames (React)
+// - Input focus (DOM)
+```
+
+**Why this split?**
+- Machine state = keyboard routing guards need it
+- React state = purely visual, no behavior impact
+
+---
+
 ## Migration Path
 
 ### Phase 1: Foundation (M-1)
@@ -632,6 +739,79 @@ src/
 
 ### Testing Strategy
 
+**XState v5 Testing Approach (AAA Pattern):**
+
+```typescript
+// Arrange-Act-Assert pattern with createActor
+import { createActor } from 'xstate';
+import { describe, it, expect, vi } from 'vitest';
+
+describe('AgentMachine', () => {
+  it('transitions from idle to preparing on START', () => {
+    // Arrange
+    const actor = createActor(agentMachine, {
+      input: { taskId: 'task-1', parentRef: mockParentRef }
+    });
+    actor.start();
+
+    // Act
+    actor.send({ type: 'START' });
+
+    // Assert
+    expect(actor.getSnapshot().value).toBe('preparing');
+    expect(actor.getSnapshot().context.taskId).toBe('task-1');
+  });
+});
+```
+
+**Testing Categories:**
+
+| Category | What to Test | XState Pattern |
+|----------|--------------|----------------|
+| **State Transitions** | Event → new state | `actor.send()` + `getSnapshot().value` |
+| **Context Updates** | Event → context change | `getSnapshot().context` |
+| **Guards** | Conditional transitions | Send event, verify state based on context |
+| **Actions** | Side effects executed | Mock actions with `vi.fn()` |
+| **Invoked Actors** | Promise/callback handling | Mock with `fromPromise()` |
+| **Spawned Actors** | Parent-child communication | Check `context.agents` array |
+
+**Testing Utilities:**
+
+```typescript
+// waitFor helper for async transitions
+import { waitFor } from 'xstate';
+
+it('completes after async operation', async () => {
+  const actor = createActor(machine);
+  actor.start();
+  actor.send({ type: 'FETCH' });
+
+  const snapshot = await waitFor(actor,
+    (s) => s.matches('success'),
+    { timeout: 5000 }
+  );
+
+  expect(snapshot.context.data).toBeDefined();
+});
+```
+
+**Test Organization:**
+
+```
+tests/
+├── machines/
+│   ├── chorus.machine.test.ts     # Root machine tests
+│   ├── agent.machine.test.ts      # Agent actor tests
+│   ├── guards.test.ts             # Isolated guard tests
+│   └── actions.test.ts            # Isolated action tests
+├── integration/
+│   ├── spawn-agent.test.ts        # Parent-child spawning
+│   ├── persistence.test.ts        # Snapshot/restore tests
+│   └── recovery.test.ts           # Crash recovery tests
+└── e2e/
+    └── chaos.test.ts              # Kill -9 scenarios
+```
+
 1. **Unit tests** - Each machine state transition
 2. **Integration tests** - Parent-child communication
 3. **Chaos tests** - Random process kills, restore verification
@@ -658,3 +838,8 @@ src/
 | 28 | **Hybrid persistence** | Snapshot primary, event sourcing fallback |
 | 29 | **M-1 milestone** | XState foundation before M0 |
 | 30 | **Delete OrchestrationStore** | Replaced by XState root machine |
+| 31 | **Minimal TUI region** | Only behavior-affecting state (focus, modal) in machine |
+| 32 | **CLI Event Sender pattern** | Load→send→persist→exit for single-event commands |
+| 33 | **File watcher for CLI→TUI sync** | Simple, reliable, MVP-appropriate |
+| 34 | **AAA testing pattern** | createActor + send + getSnapshot for all tests |
+| 35 | **XState v5 native testing** | @xstate/test deprecated, use createActor directly |

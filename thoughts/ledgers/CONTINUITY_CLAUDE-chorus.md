@@ -1,8 +1,8 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-12T00:30:00Z
-**Status:** XState Migration COMPLETE - Ready for TDD
+**Updated:** 2026-01-12T02:00:00Z
+**Status:** XState Testing Audit COMPLETE - Critical Task Updates Pending
 
 ---
 
@@ -26,12 +26,13 @@ Done: [x] Master plan v4.0 complete (XState architecture)
       [x] Zustand references updated to XState in all tasks
       [x] FX09 TUI Machine added (ch-g3of)
       [x] Committed: 2a36045
+      [x] EIGHTH AUDIT: XState Testing + AAA Pattern (173 tasks reviewed)
 Now:  [→] Ready for TDD implementation
 Next: Start ch-lxxb (FX01: XState Setup) - ONLY READY TASK
 ```
 
 **Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
-**XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md` (v1.1)
+**XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md` (v1.2 - Testing Strategy)
 **Latest Commit:** `2a36045` feat: add TUI Machine (FX09) to XState architecture
 
 ---
@@ -122,6 +123,61 @@ Created ch-g3of with 14 tests. Key simplifications:
 - Modal handlers: Send OPEN_*/CLOSE_MODAL events
 - Navigation: Sends SELECT_NEXT/PREV events
 
+### 4. Eighth Audit: XState Testing + AAA Pattern (2026-01-12 01:00-02:00)
+
+**Scope:** All 173 tasks reviewed for XState testing patterns and AAA compliance.
+
+**New Rules Added:**
+- AAA Pattern (Arrange-Act-Assert) MANDATORY for all tests
+- XState testing utilities: `createActor()`, `getSnapshot()`, `waitFor()`
+- Updated: `.claude/rules/beads-task-tracking.md`
+
+**Audit Results by Milestone:**
+
+| Milestone | Tasks | AAA ✓ | Updates Needed | Critical |
+|-----------|-------|-------|----------------|----------|
+| M-1 | 9 | 9/9 | 7 (docs) | 0 |
+| M0 | 26 | 26/26 | 6 (3 major) | 3 |
+| M1-M3 | 24 | 24/24 | 5 (docs) | 0 |
+| M4-M6 | 21 | 19/21 | 7 | 2 |
+| M7-M9 | ~20 | ~18/20 | 12+ | 1 |
+| M10-M12 | ~60 | 58/60 | 20+ | 1 |
+
+**Critical Findings:**
+
+1. **NEW TASK NEEDED: FX10 RalphLoop Machine**
+   - M7 Autopilot (F32a-d) requires RalphLoopMachine
+   - EventEmitter → XState child actor
+
+2. **CRITICAL REWRITES: ch-g6z (F20), ch-7gx (F17)**
+   - Zustand store → XState useChorusMachine hook
+   - Tests need complete rewrite
+
+3. **DEPENDENCY FIX: ch-89dk (Keyboard Router)**
+   - Current: ch-vskx (FX07) - blocks 8 tasks
+   - Should be: ch-g3of (FX09) - lightweight TUI state
+
+4. **CLI Architecture Clarified:**
+   - Stateless: `--version`, `--help` (no machine)
+   - Event Sender: `pause`, `resume` (load→send→persist→exit)
+   - Headless Actor: `merge-user`, `daemon` (own instance)
+
+5. **Minimal TUI Region Approach:**
+   - Machine: focus, modal (behavior-affecting)
+   - React: scroll, hover, animation (visual only)
+
+### 5. Critical Task Updates Applied (2026-01-12 02:00)
+
+| Update | Task ID | Description |
+|--------|---------|-------------|
+| **NEW** | ch-lbe7 | FX10: RalphLoop Machine (16 tests) |
+| **FIX** | ch-89dk | Dependency: ch-vskx → ch-g3of |
+| **REWRITE** | ch-g6z | F20: XState useOrchestration hook |
+| **REWRITE** | ch-7gx | F17: Semi-Auto via machine state |
+| **UPDATE** | ch-z8g | F82: PlanAgent XState events |
+| **UPDATE** | ch-a0a | F85: ReviewLoop XState events |
+| **UPDATE** | ch-eq5 | F89: AppRouter machine-based routing |
+
 ---
 
 ## Key Decisions (Current)
@@ -132,7 +188,11 @@ Created ch-g3of with 14 tests. Key simplifications:
 | 28 | **Crash Recovery** | **Snapshot + event sourcing fallback** |
 | 29 | **Agent Model** | **Spawned child actors** |
 | 30 | **M-1 Milestone** | **XState Foundation blocks all** |
-| **31** | **TUI State** | **TUI region in ChorusMachine** |
+| 31 | **TUI State** | **Minimal TUI region (focus + modal only)** |
+| **32** | **CLI Architecture** | **Event Sender pattern for CLI→Machine** |
+| **33** | **CLI→TUI Sync** | **File watcher on state.xstate.json** |
+| **34** | **Test Pattern** | **AAA (Arrange-Act-Assert) MANDATORY** |
+| **35** | **XState Testing** | **createActor + getSnapshot (no @xstate/test)** |
 | 26 | Learning Storage | `.claude/rules/learnings.md` |
 | 17 | Worktree Path | `.worktrees/` |
 | 10 | MVP Scope | Claude-only |
@@ -158,9 +218,12 @@ Ready:           1   (ch-lxxb - FX01: XState Setup)
 | FX04 Agent Machine | ch-qz9m | ch-j321 | blocked |
 | FX05 Persistence | ch-134l | ch-kjae,ch-qz9m | blocked |
 | FX06 Event Sourcing | ch-5gxg | ch-kjae | blocked |
-| **FX09 TUI Machine** | **ch-g3of** | **ch-kjae** | **blocked** |
-| FX07 React Integration | ch-vskx | ch-134l,ch-5gxg,**ch-g3of** | blocked |
+| FX09 TUI Machine | ch-g3of | ch-kjae | blocked |
+| FX07 React Integration | ch-vskx | ch-134l,ch-5gxg,ch-g3of | blocked |
 | FX08 Migration Bridge | ch-mzi3 | ch-vskx | blocked |
+| **FX10 RalphLoop Machine** | **ch-lbe7** | **ch-vskx** | **blocked** |
+
+**Total: 10 tasks, ~88 tests**
 
 **ch-mzi3 blocks 47 tasks** (all M0+ root tasks)
 
