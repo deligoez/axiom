@@ -21,6 +21,13 @@ export async function run(args: string[]): Promise<void> {
 		return;
 	}
 
+	// CI mode: non-interactive render for E2E testing (no TTY required)
+	if (parsed.ci) {
+		const { waitUntilExit } = render(<App ciMode />);
+		await waitUntilExit();
+		return;
+	}
+
 	// Enter alternate screen and position cursor at top-left
 	process.stdout.write(ENTER_ALT_SCREEN + CLEAR_SCREEN + CURSOR_HOME);
 

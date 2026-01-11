@@ -15,6 +15,7 @@ interface AppProps {
 	showHelp?: boolean;
 	onExit?: () => void;
 	projectDir?: string;
+	ciMode?: boolean;
 }
 
 export default function App({
@@ -22,6 +23,7 @@ export default function App({
 	showHelp,
 	onExit,
 	projectDir = process.cwd(),
+	ciMode = false,
 }: AppProps) {
 	const { exit } = useApp();
 	const [helpVisible, setHelpVisible] = useState(false);
@@ -74,11 +76,13 @@ export default function App({
 		setHelpVisible((prev) => !prev);
 	};
 
+	// Only enable keyboard input when not in CI mode (CI mode has no TTY)
 	useKeyboard({
 		onQuit: handleExit,
 		onSpawn: handleSpawn,
 		onNavigate: handleNavigate,
 		onToggleHelp: handleToggleHelp,
+		isActive: !ciMode,
 	});
 
 	if (showVersion) {

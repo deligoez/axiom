@@ -32,7 +32,15 @@ export async function renderApp(
 	// Use dist/index.js as the entry point (compiled from src/index.tsx)
 	const chorusPath = resolve(process.cwd(), "dist/index.js");
 
-	return cliRender("node", [chorusPath, ...args], {
+	// Add --ci flag for non-interactive mode unless testing --version or --help
+	const isInfoMode =
+		args.includes("--version") ||
+		args.includes("-v") ||
+		args.includes("--help") ||
+		args.includes("-h");
+	const effectiveArgs = isInfoMode ? args : ["--ci", ...args];
+
+	return cliRender("node", [chorusPath, ...effectiveArgs], {
 		cwd: cwd ?? process.cwd(),
 	});
 }
