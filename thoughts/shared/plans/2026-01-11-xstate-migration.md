@@ -40,32 +40,32 @@ Chorus'u XState v5 tabanlı bir state machine mimarisine geçiriyoruz. Bu deği�
 ### State Machine Hierarchy
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     CHORUS ROOT MACHINE                          │
-│                       type: 'parallel'                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐     │
-│  │  orchestration │  │   mergeQueue   │  │   monitoring   │     │
-│  │    region      │  │    region      │  │    region      │     │
-│  │                │  │                │  │                │     │
-│  │  ┌──────────┐  │  │  ┌──────────┐  │  │  ┌──────────┐  │     │
-│  │  │  idle    │  │  │  │  empty   │  │  │  │  active  │  │     │
-│  │  │  running │  │  │  │ pending  │  │  │  │ degraded │  │     │
-│  │  │  paused  │  │  │  │processing│  │  │  └──────────┘  │     │
-│  │  └──────────┘  │  │  │ conflict │  │  │                │     │
-│  │                │  │  └──────────┘  │  │                │     │
-│  └────────────────┘  └────────────────┘  └────────────────┘     │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                     SPAWNED CHILD ACTORS                         │
-│                                                                  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │ AgentMachine│  │ AgentMachine│  │ AgentMachine│  ... (×n)    │
-│  │  [agent-1]  │  │  [agent-2]  │  │  [agent-3]  │              │
-│  └─────────────┘  └─────────────┘  └─────────────┘              │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CHORUS ROOT MACHINE                              │
+│                           type: 'parallel'                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │ orchestration│  │  mergeQueue  │  │  monitoring  │  │     TUI      │ │
+│  │    region    │  │    region    │  │    region    │  │    region    │ │
+│  │              │  │              │  │              │  │              │ │
+│  │ ┌──────────┐ │  │ ┌──────────┐ │  │ ┌──────────┐ │  │ (parallel)   │ │
+│  │ │  idle    │ │  │ │  empty   │ │  │ │  active  │ │  │ ┌──────────┐ │ │
+│  │ │  running │ │  │ │ pending  │ │  │ │ degraded │ │  │ │  focus   │ │ │
+│  │ │  paused  │ │  │ │processing│ │  │ └──────────┘ │  │ │  modal   │ │ │
+│  │ └──────────┘ │  │ │ conflict │ │  │              │  │ │ selection│ │ │
+│  │              │  │ └──────────┘ │  │              │  │ └──────────┘ │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘ │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                       SPAWNED CHILD ACTORS                               │
+│                                                                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                      │
+│  │ AgentMachine│  │ AgentMachine│  │ AgentMachine│  ... (×n)            │
+│  │  [agent-1]  │  │  [agent-2]  │  │  [agent-3]  │                      │
+│  └─────────────┘  └─────────────┘  └─────────────┘                      │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Root Machine States (App-Level)
@@ -101,6 +101,38 @@ Chorus'u XState v5 tabanlı bir state machine mimarisine geçiriyoruz. Bu deği�
                     │  └──────────────┘   │
                     └─────────────────────┘
 ```
+
+### TUI Region States (Parallel Sub-Machine)
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                        TUI REGION                                  │
+│                      type: 'parallel'                              │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐    │
+│  │     focus       │  │      modal      │  │    selection    │    │
+│  │                 │  │                 │  │                 │    │
+│  │  ┌───────────┐  │  │  ┌───────────┐  │  │  ┌───────────┐  │    │
+│  │  │ taskPanel │  │  │  │  closed   │  │  │  │   none    │  │    │
+│  │  │ agentGrid │  │  │  │  help     │  │  │  │   task    │  │    │
+│  │  └───────────┘  │  │  │intervention│  │  │  │   agent   │  │    │
+│  │                 │  │  │  logs     │  │  │  └───────────┘  │    │
+│  │                 │  │  │ learnings │  │  │                 │    │
+│  │                 │  │  │  merge    │  │  │                 │    │
+│  │                 │  │  │ confirm   │  │  │                 │    │
+│  │                 │  │  │ settings  │  │  │                 │    │
+│  │                 │  │  └───────────┘  │  │                 │    │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘    │
+│                                                                    │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**TUI Region Benefits:**
+- Centralized keyboard routing (guards check modal/focus state)
+- UI state persisted with app state (crash recovery)
+- Predictable modal transitions (no race conditions)
+- Easy to visualize in Stately.ai inspector
 
 ### Agent Machine States (Child Actor)
 
@@ -153,16 +185,17 @@ Before M0, we need XState infrastructure:
 
 | Feature | ID | Description | Tests |
 |---------|-----|-------------|-------|
-| **FX01** | TBD | XState Setup - Package install, tsconfig | 4 |
-| **FX02** | TBD | XState Types - Events, context, input types | 8 |
-| **FX03** | TBD | Root Machine - ChorusMachine with parallel regions | 12 |
-| **FX04** | TBD | Agent Machine - Child actor with lifecycle | 10 |
-| **FX05** | TBD | Persistence Layer - Snapshot + file storage | 8 |
-| **FX06** | TBD | Event Sourcing - Backup recovery mechanism | 6 |
-| **FX07** | TBD | React Integration - useChorusMachine hook | 6 |
-| **FX08** | TBD | XState Migration Bridge - Zustand → XState adapter | 4 |
+| **FX01** | ch-lxxb | XState Setup - Package install, tsconfig | 4 |
+| **FX02** | ch-j321 | XState Types - Events, context, input types | 8 |
+| **FX03** | ch-kjae | Root Machine - ChorusMachine with parallel regions | 12 |
+| **FX04** | ch-qz9m | Agent Machine - Child actor with lifecycle | 10 |
+| **FX05** | ch-134l | Persistence Layer - Snapshot + file storage | 8 |
+| **FX06** | ch-5gxg | Event Sourcing - Backup recovery mechanism | 6 |
+| **FX07** | ch-vskx | React Integration - useChorusMachine hook | 6 |
+| **FX08** | ch-mzi3 | XState Migration Bridge - Zustand → XState adapter | 4 |
+| **FX09** | ch-g3of | TUI Machine - Focus, modal, selection states | 14 |
 
-**Total: 8 tasks, ~58 tests**
+**Total: 9 tasks, ~72 tests**
 
 ### Tasks to Modify
 
@@ -179,6 +212,25 @@ These existing tasks need XState-aware updates:
 | **ch-fna** | F43b: Pause Handler | **MODIFY** - Machine event PAUSE/RESUME |
 | **ch-5tj** | F32a: RalphLoop Control | **MODIFY** - Autopilot machine state |
 | **ch-3pa** | F32b: RalphLoop Processing | **MODIFY** - Spawning logic in machine |
+
+### TUI Tasks to Modify
+
+TUI tasks will use XState for state management instead of individual hooks:
+
+| Task ID | Feature | Change Required |
+|---------|---------|-----------------|
+| **ch-89dk** | F64c: Keyboard Router | **SIMPLIFY** - Just sends KEY_PRESS events to machine |
+| **ch-akb** | F63a: Tab Panel Switch | **SIMPLIFY** - Sends TOGGLE_FOCUS event |
+| **ch-b8l** | F63p: Navigation Keys | **SIMPLIFY** - Sends SELECT_NEXT/PREV events |
+| **ch-ak5** | F63u: Toggle Help Key | **SIMPLIFY** - Sends OPEN_HELP/CLOSE_MODAL events |
+| **ch-555** | F63h: View Logs | **SIMPLIFY** - Sends OPEN_LOGS event |
+| **ch-u5j** | F63v: View Learnings | **SIMPLIFY** - Sends OPEN_LEARNINGS event |
+| **ch-6n5** | F63t: Intervention Menu | **SIMPLIFY** - Sends OPEN_INTERVENTION event |
+| **ch-0fwe** | F63-merge-view: Merge View | **SIMPLIFY** - Sends OPEN_MERGE_VIEW event |
+| **ch-bny** | F63o: TUI Exit Handler | **SIMPLIFY** - Sends OPEN_CONFIRM event |
+| **ch-9fq** | F18a: useTaskSelection | **SIMPLIFY** - Uses machine TUI context |
+
+**Key Insight:** Most keyboard handler tasks become trivial "send event to machine" implementations. The complexity moves to machine guards and actions.
 
 ### Dependency Changes
 
@@ -253,7 +305,55 @@ type ChorusMachineEvent =
 
   // Recovery
   | { type: 'RESTORE'; snapshot: PersistedSnapshot }
-  | { type: 'CHECKPOINT_CREATED'; tag: string };
+  | { type: 'CHECKPOINT_CREATED'; tag: string }
+
+  // TUI Focus
+  | { type: 'FOCUS_TASK_PANEL' }
+  | { type: 'FOCUS_AGENT_GRID' }
+  | { type: 'TOGGLE_FOCUS' }  // Tab key
+
+  // TUI Modals
+  | { type: 'OPEN_HELP' }
+  | { type: 'OPEN_INTERVENTION' }
+  | { type: 'OPEN_LOGS'; agentId: string }
+  | { type: 'OPEN_LEARNINGS' }
+  | { type: 'OPEN_MERGE_VIEW' }
+  | { type: 'OPEN_CONFIRM'; action: ConfirmAction }
+  | { type: 'OPEN_SETTINGS' }
+  | { type: 'CLOSE_MODAL' }  // ESC key
+
+  // TUI Selection
+  | { type: 'SELECT_TASK'; taskId: string }
+  | { type: 'SELECT_AGENT'; agentId: string }
+  | { type: 'SELECT_NEXT' }
+  | { type: 'SELECT_PREV' }
+  | { type: 'CLEAR_SELECTION' }
+
+  // Keyboard (routed by guards)
+  | { type: 'KEY_PRESS'; key: string; ctrl?: boolean; shift?: boolean };
+```
+
+### TUI Context (part of ChorusMachineContext)
+
+```typescript
+interface TUIContext {
+  // Focus state
+  focusedPanel: 'taskPanel' | 'agentGrid';
+
+  // Selection state
+  selectedTaskId: string | null;
+  selectedAgentId: string | null;
+
+  // Navigation indices
+  taskIndex: number;
+  agentIndex: number;
+
+  // Confirm dialog payload
+  pendingConfirm?: {
+    action: 'quit' | 'stop_agent' | 'block_task';
+    payload?: unknown;
+  };
+}
 ```
 
 ### Agent Machine Context
