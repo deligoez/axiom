@@ -25,13 +25,16 @@ npm run typecheck
 
 # 3. Lint (Biome)
 npm run lint
+
+# 4. Dead code detection (Knip)
+npm run knip
 ```
 
-**All three must pass before committing.** If lint has auto-fixable issues, run `npm run lint:fix` first.
+**All four must pass before committing.** If lint has auto-fixable issues, run `npm run lint:fix` first.
 
-Quick combined check:
+Quick combined check (single command):
 ```bash
-npm run test:run && npm run typecheck && npm run lint
+npm run quality
 ```
 
 ## Rules
