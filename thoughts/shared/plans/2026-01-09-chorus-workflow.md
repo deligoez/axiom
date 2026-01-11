@@ -3,7 +3,7 @@
 **Date:** 2026-01-09
 **Updated:** 2026-01-11
 **Status:** APPROVED - Implementation in Progress
-**Version:** 3.6
+**Version:** 3.7
 
 ---
 
@@ -932,6 +932,9 @@ All events logged to `.chorus/session-log.jsonl`:
 | | `user_input` | `{input: string}` |
 | | `tasks_generated` | `{count, source}` |
 | | `spec_parsed` | `{file, chunks}` |
+| | `spec_created` | `{file, method: import\|interactive\|template}` |
+| | `spec_section_tasked` | `{file, section, tasks: string[]}` |
+| | `spec_archived` | `{file, reason}` |
 | **review** | `validation_started` | `{taskCount}` |
 | | `issues_found` | `{issues: Issue[]}` |
 | | `fix_applied` | `{taskId, fixType}` |
@@ -950,12 +953,29 @@ All events logged to `.chorus/session-log.jsonl`:
 | | `session_paused` | User paused |
 | | `session_resumed` | User resumed |
 | | `session_completed` | All tasks done |
+| **learning** | `learning_extracted` | `{taskId, agentType, category, count}` |
+| | `learning_categorized` | `{learningId, category: LOCAL\|CROSS_CUTTING\|ARCHITECTURAL}` |
+| | `pattern_suggested` | `{content, source, category}` |
+| | `pattern_approved` | `{content, approvedBy: auto\|user}` |
+| | `pattern_rejected` | `{content, reason}` |
+| **plan_review** | `review_triggered` | `{trigger: learning\|manual, learningCategory}` |
+| | `review_iteration` | `{iteration, tasksUpdated, tasksMarkedRedundant}` |
+| | `review_converged` | `{iterations, totalChanges}` |
+| | `task_updated` | `{taskId, changeType, oldValue, newValue}` |
+| | `task_marked_redundant` | `{taskId, reason}` |
+| **incremental_planning** | `planning_triggered` | `{readyCount, threshold}` |
+| | `horizon_started` | `{horizonNumber, specSections}` |
+| | `horizon_completed` | `{horizonNumber, tasksCreated}` |
+| | `stop_condition_hit` | `{condition: unknownDependency\|decisionPoint\|taskCountReached}` |
 
 ### Config File: `.chorus/config.json`
 
+> **Note:** Config `version` tracks the config schema version, not the plan version.
+> Use semantic versioning: bump major for breaking changes, minor for new fields.
+
 ```json
 {
-  "version": "3.0",
+  "version": "3.1",
 
   "project": {
     "name": "my-awesome-app",
@@ -1251,6 +1271,21 @@ Beads tasks can include custom fields for Chorus:
 - Press `+` to increase maxIterations for this task
 - Distinct from FAILED: No error occurred, agent just couldn't finish in time
 
+**TIMEOUT/FAILED in Beads:**
+
+Beads (`bd`) uses standard statuses: `open`, `in_progress`, `closed`. Chorus extends this:
+
+| Chorus State | Beads Status | Custom Field | How Chorus Tracks |
+|--------------|--------------|--------------|-------------------|
+| PENDING | `open` | - | Default |
+| IN_PROGRESS | `in_progress` | - | Normal |
+| CLOSED | `closed` | - | Normal |
+| BLOCKED | `open` | `blocked: true` | `bd update --custom blocked=true` |
+| FAILED | `open` | `failed: true` | `bd update --custom failed=true` |
+| TIMEOUT | `open` | `timeout: true` | `bd update --custom timeout=true` |
+
+On retry: `bd update ch-xxx --status=open --custom failed= --custom timeout=`
+
 ### Dependency Management
 
 ```
@@ -1306,10 +1341,20 @@ Chorus behavior:
 
 2. WORKTREE SETUP
    ├── git worktree add .worktrees/{agent}-{task-id} -b agent/{agent}/{task-id}
-   ├── Copy .agent/scratchpad.md template (see below)
+   ├── Copy scratchpad template to worktree (see below)
    └── Ensure AGENTS.md accessible
 
-   **Scratchpad Template** (`.agent/scratchpad.md`):
+   **Scratchpad Template Locations:**
+   - **Template source:** `.chorus/templates/scratchpad.md` (project-wide template)
+   - **Fallback:** Built-in default if template doesn't exist
+   - **Destination:** `.worktrees/{agent}-{task-id}/.agent/scratchpad.md`
+
+   **Why separate locations?**
+   - Template lives in `.chorus/` (project config, git-tracked)
+   - Instance lives in worktree (per-agent, gitignored in worktree)
+   - Each agent gets a fresh copy with task ID substituted
+
+   **Template Content** (`.chorus/templates/scratchpad.md`):
    ```markdown
    # Task Scratchpad: {task_id}
 
@@ -1620,6 +1665,8 @@ When complex conflicts need agent resolution:
    P0: +200 queue position (blocker)
    P1: +100 queue position (critical)
    P2: +50 queue position (high)
+   P3: +10 queue position (medium)
+   P4: +0 queue position (low, FIFO only)
 
 3. FIFO within same priority level
 
@@ -1909,6 +1956,67 @@ async function extractLearnings(task: Task, agent: Agent): Promise<void> {
 }
 ```
 
+**Learning Pipeline (F40 → F41 → learnings.md):**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   LEARNING PIPELINE                              │
+└─────────────────────────────────────────────────────────────────┘
+
+Agent writes to scratchpad during task
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ F40: Learning Extractor                                          │
+│                                                                  │
+│ Input:  .worktrees/{agent}/.agent/scratchpad.md                 │
+│ Action: Parse "## Learnings" section                            │
+│ Output: Structured Learning objects                              │
+│                                                                  │
+│ interface Learning {                                             │
+│   content: string;        // The actual learning                │
+│   category: 'LOCAL' | 'CROSS_CUTTING' | 'ARCHITECTURAL';        │
+│   source: { taskId, agentType, timestamp };                     │
+│   suggestPattern: boolean; // Should this become a pattern?     │
+│ }                                                                │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ F41: Learning Store                                              │
+│                                                                  │
+│ Responsibilities:                                                │
+│ 1. Append to .agent/learnings.md (human-readable, git-tracked)  │
+│ 2. Index in memory for fast retrieval (by label, category)      │
+│ 3. Track "reviewed" status for Plan Review trigger              │
+│ 4. Deduplicate similar learnings                                │
+│                                                                  │
+│ Storage:                                                         │
+│ - Primary: .agent/learnings.md (append-only, survives sessions) │
+│ - Index: In-memory during runtime (rebuilt on startup)          │
+│ - Metadata: .agent/learnings-meta.json (review status, etc.)    │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Downstream Consumers                                             │
+│                                                                  │
+│ F07 Prompt Builder ← Retrieves relevant learnings by task label │
+│ F93 Learning Categorizer ← Gets unreviewed learnings            │
+│ F94 Plan Review Trigger ← Checks for CROSS_CUTTING learnings    │
+│ PATTERNS.md Manager ← Gets pattern suggestions                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**File Relationships:**
+
+| File | Purpose | Updated By | Read By |
+|------|---------|------------|---------|
+| `.agent/scratchpad.md` | Agent writes discoveries during task | Agent | F40 Extractor |
+| `.agent/learnings.md` | Permanent, shared learnings (git-tracked) | F41 Store | F07, all agents |
+| `.agent/learnings-meta.json` | Review status, dedup hashes | F41 Store | F93, F94 |
+| `.chorus/PATTERNS.md` | Promoted patterns (curated) | PATTERNS Manager | All agents |
+
 ### Learning-Triggered Plan Review (Adaptive Task Refinement)
 
 > **Post-MVP Feature:** Automatically reviews and updates pending tasks when cross-cutting learnings are discovered.
@@ -2133,6 +2241,52 @@ Implementation continues...
 
 Specs are **consumed** as they become tasks. Once tasked, sections collapse. Once complete, specs archive.
 
+**Spec Creation Methods:**
+
+| Method | When | How |
+|--------|------|-----|
+| **Manual** | User has a PRD/spec document | `chorus spec import path/to/spec.md` or copy to `.chorus/specs/` |
+| **Interactive** | User describes feature in Planning Mode | Plan Agent creates spec from conversation |
+| **Template** | Starting a new feature | `chorus spec new --template feature` |
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SPEC CREATION FLOW                            │
+└─────────────────────────────────────────────────────────────────┘
+
+Option A: Import existing
+┌─────────────────────────────────────────────────────────────────┐
+│ $ chorus spec import ~/docs/survey-prd.md                        │
+│                                                                  │
+│ → Copies to .chorus/specs/survey-prd.md                          │
+│ → Adds 📋 emoji prefix to all ## headings                        │
+│ → Creates entry in spec-progress.json                            │
+│ → Validates structure (headings, sections)                       │
+└─────────────────────────────────────────────────────────────────┘
+
+Option B: Interactive creation
+┌─────────────────────────────────────────────────────────────────┐
+│ User: "I want to build a survey system"                          │
+│                                                                  │
+│ Plan Agent: Creates survey-spec.md with:                         │
+│   ## 📋 1. Overview                                               │
+│   ## 📋 2. Questions                                               │
+│   ## 📋 3. Responses                                               │
+│   ## 📋 4. Analytics                                               │
+│                                                                  │
+│ User can edit/approve before planning begins                     │
+└─────────────────────────────────────────────────────────────────┘
+
+Option C: Template
+┌─────────────────────────────────────────────────────────────────┐
+│ $ chorus spec new --name "user-auth" --template feature          │
+│                                                                  │
+│ → Creates .chorus/specs/user-auth.md from template               │
+│ → User fills in sections                                         │
+│ → Plan Agent validates completeness                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                       SPEC LIFECYCLE                             │
@@ -2183,14 +2337,63 @@ Phase 3: ALL TASKED → ARCHIVE
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Learnings from Archived Specs:**
+
+When a spec is archived, the learnings discovered during its implementation are NOT lost:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│            LEARNING PRESERVATION ACROSS ARCHIVE                  │
+└─────────────────────────────────────────────────────────────────┘
+
+During Implementation:
+┌─────────────────────────────────────────────────────────────────┐
+│ Task ch-005 (from survey-spec.md ## 2. Questions)                │
+│                                                                  │
+│ Agent discovers: "Rate limiting needed for all endpoints"        │
+│         │                                                        │
+│         ▼                                                        │
+│ F40 extracts → F41 stores in .agent/learnings.md                │
+│         │                                                        │
+│         └─► Learning includes: source: "ch-005"                 │
+│             (task ID is permanent, spec reference not needed)    │
+└─────────────────────────────────────────────────────────────────┘
+
+After Archive:
+┌─────────────────────────────────────────────────────────────────┐
+│ survey-spec.md → .chorus/specs/archive/                          │
+│                                                                  │
+│ Learnings in .agent/learnings.md:                               │
+│ - Still reference task IDs (ch-005)                             │
+│ - Task IDs queryable via Beads (bd show ch-005)                 │
+│ - Context preserved: agent type, timestamp, category             │
+│                                                                  │
+│ PATTERNS.md:                                                     │
+│ - Patterns promoted from learnings survive forever               │
+│ - No reference to source spec needed                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key insight:** Learnings are tied to TASK IDs, not SPEC files. Archiving a spec doesn't affect learnings because:
+1. Learnings reference task IDs (permanent)
+2. Task metadata is in Beads (queryable forever)
+3. Patterns in PATTERNS.md are standalone
+
 **Spec Section States:**
 
-| State | Emoji | In Spec File | In Context |
-|-------|-------|--------------|------------|
-| `draft` | 📋 | Full content visible | Yes |
-| `planning` | 🚧 | Full content visible | Yes |
-| `tasked` | ✅ | Collapsed `<details>` | No (collapsed) |
-| `archived` | 🏁 | Moved to archive/ | Never |
+| State | Emoji | In Spec File | In Context | Plan Review Access |
+|-------|-------|--------------|------------|-------------------|
+| `draft` | 📋 | Full content visible | Yes | N/A (no tasks yet) |
+| `planning` | 🚧 | Full content visible | Yes | N/A (tasks being created) |
+| `tasked` | ✅ | Collapsed `<details>` | No (collapsed) | Via `spec-progress.json` |
+| `archived` | 🏁 | Moved to archive/ | Never | Via archived task IDs |
+
+**Plan Review + Collapsed Sections:**
+When Plan Review needs to update a task from a collapsed section:
+1. Review uses `spec-progress.json` to find task → section mapping
+2. Task metadata contains original acceptance criteria (stored in Beads)
+3. Review updates task in Beads, NOT the collapsed spec section
+4. Original spec content preserved in `<details>` for human reference only
 
 **Directory Structure:**
 
@@ -2355,6 +2558,9 @@ For incremental planning to work in autopilot:
 
 1. **Done Detection:** Feature complete when all spec sections tasked AND all tasks closed
 2. **Scope Guard:** New tasks must map to a spec section (prevents endless task creation)
+   - **Exception:** Cross-cutting tasks from learnings are allowed (labeled `infrastructure` or `cross-cutting`)
+   - These tasks are tracked separately and don't block Done Detection
+   - Example: "Rate limiting middleware" discovered via learning → creates `ch-xxx [cross-cutting]`
 3. **Planning Autonomy:** Agent decides when more tasks needed (ready count < threshold)
 4. **Auto-Archive:** When complete, spec moves to archive/ without user intervention
 
@@ -2404,21 +2610,44 @@ All spec sections implemented
 ```
 Task completes
      │
-     ├──► Extract learnings
-     │         │
-     │         ├── [LOCAL] → No action
-     │         └── [CROSS-CUTTING] → Trigger Plan Review
-     │                                    │
-     │                                    ▼
-     │                              Update existing tasks
+     ▼
+Step 1: Extract learnings
      │
-     └──► Check ready task count
+     ├── [LOCAL] → No action, continue to Step 2
+     │
+     └── [CROSS-CUTTING] or [ARCHITECTURAL]
                │
-               ├── Above threshold → Continue
-               └── Below threshold → Trigger Task Creation
-                                          │
-                                          ▼
-                                    Create new tasks from spec
+               ▼
+         Step 1b: Plan Review Loop
+               │
+               ├── Update existing tasks
+               ├── Mark redundant tasks
+               └── Wait for convergence (no changes)
+               │
+               ▼
+Step 2: Check ready task count (AFTER Plan Review completes)
+     │
+     ├── Above threshold → Continue implementation
+     │
+     └── Below threshold
+               │
+               ▼
+         Step 3: Task Creation
+               │
+               ├── Create new tasks from spec
+               └── Create cross-cutting tasks from learnings
+                   (if not already covered by Plan Review)
+```
+
+**Execution Order Guarantee:**
+1. Learning extraction ALWAYS runs first
+2. Plan Review MUST complete before Task Creation starts
+3. This prevents race conditions where new tasks are created while Review is updating
+
+**Why this order matters:**
+- Plan Review might mark tasks as redundant
+- Task Creation should see the updated task list
+- Prevents creating duplicate or conflicting tasks
 ```
 
 ### Manual Review Triggers (TUI)
@@ -2551,6 +2780,65 @@ Universal patterns that all agents should know, stored in `.chorus/PATTERNS.md`:
 3. Learning Extractor suggests additions to PATTERNS.md from agent discoveries
 4. User can manually edit PATTERNS.md anytime
 
+**PATTERNS.md Update Flow:**
+
+```
+Agent discovers pattern during task
+       │
+       ▼
+Learning Extractor (F40) categorizes:
+       │
+       ├── [LOCAL] → Only to learnings.md, not patterns
+       │
+       └── [CROSS-CUTTING] or [ARCHITECTURAL]
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Pattern Suggestion Created                                      │
+│  ├── Proposed text: "All API calls need rate limiting"          │
+│  ├── Source: ch-005 (claude)                                    │
+│  ├── Category: "API Design"                                     │
+│  └── Status: pending_review                                     │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Review Options (based on config)                                │
+│                                                                  │
+│  autoApply: "none"    → User must approve in TUI                │
+│  autoApply: "minor"   → Auto-add to PATTERNS.md, notify user    │
+│  autoApply: "all"     → Auto-add silently                       │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+If approved/auto-applied:
+       │
+       ├── Append to appropriate section in PATTERNS.md
+       ├── Add source attribution: "Source: ch-005"
+       ├── Commit: "patterns: add rate limiting guideline"
+       └── Log to session-log.jsonl: pattern_added event
+```
+
+**TUI Pattern Review:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ NEW PATTERN SUGGESTION                                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Category: API Design                                            │
+│  Source: ch-005 (claude) - "Implement user auth"                │
+│                                                                  │
+│  Suggested pattern:                                              │
+│  "All API endpoints require rate limiting middleware"            │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ [A] Approve  [E] Edit  [R] Reject  [L] Later              │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ### AGENTS.md vs PATTERNS.md Distinction
 
 | Aspect | AGENTS.md | PATTERNS.md |
@@ -2569,8 +2857,13 @@ Universal patterns that all agents should know, stored in `.chorus/PATTERNS.md`:
 
 **Loading priority:**
 1. Claude loads AGENTS.md natively (via `.claude/rules` symlink or direct read)
-2. F07 Prompt Builder injects PATTERNS.md for all agents
-3. Non-Claude agents receive both via prompt prefix
+2. F07 Prompt Builder injects PATTERNS.md for ALL agents (including Claude)
+3. Non-Claude agents (post-MVP) receive AGENTS.md + learnings via prompt prefix
+
+**Why inject PATTERNS.md even for Claude?**
+- PATTERNS.md is in `.chorus/` which Claude doesn't auto-load
+- Consistent injection ensures all agents see same patterns
+- Alternative: symlink `.chorus/PATTERNS.md` → `.claude/rules/PATTERNS.md` (not recommended, creates coupling)
 
 ---
 
@@ -2635,8 +2928,76 @@ Scripts must be executable (`chmod +x`) and named exactly as the event.
 
 ### Hook Input/Output Format
 
-```bash
-# Input: JSON via stdin
+**Input Fields by Event:**
+
+| Hook Event | `agent` | `task` | `iteration` | `output` | `merge` | `error` |
+|------------|:-------:|:------:|:-----------:|:--------:|:-------:|:-------:|
+| `pre-agent-start` | ✓ | ✓ | - | - | - | - |
+| `post-agent-start` | ✓ | ✓ | - | - | - | - |
+| `pre-task-claim` | - | ✓ | - | - | - | - |
+| `post-task-claim` | ✓ | ✓ | - | - | - | - |
+| `pre-iteration` | ✓ | ✓ | ✓ | - | - | - |
+| `post-iteration` | ✓ | ✓ | ✓ | ✓ | - | - |
+| `pre-task-complete` | ✓ | ✓ | ✓ | ✓ | - | - |
+| `post-task-complete` | ✓ | ✓ | ✓ | ✓ | - | - |
+| `pre-merge` | ✓ | ✓ | - | - | ✓ | - |
+| `post-merge` | ✓ | ✓ | - | - | ✓ | - |
+| `on-agent-error` | ✓ | ✓ | ✓ | ✓ | - | ✓ |
+| `on-agent-timeout` | ✓ | ✓ | ✓ | ✓ | - | - |
+| `on-conflict` | ✓ | ✓ | - | - | ✓ | - |
+
+**Legend:** ✓ = field present, - = field absent
+
+**Field Schemas:**
+
+```typescript
+interface HookInput {
+  event: string;           // Always present
+
+  agent?: {
+    id: string;            // e.g., "claude-ch-001"
+    type: AgentType;       // "claude" | "codex" | "opencode"
+    worktree: string;      // e.g., ".worktrees/claude-ch-001"
+    pid?: number;          // Process ID (post-start only)
+  };
+
+  task?: {
+    id: string;            // e.g., "ch-001"
+    title: string;
+    status: TaskStatus;
+    priority: number;
+    labels: string[];
+  };
+
+  iteration?: {
+    number: number;        // Current iteration (1-based)
+    maxIterations: number; // Config limit
+  };
+
+  output?: {
+    stdout: string;        // Last N lines of agent output
+    stderr?: string;       // If any
+    exitCode: number;      // 0 = success
+    signal?: Signal;       // Parsed <chorus>...</chorus> if present
+  };
+
+  merge?: {
+    branch: string;        // e.g., "agent/claude/ch-001"
+    targetBranch: string;  // e.g., "main"
+    conflictFiles?: string[]; // Only for on-conflict
+  };
+
+  error?: {
+    message: string;
+    stack?: string;
+    code?: string;
+  };
+}
+```
+
+**Example Input (post-iteration):**
+
+```json
 {
   "event": "post-iteration",
   "agent": {
@@ -2658,13 +3019,22 @@ Scripts must be executable (`chmod +x`) and named exactly as the event.
     "exitCode": 0
   }
 }
+```
 
-# Output: JSON to stdout
+**Output Format:**
+
+```json
 {
-  "result": "continue",  // or "block", "complete"
+  "result": "continue",
   "message": "Optional message for TUI"
 }
 ```
+
+| `result` Value | Meaning |
+|----------------|---------|
+| `continue` | Proceed normally |
+| `block` | Halt operation, show message |
+| `complete` | Override completion check (use sparingly) |
 
 ---
 
@@ -2978,6 +3348,23 @@ PRIORITY BADGES:
 ---
 
 ## Changelog
+
+- **v3.7 (2026-01-11):** Comprehensive Consistency Review
+  - FIXED: PATTERNS.md injection clarified (injected for ALL agents including Claude)
+  - FIXED: Scope Guard exception for cross-cutting tasks from learnings
+  - FIXED: Plan Review access to collapsed spec sections (via spec-progress.json)
+  - FIXED: Execution ordering (Plan Review MUST complete before Task Creation)
+  - ADDED: Spec Creation Flow (import, interactive, template methods)
+  - ADDED: PATTERNS.md Update Flow with TUI review dialog
+  - ADDED: Learning Pipeline diagram (F40 → F41 → learnings.md relationship)
+  - ADDED: Hook Input fields table (which fields available per event)
+  - ADDED: Session Logger events for learning, plan_review, incremental_planning modes
+  - ADDED: Priority Boost values for P3 (+10) and P4 (+0)
+  - ADDED: TIMEOUT/FAILED status mapping to Beads custom fields
+  - ADDED: Scratchpad template location clarification (.chorus/templates/ → worktree)
+  - ADDED: Archived spec learnings preservation (tied to task IDs, not specs)
+  - UPDATED: Config version bumped to 3.1 with versioning note
+  - PURPOSE: Resolves all identified contradictions, gaps, and inconsistencies
 
 - **v3.6 (2026-01-11):** Incremental Planning & Manual Triggers
   - ADDED: Implementation-Triggered Task Creation (Incremental Planning) section

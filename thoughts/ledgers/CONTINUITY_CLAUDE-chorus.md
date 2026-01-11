@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-11T22:00:00Z
+**Updated:** 2026-01-11T23:30:00Z
 **Status:** Planning Complete, Ready for TDD Implementation
 
 ---
@@ -17,22 +17,44 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: [x] Master plan v3.6 complete (Incremental Planning & Manual Triggers)
+Done: [x] Master plan v3.7 complete (Consistency Review)
       [x] 140 tasks in Beads (26 M0 + 102 existing + 5 v3.5 + 7 v3.6)
       [x] All task dependencies verified
       [x] All acceptance criteria TDD-ready
       [x] v3.5: Learning-Triggered Plan Review (adaptive task refinement)
       [x] v3.6: Spec Lifecycle + Incremental Planning + TUI Triggers
+      [x] v3.7: Consistency review (14 fixes, no feature conflicts)
 Now:  [→] Begin TDD implementation
 Next: Pick ready task, write tests, implement
 ```
 
 **Ready Tasks:** 48 (use `bd ready -n 0 | grep -v deferred`)
-**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.6)
+**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.7)
 
 ---
 
 ## Recent Session (2026-01-11)
+
+### Master Plan v3.7 - Comprehensive Consistency Review
+
+Addresses all identified contradictions, gaps, and inconsistencies:
+
+| Category | Fix |
+|----------|-----|
+| **Clarification** | PATTERNS.md injected for ALL agents (including Claude) |
+| **Conflict Resolution** | Scope Guard exception for cross-cutting tasks |
+| **Conflict Resolution** | Plan Review accesses collapsed sections via spec-progress.json |
+| **Ordering** | Plan Review MUST complete before Task Creation (no race) |
+| **Gap: Spec Creation** | Added import, interactive, template methods |
+| **Gap: PATTERNS.md Flow** | Added update/review/approve flow with TUI dialog |
+| **Gap: Learning Pipeline** | Added F40 → F41 → learnings.md diagram |
+| **Gap: Hook Fields** | Added table showing which fields per event |
+| **Gap: Session Events** | Added learning, plan_review, incremental_planning events |
+| **Inconsistency** | Added P3 (+10) and P4 (+0) priority boost values |
+| **Inconsistency** | TIMEOUT/FAILED mapped to Beads custom fields |
+| **Inconsistency** | Config version 3.1 with versioning note |
+| **Clarification** | Scratchpad template in .chorus/templates/, copied to worktree |
+| **Clarification** | Archived spec learnings tied to task IDs (preserved forever) |
 
 ### Master Plan v3.6 - Incremental Planning & Manual Triggers
 
@@ -146,6 +168,7 @@ Foundation tasks with no dependencies:
 | 13 | Quality gates | Flexible qualityCommands[] |
 | 14 | Context strategy | MVP: Claude compact; Post-MVP: custom ledger |
 | 15 | Planning strategy | Incremental (just-in-time) with manual triggers |
+| 16 | Post-task ordering | Plan Review → Task Creation (no race condition) |
 
 ---
 
@@ -155,10 +178,12 @@ Foundation tasks with no dependencies:
 .chorus/
 ├── config.json              # qualityCommands[], taskIdPrefix, checkpoints, incrementalPlanning
 ├── task-rules.md            # Validation rules (agent-readable)
-├── PATTERNS.md              # Cross-agent patterns
+├── PATTERNS.md              # Cross-agent patterns (F07 injects for ALL agents)
 ├── planning-state.json      # Planning progress + chosenMode
-├── session-log.jsonl        # Append-only event log
+├── session-log.jsonl        # Append-only event log (v3.7: new event types)
 ├── state.json               # Runtime state (gitignored)
+├── templates/               # v3.7: Template files
+│   └── scratchpad.md        # Copied to worktree on agent spawn
 ├── specs/                   # Living spec documents (v3.6)
 │   ├── feature-spec.md      # Main spec/PRD (only 📋 DRAFT visible)
 │   ├── spec-progress.json   # Tracks which sections have tasks
@@ -196,6 +221,7 @@ npm test                              # Run tests
 
 ## Audit History
 
+- **v3.7:** Comprehensive Consistency Review (14 fixes - contradictions, gaps, race conditions, clarifications)
 - **v3.6:** Incremental Planning & Manual Triggers (7 new tasks - F98-F101b, spec lifecycle, just-in-time planning)
 - **v3.5:** Learning-Triggered Plan Review (6 new tasks - F80d, F93-F97, anti-waterfall feature)
 - **v3.4:** Diagram & config completeness (6 fixes - TIMEOUT state, checkpoints, hooks registration, templates)
@@ -209,7 +235,7 @@ npm test                              # Run tests
 
 ## Key Files
 
-- Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.6)
+- Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.7)
 - Task Rules: `.claude/rules/beads-task-tracking.md`
 - This Ledger: `thoughts/ledgers/CONTINUITY_CLAUDE-chorus.md`
 
