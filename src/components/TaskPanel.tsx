@@ -16,6 +16,8 @@ function StatusIndicator({ status }: { status: BeadStatus }) {
 			return <Text color="green">✓</Text>;
 		case "blocked":
 			return <Text color="red">⊗</Text>;
+		case "failed":
+			return <Text color="red">✗</Text>;
 		case "tombstone":
 			return <Text color="gray">⌫</Text>;
 		default:

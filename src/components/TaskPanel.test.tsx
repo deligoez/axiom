@@ -68,6 +68,37 @@ describe("TaskPanel", () => {
 			const { lastFrame } = render(<TaskPanel beads={beads} />);
 			expect(lastFrame()).toContain("⊗");
 		});
+
+		it("shows ✗ for failed tasks", () => {
+			const beads = [createTestBead({ status: "failed" })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			expect(lastFrame()).toContain("✗");
+		});
+
+		it("failed indicator is red colored", () => {
+			const beads = [createTestBead({ status: "failed" })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// Red color is applied - ✗ should be present
+			expect(lastFrame()).toContain("✗");
+		});
+
+		it("failed status is distinct from blocked", () => {
+			const failedBeads = [createTestBead({ status: "failed" })];
+			const blockedBeads = [createTestBead({ status: "blocked" })];
+
+			const { lastFrame: failedFrame } = render(
+				<TaskPanel beads={failedBeads} />,
+			);
+			const { lastFrame: blockedFrame } = render(
+				<TaskPanel beads={blockedBeads} />,
+			);
+
+			// Failed uses ✗, blocked uses ⊗
+			expect(failedFrame()).toContain("✗");
+			expect(failedFrame()).not.toContain("⊗");
+			expect(blockedFrame()).toContain("⊗");
+			expect(blockedFrame()).not.toContain("✗");
+		});
 	});
 
 	describe("selection", () => {
