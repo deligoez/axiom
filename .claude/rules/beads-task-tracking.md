@@ -254,6 +254,7 @@ Update this section as you learn:
 | F04 Worktree Create | ch-glq | - | ready |
 | F05 Worktree Remove | ch-112 | ch-glq | blocked |
 | F06 Worktree Query | ch-iel | ch-112 | blocked |
+| F06b Worktree CLI | ch-6sg | ch-112,ch-iel,ch-zqi | blocked |
 
 ### M2: Agent Preparation
 
@@ -292,12 +293,14 @@ Update this section as you learn:
 |---------|-----|--------------|--------|
 | F24 Merge Queue | ch-glf | - | ready |
 | F25 Merge Worker | ch-fe5 | ch-glf | blocked |
+| F25b Force-Push Recovery | ch-gnf | ch-fe5 | blocked |
 | F26 Conflict Classifier | ch-7pb | ch-fe5 | blocked |
 | F27 Auto-Resolver | ch-t31 | ch-7pb | blocked |
 | F28 Rebase-Retry | ch-xn6 | ch-7pb | blocked |
 | F29 Resolver Agent | ch-9sj | ch-xn6 | blocked |
 | F30 Human Escalation | ch-26c | ch-9sj | blocked |
-| F31 Merge Service | ch-8ee | ch-112, ch-glf, ch-fe5, ch-7pb, ch-t31, ch-xn6, ch-9sj, ch-26c | blocked |
+| F31 Merge Service | ch-8ee | ch-112, ch-glf, ch-fe5, ch-gnf, ch-7pb, ch-t31, ch-xn6, ch-9sj, ch-26c | blocked |
+| F92 Merge-User CLI | ch-8gf | ch-glf | blocked |
 
 ### M6: Parallelism
 
@@ -346,6 +349,8 @@ Update this section as you learn:
 | F46 Task Block | ch-sb7 | ch-ahq, ch-cwy, ch-zqi | blocked |
 | F46b Task Editor | ch-xe8 | ch-0e7, ch-cwy | blocked |
 | F46c Intervention Panel | ch-di6 | ch-8j3, ch-ahq, ch-fna, ch-cwy, ch-ddk, ch-sb7, ch-xe8 | blocked |
+| F63n Approve Merge Key | ch-6ta | ch-26c | blocked |
+| F63o TUI Exit Handler | ch-bny | ch-cwy | blocked |
 
 ### M10: Rollback & Recovery
 
@@ -356,6 +361,7 @@ Update this section as you learn:
 | F49 Iteration Rollback | ch-c8j | ch-2r5 | blocked |
 | F50 Task Rollback | ch-ofm | ch-2r5, ch-zqi | blocked |
 | F51 Session Recovery | ch-jxp | ch-2r5, ch-81x, ch-112, ch-8ee | blocked |
+| F51b Beads Recovery CLI | ch-ozc | ch-zqi | blocked |
 
 ### M11: Hooks
 
@@ -392,3 +398,21 @@ Update this section as you learn:
 | F63j Task Failed Status | ch-dff | - | ready |
 | F63k Agent Paused Status | ch-tdt | - | ready |
 | F63l Priority Badge Colors | ch-96v | - | ready |
+| F63m Task Recovery Keys | ch-kns | ch-zqi,ch-c8j,ch-112 | blocked |
+| F63p Navigation Keys | ch-b8l | - | ready |
+| F63q Spawn Agent Key | ch-p3c | ch-i9i,ch-zqi | blocked |
+| F63r Assign Task Key | ch-ukl | ch-i9i,ch-zqi | blocked |
+| F63s Start Autopilot Key | ch-jx9 | ch-8j3 | blocked |
+| F63t Intervention Menu Key | ch-6n5 | ch-di6 | blocked |
+| F63u Toggle Help Key | ch-ak5 | ch-2po | blocked |
+| F63v View Learnings Key | ch-u5j | ch-g2h | blocked |
+| F63w Create Checkpoint Key | ch-6aq | ch-k9y | blocked |
+| F63x Undo Key | ch-zsn | ch-c8j,ch-8j3 | blocked |
+| F63y Pause/Resume Key | ch-2gt | ch-fna | blocked |
+| F63z App-Level Control Keys | ch-nggj | ch-di6,ch-kns | blocked |
+| F64a Layout Integration | ch-d6yv | ch-amw,ch-73t,ch-nvo | blocked |
+| F64b AgentGrid Integration | ch-6rh8 | ch-hhh,ch-c2p,ch-if9,ch-70p | blocked |
+| F64c Keyboard Router | ch-89dk | ch-b8l,ch-akb,ch-4ow,ch-nggj | blocked |
+| F64d Full TUI Integration | ch-clju | ch-d6yv,ch-6rh8,ch-89dk | blocked |
+| F63-quit Quit Key | ch-oifw | ch-i9i,ch-112 | blocked |
+| F63-merge-view Merge Queue View Key | ch-0fwe | ch-glf,ch-105 | blocked |
