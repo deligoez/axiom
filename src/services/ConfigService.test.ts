@@ -6,10 +6,14 @@ import { ConfigService } from "./ConfigService.js";
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn(),
 	readFileSync: vi.fn(),
+	writeFileSync: vi.fn(),
+	mkdirSync: vi.fn(),
 }));
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
+const mockWriteFileSync = vi.mocked(fs.writeFileSync);
+const mockMkdirSync = vi.mocked(fs.mkdirSync);
 
 describe("ConfigService", () => {
 	let service: ConfigService;
@@ -174,5 +178,238 @@ describe("ConfigService", () => {
 		expect(
 			(result.project as { testCommand?: string }).testCommand,
 		).toBeUndefined();
+	});
+
+	// F01c: save() tests (2)
+	it("save() creates directory and writes formatted JSON", () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(false);
+		const config = {
+			version: "1.0",
+			mode: "semi-auto" as const,
+			project: { taskIdPrefix: "ch-" },
+			agents: {
+				default: "claude" as const,
+				maxParallel: 3,
+				timeoutMinutes: 30,
+				available: {},
+			},
+			qualityCommands: [],
+			completion: {
+				signal: "DONE",
+				requireTests: true,
+				maxIterations: 50,
+				taskTimeout: 30,
+			},
+			merge: { autoResolve: true, agentResolve: true, requireApproval: false },
+			tui: { agentGrid: "auto" as const },
+			checkpoints: { beforeAutopilot: true, beforeMerge: true, periodic: 5 },
+			planReview: {
+				enabled: true,
+				maxIterations: 5,
+				triggerOn: [],
+				autoApply: "none" as const,
+				requireApproval: [],
+			},
+		};
+
+		// Act
+		service.save(config);
+
+		// Assert
+		expect(mockMkdirSync).toHaveBeenCalledWith("/test/project/.chorus", {
+			recursive: true,
+		});
+		expect(mockWriteFileSync).toHaveBeenCalledWith(
+			"/test/project/.chorus/config.json",
+			expect.stringContaining('"version": "1.0"'),
+		);
+	});
+
+	it("save() overwrites existing file", () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		const config = {
+			version: "2.0",
+			mode: "autopilot" as const,
+			project: { taskIdPrefix: "new-" },
+			agents: {
+				default: "claude" as const,
+				maxParallel: 3,
+				timeoutMinutes: 30,
+				available: {},
+			},
+			qualityCommands: [],
+			completion: {
+				signal: "DONE",
+				requireTests: true,
+				maxIterations: 50,
+				taskTimeout: 30,
+			},
+			merge: { autoResolve: true, agentResolve: true, requireApproval: false },
+			tui: { agentGrid: "auto" as const },
+			checkpoints: { beforeAutopilot: true, beforeMerge: true, periodic: 5 },
+			planReview: {
+				enabled: true,
+				maxIterations: 5,
+				triggerOn: [],
+				autoApply: "none" as const,
+				requireApproval: [],
+			},
+		};
+
+		// Act
+		service.save(config);
+
+		// Assert
+		expect(mockWriteFileSync).toHaveBeenCalledWith(
+			"/test/project/.chorus/config.json",
+			expect.stringContaining('"version": "2.0"'),
+		);
+	});
+
+	// F01c: update() test (1)
+	it("update() merges partial and saves", () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(false);
+		service.load(); // Get defaults
+		mockExistsSync.mockReturnValue(true); // For save
+
+		// Act
+		service.update({ mode: "autopilot" });
+
+		// Assert
+		expect(mockWriteFileSync).toHaveBeenCalledWith(
+			"/test/project/.chorus/config.json",
+			expect.stringContaining('"mode": "autopilot"'),
+		);
+	});
+
+	// F01c: validate() tests (7)
+	it("validate() accepts valid ChorusConfig", () => {
+		// Arrange
+		const validConfig = {
+			version: "1.0",
+			mode: "semi-auto",
+			project: { taskIdPrefix: "ch-" },
+			agents: { default: "claude" },
+			qualityCommands: [{ name: "test", command: "npm test" }],
+		};
+
+		// Act
+		const result = service.validate(validConfig);
+
+		// Assert
+		expect(result).toBe(true);
+	});
+
+	it("validate() rejects null, undefined, and non-objects", () => {
+		// Act & Assert
+		expect(service.validate(null)).toBe(false);
+		expect(service.validate(undefined)).toBe(false);
+		expect(service.validate("string")).toBe(false);
+		expect(service.validate(123)).toBe(false);
+	});
+
+	it("validate() rejects invalid mode values", () => {
+		// Arrange
+		const invalidMode = {
+			version: "1.0",
+			mode: "invalid-mode",
+			project: { taskIdPrefix: "ch-" },
+			agents: { default: "claude" },
+			qualityCommands: [],
+		};
+
+		// Act
+		const result = service.validate(invalidMode);
+
+		// Assert
+		expect(result).toBe(false);
+	});
+
+	it("validate() rejects missing required fields", () => {
+		// Missing version
+		expect(service.validate({ mode: "semi-auto" })).toBe(false);
+		// Missing agents.default
+		expect(
+			service.validate({
+				version: "1.0",
+				mode: "semi-auto",
+				project: { taskIdPrefix: "ch-" },
+				agents: {},
+				qualityCommands: [],
+			}),
+		).toBe(false);
+		// Missing project.taskIdPrefix
+		expect(
+			service.validate({
+				version: "1.0",
+				mode: "semi-auto",
+				project: {},
+				agents: { default: "claude" },
+				qualityCommands: [],
+			}),
+		).toBe(false);
+	});
+
+	it("validate() rejects non-array qualityCommands", () => {
+		// Arrange
+		const invalidQC = {
+			version: "1.0",
+			mode: "semi-auto",
+			project: { taskIdPrefix: "ch-" },
+			agents: { default: "claude" },
+			qualityCommands: "not-an-array",
+		};
+
+		// Act
+		const result = service.validate(invalidQC);
+
+		// Assert
+		expect(result).toBe(false);
+	});
+
+	it("validate() rejects invalid qualityCommand objects", () => {
+		// Missing name
+		expect(
+			service.validate({
+				version: "1.0",
+				mode: "semi-auto",
+				project: { taskIdPrefix: "ch-" },
+				agents: { default: "claude" },
+				qualityCommands: [{ command: "npm test" }],
+			}),
+		).toBe(false);
+		// Missing command
+		expect(
+			service.validate({
+				version: "1.0",
+				mode: "semi-auto",
+				project: { taskIdPrefix: "ch-" },
+				agents: { default: "claude" },
+				qualityCommands: [{ name: "test" }],
+			}),
+		).toBe(false);
+	});
+
+	it("validate() accepts valid qualityCommands array", () => {
+		// Arrange
+		const validConfig = {
+			version: "1.0",
+			mode: "semi-auto",
+			project: { taskIdPrefix: "ch-" },
+			agents: { default: "claude" },
+			qualityCommands: [
+				{ name: "test", command: "npm test" },
+				{ name: "lint", command: "npm lint" },
+			],
+		};
+
+		// Act
+		const result = service.validate(validConfig);
+
+		// Assert
+		expect(result).toBe(true);
 	});
 });

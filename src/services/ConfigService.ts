@@ -45,4 +45,52 @@ export class ConfigService {
 	exists(): boolean {
 		return fs.existsSync(this.configPath);
 	}
+
+	save(config: ChorusConfig): void {
+		const dir = path.dirname(this.configPath);
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir, { recursive: true });
+		}
+		fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
+		this.config = config;
+	}
+
+	update(partial: Partial<ChorusConfig>): void {
+		const current = this.get();
+		const merged = { ...current, ...partial };
+		this.save(merged);
+	}
+
+	validate(config: unknown): config is ChorusConfig {
+		if (!config || typeof config !== "object") return false;
+
+		const c = config as Record<string, unknown>;
+
+		// Check version
+		if (!c.version || typeof c.version !== "string") return false;
+
+		// Check mode
+		if (c.mode !== "semi-auto" && c.mode !== "autopilot") return false;
+
+		// Check agents
+		if (!c.agents || typeof c.agents !== "object") return false;
+		const agents = c.agents as Record<string, unknown>;
+		if (!["claude", "codex", "opencode"].includes(agents.default as string))
+			return false;
+
+		// Check project.taskIdPrefix
+		if (!c.project || typeof c.project !== "object") return false;
+		const project = c.project as Record<string, unknown>;
+		if (!project.taskIdPrefix) return false;
+
+		// Check qualityCommands
+		if (!Array.isArray(c.qualityCommands)) return false;
+		for (const cmd of c.qualityCommands as unknown[]) {
+			if (!cmd || typeof cmd !== "object") return false;
+			const qc = cmd as Record<string, unknown>;
+			if (!qc.name || !qc.command) return false;
+		}
+
+		return true;
+	}
 }
