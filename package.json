@@ -57,6 +57,7 @@
     "@types/react": "^19.2.7",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
+    "cli-testing-library": "^3.0.1",
     "fullscreen-ink": "^0.1.0",
     "ink-testing-library": "^4.0.0",
     "knip": "^5.80.2",
