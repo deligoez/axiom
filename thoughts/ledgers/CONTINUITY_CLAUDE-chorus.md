@@ -1,8 +1,8 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-12T02:00:00Z
-**Status:** XState Testing Audit COMPLETE - Critical Task Updates Pending
+**Updated:** 2026-01-12T02:30:00Z
+**Status:** Ready for TDD - Start ch-lxxb (FX01)
 
 ---
 
@@ -33,7 +33,7 @@ Next: Start ch-lxxb (FX01: XState Setup) - ONLY READY TASK
 
 **Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
 **XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md` (v1.2 - Testing Strategy)
-**Latest Commit:** `2a36045` feat: add TUI Machine (FX09) to XState architecture
+**Latest Commit:** `8f5b04d` feat: eighth audit - XState testing patterns and critical task updates
 
 ---
 
@@ -202,8 +202,8 @@ Created ch-g3of with 14 tests. Key simplifications:
 ## Task Statistics
 
 ```
-Total Tasks:     173 (164 existing + 9 new M-1)
-Active:          169 (non-deferred)
+Total Tasks:     174 (164 existing + 10 M-1)
+Active:          170 (non-deferred)
 Deferred:        4   (3 non-Claude + 1 OrchestrationStore replaced)
 Ready:           1   (ch-lxxb - FX01: XState Setup)
 ```
