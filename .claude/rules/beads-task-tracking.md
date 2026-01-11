@@ -157,6 +157,18 @@ bd show <id>               # Task details
 
 Update this section as you learn:
 
+### 2026-01-11 (Seventh Audit - M8-M12 Deep Review)
+- **92 tasks reviewed** across M8-M12 with 7 parallel review agents
+- **Key Conflict Resolution:**
+  - 'L' key: ch-u5j (View Learnings) uses 'L', ch-s8u (Learning Review) now uses 'Ctrl+L'
+  - 'a' key: No actual conflict - ch-jx9 (Autopilot) and ch-6ta (Approve Merge) are context-dependent
+- **Keyboard Router Fix (ch-89dk):**
+  - Was incorrectly depending on individual key handlers
+  - Now depends only on ch-8j3 (OrchestrationStore) for mode/pause context
+  - Blocks 10 key handlers + Full TUI Integration
+- **Verified:** All 52 ready tasks have correct dependencies satisfied
+- **Total Tasks:** 164 (52 ready, 3 deferred)
+
 ### 2026-01-11 (v3.6)
 - Master Plan v3.6: Incremental Planning & Manual Triggers
 - NEW: Implementation-Triggered Task Creation (Just-in-Time planning)
@@ -350,7 +362,6 @@ Update this section as you learn:
 | F46b Task Editor | ch-xe8 | ch-0e7, ch-999, ch-cwy | blocked |
 | F46c Intervention Panel | ch-di6 | ch-8j3, ch-ahq, ch-fna, ch-cwy, ch-ddk, ch-sb7, ch-xe8 | blocked |
 | F63n Approve Merge Key | ch-6ta | ch-26c | blocked |
-| F63o TUI Exit Handler | ch-bny | ch-cwy | blocked |
 
 ### M10: Rollback & Recovery
 
@@ -362,6 +373,7 @@ Update this section as you learn:
 | F50 Task Rollback | ch-ofm | ch-2r5, ch-zqi | blocked |
 | F51 Session Recovery | ch-jxp | ch-2r5, ch-81x, ch-112, ch-8ee | blocked |
 | F51b Beads Recovery CLI | ch-ozc | ch-zqi | blocked |
+| F51c Disk Space Monitor | ch-v31l | ch-2r5 | blocked |
 
 ### M11: Hooks
 
@@ -414,5 +426,6 @@ Update this section as you learn:
 | F64b AgentGrid Integration | ch-6rh8 | ch-hhh,ch-c2p,ch-if9,ch-70p | blocked |
 | F64c Keyboard Router | ch-89dk | ch-b8l,ch-akb,ch-4ow,ch-nggj | blocked |
 | F64d Full TUI Integration | ch-clju | ch-d6yv,ch-6rh8,ch-89dk | blocked |
-| F63-quit Quit Key | ch-oifw | ch-i9i,ch-112 | blocked |
+| F63o TUI Exit Handler | ch-bny | ch-cwy | blocked |
 | F63-merge-view Merge Queue View Key | ch-0fwe | ch-glf,ch-105 | blocked |
+| F42c TUI Pattern Review Dialog | ch-zi33 | ch-j40,ch-a6h | blocked |

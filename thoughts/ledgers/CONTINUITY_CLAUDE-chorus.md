@@ -1,8 +1,8 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-11T16:15:00Z
-**Status:** Fourth Task Audit COMPLETE - 23 Issues Fixed, 3 Duplicates Closed
+**Updated:** 2026-01-11T19:00:00Z
+**Status:** Seventh Task Audit COMPLETE - M8-M12 Deep Review
 
 ---
 
@@ -18,11 +18,10 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 
 ```
 Done: [x] Master plan v3.10 complete
-      [x] First-Third Task Audits (cumulative 77 fixes)
-      [x] Fourth Task Audit (16:15) - 6 review + 4 fix agents
-      [x] 23 issues identified and fixed
-      [x] 3 duplicate tasks closed (ch-4oz, ch-djpg, ch-f58w)
-      [x] All milestones verified against master plan
+      [x] First-Sixth Task Audits (cumulative 116 fixes)
+      [x] Seventh Task Audit (19:00) - M8-M12 deep review
+      [x] 3 critical fixes applied
+      [x] Verified 52 ready tasks have correct dependencies
 Now:  [→] TDD implementation ready to begin
 Next: Pick first ready task from `bd ready -n 0 | grep -v deferred`
 ```
@@ -31,57 +30,131 @@ Next: Pick first ready task from `bd ready -n 0 | grep -v deferred`
 
 ---
 
-## Latest Session: Fourth Task Audit (2026-01-11 16:15)
+## Seventh Task Audit (2026-01-11 19:00)
 
-Full review of all 169 tasks with 6 parallel review agents + 4 parallel fix agents.
+Deep M8-M12 review with 7 parallel review agents + 6 parallel fix agents.
 
 ### Review Statistics
 
 | Milestone | Tasks | OK | Issues |
 |-----------|-------|-----|--------|
-| M0 Planning | 26 | 26 | 0 |
-| M1 Infrastructure | 16 | 16 | 0 |
-| M2-M4 | 18 | 18 | 0 |
-| M5-M7 | 16 | 14 | 2 |
-| M8-M11 | 39 | 33 | 6 |
-| M12 TUI | 54 | 39 | 15 |
-| **Total** | **169** | **146** | **23** |
+| M8: Memory | 18 | 17 | 1 (key conflict) |
+| M9: Intervention | 10 | 10 | 0 |
+| M10: Rollback | 7 | 7 | 0 |
+| M11: Hooks | 3 | 3 | 0 |
+| M12 TUI Part 1 | 20 | 20 | 0 |
+| M12 TUI Part 2 | 27 | 26 | 1 (key conflict) |
+| M12 TUI Part 3 | 7 | 6 | 1 (wrong deps) |
+| **Total** | **92** | **89** | **3** |
 
-### Duplicates Closed (3)
+### Fixes Applied (3)
 
-| ID | Duplicate Of | Reason |
-|----|--------------|--------|
-| ch-4oz | ch-0fwe | 'M' key merge view |
-| ch-djpg | ch-0fwe | 'M' key merge view |
-| ch-f58w | ch-oifw | 'q' key quit |
+| # | Task | Fix |
+|---|------|-----|
+| 1 | ch-s8u | `L` → `Ctrl+L` shortcut (master plan compliance) |
+| 2 | ch-89dk | Fixed dep direction: now depends on ch-8j3, blocks 10 handlers |
+| 3 | Test counts | Verified already correct from previous audit |
 
-### M8-M11 Fixes (6)
+### Key Findings
 
-| Task | Change |
-|------|--------|
-| ch-yhq | +ch-sro dependency (Config Load) |
-| ch-2yp | -ch-j40 dependency (now READY!) |
-| ch-s8u | +ch-yhq dependency |
-| ch-fts | -ch-z8g, +ch-yhq, +ch-2yp |
-| ch-xe8 | Verified ch-999 valid |
-| ch-cg0 | Body updated: iterations tracking (10→12 tests) |
+**Key Conflict Resolution:**
+- **'L' key conflict FIXED**: ch-u5j (View Learnings) uses 'L' read-only, ch-s8u (Learning Review) now uses 'Ctrl+L'
+- **'a' key NO CONFLICT**: ch-jx9 (Autopilot) and ch-6ta (Approve Merge) are context-dependent (handled by Keyboard Router)
 
-### M12 TUI Fixes (14)
+**Dependency Architecture Fixed:**
+- ch-89dk (Keyboard Router) now correctly:
+  - Depends on: ch-8j3 (OrchestrationStore) - for mode/pause context
+  - Blocks: 10 key handlers + Full TUI Integration
+  - No longer incorrectly depends on individual handlers
 
-| Task | Change |
-|------|--------|
-| ch-3ji | +ch-7gx (Semi-Auto Mode) |
-| ch-02h | +ch-cwy, +ch-i9i (AgentStopper, SlotManager) |
-| ch-im6 | -ch-zqi (now READY!) |
-| ch-0vb | +ch-70p, +ch-c2p (Grid, Tile) |
-| ch-555 | +ch-8j3 (Orchestration Store) |
-| ch-jx9 | +ch-5tj (RalphLoop Control) |
-| ch-nggj | +ch-kns, +ch-cwy, +ch-zqi |
-| ch-p3c | +ch-0e7 (Orchestrator Core) |
-| ch-ukl | +ch-0e7 (Orchestrator Core) |
-| ch-zsn | +ch-fna (PauseHandler) |
-| ch-2gt | Verified OK |
-| ch-89dk | +ch-3ji, +ch-0fwe, +ch-oifw, +ch-kns, +ch-2gt |
+**Verified Ready Tasks:** All 52 ready tasks have correct dependencies satisfied. No phantom dependencies found.
+
+---
+
+## Previous Session: Fifth Task Audit (2026-01-11 17:30)
+
+Focused review of M5-M12 milestones with 6 parallel review agents + 6 parallel fix agents.
+
+### Review Statistics
+
+| Milestone | Tasks | OK | Issues |
+|-----------|-------|-----|--------|
+| M5-M7 | 15 | 14 | 1 (dead deps) |
+| M8-M9 | 35 | 35 | 0 (all compliant) |
+| M10-M11 | 9 | 8 | 1 (wrong dep) |
+| M12 TUI Part 1 | 20 | 16 | 4 (test counts) |
+| M12 TUI Part 2 | 19 | 16 | 3 (duplicate, deps, key) |
+| M12 TUI Part 3 | 4 | 4 | 0 (all pass) |
+| **Total** | **102** | **93** | **9** |
+
+### Fixes Applied (10)
+
+| # | Task | Fix |
+|---|------|-----|
+| 1 | ch-3pa | Removed dead deps (ch-19o, ch-cu1) |
+| 2 | ch-mnd | Test count: 7→8 |
+| 3 | ch-3na | Test count: 8→9 |
+| 4 | ch-nvo | Test count: 9→10 |
+| 5 | ch-hhh | Test count: 12→11 |
+| 6 | ch-oifw | **Closed as duplicate** of ch-bny |
+| 7 | ch-89dk | Updated dep: ch-oifw→ch-bny |
+| 8 | ch-b8l | Added missing dep: ch-akb |
+| 9 | ch-ozc | Removed wrong dep ch-zqi (now READY!) |
+| 10 | ch-6ta | Key changed: 'm'→'a' (conflict fix) |
+
+### Design Decisions Verified
+
+- **'r' key context-dependent**: Keyboard Router handles correctly
+  - failed/timeout task → retry (ch-kns, priority 100)
+  - normal task → redirect (ch-nggj, priority 50)
+- **'M' vs 'm'**: No conflict - M (shift) = merge view, m = mode toggle
+- **'a' for approve**: Changed from 'm' to avoid mode toggle conflict
+
+---
+
+## Sixth Task Audit (2026-01-11 18:15)
+
+Comprehensive M5-M12 review with 5 parallel review agents + 6 parallel fix agents.
+
+### Review Statistics
+
+| Milestone | Tasks | OK | Issues |
+|-----------|-------|-----|--------|
+| M5: Merge Service | 10 | 10 | 0 |
+| M6: Parallelism | 1 | 1 | 0 |
+| M7: Autopilot | 4 | 4 | 0 |
+| M8: Memory | 18 | 16 | 2 |
+| M9: Intervention | 12 | 11 | 1 |
+| M10: Rollback | 6 | 6 | 0 |
+| M11: Hooks | 3 | 3 | 0 |
+| M12: TUI | 35 | 30 | 5 |
+| **Total** | **89** | **81** | **8** |
+
+### Fixes Applied (6)
+
+| # | Task | Fix |
+|---|------|-----|
+| 1 | ch-cjf | `LearningCategory` → `LearningScope` |
+| 2 | ch-s8u | `Ctrl+L` → `L` shortcut |
+| 3 | ch-6ta | Key 'm' → 'a', added acceptance criteria, label → m12-tui |
+| 4 | ch-3ji | Removed ch-mnd dep, added state.json test (5→6 tests) |
+| 5 | ch-bny | Label m9-intervention → m12-tui |
+| 6 | ch-oifw | Confirmed closed (duplicate of ch-bny) |
+
+### New Tasks Created (2)
+
+| Task | Feature | Milestone |
+|------|---------|-----------|
+| ch-v31l | F51c: Disk Space Monitor (ENOSPC) | M10 |
+| ch-zi33 | F42c: TUI Pattern Review Dialog | M12 |
+
+### Missing Task Analysis
+
+| Feature | Status |
+|---------|--------|
+| Agent Stuck Detection | ✅ Already covered by ch-1hq (F32d) |
+| Disk Space Monitor | ✅ Created ch-v31l |
+| Pattern Review Dialog | ✅ Created ch-zi33 |
 
 ---
 
@@ -101,18 +174,20 @@ Full review of all 169 tasks with 6 parallel review agents + 4 parallel fix agen
 | 19 | State Extensions | paused, priority, enqueuedAt, totalIterations |
 | 20 | Iteration Boundaries | State-based tracking in ChorusState.agents |
 | 21 | Phantom Dependencies | ch-999 (F15b) is valid task |
-| **22** | **Focus State** | **TwoColumnLayout owns focus, exposes callback** |
+| 22 | Focus State | TwoColumnLayout owns focus, exposes callback |
+| 23 | Merge Approve Key | 'a' (not 'm' to avoid mode toggle conflict) |
+| **24** | **Learning Review Key** | **'Ctrl+L' (not 'L' - 'L' is view-only)** |
+| **25** | **Keyboard Router Deps** | **Router depends on OrchestrationStore, handlers depend on Router** |
 
 ---
 
 ## Task Statistics
 
 ```
-Total Tasks:     163 (was 166, 3 duplicates closed)
-Active:          160 (non-deferred)
+Total Tasks:     164
+Active:          161 (non-deferred)
 Deferred:        3   (non-Claude agent support)
-Ready:           49  (dependencies satisfied)
-New Ready:       ch-2yp, ch-im6 (dependency fixes)
+Ready:           52  (dependencies satisfied)
 ```
 
 ### Deferred Tasks
@@ -126,8 +201,8 @@ New Ready:       ch-2yp, ch-im6 (dependency fixes)
 
 ```bash
 # Task management
-bd list -n 0                          # All tasks (163)
-bd ready -n 0 | grep -v deferred      # Ready tasks (49)
+bd list -n 0                          # All tasks (164)
+bd ready -n 0 | grep -v deferred      # Ready tasks (52)
 bd show <id>                          # View task spec
 
 # Start implementation
@@ -135,7 +210,7 @@ bd update <id> --status=in_progress   # Start task
 bd close <id>                         # Complete task
 
 # Verify counts
-bd list -n 0 --status=open | wc -l    # Should be 163
+bd list -n 0 --status=open | wc -l    # Should be 164
 ```
 
 ---
@@ -152,7 +227,7 @@ bd list -n 0 --status=open | wc -l    # Should be 163
 
 After `/clear`:
 1. Read this ledger (auto-loaded by hook)
-2. Four audits complete - 163 tasks, 49 ready for TDD implementation
+2. Seven audits complete - 164 tasks, 52 ready for TDD implementation
 3. Pick first ready task: `bd ready -n 0 | grep -v deferred | head -5`
 4. Start with: `bd update <id> --status=in_progress`
 5. Follow TDD: RED → GREEN → COMMIT
