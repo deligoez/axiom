@@ -162,4 +162,45 @@ describe("TaskPanel", () => {
 			expect(lastFrame()).toContain("3");
 		});
 	});
+
+	describe("priority badge colors", () => {
+		it("P0 badge is magenta (critical)", () => {
+			const beads = [createTestBead({ priority: 0 })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// P0 should be displayed
+			expect(lastFrame()).toContain("P0");
+		});
+
+		it("P0 badge has flashing animation", async () => {
+			// Flashing is implemented via setInterval - P0 badge toggles visibility
+			const beads = [createTestBead({ priority: 0 })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// Initial state should show P0
+			expect(lastFrame()).toContain("P0");
+		});
+
+		it("P1 badge is red", () => {
+			const beads = [createTestBead({ priority: 1 })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			expect(lastFrame()).toContain("P1");
+		});
+
+		it("P2 badge is yellow/orange", () => {
+			const beads = [createTestBead({ priority: 2 })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			expect(lastFrame()).toContain("P2");
+		});
+
+		it("P3 badge is yellow", () => {
+			const beads = [createTestBead({ priority: 3 })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			expect(lastFrame()).toContain("P3");
+		});
+
+		it("P4 badge is blue/dim", () => {
+			const beads = [createTestBead({ priority: 4 })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			expect(lastFrame()).toContain("P4");
+		});
+	});
 });

@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import { useEffect, useState } from "react";
 import type { Bead, BeadStatus } from "../types/bead.js";
 
 interface TaskPanelProps {
@@ -35,13 +36,32 @@ function getShortId(id: string): string {
 }
 
 function PriorityBadge({ priority }: { priority: number }) {
+	const [visible, setVisible] = useState(true);
+
+	// P0 flashing animation
+	useEffect(() => {
+		if (priority !== 0) return;
+
+		const interval = setInterval(() => {
+			setVisible((v) => !v);
+		}, 500);
+
+		return () => clearInterval(interval);
+	}, [priority]);
+
 	const colors: Record<number, string> = {
-		0: "red",
-		1: "yellow",
-		2: "white",
-		3: "gray",
-		4: "gray",
+		0: "magenta",
+		1: "red",
+		2: "yellow",
+		3: "yellow",
+		4: "blue",
 	};
+
+	// P0 flashes (toggles visibility)
+	if (priority === 0 && !visible) {
+		return <Text> </Text>;
+	}
+
 	return <Text color={colors[priority] ?? "gray"}>P{priority}</Text>;
 }
 
