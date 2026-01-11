@@ -1,8 +1,9 @@
 # Chorus Workflow: End-to-End Multi-Agent Orchestration
 
 **Date:** 2026-01-09
+**Updated:** 2026-01-11
 **Status:** APPROVED - Implementation in Progress
-**Version:** 2.1
+**Version:** 3.2
 
 ---
 
@@ -12,16 +13,17 @@
 2. [Key Decisions (Resolved)](#key-decisions-resolved)
 3. [Architecture](#architecture)
 4. [Operating Modes](#operating-modes)
-5. [Initialization Flow](#initialization-flow)
-6. [Task Creation & Management](#task-creation--management)
-7. [Agent Lifecycle](#agent-lifecycle)
-8. [Background Merge Service](#background-merge-service)
-9. [Automatic Mode (Ralph Wiggum)](#automatic-mode-ralph-wiggum)
-10. [Memory System](#memory-system)
-11. [Hooks Integration](#hooks-integration)
-12. [Human Intervention](#human-intervention)
-13. [Rollback & Recovery](#rollback--recovery)
-14. [TUI Visualization](#tui-visualization)
+5. [Planning Phase (M0)](#planning-phase-m0) ← **NEW**
+6. [Initialization Flow](#initialization-flow)
+7. [Task Creation & Management](#task-creation--management)
+8. [Agent Lifecycle](#agent-lifecycle)
+9. [Background Merge Service](#background-merge-service)
+10. [Automatic Mode (Ralph Wiggum)](#automatic-mode-ralph-wiggum)
+11. [Memory System](#memory-system)
+12. [Hooks Integration](#hooks-integration)
+13. [Human Intervention](#human-intervention)
+14. [Rollback & Recovery](#rollback--recovery)
+15. [TUI Visualization](#tui-visualization)
 
 ---
 
@@ -40,7 +42,7 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
 
 ### Design Principles
 
-1. **Agent-Agnostic**: Works with claude-code, codex, and opencode
+1. **Agent-Ready Architecture**: Designed for claude-code (MVP), extensible to codex and opencode (post-MVP)
 2. **Non-Invasive**: Uses existing tools (Beads, git worktrees) rather than reinventing
 3. **Fail-Safe**: Can recover from crashes, bad commits, stuck agents
 4. **Observable**: Every action is visible in TUI and logged
@@ -62,14 +64,60 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
 | 7 | Prompt construction? | Inject task context + learnings |
 | 8 | Conflict resolution? | Agent-first, human-fallback |
 | 9 | Operating modes? | Semi-auto (default) + Autopilot |
-| **10** | **MVP Scope?** | **Claude-only (codex/opencode deferred)** |
+| 10 | MVP Scope? | Claude-only (codex/opencode deferred) |
+| **11** | **Architecture?** | **Planning-first (Ralph-inspired)** |
+| **12** | **Config format?** | **JSON (config) + Markdown (rules, patterns)** |
+| **13** | **Quality gates?** | **Flexible commands (not just test/lint)** |
+| **14** | **Context strategy?** | **MVP: Claude compact; Post-MVP: custom ledger** |
 
 ### Decision Details
 
+#### 14. Context Strategy: Claude Compact → Custom Ledger
+
+**MVP: Claude Compact**
+Claude Code has built-in context management via `/compact` command. For MVP:
+- Agent runs until context fills (~70% usage)
+- Claude automatically compacts conversation
+- Task context preserved via prompt injection (re-injected after compact)
+- No special handling needed by Chorus
+
+```
+Agent iteration 1-N:
+├── Claude manages its own context
+├── On compact: Claude summarizes conversation
+├── Task prompt (from F07) re-injected automatically
+└── Chorus monitors via output parsing only
+```
+
+**Post-MVP: Custom Ledger System**
+For long-running tasks or complex multi-file changes:
+- Chorus maintains a task-specific ledger (`.chorus/ledgers/{task-id}.md`)
+- Ledger tracks: files changed, decisions made, blockers encountered
+- On agent restart/compact: Ledger injected for continuity
+- Enables cross-iteration state that survives compaction
+
+```typescript
+// Post-MVP ledger structure
+interface TaskLedger {
+  taskId: string;
+  filesModified: string[];
+  keyDecisions: { decision: string; rationale: string }[];
+  blockers: { issue: string; resolution?: string }[];
+  lastIteration: number;
+  lastCheckpoint: string;  // git commit hash
+}
+```
+
+**Why defer custom ledger?**
+- Claude's built-in compact works well for most tasks
+- Ledger adds complexity without clear MVP benefit
+- Can evaluate need based on real usage patterns
+
 #### 1. Multi-Agent Support: claude, codex, opencode
 
-> **MVP SCOPE:** Claude-only. Codex and OpenCode support deferred.
-> See deferred tasks: F07b (context injection), F03c (CLI detection), F42 (learning injector)
+> **MVP SCOPE:** Config structure supports all 3 agents, but MVP implements Claude only.
+> Deferred features for codex/opencode: F07b (context injection), F03c (CLI detection), F42 (learning injector)
+> These agents will work in MVP but without context injection - they run with default prompts.
 
 **Rationale:**
 - All support autonomous/non-interactive mode
@@ -82,15 +130,15 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
   "agents": {
     "default": "claude",
     "available": {
-      "claude": { "command": "claude", "args": ["--dangerously-skip-permissions"] },
-      "codex": { "command": "codex", "args": ["--full-auto"] },
-      "opencode": { "command": "opencode", "args": ["-p"] }
+      "claude": { "command": "claude", "args": ["--dangerously-skip-permissions"] }
     }
   }
 }
 ```
 
-**Context Injection for Non-Claude Agents:**
+> **Post-MVP:** Add codex and opencode to `available` when context injection implemented.
+
+**Context Injection for Non-Claude Agents (Post-MVP):**
 Claude-code natively loads `.claude/rules` and `.claude/skills`. For codex and opencode, we inject context via prompt prefix:
 
 ```typescript
@@ -290,6 +338,12 @@ Key Behaviors:
 ├── Task panel updates in real-time
 ├── Multiple agents can run in parallel
 └── User maintains full control
+
+Signal Handling (Semi-Auto):
+├── COMPLETE → Task closed, agent stops, user decides next
+├── BLOCKED → Task marked blocked, agent stops, user notified
+├── NEEDS_HELP → Agent pauses, user can respond or redirect
+└── No signal → Continue iterations until max or timeout
 ```
 
 ### Autopilot Mode
@@ -319,6 +373,12 @@ Key Behaviors:
 ├── Auto-spawns new agents when slots free
 ├── Can be paused/resumed
 └── Safeguards prevent runaway (max iterations, timeout)
+
+Signal Handling (Autopilot):
+├── COMPLETE → Task closed, merge queued, pick next ready task
+├── BLOCKED → Task stays blocked, agent freed, pick different task
+├── NEEDS_HELP → Alert user, agent pauses, autopilot continues others
+└── No signal → Continue iterations until max or timeout
 ```
 
 ### Mode Switching
@@ -339,138 +399,481 @@ Config (.chorus/config.json):
 
 ---
 
-## Initialization Flow
+## Planning Phase (M0)
 
-### First-Time Setup: `chorus init`
+> **NEW in v3.0:** Planning-first architecture inspired by Ralph pattern.
+
+### Overview
+
+Before implementation begins, Chorus guides users through interactive planning:
+
+```
+chorus command
+     │
+     ▼
+┌─────────────────┐
+│ Check .chorus/  │
+│ directory       │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │ exists? │
+    └────┬────┘
+         │
+    No   │   Yes
+    ┌────┴────────────────┐
+    ▼                     ▼
+┌─────────┐        ┌─────────────┐
+│  INIT   │        │ Check state │
+│  MODE   │        └──────┬──────┘
+└────┬────┘               │
+     │              ┌─────┴─────┐
+     ▼              │ has tasks?│
+┌─────────────┐     └─────┬─────┘
+│  PLANNING   │           │
+│    MODE     │◀──No──────┤
+└─────────────┘           │Yes
+                          ▼
+                   ┌─────────────────┐
+                   │ IMPLEMENTATION  │
+                   │      MODE       │
+                   └─────────────────┘
+```
+
+### TUI Layout (All Modes)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    chorus init --interactive                     │
+│ CHORUS [MODE]                                    [Status] [Help]│
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│                                                                  │
+│                    Agent Window (~80%)                           │
+│                                                                  │
+│     Agent conversation, output, forms, etc.                     │
+│                                                                  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > ___________________________________________________________   │
+│                                                                  │
+│ [Tab: Focus] [Enter: Send] [Esc: Cancel] [?: Help]              │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+```
+
+### Planning Mode
+
+Interactive task planning with Plan Agent before implementation:
+
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 1: Check Prerequisites                                      │
-│ ├── git repo initialized?                                        │
-│ ├── Node.js >= 20?                                               │
-│ ├── bd (Beads) installed?                                        │
-│ └── At least one agent CLI available? (claude/codex/opencode)    │
+│ CHORUS PLANNING                                        [?] Help │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Plan Agent: Welcome! I see this project has no tasks yet.      │
+│                                                                  │
+│  How would you like to proceed?                                  │
+│                                                                  │
+│  You can:                                                        │
+│  • Describe what you want to build (I'll help break it down)   │
+│  • Paste a task list (I'll validate against our rules)         │
+│  • Reference a spec file (I'll parse and decompose it)         │
+│                                                                  │
+│  Or just start typing...                                         │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > _____________________________________________________________│
 └─────────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┴───────────────┐
-              │ Missing?                      │
-              │ → Show install instructions   │
-              │ → Offer to install (if npm)   │
-              └───────────────┬───────────────┘
-                              ▼
+```
+
+### Plan Agent Capabilities
+
+Plan Agent helps with:
+
+1. **Free-form Planning:** User describes goal, agent creates task breakdown
+2. **Task List Review:** User pastes tasks, agent validates and suggests improvements
+3. **Spec/PRD Parsing:** User provides spec file, agent parses and decomposes into tasks
+
+Agent prompt is constructed from:
+- Core task rules (built-in)
+- Project-specific rules (from `.chorus/task-rules.md`)
+- Learned patterns (from `.chorus/PATTERNS.md`)
+
+### Auto-Decomposition
+
+For large specs, chunked processing:
+
+```typescript
+// Process large specs in chunks
+async function parseSpecInChunks(specPath: string, chunkSize: number = 500) {
+  const content = await readFile(specPath);
+  const lines = content.split('\n');
+
+  for (let i = 0; i < lines.length; i += chunkSize) {
+    const chunk = lines.slice(i, i + chunkSize).join('\n');
+    // Process chunk, generate tasks
+    yield processChunk(chunk);
+  }
+}
+```
+
+### Task Validation Rules
+
+All tasks are validated before implementation begins.
+
+#### Built-in Rules (Always Enforced)
+
+| Rule | Description |
+|------|-------------|
+| **Atomic** | Each task must have a single responsibility |
+| **Testable** | All acceptance criteria must be verifiable |
+| **Acyclic** | No circular dependencies allowed |
+| **Context-fit** | Task must fit within one agent context window |
+
+#### Configurable Rules (`.chorus/task-rules.md`)
+
+```markdown
+# Task Rules
+
+## Configurable Limits
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| max_acceptance_criteria | 10 | Maximum criteria per task |
+| max_description_length | 500 | Maximum chars for description |
+
+## Optional Rules
+
+- [ ] require_test_file: Require explicit test file reference
+- [x] enforce_naming: Pattern `^F\d+[a-z]?: .+`
+- [ ] forbidden_words: simple, easy, just, obviously
+```
+
+### Task Review Loop (Ralph-Style)
+
+Before implementation, iterate until all tasks valid:
+
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 2: Detect Project Settings                                  │
+│ TASK REVIEW                                      Iteration 1/3  │
+├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│ Auto-detect from package.json / pyproject.toml / go.mod:         │
-│ ├── testCommand: "npm test" / "pytest" / "go test ./..."         │
-│ ├── buildCommand: "npm run build" / etc.                         │
-│ └── Project type for routing hints                               │
+│  Validating 15 tasks against project rules...                   │
+│                                                                  │
+│  Results:                                                        │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ ✗ T03: 'Build auth system' - 15 criteria (max: 10)       │   │
+│  │   → Splitting into T03a, T03b                            │   │
+│  │                                                           │   │
+│  │ ✗ T07 → T03 → T07 - Circular dependency                  │   │
+│  │   → Reordering: T03 first, then T07                      │   │
+│  │                                                           │   │
+│  │ ⚠️ T11: 'works correctly' - Vague criterion              │   │
+│  │   → Need clarification                                   │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  [Apply Fixes] [Edit Rules] [Review Again] [Back to Plan]       │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+```
+
+After all tasks valid:
+- User chooses mode: Semi-Auto or Full Auto
+- Implementation begins
+
+### Planning State Persistence
+
+Planning progress saved to `.chorus/planning-state.json`:
+
+```json
+{
+  "status": "reviewing",
+  "chosenMode": null,
+  "planSummary": {
+    "userGoal": "Build e-commerce API",
+    "estimatedTasks": 15
+  },
+  "reviewIterations": [
+    { "iteration": 1, "issues": 3, "fixed": 2 }
+  ]
+}
+```
+
+**Status Values:**
+- `planning` - User describing goals, Plan Agent creating tasks
+- `reviewing` - Validating tasks against rules
+- `ready` - All tasks valid, waiting for mode selection
+- `implementation` - User chose mode, implementation started
+
+**chosenMode Values:** `null` (not yet chosen), `"semi-auto"`, `"autopilot"`
+
+### Mode Routing (App Router)
+
+The App Router (F89) determines which mode to enter based on project state:
+
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 3: Create Directory Structure                               │
-│                                                                  │
-│ .chorus/                     # Chorus config                     │
-│ ├── config.json              # Settings                          │
-│ ├── state.json               # Runtime state (gitignored)        │
-│ └── hooks/                   # Optional lifecycle hooks          │
-│                                                                  │
-│ .agent/                      # Agent memory                      │
-│ ├── learnings.md             # Shared knowledge                  │
-│ └── scratchpad.md            # Per-session notes                 │
-│                                                                  │
-│ .beads/                      # Task queue (via bd init)          │
-│ └── issues.jsonl             # Tasks database                    │
-│                                                                  │
-│ .worktrees/                  # Parallel workspaces (gitignored)  │
-│                                                                  │
-│ AGENTS.md                    # Project instructions (all agents) │
+│                      MODE ROUTING LOGIC                          │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+
+CLI Input (F90)
+     │
+     ├── chorus --help          → Show help, exit
+     ├── chorus --version       → Show version, exit
+     ├── chorus init            → Force INIT MODE
+     ├── chorus plan            → Force PLANNING MODE
+     └── chorus [--mode X]      → Auto-detect or use specified mode
+                │
+                ▼
+        ┌───────────────┐
+        │  App Router   │  (F89)
+        └───────┬───────┘
+                │
+     ┌──────────┴──────────┐
+     │ .chorus/ exists?    │
+     └──────────┬──────────┘
+           No   │   Yes
+           │    │
+           ▼    ▼
+     ┌─────────┐ ┌─────────────────┐
+     │  INIT   │ │ Check state     │
+     │  MODE   │ │ planning-state  │
+     └─────────┘ └────────┬────────┘
+                         │
+              ┌──────────┴──────────┐
+              │ planning-state.json │
+              │ status?             │
+              └──────────┬──────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+    "planning"      "reviewing"    "ready" or
+    "reviewing"                    "implementation"
+         │               │               │
+         ▼               ▼               ▼
+   ┌───────────┐   ┌───────────┐   ┌────────────────┐
+   │ PLANNING  │   │  REVIEW   │   │ Check bd ready │
+   │   MODE    │   │   MODE    │   └───────┬────────┘
+   └───────────┘   └───────────┘           │
+                                    ┌──────┴──────┐
+                                    │ Has tasks?  │
+                                    └──────┬──────┘
+                                      Yes  │  No
+                                      │    │
+                                      ▼    ▼
+                              ┌──────────┐ ┌──────────┐
+                              │IMPLEMENT │ │ PLANNING │
+                              │  MODE    │ │   MODE   │
+                              └──────────┘ └──────────┘
+```
+
+**CLI Parser (F90):**
+```typescript
+interface CLIArgs {
+  mode?: 'init' | 'plan' | 'semi-auto' | 'autopilot';
+  help?: boolean;
+  version?: boolean;
+  maxAgents?: number;
+  config?: string;  // custom config path
+}
+
+// Examples:
+// chorus                    → Auto-detect mode
+// chorus --mode semi-auto   → Force semi-auto
+// chorus --autopilot        → Start in autopilot
+// chorus init               → Force init mode
+// chorus plan               → Force planning mode
+```
+
+**Implementation Mode (F91):**
+When entering Implementation Mode:
+1. Load `planning-state.json` to get `chosenMode`
+2. Initialize Orchestrator with mode
+3. Load tasks from Beads (`bd ready`)
+4. Render TUI with appropriate layout (TaskPanel + AgentGrid)
+5. Start event loop based on mode (semi-auto waits, autopilot auto-assigns)
+
+---
+
+## Initialization Flow
+
+### First-Time Setup: Interactive Init Mode
+
+Init Mode is conversational - user can type freely at any step.
+
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 4: Configure Agents                                         │
+│ CHORUS INIT                                            Step 1/4 │
+├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│ Detected agents:                                                 │
-│ ✓ claude (Claude Code)                                           │
-│ ✓ codex (Codex CLI)                                              │
-│ ○ opencode (not found)                                           │
+│  Checking prerequisites...                                       │
 │                                                                  │
-│ Default agent: [claude]                                          │
-│ Max parallel agents: [3]                                         │
+│  ✓ Git repository initialized                                   │
+│  ✓ Node.js v22.0.0 (>= 20 required)                             │
+│  ✓ Beads CLI (bd) v0.46.0                                       │
+│  ✓ Claude Code CLI found                                        │
+│                                                                  │
+│  All prerequisites met!                                          │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > (type to ask questions or press Enter to continue)            │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+```
+
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 5: Update .gitignore                                        │
+│ CHORUS INIT                                            Step 2/4 │
+├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│ Added:                                                           │
-│ .worktrees/                                                      │
-│ .chorus/state.json                                               │
-│ .agent/scratchpad.md                                             │
+│  Project Detection:                                              │
+│  ├── package.json found → Node.js/TypeScript                    │
+│  └── tsconfig.json found                                        │
+│                                                                  │
+│  Project name: [chorus] (from package.json)                     │
+│  Task ID prefix: [ch-]                                           │
+│                                                                  │
+│  Is this correct? (type to change, or Enter to confirm)         │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > _                                                              │
 └─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+```
+
+### Quality Commands (Flexible)
+
+User can add ANY quality commands - not limited to test/typecheck/lint:
+
+```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Step 6: Done!                                                    │
+│ CHORUS INIT                                            Step 3/4 │
+├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│ ✓ Chorus initialized successfully                                │
+│  Quality Commands                                                │
+│  These run before marking any task as complete.                 │
 │                                                                  │
-│ Next steps:                                                      │
-│ 1. Edit AGENTS.md with project conventions                       │
-│ 2. Create tasks: bd create "Your first task" -p 1                │
-│ 3. Start TUI: npx chorus                                         │
+│  Current commands:                                               │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ 1. [*] test       npm test                               │   │
+│  │ 2. [ ] typecheck  npm run typecheck                      │   │
+│  │ 3. [ ] lint       npm run lint                           │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│  [*] = required  [ ] = optional                                 │
+│                                                                  │
+│  Commands:                                                       │
+│  • "add <name> <command>" to add                                │
+│  • "remove <number>" to delete                                  │
+│  • "toggle <number>" for required/optional                      │
+│  • "done" when finished                                         │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > add phpstan vendor/bin/phpstan analyse                        │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+### Task Validation Rules Setup
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CHORUS INIT                                            Step 4/4 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Task Validation Rules                                           │
+│                                                                  │
+│  ═══ Built-in Rules (Always Enforced) ═══                       │
+│  • Tasks must be atomic (single responsibility)                 │
+│  • All acceptance criteria must be testable                     │
+│  • No circular dependencies allowed                             │
+│  • Each task must fit within one agent context window           │
+│                                                                  │
+│  ═══ Configurable Limits ═══                                    │
+│  Max acceptance criteria per task: [10]                         │
+│  Max description length (chars):   [500]                        │
+│                                                                  │
+│  Type values to change, or "done" to finish                     │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > done                                                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Programmatic Init (Non-Interactive)
+
+For CI/CD or scripted setup, use `chorus init --yes` which:
+
+1. **Check Prerequisites** - git, Node.js >= 20, bd CLI, claude CLI
+2. **Auto-detect Project** - Read package.json/pyproject.toml/go.mod
+3. **Create Directories** - See [Directory Structure](#directory-structure-chorus) below
+4. **Configure Defaults** - Claude as default agent, maxParallel=3
+5. **Update .gitignore** - Add `.worktrees/`, `.chorus/state.json`, `.agent/scratchpad.md`
+
+```bash
+# Non-interactive init with defaults
+chorus init --yes
+
+# With custom settings
+chorus init --yes --max-agents 5 --prefix "myapp-"
+```
+
+### Directory Structure: `.chorus/`
+
+```
+.chorus/
+├── config.json              # Main configuration
+├── task-rules.md            # Task validation rules (agent-readable)
+├── PATTERNS.md              # Cross-agent patterns (agent-readable)
+├── planning-state.json      # Current planning state
+├── session-log.jsonl        # Session history (append-only, JSONL)
+├── state.json               # Runtime state (gitignored)
+└── prompts/
+    ├── plan-agent.md        # Plan agent system prompt
+    └── impl-agent.md        # Implementation agent prompt
+```
+
+**File Formats:**
+- **JSON:** config.json, planning-state.json, state.json (structured data)
+- **Markdown:** task-rules.md, PATTERNS.md, prompts/*.md (agent-readable)
+- **JSONL:** session-log.jsonl (append-only log, one JSON per line)
+
+### Session Logger
+
+All events logged to `.chorus/session-log.jsonl`:
+
+```jsonl
+{"ts":"2026-01-11T14:00:00Z","mode":"init","event":"started","details":{}}
+{"ts":"2026-01-11T14:05:00Z","mode":"init","event":"config_saved","details":{"qualityCommands":["npm test"]}}
+{"ts":"2026-01-11T14:10:00Z","mode":"planning","event":"agent_started","details":{}}
+{"ts":"2026-01-11T14:15:00Z","mode":"planning","event":"tasks_generated","details":{"count":15}}
+{"ts":"2026-01-11T14:20:00Z","mode":"review","event":"iteration_complete","details":{"iteration":1,"issues":3}}
+{"ts":"2026-01-11T14:25:00Z","mode":"implementation","event":"agent_assigned","details":{"agentId":"a1","taskId":"ch-abc"}}
 ```
 
 ### Config File: `.chorus/config.json`
 
-Simplified configuration with sensible defaults:
-
 ```json
 {
-  "$schema": "https://chorus.dev/schema/v2.json",
-  "version": "2.0",
+  "version": "3.0",
+
+  "project": {
+    "name": "my-awesome-app",
+    "type": "node",
+    "taskIdPrefix": "ch-"
+  },
+
+  "qualityCommands": [
+    { "name": "typecheck", "command": "npm run typecheck", "required": true, "order": 1 },
+    { "name": "lint", "command": "npm run lint", "required": false, "order": 2 },
+    { "name": "test", "command": "npm test", "required": true, "order": 3 }
+  ],
 
   "mode": "semi-auto",
 
   "agents": {
     "default": "claude",
     "maxParallel": 3,
-    "available": {
-      "claude": {
-        "command": "claude",
-        "args": ["--dangerously-skip-permissions"],
-        "model": "sonnet",
-        "allowModelOverride": true
-      },
-      "codex": {
-        "command": "codex",
-        "args": ["--full-auto"]
-      },
-      "opencode": {
-        "command": "opencode",
-        "args": ["-p"]
-      }
-    }
-  },
-
-  "project": {
-    "testCommand": "npm test",
-    "buildCommand": "npm run build"
+    "timeoutMinutes": 30
   },
 
   "completion": {
     "signal": "<chorus>COMPLETE</chorus>",
-    "requireTests": true,
-    "maxIterations": 50,
-    "taskTimeout": 1800000
+    "maxIterations": 50
   },
 
   "merge": {
@@ -481,8 +884,25 @@ Simplified configuration with sensible defaults:
 
   "tui": {
     "agentGrid": "auto"
-  }
+  },
+
+  "createdAt": "2026-01-11T14:00:00Z",
+  "updatedAt": "2026-01-11T14:00:00Z"
 }
+```
+
+### Quality Commands Interface
+
+```typescript
+interface QualityCommand {
+  name: string;        // Display name (e.g., "phpstan", "rector")
+  command: string;     // Shell command to run
+  required: boolean;   // Must pass for task completion
+  order: number;       // Execution order
+}
+
+// All required commands must pass before task marked complete
+// Optional commands run but don't block completion
 ```
 
 ---
@@ -517,7 +937,7 @@ Note: GitHub Issues import and PRD parsing planned for v2.
 
 ### BeadsCLI Integration
 
-**IMPORTANT:** All Chorus components MUST access Beads through `BeadsCLI` service. Direct `bd` CLI calls are prohibited.
+**IMPORTANT:** All Chorus components MUST access Beads through `BeadsCLI` service wrapper. This centralizes error handling and provides consistent label filtering. The service internally uses `bd` CLI commands.
 
 ```typescript
 // src/services/BeadsCLI.ts - Single point of Beads access
@@ -564,7 +984,7 @@ class BeadsCLI {
     const args = [`bd create "${title}"`];
     if (options.priority) args.push(`-p ${options.priority}`);
     if (options.labels) args.push(`-l ${options.labels.join(',')}`);
-    if (options.depends) args.push(`--depends ${options.depends.join(',')}`);
+    if (options.deps) args.push(`--deps ${options.deps.join(',')}`);
     if (options.model) args.push(`--custom model=${options.model}`);
 
     const { stdout } = await exec(args.join(' '));
@@ -676,7 +1096,20 @@ Beads tasks can include custom fields for Chorus:
 │  • Needs attention  │
 │  • Worktree kept    │
 └─────────────────────┘
+        │
+        │ Recovery options:
+        │ 1. Manual retry (r key)
+        │ 2. Edit task & retry
+        │ 3. Rollback & pending
+        ▼
+  [back to PENDING]
 ```
+
+**FAILED Recovery:**
+- Press `r` on failed task → Task returns to PENDING, worktree preserved
+- Press `e` to edit task description → Then retry
+- Press `R` to rollback → Reverts commits, task → PENDING
+- Worktree kept for debugging until manually cleaned
 
 ### Dependency Management
 
@@ -772,7 +1205,7 @@ Chorus behavior:
 
 ## Completion Protocol
 When ALL criteria are met:
-1. Ensure tests pass: `{project.testCommand}`
+1. Ensure all required quality commands pass (see config.qualityCommands)
 2. Output exactly: <chorus>COMPLETE</chorus>
 
 If blocked, output: <chorus>BLOCKED: reason</chorus>
@@ -781,7 +1214,7 @@ If blocked, output: <chorus>BLOCKED: reason</chorus>
 - Read AGENTS.md for project conventions
 - Read .agent/learnings.md for known patterns
 - Current branch: agent/{agent}/{task_id}
-- Commit format: "type(scope): description [{task_id}]"
+- Commit format: "type(scope): description [ch-xxx]"
 
 ## Important
 - Log discoveries to .agent/scratchpad.md
@@ -993,8 +1426,8 @@ When complex conflicts need agent resolution:
 2. Understand the intent of each change
 3. Determine if they can coexist
 4. If YES: Resolve the conflict and commit
-5. Run tests: `{project.testCommand}`
-6. If tests pass: <chorus>RESOLVED</chorus>
+5. Run required quality commands (test, typecheck, lint)
+6. If all pass: <chorus>RESOLVED</chorus>
 7. If cannot resolve: <chorus>NEEDS_HUMAN: explanation</chorus>
 
 ## Important
@@ -1018,6 +1451,14 @@ When complex conflicts need agent resolution:
 4. CONFLICT DEFERRAL
    Conflicted items go to end after retry.
    After 3 retries without resolution: escalate to human.
+
+5. FORCE-PUSH RECOVERY
+   If main branch is force-pushed during merge:
+   - Detect via git fetch + ref comparison
+   - Pull latest main
+   - Rebase agent branch onto new main
+   - Retry merge from beginning
+   - After 2 force-push recoveries: pause and alert user
 ```
 
 ---
@@ -1127,22 +1568,32 @@ function parseSignal(output: string): Signal | null {
 
 ### Completion Check
 
-Completion requires BOTH signal AND tests passing:
+Completion requires BOTH signal AND required quality commands passing:
 
 ```typescript
 interface CompletionCheck {
   type: 'all';
   checks: [
     { type: 'signal', pattern: '<chorus>COMPLETE</chorus>' },
-    { type: 'command', command: '${project.testCommand}', exitCode: 0 }
+    { type: 'qualityCommands', requiredOnly: true, exitCode: 0 }
   ];
 }
 
-// Matrix:
-// Signal + Tests Pass = COMPLETE ✓
-// Signal + Tests Fail = Continue iterations
-// No Signal + Tests Pass = Continue iterations
-// No Signal + Tests Fail = Continue iterations
+// Completion Matrix:
+// ┌──────────────────┬─────────────────┬─────────────────────────────────┐
+// │ Signal           │ Quality Commands│ Result                          │
+// ├──────────────────┼─────────────────┼─────────────────────────────────┤
+// │ COMPLETE         │ All Pass        │ ✓ Task CLOSED, queue merge      │
+// │ COMPLETE         │ Any Fail        │ Continue iterations             │
+// │ BLOCKED          │ (any)           │ Task → BLOCKED, agent stops     │
+// │ NEEDS_HELP       │ (any)           │ Alert user, agent pauses        │
+// │ No Signal        │ All Pass        │ Continue (agent must signal)    │
+// │ No Signal        │ Any Fail        │ Continue iterations             │
+// └──────────────────┴─────────────────┴─────────────────────────────────┘
+//
+// Mode-specific behavior for BLOCKED:
+// - Semi-auto: Agent stops, user decides next action
+// - Autopilot: Agent freed, task stays BLOCKED, picks next ready task
 ```
 
 ### Iteration Safeguards
@@ -1214,9 +1665,12 @@ interface CompletionCheck {
 
 ### Cross-Agent Knowledge Sharing
 
+> **MVP Note:** Cross-agent knowledge sharing is Claude-only in MVP.
+> Codex/opencode support requires F07b (deferred). The diagram below shows post-MVP behavior.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              CROSS-AGENT KNOWLEDGE FLOW                          │
+│              CROSS-AGENT KNOWLEDGE FLOW (Post-MVP)               │
 └─────────────────────────────────────────────────────────────────┘
 
 Timeline:
@@ -1230,16 +1684,23 @@ T=45: Claude completes, outputs <chorus>COMPLETE</chorus>
       ├─► Appends to .agent/learnings.md with attribution
       └─► Commits: "learn: extract from ch-001 (claude)"
       │
-T=46: Codex starts ch-003 (Unicode handling)
+T=46: Another Claude agent starts ch-003 (Unicode handling)
+      │                       ↑ MVP: Claude only
+      │                       ↓ Post-MVP: codex/opencode too
+      └─► Claude reads .agent/learnings.md natively
+          (Post-MVP: Chorus injects for non-Claude agents)
       │
-      └─► Chorus injects learnings into Codex prompt:
-          "Relevant learnings: mb_str_split > preg_split..."
-      │
-T=60: Codex uses pattern directly (saved rediscovery time)
+T=60: Agent uses pattern directly (saved rediscovery time)
+```
 
+**MVP Behavior:**
+- Claude agents read `.agent/learnings.md` natively (no injection needed)
+- Learning extraction works for all agents
+- Non-Claude agents work but don't receive injected context
 
-Key: Non-Claude agents receive learnings via prompt injection.
-     Claude agents read .agent/learnings.md natively.
+**Post-MVP Behavior (F07b):**
+- Non-Claude agents receive learnings via prompt injection
+- Full cross-agent knowledge sharing enabled
 ```
 
 ### Learning Extraction
@@ -1264,6 +1725,60 @@ async function extractLearnings(task: Task, agent: Agent): Promise<void> {
   await exec(`git commit -m "learn: extract from ${task.id} (${agent.type})"`);
 }
 ```
+
+### Cross-Agent Patterns (PATTERNS.md)
+
+Universal patterns that all agents should know, stored in `.chorus/PATTERNS.md`:
+
+```markdown
+# Project Patterns
+
+## Code Conventions
+- All models use UUID for primary keys
+- API routes follow RESTful naming: `/api/v1/{resource}`
+- Error handling uses custom AppError class
+
+## Database
+- Use Prisma for all queries
+- Run `prisma generate` after schema changes
+- Migrations via `prisma migrate dev`
+
+## Testing
+- Use Pest for PHP, Vitest for TypeScript
+- Mock external services in tests
+- Minimum 80% coverage for new code
+
+## Gotchas
+- Frontend env vars need NEXT_PUBLIC_ prefix
+- Cache invalidation required after user updates
+```
+
+**How it's used:**
+1. Plan Agent reads PATTERNS.md when validating tasks
+2. Implementation agents receive PATTERNS.md in prompt via F07 Prompt Builder
+3. Learning Extractor suggests additions to PATTERNS.md from agent discoveries
+4. User can manually edit PATTERNS.md anytime
+
+### AGENTS.md vs PATTERNS.md Distinction
+
+| Aspect | AGENTS.md | PATTERNS.md |
+|--------|-----------|-------------|
+| **Location** | Project root | `.chorus/PATTERNS.md` |
+| **Author** | Human (developer) | Machine-discovered + human-curated |
+| **Purpose** | Project conventions for all agents | Cross-agent learned patterns |
+| **Content** | Architecture, coding style, commit conventions, team rules | Runtime discoveries, gotchas, performance tips |
+| **Updates** | Manual edits by developer | Auto-suggested by Learning Extractor |
+| **Scope** | Static project knowledge | Dynamic session learnings |
+| **Example** | "Use Prisma for all DB queries" | "mb_str_split() is 3x faster than preg_split() for Unicode" |
+
+**Why both?**
+- `AGENTS.md` = What developers WANT agents to know (intentional)
+- `PATTERNS.md` = What agents DISCOVER while working (emergent)
+
+**Loading priority:**
+1. Claude loads AGENTS.md natively (via `.claude/rules` symlink or direct read)
+2. F07 Prompt Builder injects PATTERNS.md for all agents
+3. Non-Claude agents receive both via prompt prefix
 
 ---
 
@@ -1427,6 +1942,20 @@ When user wants to merge their work:
 2. Option B: `chorus merge-user <branch>` to add to queue
 ```
 
+### Edge Cases & Behaviors
+
+| Scenario | Behavior |
+|----------|----------|
+| **TUI Exit with Running Agents** | Prompt: "Kill all agents or let them continue?" Grace period 30s, then force-kill |
+| **Pause Duration** | Indefinite until user presses Space again to resume |
+| **Agent CLI Unavailable During Run** | Pre-spawn checks run before each agent; if CLI missing, task → pending |
+| **Planning Exit Mid-Review** | State auto-persisted; resuming shows current iteration |
+| **Resolver Creates New Conflicts** | Works on throwaway branch; if fails, escalate to human |
+| **Multiple Rule Violations** | Review loop shows all violations; user fixes in priority order |
+| **Hook Returns "block"** | Operation halted, message shown, allows user intervention |
+| **Learnings Outdated/Incorrect** | Agent can ignore; priority is current task, not historical |
+| **Learning File Corrupted** | Recover from git history; warn user |
+
 ---
 
 ## Rollback & Recovery
@@ -1441,7 +1970,7 @@ Level 1: SINGLE ITERATION
 
 Level 2: SINGLE TASK
 ├── What: Undo all commits for one task
-├── How: git revert all commits with [task-id]
+├── How: git revert all commits with [ch-xxx] tag
 └── State: Task → pending
 
 Level 3: TASK + DEPENDENTS
@@ -1634,12 +2163,52 @@ PRIORITY BADGES:
 
 ## Changelog
 
+- **v3.2 (2026-01-11):** Consistency & Completeness Review
+  - FIXED: Planning State JSON - added `chosenMode` field with status values
+  - FIXED: FAILED state - added recovery path (retry, edit, rollback)
+  - FIXED: Signal matrix - added BLOCKED and NEEDS_HELP behavior per mode
+  - FIXED: F07b contradiction - clarified MVP vs post-MVP for cross-agent knowledge
+  - FIXED: Agent-Agnostic → Agent-Ready Architecture (reflects MVP scope)
+  - FIXED: Commit format standardized to `[ch-xxx]`
+  - ADDED: Mode Routing section (F89/F90/F91 documentation)
+  - ADDED: Decision #14 detailed explanation (Claude compact → custom ledger)
+  - ADDED: AGENTS.md vs PATTERNS.md distinction table
+  - ADDED: Semi-auto and Autopilot signal handling sections
+  - CONSOLIDATED: Legacy Init Flow shortened to reference version
+  - CONSOLIDATED: Directory Structure redundancy removed
+
+- **v3.1 (2026-01-11):** Comprehensive Review & Fixes
+  - FIXED: BeadsCLI service clarification (wrapper, not prohibition)
+  - FIXED: `--depends` → `--deps` typo in createTask()
+  - FIXED: MVP scope clarification (config supports all agents, MVP implements Claude)
+  - FIXED: testCommand → qualityCommands throughout document
+  - ADDED: Force-push recovery in merge ordering rules
+  - ADDED: Edge cases table (TUI exit, pause duration, corrupted files)
+  - CONSOLIDATED: Directory structure references
+  - 127 tasks in Beads (48 ready, 4 deferred)
+
+- **v3.0 (2026-01-11):** Planning-First Architecture (Ralph-inspired)
+  - NEW: M0 Planning Phase - interactive task planning before implementation
+  - NEW: Plan Agent - helps create/validate tasks via conversation
+  - NEW: Task Review Loop - iterate until all tasks valid (Ralph pattern)
+  - NEW: Auto-Decomposition - parse large specs into atomic tasks
+  - NEW: Task Validation Rules - built-in + configurable rules
+  - NEW: `.chorus/task-rules.md` - agent-readable validation rules
+  - NEW: `.chorus/PATTERNS.md` - cross-agent learned patterns
+  - NEW: `.chorus/session-log.jsonl` - append-only session logging
+  - NEW: Flexible quality commands (not just test/lint/typecheck)
+  - CHANGED: Interactive Init Mode with conversational setup
+  - CHANGED: Config v3.0 with qualityCommands[], taskIdPrefix
+  - CHANGED: TUI layout - 80% agent window + chat input
+  - Key Decisions #11-14 added
+  - 127 tasks in Beads (102 existing + 25 new M0 tasks)
+
 - **v2.1 (2026-01-10):** Documentation cleanup
   - Task ID format: `bd-xxx` → `ch-xxx` (Chorus prefix)
   - Architecture: StatusBar → HeaderBar + FooterBar
   - TUI layout example updated with real task IDs
   - Status: DRAFT → APPROVED (implementation in progress)
-  - 95 tasks in Beads (32 ready, 63 blocked including 3 deferred)
+  - 102 tasks in Beads (36 ready, 4 deferred)
 
 - **v2.0 (2026-01-10):** Major optimization and refinement
   - Simplified architecture: 7+ services → 2 (Orchestrator + MergeService)

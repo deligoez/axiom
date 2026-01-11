@@ -40,6 +40,7 @@ EOF
 
 | Label | Meaning |
 |-------|---------|
+| m0-planning | Milestone 0: Planning Phase (Init, Plan Agent, Validation) |
 | m1-infrastructure | Milestone 1: Config, State, Worktree |
 | m2-agent-prep | Milestone 2: Prompt, Signal, Linking |
 | m3-task-mgmt | Milestone 3: Test, Completion, Claim, Close |
@@ -156,6 +157,20 @@ bd show <id>               # Task details
 
 Update this section as you learn:
 
+### 2026-01-11
+- M0 Planning Phase tasks created (25 tasks)
+- m0-planning label added for Planning Phase milestone
+- Existing M1 tasks updated with qualityCommands support
+- F01a-c, F03b, F07, F10 updated with new requirements
+- F89 App Router, F90 CLI Parser, F91 Implementation Mode added
+- Total tasks: 127 (102 existing + 25 new)
+- **Master Plan Coverage Audit:**
+  - F86 (ch-to7): Added `chosenMode` field to state (9 tests)
+  - F85 (ch-a0a): Added state transition + F86 dependency (12 tests)
+  - F80 (ch-m9y): Added F03b-1 dependency
+  - F03b-1 (ch-mdj): Removed unnecessary F01c dependency
+  - Ready tasks: 48
+
 ### 2026-01-10
 - Initial setup complete
 - bd v0.46.0 installed via homebrew
@@ -175,6 +190,36 @@ Update this section as you learn:
 
 ## Current Task IDs
 
+### M0: Planning Phase
+
+| Feature | ID | Dependencies | Status |
+|---------|-----|--------------|--------|
+| F87 Session Logger | ch-73s | - | ready |
+| F88 PATTERNS.md Manager | ch-j40 | - | ready |
+| F80a Project Detector | ch-06m | - | ready |
+| F80b Config Wizard | ch-4ba | ch-06m | blocked |
+| F80c Quality Commands Manager | ch-h0s | - | ready |
+| F80 Init Mode Controller | ch-m9y | ch-06m,ch-4ba,ch-h0s,ch-73s,ch-mdj | blocked |
+| F81a Planning TUI Layout | ch-7h5 | - | ready |
+| F81b Chat Input | ch-3i0 | - | ready |
+| F81 Planning Mode Controller | ch-o5z | ch-7h5,ch-3i0 | blocked |
+| F82a Plan Agent Prompt Builder | ch-rmg | ch-j40 | blocked |
+| F82b Conversation Manager | ch-0el | - | ready |
+| F82 Plan Agent Controller | ch-z8g | ch-rmg,ch-0el | blocked |
+| F83a Spec Chunker | ch-3xt | - | ready |
+| F83b Task Generator | ch-8le | ch-3xt,ch-z8g | blocked |
+| F83 Auto-Decomposition | ch-r1p | ch-3xt,ch-8le,ch-2hw | blocked |
+| F84a Validation Rules Engine | ch-171 | - | ready |
+| F84b Dependency Checker | ch-32r | - | ready |
+| F84 Task Validator | ch-2hw | ch-171,ch-32r | blocked |
+| F85a Review TUI | ch-5bd | ch-2hw | blocked |
+| F85b Fix Applier | ch-6oy | ch-2hw | blocked |
+| F85 Review Loop | ch-a0a | ch-5bd,ch-6oy,ch-2hw,ch-to7 | blocked |
+| F86 Planning State Persistence | ch-to7 | - | ready |
+| F89 App Router | ch-eq5 | ch-m9y,ch-o5z,ch-to7 | blocked |
+| F90 CLI Parser | ch-nrr | - | ready |
+| F91 Implementation Mode | ch-8er | ch-eq5,ch-a0a | blocked |
+
 ### M1: Infrastructure
 
 | Feature | ID | Dependencies | Status |
@@ -188,7 +233,7 @@ Update this section as you learn:
 | F02d State Persist | ch-r12 | ch-ah6, ch-81x | blocked |
 | F02e State Merge Queue | ch-tpj | ch-ah6, ch-81x | blocked |
 | F03a Init Prerequisites | ch-0z7 | - | ready |
-| F03b Init Scaffold | ch-mdj | ch-0z7, ch-y43 | blocked |
+| F03b Init Scaffold | ch-mdj | ch-0z7 | blocked |
 | F04 Worktree Create | ch-glq | - | ready |
 | F05 Worktree Remove | ch-112 | ch-glq | blocked |
 | F06 Worktree Query | ch-iel | ch-112 | blocked |
