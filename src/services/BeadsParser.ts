@@ -11,9 +11,14 @@ export interface ParseOptions {
 }
 
 function isValidStatus(status: string): status is BeadStatus {
-	return ["open", "in_progress", "closed", "blocked", "tombstone"].includes(
-		status,
-	);
+	return [
+		"open",
+		"in_progress",
+		"closed",
+		"blocked",
+		"failed",
+		"tombstone",
+	].includes(status);
 }
 
 function isValidType(type: string): type is BeadType {

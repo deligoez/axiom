@@ -106,4 +106,34 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 		expect(output).toContain("P1");
 		expect(output).toContain("P2");
 	});
+
+	it("shows ⊗ for blocked tasks", async () => {
+		// Arrange
+		projectDir = createTestProject([
+			createStatusBead("ch-blk1", "Blocked Task", "blocked"),
+		]);
+
+		// Act
+		const result = await renderApp([], projectDir);
+		await waitForText(result, "Blocked Task", 5000);
+
+		// Assert
+		const output = getOutput(result);
+		expect(output).toContain("⊗");
+	});
+
+	it("shows ✗ for failed tasks", async () => {
+		// Arrange
+		projectDir = createTestProject([
+			createStatusBead("ch-fail1", "Failed Task", "failed"),
+		]);
+
+		// Act
+		const result = await renderApp([], projectDir);
+		await waitForText(result, "Failed Task", 5000);
+
+		// Assert
+		const output = getOutput(result);
+		expect(output).toContain("✗");
+	});
 });

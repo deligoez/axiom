@@ -75,10 +75,11 @@ describe("E2E: Fresh Project Init", () => {
 		writeFileSync(join(beadsDir, "issues.jsonl"), `${JSON.stringify(task)}\n`);
 
 		// Assert - wait for file watcher to pick up the new task
-		await waitForText(result, "1 task", 5000);
+		// Use longer timeout for file watcher (can be slow under parallel test load)
+		await waitForText(result, "1 task", 10000);
 		const output = getOutput(result);
 		expect(output).toContain("1 task");
-	});
+	}, 15000);
 
 	it("first task appears in panel", async () => {
 		// Arrange - create project with a task already
