@@ -101,6 +101,13 @@ npm run quality   # Runs all checks:
 4. **Test Pattern:** AAA (Arrange-Act-Assert) mandatory
 5. **MVP Scope:** Claude-only
 
+## Learnings
+
+Document important task-applicable findings here (only truly universal insights):
+
+- **XState sendTo vs direct send:** `sendTo` action requires full XState actor ref with `_send` method. For mocked parents in tests, use direct `context.parentRef.send()` in actions instead.
+- **Type-only imports in tests:** Vitest may pass even if type files don't exist because `import type` is erased at runtime. Always run `npm run typecheck` to catch missing types.
+
 ## Testing Patterns
 
 **AAA Pattern (mandatory):**
