@@ -1,6 +1,6 @@
 # Continuity Ledger: Chorus
 
-**Updated:** 2026-01-12T03:45:00Z
+**Updated:** 2026-01-12T04:00:00Z
 **Status:** Ready for TDD - Start ch-lxxb (FX01)
 
 ---
@@ -19,11 +19,26 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 Done: [x] Planning complete (9 audits, 175 tasks created)
       [x] XState migration plan finalized
       [x] M-1 milestone blocks all other milestones
+      [x] Quality tools setup (Biome + Knip)
 Now:  [→] Ready for TDD implementation
 Next: Start ch-lxxb (FX01: XState Setup)
 ```
 
-**Latest Commit:** `a185ab4` docs: update ledger with Zustand cleanup task (ch-gzhj)
+**Latest Commit:** `e433863` chore: add Knip for dead code detection
+
+---
+
+## Quality Pipeline
+
+```bash
+npm run quality   # Runs all checks below:
+# 1. npm run test:run   - Vitest (176 tests)
+# 2. npm run typecheck  - TypeScript strict
+# 3. npm run lint       - Biome
+# 4. npm run knip       - Dead code detection
+```
+
+TDD Pattern: `RED → GREEN → npm run quality → COMMIT`
 
 ---
 
