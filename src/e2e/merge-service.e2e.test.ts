@@ -221,6 +221,135 @@ describe("E2E: MergeService", () => {
 		});
 	});
 
+	// Additional Merge Scenarios (4 tests)
+
+	describe("Additional Merge Scenarios", () => {
+		it("performs fast-forward merge when main has no new commits", async () => {
+			// Arrange - create branch from main with commits, but main stays unchanged
+			createBranch(repo.path, "feature/fast-forward");
+			createCommit(repo.path, "FF commit 1", "ff1.txt");
+			createCommit(repo.path, "FF commit 2", "ff2.txt");
+			checkoutBranch(repo.path, "main");
+
+			const git = new RealGitService(repo.path);
+
+			// Act
+			const result = await git.merge("feature/fast-forward");
+
+			// Assert
+			expect(result.success).toBe(true);
+			expect(result.merged).toBe(true);
+		});
+
+		it("handles multi-file conflict with different conflict files", async () => {
+			// Arrange - create conflict in multiple files
+			const { writeFileSync } = require("node:fs");
+			const { join } = require("node:path");
+			const { execSync } = require("node:child_process");
+
+			// Create first version on main
+			writeFileSync(join(repo.path, "file1.txt"), "file1 main\n");
+			writeFileSync(join(repo.path, "file2.txt"), "file2 main\n");
+			execSync("git add .", { cwd: repo.path, stdio: "pipe" });
+			execSync('git commit -m "Add files on main"', {
+				cwd: repo.path,
+				stdio: "pipe",
+			});
+
+			// Create branch and modify both files
+			createBranch(repo.path, "feature/multi-conflict");
+			writeFileSync(join(repo.path, "file1.txt"), "file1 feature\n");
+			writeFileSync(join(repo.path, "file2.txt"), "file2 feature\n");
+			execSync("git add .", { cwd: repo.path, stdio: "pipe" });
+			execSync('git commit -m "Modify files on feature"', {
+				cwd: repo.path,
+				stdio: "pipe",
+			});
+
+			// Modify same files on main
+			checkoutBranch(repo.path, "main");
+			writeFileSync(join(repo.path, "file1.txt"), "file1 main modified\n");
+			writeFileSync(join(repo.path, "file2.txt"), "file2 main modified\n");
+			execSync("git add .", { cwd: repo.path, stdio: "pipe" });
+			execSync('git commit -m "Modify files on main"', {
+				cwd: repo.path,
+				stdio: "pipe",
+			});
+
+			const git = new RealGitService(repo.path);
+
+			// Act
+			const result = await git.merge("feature/multi-conflict");
+
+			// Assert
+			expect(result.success).toBe(false);
+			expect(result.hasConflict).toBe(true);
+			expect(result.conflictFiles).toContain("file1.txt");
+			expect(result.conflictFiles).toContain("file2.txt");
+			expect(result.conflictFiles?.length).toBe(2);
+		});
+
+		it("succeeds when only some files would conflict but they're different", async () => {
+			// Arrange - modify different files on each branch (no conflict)
+			const { writeFileSync } = require("node:fs");
+			const { join } = require("node:path");
+			const { execSync } = require("node:child_process");
+
+			// Create initial files
+			writeFileSync(join(repo.path, "shared.txt"), "shared content\n");
+			execSync("git add .", { cwd: repo.path, stdio: "pipe" });
+			execSync('git commit -m "Add shared file"', {
+				cwd: repo.path,
+				stdio: "pipe",
+			});
+
+			// Feature branch adds new file
+			createBranch(repo.path, "feature/partial");
+			writeFileSync(join(repo.path, "feature-only.txt"), "feature content\n");
+			execSync("git add .", { cwd: repo.path, stdio: "pipe" });
+			execSync('git commit -m "Add feature file"', {
+				cwd: repo.path,
+				stdio: "pipe",
+			});
+
+			// Main adds different file
+			checkoutBranch(repo.path, "main");
+			writeFileSync(join(repo.path, "main-only.txt"), "main content\n");
+			execSync("git add .", { cwd: repo.path, stdio: "pipe" });
+			execSync('git commit -m "Add main file"', {
+				cwd: repo.path,
+				stdio: "pipe",
+			});
+
+			const git = new RealGitService(repo.path);
+
+			// Act
+			const result = await git.merge("feature/partial");
+
+			// Assert
+			expect(result.success).toBe(true);
+			expect(result.merged).toBe(true);
+		});
+
+		it("detects conflict markers in file content after merge failure", async () => {
+			// Arrange
+			const { readFileSync } = require("node:fs");
+			const { join } = require("node:path");
+
+			const { conflictFile } = setupMergeConflict(repo.path, "feature/markers");
+			const git = new RealGitService(repo.path);
+
+			// Act
+			await git.merge("feature/markers");
+
+			// Assert - check conflict markers exist in file
+			const content = readFileSync(join(repo.path, conflictFile), "utf-8");
+			expect(content).toContain("<<<<<<<");
+			expect(content).toContain("=======");
+			expect(content).toContain(">>>>>>>");
+		});
+	});
+
 	// Conflict File Detection (2 tests)
 
 	describe("Conflict Detection", () => {
