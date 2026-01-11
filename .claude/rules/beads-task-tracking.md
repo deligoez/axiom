@@ -330,13 +330,13 @@ Update this section as you learn:
 | F95 Plan Review Loop | ch-bmx | ch-cjf,ch-z8g | blocked |
 | F96 Task Updater | ch-dka | ch-bmx | blocked |
 | F97 Plan Review Integration | ch-c3q | ch-dka,ch-nn6 | blocked |
-| F98 Incremental Planning Trigger | ch-yhq | ch-wqn,ch-2yp,ch-z8g | blocked |
+| F98 Incremental Planning Trigger | ch-yhq | ch-wqn,ch-2yp,ch-z8g,ch-sro | blocked |
 | F99 Planning Horizon Manager | ch-wqn | ch-to7,ch-sro | blocked |
-| F100 Spec Evolution Tracker | ch-2yp | ch-j40 | blocked |
+| F100 Spec Evolution Tracker | ch-2yp | - | ready |
 | F100a Spec Section Collapser | ch-iru | ch-2yp | blocked |
 | F100b Spec Archiver | ch-tr4 | ch-2yp | blocked |
-| F101a TUI Learning Review Trigger | ch-s8u | ch-c3q | blocked |
-| F101b TUI Planning Trigger | ch-fts | ch-yhq | blocked |
+| F101a TUI Learning Review Trigger | ch-s8u | ch-c3q,ch-yhq | blocked |
+| F101b TUI Planning Trigger | ch-fts | ch-yhq,ch-2yp | blocked |
 
 ### M9: Human Intervention
 
@@ -347,7 +347,7 @@ Update this section as you learn:
 | F44 Agent Stop | ch-cwy | ch-ahq, ch-i9i, ch-zqi | blocked |
 | F45 Agent Redirect | ch-ddk | ch-0e7, ch-cwy, ch-zqi | blocked |
 | F46 Task Block | ch-sb7 | ch-ahq, ch-cwy, ch-zqi | blocked |
-| F46b Task Editor | ch-xe8 | ch-0e7, ch-cwy | blocked |
+| F46b Task Editor | ch-xe8 | ch-0e7, ch-999, ch-cwy | blocked |
 | F46c Intervention Panel | ch-di6 | ch-8j3, ch-ahq, ch-fna, ch-cwy, ch-ddk, ch-sb7, ch-xe8 | blocked |
 | F63n Approve Merge Key | ch-6ta | ch-26c | blocked |
 | F63o TUI Exit Handler | ch-bny | ch-cwy | blocked |
