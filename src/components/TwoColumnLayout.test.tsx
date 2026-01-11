@@ -132,6 +132,26 @@ describe("TwoColumnLayout", () => {
 		expect(onToggleFocus).toHaveBeenCalledWith("right");
 	});
 
+	it("toggles focus on each Tab keypress", () => {
+		// Arrange
+		const focusHistory: Array<"left" | "right"> = [];
+		const onToggleFocus = (focus: "left" | "right") => focusHistory.push(focus);
+		const { stdin } = render(
+			<TwoColumnLayout
+				left={<Text>Left</Text>}
+				right={<Text>Right</Text>}
+				onToggleFocus={onToggleFocus}
+			/>,
+		);
+
+		// Act - Press Tab to toggle focus to right
+		stdin.write("\t");
+
+		// Assert - First toggle goes to right
+		expect(focusHistory).toHaveLength(1);
+		expect(focusHistory[0]).toBe("right");
+	});
+
 	it("applies cyan border to focused panel, gray to unfocused", () => {
 		// Arrange & Act
 		const { lastFrame } = render(
