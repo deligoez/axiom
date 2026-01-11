@@ -13,9 +13,11 @@ bd show <id>  # View details
 bd update <id> --status=in_progress
 
 # 3. Work (TDD: RED → GREEN → quality → commit)
+#    Commit format: "feat: description [ch-xxxx]"
 
 # 4. Complete
 bd close <id>  # Unblocks dependents
+bd sync        # Sync with git (optional)
 ```
 
 ## Quality Pipeline
@@ -37,6 +39,7 @@ npm run quality   # Runs all checks:
 | `bd ready -n 0 \| grep -v deferred` | List available tasks |
 | `bd update <id> --status=in_progress` | Start task |
 | `bd close <id>` | Complete task (unblocks dependents) |
+| `bd sync` | Sync with git |
 | `bd list -l <label> -n 0` | List by milestone |
 | `bd blocked` | See blocked tasks |
 | `bd show <id>` | Task details |

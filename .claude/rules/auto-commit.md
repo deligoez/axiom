@@ -59,32 +59,39 @@ For ALL commits (TDD or otherwise):
 ## Commit Message Format
 
 ```
-<type>: <short description>
+<type>: <short description> [task-id]
 
 - What was added/changed
 - Test count: X passing tests
 ```
 
+**Task ID is required** when working on a Beads task. Format: `[ch-xxxx]`
+
 ## Examples
 
 ```bash
 # After adding new feature with tests
-feat: add CLI argument parsing
+feat: add CLI argument parsing [ch-nrr]
 
 - Parse --version and --help flags
 - 5 passing tests
 
 # After fixing a bug with test
-fix: handle empty input in parser
+fix: handle empty input in parser [ch-mpl]
 
 - Return default values for empty args
 - 6 passing tests
 
 # After refactoring (tests still green)
-refactor: extract validation logic
+refactor: extract validation logic [ch-wk8]
 
 - Move validation to separate function
 - 6 passing tests (unchanged)
+
+# Chore without task (rare)
+chore: update gitignore
+
+- Add .perles/ to ignored files
 ```
 
 ## Why This Matters
