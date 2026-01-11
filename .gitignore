@@ -41,3 +41,6 @@ logs/
 .claude/
 !.claude/rules/
 dist/
+
+# Perles config (personal)
+.perles/
