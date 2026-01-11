@@ -15,6 +15,19 @@ bd update <task-id> --status=in_progress
 bd show <task-id>
 ```
 
+## Session End
+
+```bash
+# 1. Quality gates (if code changed)
+npm run quality
+
+# 2. Update task status
+bd close <id>  # or update status
+
+# 3. Push to remote
+git pull --rebase && bd sync && git push
+```
+
 ## Quality Pipeline
 
 ```bash
