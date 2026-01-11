@@ -8,13 +8,15 @@ function TestComponent({
 	onSpawn,
 	onNavigate,
 	onMarkDone,
+	onQuickSelect,
 }: {
 	onQuit: () => void;
 	onSpawn?: () => void;
 	onNavigate?: (direction: "next" | "prev") => void;
 	onMarkDone?: () => void;
+	onQuickSelect?: (index: number) => void;
 }) {
-	useKeyboard({ onQuit, onSpawn, onNavigate, onMarkDone });
+	useKeyboard({ onQuit, onSpawn, onNavigate, onMarkDone, onQuickSelect });
 	return null;
 }
 
@@ -110,5 +112,65 @@ describe("useKeyboard", () => {
 		const { stdin } = render(<TestComponent onQuit={onQuit} />);
 
 		expect(() => stdin.write("d")).not.toThrow();
+	});
+
+	it("calls onQuickSelect(0) when 1 is pressed", () => {
+		// Arrange
+		const onQuit = vi.fn();
+		const onQuickSelect = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onQuickSelect={onQuickSelect} />,
+		);
+
+		// Act
+		stdin.write("1");
+
+		// Assert
+		expect(onQuickSelect).toHaveBeenCalledWith(0);
+	});
+
+	it("calls onQuickSelect(8) when 9 is pressed", () => {
+		// Arrange
+		const onQuit = vi.fn();
+		const onQuickSelect = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onQuickSelect={onQuickSelect} />,
+		);
+
+		// Act
+		stdin.write("9");
+
+		// Assert
+		expect(onQuickSelect).toHaveBeenCalledWith(8);
+	});
+
+	it("does not call onQuickSelect when 0 is pressed", () => {
+		// Arrange
+		const onQuit = vi.fn();
+		const onQuickSelect = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onQuickSelect={onQuickSelect} />,
+		);
+
+		// Act
+		stdin.write("0");
+
+		// Assert
+		expect(onQuickSelect).not.toHaveBeenCalled();
+	});
+
+	it("does not call onQuickSelect for non-numeric keys", () => {
+		// Arrange
+		const onQuit = vi.fn();
+		const onQuickSelect = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onQuickSelect={onQuickSelect} />,
+		);
+
+		// Act
+		stdin.write("a");
+
+		// Assert
+		expect(onQuickSelect).not.toHaveBeenCalled();
 	});
 });

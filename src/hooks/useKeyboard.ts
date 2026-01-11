@@ -6,6 +6,7 @@ interface UseKeyboardOptions {
 	onNavigate?: (direction: "next" | "prev") => void;
 	onToggleHelp?: () => void;
 	onMarkDone?: () => void;
+	onQuickSelect?: (index: number) => void;
 	isActive?: boolean;
 }
 
@@ -15,6 +16,7 @@ export function useKeyboard({
 	onNavigate,
 	onToggleHelp,
 	onMarkDone,
+	onQuickSelect,
 	isActive = true,
 }: UseKeyboardOptions): void {
 	useInput(
@@ -36,6 +38,11 @@ export function useKeyboard({
 			}
 			if (input === "d") {
 				onMarkDone?.();
+			}
+			// Quick select: 1-9 keys (convert to 0-indexed)
+			const num = Number.parseInt(input, 10);
+			if (num >= 1 && num <= 9) {
+				onQuickSelect?.(num - 1);
 			}
 		},
 		{ isActive },
