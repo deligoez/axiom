@@ -24,18 +24,23 @@ export class RealGitService implements GitService {
 			await execAsync(`git merge ${branch} --no-edit`, { cwd: this.cwd });
 			return { success: true, merged: true };
 		} catch (error) {
-			const err = error as { stderr?: string; message?: string };
-			const stderr = err.stderr || err.message || "";
+			const err = error as {
+				stderr?: string;
+				stdout?: string;
+				message?: string;
+			};
+			// Git outputs conflict info to stdout, not stderr
+			const output = (err.stdout || "") + (err.stderr || err.message || "");
 
 			if (
-				stderr.includes("CONFLICT") ||
-				stderr.includes("Automatic merge failed")
+				output.includes("CONFLICT") ||
+				output.includes("Automatic merge failed")
 			) {
 				const conflictFiles = await this.getConflictFiles();
 				return { success: false, hasConflict: true, conflictFiles };
 			}
 
-			return { success: false, error: stderr };
+			return { success: false, error: output };
 		}
 	}
 

@@ -138,10 +138,12 @@ export class BeadsCLI {
 		}
 
 		const { stdout } = await this.runBd(args);
-		// Extract task ID from output (e.g., "Created ch-xyz: Title")
-		const match = stdout.match(/(?:Created\s+)?(ch-[a-z0-9]+)/i);
+		// Extract task ID from output:
+		// Real bd: "Created issue: bd-xxx-1" or "Created issue: ch-xxx"
+		// Mocked: "Created ch-abc123: Title"
+		const match = stdout.match(/Created(?:\s+issue:)?\s+([a-z]+-[a-z0-9]+)/i);
 		if (!match) {
-			throw new Error("Failed to parse created task ID");
+			throw new Error(`Failed to parse created task ID from: ${stdout}`);
 		}
 		return match[1];
 	}
