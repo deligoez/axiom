@@ -71,7 +71,7 @@ export interface ValidationIssue {
 export type ChorusMachineEvent =
 	// Agent management
 	| { type: "SPAWN_AGENT"; taskId: string }
-	| { type: "STOP_AGENT"; agentId: string }
+	| { type: "STOP_AGENT"; agentId: string; taskId: string }
 	| { type: "AGENT_COMPLETED"; agentId: string; result: AgentResult }
 	| { type: "AGENT_FAILED"; agentId: string; error: Error }
 	| { type: "AGENT_BLOCKED"; agentId: string; reason: string }

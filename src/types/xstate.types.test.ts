@@ -36,7 +36,7 @@ describe("XState Types", () => {
 			// Arrange - create array of all event types
 			const events: ChorusMachineEvent[] = [
 				{ type: "SPAWN_AGENT", taskId: "task-1" },
-				{ type: "STOP_AGENT", agentId: "agent-1" },
+				{ type: "STOP_AGENT", agentId: "agent-1", taskId: "task-1" },
 				{ type: "PAUSE" },
 				{ type: "RESUME" },
 				{ type: "SET_MODE", mode: "autopilot" },

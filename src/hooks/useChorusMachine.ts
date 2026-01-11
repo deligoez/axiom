@@ -23,7 +23,7 @@ export interface UseChorusMachineReturn {
 	isPaused: boolean;
 	// Actions
 	spawnAgent: (taskId: string) => void;
-	stopAgent: (agentId: string) => void;
+	stopAgent: (agentId: string, taskId: string) => void;
 	pause: () => void;
 	resume: () => void;
 	setMode: (mode: "semi-auto" | "autopilot") => void;
@@ -56,8 +56,8 @@ export function useChorusMachine(
 		send({ type: "SPAWN_AGENT", taskId });
 	};
 
-	const stopAgent = (agentId: string) => {
-		send({ type: "STOP_AGENT", agentId });
+	const stopAgent = (agentId: string, taskId: string) => {
+		send({ type: "STOP_AGENT", agentId, taskId });
 	};
 
 	const pause = () => {

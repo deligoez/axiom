@@ -29,6 +29,10 @@ export interface ChorusMachineContext {
 	maxAgents: number;
 	mergeQueue: MergeQueueItem[];
 	stats: SessionStats;
+	// Orchestration context
+	activeTaskIds: string[];
+	activeAgentIds: string[];
+	acquiredSlots: number;
 	// TUI context
 	selectedTaskId: string | null;
 	selectedAgentId: string | null;
@@ -54,7 +58,18 @@ export type ChorusMachineEvent =
 	| { type: "SET_MODE"; mode: "semi-auto" | "autopilot" }
 	// Agent management
 	| { type: "SPAWN_AGENT"; taskId: string }
-	| { type: "STOP_AGENT"; agentId: string }
+	| { type: "STOP_AGENT"; agentId: string; taskId: string }
+	| {
+			type: "AGENT_COMPLETED";
+			agentId: string;
+			taskId: string;
+	  }
+	| {
+			type: "AGENT_FAILED";
+			agentId: string;
+			taskId: string;
+	  }
+	| { type: "STOP_ALL"; preserveChanges?: boolean }
 	// TUI Focus
 	| { type: "FOCUS_TASK_PANEL" }
 	| { type: "FOCUS_AGENT_GRID" }
@@ -84,7 +99,11 @@ export const chorusMachine = setup({
 		input: {} as ChorusMachineInput,
 		events: {} as ChorusMachineEvent,
 	},
-	guards: {},
+	guards: {
+		hasAvailableSlot: ({ context }) =>
+			context.acquiredSlots < context.maxAgents,
+		noActiveTasks: ({ context }) => context.activeTaskIds.length === 0,
+	},
 	actions: {
 		setMode: assign({
 			mode: (_, params: { mode: "semi-auto" | "autopilot" }) => params.mode,
@@ -109,6 +128,41 @@ export const chorusMachine = setup({
 				...context.stats,
 				inProgress: Math.max(0, context.stats.inProgress - 1),
 			}),
+		}),
+		// Slot management actions
+		claimSlot: assign({
+			acquiredSlots: ({ context }) => context.acquiredSlots + 1,
+		}),
+		releaseSlot: assign({
+			acquiredSlots: ({ context }) => Math.max(0, context.acquiredSlots - 1),
+		}),
+		releaseAllSlots: assign({
+			acquiredSlots: () => 0,
+		}),
+		// Task tracking actions
+		trackActiveTask: assign({
+			activeTaskIds: (
+				{ context },
+				params: { taskId: string; agentId: string },
+			) => [...context.activeTaskIds, params.taskId],
+			activeAgentIds: (
+				{ context },
+				params: { taskId: string; agentId: string },
+			) => [...context.activeAgentIds, params.agentId],
+		}),
+		removeActiveTask: assign({
+			activeTaskIds: (
+				{ context },
+				params: { taskId: string; agentId: string },
+			) => context.activeTaskIds.filter((id) => id !== params.taskId),
+			activeAgentIds: (
+				{ context },
+				params: { taskId: string; agentId: string },
+			) => context.activeAgentIds.filter((id) => id !== params.agentId),
+		}),
+		clearActiveTasks: assign({
+			activeTaskIds: () => [],
+			activeAgentIds: () => [],
 		}),
 		selectTask: assign({
 			selectedTaskId: (_, params: { taskId: string }) => params.taskId,
@@ -137,6 +191,10 @@ export const chorusMachine = setup({
 		maxAgents: input.maxAgents ?? 3,
 		mergeQueue: [],
 		stats: { completed: 0, failed: 0, inProgress: 0 },
+		// Orchestration context
+		activeTaskIds: [],
+		activeAgentIds: [],
+		acquiredSlots: 0,
 		// TUI context
 		selectedTaskId: null,
 		selectedAgentId: null,
@@ -183,11 +241,96 @@ export const chorusMachine = setup({
 			states: {
 				idle: {
 					on: {
+						SPAWN_AGENT: {
+							target: "running",
+							guard: "hasAvailableSlot",
+							actions: [
+								{ type: "claimSlot" },
+								{
+									type: "spawnAgent",
+									params: ({ event }) => ({ taskId: event.taskId }),
+								},
+								{
+									type: "trackActiveTask",
+									params: ({ event }) => ({
+										taskId: event.taskId,
+										agentId: `agent-${event.taskId}`,
+									}),
+								},
+							],
+						},
 						RESUME: "running",
 					},
 				},
 				running: {
 					on: {
+						SPAWN_AGENT: {
+							guard: "hasAvailableSlot",
+							actions: [
+								{ type: "claimSlot" },
+								{
+									type: "spawnAgent",
+									params: ({ event }) => ({ taskId: event.taskId }),
+								},
+								{
+									type: "trackActiveTask",
+									params: ({ event }) => ({
+										taskId: event.taskId,
+										agentId: `agent-${event.taskId}`,
+									}),
+								},
+							],
+						},
+						AGENT_COMPLETED: {
+							target: "checkIfIdle",
+							actions: [
+								{ type: "releaseSlot" },
+								{
+									type: "removeActiveTask",
+									params: ({ event }) => ({
+										taskId: event.taskId,
+										agentId: event.agentId,
+									}),
+								},
+							],
+						},
+						AGENT_FAILED: {
+							target: "checkIfIdle",
+							actions: [
+								{ type: "releaseSlot" },
+								{
+									type: "removeActiveTask",
+									params: ({ event }) => ({
+										taskId: event.taskId,
+										agentId: event.agentId,
+									}),
+								},
+							],
+						},
+						STOP_AGENT: {
+							target: "checkIfIdle",
+							actions: [
+								{
+									type: "stopAgent",
+									params: ({ event }) => ({ agentId: event.agentId }),
+								},
+								{ type: "releaseSlot" },
+								{
+									type: "removeActiveTask",
+									params: ({ event }) => ({
+										taskId: event.taskId,
+										agentId: event.agentId,
+									}),
+								},
+							],
+						},
+						STOP_ALL: {
+							target: "idle",
+							actions: [
+								{ type: "releaseAllSlots" },
+								{ type: "clearActiveTasks" },
+							],
+						},
 						PAUSE: "paused",
 					},
 				},
@@ -195,6 +338,12 @@ export const chorusMachine = setup({
 					on: {
 						RESUME: "running",
 					},
+				},
+				checkIfIdle: {
+					always: [
+						{ target: "idle", guard: "noActiveTasks" },
+						{ target: "running" },
+					],
 				},
 			},
 		},
@@ -312,18 +461,7 @@ export const chorusMachine = setup({
 				params: ({ event }) => ({ mode: event.mode }),
 			},
 		},
-		SPAWN_AGENT: {
-			actions: {
-				type: "spawnAgent",
-				params: ({ event }) => ({ taskId: event.taskId }),
-			},
-		},
-		STOP_AGENT: {
-			actions: {
-				type: "stopAgent",
-				params: ({ event }) => ({ agentId: event.agentId }),
-			},
-		},
+		// Note: SPAWN_AGENT and STOP_AGENT are handled in orchestration region
 		SELECT_TASK: {
 			actions: {
 				type: "selectTask",

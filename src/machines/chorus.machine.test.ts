@@ -163,7 +163,11 @@ describe("ChorusMachine", () => {
 		expect(actor.getSnapshot().context.agents).toHaveLength(1);
 
 		// Act
-		actor.send({ type: "STOP_AGENT", agentId: "agent-task-1" });
+		actor.send({
+			type: "STOP_AGENT",
+			agentId: "agent-task-1",
+			taskId: "task-1",
+		});
 
 		// Assert
 		expect(actor.getSnapshot().context.agents).toHaveLength(0);
