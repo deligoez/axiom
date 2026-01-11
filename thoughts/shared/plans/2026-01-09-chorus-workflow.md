@@ -3,7 +3,7 @@
 **Date:** 2026-01-09
 **Updated:** 2026-01-11
 **Status:** APPROVED - Implementation in Progress
-**Version:** 3.7
+**Version:** 3.10
 
 ---
 
@@ -399,6 +399,27 @@ Config (.chorus/config.json):
   "mode": "semi-auto"  // or "autopilot"
 }
 ```
+
+**Mode State Hierarchy (Clarification):**
+
+| Location | Field | Purpose | Precedence |
+|----------|-------|---------|------------|
+| CLI args | `--mode` | Override for this session | 1 (highest) |
+| `planning-state.json` | `chosenMode` | User's choice after planning review | 2 |
+| `state.json` | `mode` | Current runtime mode (survives TUI restarts) | 3 |
+| `config.json` | `mode` | Project default | 4 (lowest) |
+
+**Mode Resolution Flow:**
+1. CLI `--mode` flag → use that mode
+2. Else if `planning-state.json` has `chosenMode` → use that (first run after planning)
+3. Else if `state.json` has `mode` → use that (preserves 'm' toggle across TUI restarts)
+4. Else use `config.json` default
+
+**TUI 'm' Toggle Behavior:**
+- Toggles between `semi-auto` ↔ `autopilot`
+- Updates `state.json` immediately (persisted)
+- Does NOT update `config.json` (project default unchanged)
+- Does NOT update `planning-state.json` (initial choice preserved)
 
 ---
 
@@ -894,16 +915,25 @@ chorus init --yes --max-agents 5 --prefix "myapp-"
 ├── task-rules.md            # Task validation rules (agent-readable)
 ├── PATTERNS.md              # Cross-agent patterns (agent-readable)
 ├── planning-state.json      # Current planning state
+├── pending-patterns.json    # Pattern suggestions awaiting review (auto-expires 7 days)
 ├── session-log.jsonl        # Session history (append-only, JSONL)
 ├── state.json               # Runtime state (gitignored)
+├── templates/               # Template files
+│   └── scratchpad.md        # Copied to worktree on agent spawn
+├── specs/                   # Living spec documents (v3.6)
+│   ├── *.md                 # Active specs (only draft sections visible)
+│   ├── spec-progress.json   # Tracks spec sections and their states
+│   └── archive/             # Completed specs (never in agent context)
+├── hooks/                   # Auto-discovered hooks (v3.4)
+│   └── *.sh                 # Named by event (e.g., post-task-complete.sh)
 └── prompts/
     ├── plan-agent.md        # Plan agent system prompt
     └── impl-agent.md        # Implementation agent prompt
 ```
 
 **File Formats:**
-- **JSON:** config.json, planning-state.json, state.json (structured data)
-- **Markdown:** task-rules.md, PATTERNS.md, prompts/*.md (agent-readable)
+- **JSON:** config.json, planning-state.json, pending-patterns.json, state.json, spec-progress.json (structured data)
+- **Markdown:** task-rules.md, PATTERNS.md, prompts/*.md, specs/*.md, templates/*.md (agent-readable)
 - **JSONL:** session-log.jsonl (append-only log, one JSON per line)
 
 ### Session Logger
@@ -958,6 +988,7 @@ All events logged to `.chorus/session-log.jsonl`:
 | | `pattern_suggested` | `{content, source, category}` |
 | | `pattern_approved` | `{content, approvedBy: auto\|user}` |
 | | `pattern_rejected` | `{content, reason}` |
+| | `pattern_expired` | `{content, source, age_days}` |
 | **plan_review** | `review_triggered` | `{trigger: learning\|manual, learningCategory}` |
 | | `review_iteration` | `{iteration, tasksUpdated, tasksMarkedRedundant}` |
 | | `review_converged` | `{iterations, totalChanges}` |
@@ -1086,6 +1117,21 @@ interface QualityCommand {
 └─────────────────────────────────────────────────────────────────┘
 
 Note: GitHub Issues import and PRD parsing planned for v2.
+```
+
+**Task Priority Levels:**
+
+| Priority | Flag | Name | Description | Merge Boost |
+|----------|------|------|-------------|-------------|
+| P0 | `-p 0` | Blocker | Blocks other work, must fix immediately | +200 |
+| P1 | `-p 1` | Critical | Urgent, should be first in queue | +100 |
+| P2 | `-p 2` | High | Important, prioritize over normal work | +50 |
+| P3 | `-p 3` | Medium | Normal priority (default) | +10 |
+| P4 | `-p 4` | Low | Nice to have, do when time permits | +0 |
+
+**Creating a Blocker Task (P0):**
+```bash
+bd create "BLOCKER: Database connection failing" -p 0 -l bug
 ```
 
 ### BeadsCLI Integration
@@ -1263,7 +1309,23 @@ Beads tasks can include custom fields for Chorus:
 - Press `r` on failed task → Task returns to PENDING, worktree preserved
 - Press `e` to edit task description → Then retry
 - Press `R` to rollback → Reverts commits, task → PENDING
+- Press `X` (Shift+x) to cleanup worktree → Removes worktree, task stays FAILED
 - Worktree kept for debugging until manually cleaned
+
+**Worktree Cleanup Commands:**
+```bash
+# Cleanup specific failed task worktree
+chorus worktree clean <task-id>
+
+# Cleanup all failed/timeout task worktrees
+chorus worktree clean --failed
+
+# Cleanup all worktrees (nuclear option)
+chorus worktree clean --all
+
+# List orphaned worktrees
+chorus worktree list --orphaned
+```
 
 **TIMEOUT Recovery:**
 - Press `r` on timed-out task → Fresh iteration counter, retry
@@ -1429,6 +1491,21 @@ If you need clarification, output: <chorus>NEEDS_HELP: what you need</chorus>
 ## Important
 - Log discoveries to .agent/scratchpad.md
 - Commit frequently with task ID in message
+
+## Learnings Format
+When you discover something useful, add it to your scratchpad's ## Learnings section:
+
+```
+## Learnings
+- [LOCAL] This specific function needs memoization for performance
+- [CROSS-CUTTING] All API endpoints require rate limiting middleware
+- [ARCHITECTURAL] State management should use Zustand instead of Context
+```
+
+Categories:
+- [LOCAL] - Only affects this task (not shared with other tasks)
+- [CROSS-CUTTING] - Affects multiple features (triggers plan review)
+- [ARCHITECTURAL] - Fundamental design decision (triggers plan review + alert)
 ```
 
 ### Custom Model Per Task
@@ -1860,7 +1937,7 @@ interface CompletionCheck {
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                    PERMANENT (Shared)                            │
+│                    PERMANENT (Shared) - PROJECT ROOT             │
 │                                                                  │
 │  .agent/learnings.md                                             │
 │  ├── Append-only                                                 │
@@ -1868,7 +1945,12 @@ interface CompletionCheck {
 │  ├── Shared across ALL agents (claude, codex, opencode)          │
 │  └── Git-tracked (versioned)                                     │
 │                                                                  │
-│  Format:                                                         │
+│  .agent/learnings-meta.json                                      │
+│  ├── Review status (which learnings reviewed by Plan Review)     │
+│  ├── Dedup hashes (prevent duplicate learnings)                  │
+│  └── Git-tracked (metadata for learning system)                  │
+│                                                                  │
+│  Format (learnings.md):                                          │
 │  # Project Learnings                                             │
 │                                                                  │
 │  ## Performance                                                  │
@@ -1883,15 +1965,39 @@ interface CompletionCheck {
           Extracted on task completion
                               │
 ┌─────────────────────────────────────────────────────────────────┐
-│                   SESSION (Per-Agent)                            │
+│                   SESSION (Per-Agent) - WORKTREE                 │
 │                                                                  │
-│  .worktrees/{agent}/.agent/scratchpad.md                         │
+│  .worktrees/{agent}-{task-id}/.agent/scratchpad.md               │
 │  ├── Current session only                                        │
 │  ├── Cleared on task completion                                  │
 │  ├── Per-agent in parallel mode                                  │
-│  └── Gitignored                                                  │
+│  └── Gitignored (in worktree)                                    │
 └─────────────────────────────────────────────────────────────────┘
+
+**Directory Structure (Memory-Specific):**
+
+> For full `.chorus/` directory structure, see [Directory Structure: `.chorus/`](#directory-structure-chorus).
+
 ```
+project-root/
+├── .agent/                              # SHARED - Project root (git-tracked)
+│   ├── learnings.md                     # Permanent shared learnings
+│   └── learnings-meta.json              # Review status, dedup hashes
+│
+├── .chorus/                             # See Directory Structure section
+│
+└── .worktrees/                          # Agent worktrees (gitignored)
+    └── {agent}-{task-id}/               # e.g., claude-ch-001
+        └── .agent/                      # PER-AGENT - Worktree only (gitignored)
+            └── scratchpad.md            # Session notes, cleared on completion
+```
+
+**⚠️ Important: `.agent/` exists in TWO locations with different purposes:**
+
+| Location | Purpose | Git Status | Lifetime |
+|----------|---------|------------|----------|
+| Project root `.agent/` | Shared learnings across all agents | Tracked | Permanent |
+| Worktree `.agent/` | Per-agent scratchpad | Gitignored | Task duration |
 
 ### Cross-Agent Knowledge Sharing
 
@@ -2008,6 +2114,37 @@ Agent writes to scratchpad during task
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**De-duplication Algorithm:**
+
+```typescript
+interface DeduplicationConfig {
+  algorithm: 'exact' | 'similarity';
+  threshold: number;        // 0.85 for similarity matching
+  action: 'skip' | 'merge'; // What to do with duplicates
+}
+
+// Default config
+const DEFAULT_DEDUP: DeduplicationConfig = {
+  algorithm: 'similarity',
+  threshold: 0.85,
+  action: 'skip'
+};
+```
+
+| Step | Action | Example |
+|------|--------|---------|
+| 1. Hash incoming | Generate hash of normalized learning content | `sha256("rate limiting needed")` |
+| 2. Check exact match | Compare hash against `learnings-meta.json` | Hash exists → duplicate |
+| 3. If no exact match | Run similarity check against recent learnings (last 50) | Cosine similarity > 0.85 |
+| 4. If similar found | Action based on config: `skip` (discard) or `merge` (combine) | Skip if already captured |
+| 5. Store hash | Add hash to `learnings-meta.json` for future checks | Prevent re-discovery |
+
+**Similarity Matching Details:**
+- Uses normalized text (lowercase, trimmed, stop-words removed)
+- Compares against learnings from last 7 days or last 50 entries (whichever is smaller)
+- Threshold 0.85 catches near-duplicates like "add rate limiting" vs "implement rate limiting"
+- On merge: Keep newer learning, append source references
+
 **File Relationships:**
 
 | File | Purpose | Updated By | Read By |
@@ -2019,7 +2156,7 @@ Agent writes to scratchpad during task
 
 ### Learning-Triggered Plan Review (Adaptive Task Refinement)
 
-> **Post-MVP Feature:** Automatically reviews and updates pending tasks when cross-cutting learnings are discovered.
+> **M8 Feature (F93-F97):** Automatically reviews and updates pending tasks when cross-cutting learnings are discovered.
 
 When an agent discovers something that affects multiple tasks, the plan shouldn't stay frozen. This feature creates a feedback loop from implementation back to planning.
 
@@ -2130,12 +2267,36 @@ Review each task against this learning:
 | `autoApply` | `none` / `minor` / `all` | What to apply without approval |
 | `requireApproval` | array | Changes that need user confirmation |
 
+**Error Handling:**
+
+| Error Scenario | Detection | Recovery Action |
+|----------------|-----------|-----------------|
+| Review times out | `maxIterations` or wall-clock timeout | Notify user, continue without applying changes |
+| LLM returns invalid JSON | JSON parse error | Retry once with simpler prompt, then skip iteration |
+| Beads update fails | `bd update` exit code != 0 | Log error, skip task update, continue review |
+| Concurrent review requests | Second trigger while first running | Queue request, process after current completes |
+| Network error (LLM API) | Request timeout/connection error | Retry with exponential backoff (max 3), then pause |
+
+**Concurrency Model:**
+```
+Review Request A arrives
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Is review in progress?                                          │
+│  ├── No  → Start review immediately                             │
+│  └── Yes → Queue request, process after current completes       │
+│                                                                  │
+│  Queue is FIFO, max size 3 (drop oldest if full)                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 **Anti-Waterfall Benefit:**
 This directly addresses the waterfall problem discussed in the design principles. Instead of frozen plans that diverge from reality, the plan becomes a **living document** that adapts to implementation discoveries.
 
 ### Implementation-Triggered Task Creation (Incremental Planning)
 
-> **Post-MVP Feature:** Just-in-time task creation based on implementation progress.
+> **M8 Feature (F98-F101):** Just-in-time task creation based on implementation progress.
 
 Instead of planning all tasks upfront (waterfall), plan just enough to start, then create more tasks as implementation reveals what's actually needed.
 
@@ -2261,8 +2422,35 @@ Option A: Import existing
 │ → Copies to .chorus/specs/survey-prd.md                          │
 │ → Adds 📋 emoji prefix to all ## headings                        │
 │ → Creates entry in spec-progress.json                            │
-│ → Validates structure (headings, sections)                       │
+│ → Validates structure (see Spec Validation below)                │
 └─────────────────────────────────────────────────────────────────┘
+
+**Spec Validation Rules:**
+
+| Rule | Description | Error |
+|------|-------------|-------|
+| Has `# Title` | Must have exactly one H1 heading | "Missing or multiple H1 titles" |
+| Has sections | At least one `## Section` heading | "No sections found" |
+| No empty sections | Each section must have content | "Empty section: {heading}" |
+| Valid markdown | Must parse as valid markdown | "Invalid markdown syntax" |
+| No duplicate headings | Section headings must be unique | "Duplicate heading: {heading}" |
+| Reasonable size | Max 10,000 lines (configurable) | "Spec too large for processing" |
+
+**Validation Output Example:**
+```
+$ chorus spec import ~/docs/survey-prd.md
+
+Validating spec...
+✓ Title found: "Survey System Spec"
+✓ 4 sections detected
+✓ All sections have content
+✓ No duplicate headings
+✓ Markdown syntax valid
+
+Spec imported successfully!
+→ .chorus/specs/survey-prd.md
+→ 4 sections marked as 📋 draft
+```
 
 Option B: Interactive creation
 ┌─────────────────────────────────────────────────────────────────┐
@@ -2395,7 +2583,9 @@ When Plan Review needs to update a task from a collapsed section:
 3. Review updates task in Beads, NOT the collapsed spec section
 4. Original spec content preserved in `<details>` for human reference only
 
-**Directory Structure:**
+**Directory Structure (Spec-Specific):**
+
+> This shows only `.chorus/specs/`. For full directory structure, see [Directory Structure: `.chorus/`](#directory-structure-chorus).
 
 ```
 .chorus/specs/
@@ -2839,6 +3029,45 @@ If approved/auto-applied:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Pattern Action Results:**
+
+| Action | Immediate Effect | Future Behavior |
+|--------|------------------|-----------------|
+| **[A] Approve** | Append to PATTERNS.md, commit, log `pattern_approved` | All agents see pattern in prompt |
+| **[E] Edit** | Open editor, user modifies text, then Approve flow | Modified version goes to PATTERNS.md |
+| **[R] Reject** | Log `pattern_rejected` with reason, discard | NOT suggested again from same task |
+| **[L] Later** | Add to pending queue, remind after next task | Resurfaces in TUI notification area |
+
+**Rejection Flow Details:**
+
+```
+User presses [R] Reject
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Optional: Enter rejection reason                                │
+│  > "Too specific to this task, not generalizable"               │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Actions taken:                                                  │
+│  1. Log to session-log.jsonl:                                   │
+│     {"event": "pattern_rejected", "content": "...",             │
+│      "reason": "Too specific...", "source": "ch-005"}           │
+│  2. Add to rejection index (learnings-meta.json):               │
+│     Stores hash of pattern content + source task                │
+│  3. Future: Same pattern from same task → auto-skip             │
+│     (But same pattern from DIFFERENT task → re-suggest)         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Later Queue Behavior:**
+- "Later" patterns stored in `.chorus/pending-patterns.json`
+- TUI shows notification: "📝 3 patterns pending review"
+- User can press `Shift+P` to review pending patterns
+- Auto-expire after 7 days if not reviewed (logged as `pattern_expired`)
+
 ### AGENTS.md vs PATTERNS.md Distinction
 
 | Aspect | AGENTS.md | PATTERNS.md |
@@ -2855,15 +3084,44 @@ If approved/auto-applied:
 - `AGENTS.md` = What developers WANT agents to know (intentional)
 - `PATTERNS.md` = What agents DISCOVER while working (emergent)
 
-**Loading priority:**
-1. Claude loads AGENTS.md natively (via `.claude/rules` symlink or direct read)
-2. F07 Prompt Builder injects PATTERNS.md for ALL agents (including Claude)
-3. Non-Claude agents (post-MVP) receive AGENTS.md + learnings via prompt prefix
+**Loading Mechanism:**
 
-**Why inject PATTERNS.md even for Claude?**
-- PATTERNS.md is in `.chorus/` which Claude doesn't auto-load
+| File | Claude Loading | Non-Claude Loading (Post-MVP) |
+|------|----------------|-------------------------------|
+| `AGENTS.md` | Via symlink: `.claude/rules/AGENTS.md` → `AGENTS.md` | F07 injects in prompt prefix |
+| `PATTERNS.md` | F07 injects in prompt | F07 injects in prompt prefix |
+| `learnings.md` | Claude reads natively (in `.agent/`) | F07 injects relevant learnings |
+
+**Setup Requirement (Init Flow):**
+During `chorus init`, create symlink for Claude to read AGENTS.md:
+```bash
+ln -s ../../AGENTS.md .claude/rules/AGENTS.md
+```
+
+**Why different loading mechanisms?**
+
+| File | Why This Method | Token Impact |
+|------|-----------------|--------------|
+| `AGENTS.md` | Symlink loads once at session start, persists across tasks | Low (one-time cost) |
+| `PATTERNS.md` | F07 injects per-task to ensure latest patterns | Medium (per task) |
+| `learnings.md` | Claude reads natively; F07 filters relevant ones for non-Claude | Variable (filtered) |
+
+**Why F07 injects PATTERNS.md even for Claude?**
+- PATTERNS.md is in `.chorus/` which Claude doesn't auto-load from `.claude/rules/`
 - Consistent injection ensures all agents see same patterns
-- Alternative: symlink `.chorus/PATTERNS.md` → `.claude/rules/PATTERNS.md` (not recommended, creates coupling)
+- Avoids symlink complexity (`.chorus/` → `.claude/` coupling)
+- Patterns update during session, so per-task injection is correct behavior
+
+**Why not symlink PATTERNS.md like AGENTS.md?**
+- AGENTS.md is static during a session (developer manually edits)
+- PATTERNS.md changes during session (agents discover patterns)
+- Symlinked files are read once at session start
+- F07 injection ensures freshest patterns per task
+
+**Loading Order:**
+1. Claude reads `.claude/rules/AGENTS.md` (symlink) at session start
+2. F07 Prompt Builder injects PATTERNS.md into task prompt (all agents)
+3. F07 injects relevant learnings based on task labels (all agents)
 
 ---
 
@@ -2925,6 +3183,51 @@ Scripts must be executable (`chmod +x`) and named exactly as the event.
 ```
 
 **Precedence:** Explicit config overrides auto-discovery for the same event.
+
+### Hook Timeout & Error Handling
+
+Hooks have configurable timeout and retry behavior:
+
+```json
+{
+  "hookConfig": {
+    "timeout": 30000,
+    "retryOnError": false,
+    "maxRetries": 1,
+    "continueOnFailure": true
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `timeout` | 30000 | Max execution time in ms (30s default) |
+| `retryOnError` | false | Retry hook if it exits with non-zero |
+| `maxRetries` | 1 | Number of retries if retryOnError=true |
+| `continueOnFailure` | true | Continue operation if hook fails |
+
+**Behavior on Hook Failure:**
+
+| Scenario | `continueOnFailure=true` | `continueOnFailure=false` |
+|----------|--------------------------|---------------------------|
+| Hook times out | Log warning, continue | Halt operation, show error |
+| Hook exits non-zero | Log warning, continue | Halt operation, show error |
+| Hook returns `block` | Always halt (intentional) | Always halt (intentional) |
+| Hook not found | Skip silently | Skip silently |
+
+**Per-Hook Override:**
+
+```json
+{
+  "hooks": {
+    "pre-merge": {
+      "command": ".chorus/hooks/validate-branch.sh",
+      "timeout": 60000,
+      "continueOnFailure": false
+    }
+  }
+}
+```
 
 ### Hook Input/Output Format
 
@@ -3348,6 +3651,41 @@ PRIORITY BADGES:
 ---
 
 ## Changelog
+
+- **v3.10 (2026-01-11):** Comprehensive Review Fixes
+  - ADDED: `pattern_expired` event to Session Logger Event Reference
+  - ADDED: Hook Timeout & Error Handling section (timeout, retry, continueOnFailure config)
+  - ADDED: Learnings Format specification in Agent Prompt Template (LOCAL/CROSS-CUTTING/ARCHITECTURAL)
+  - ADDED: Worktree Cleanup Commands (`chorus worktree clean <task-id>`, `--failed`, `--all`)
+  - ADDED: Spec Validation Rules table with detailed validation criteria
+  - ADDED: Cross-references between Directory Structure sections (reduced redundancy)
+  - ADDED: `.agent/` dual-location clarification table (Project root vs Worktree)
+  - ADDED: Loading Mechanism rationale table (why different methods for different files)
+  - ADDED: AGENTS.md vs PATTERNS.md loading explanation (symlink vs F07 injection rationale)
+  - PURPOSE: Addresses all gaps, inconsistencies, and missing documentation identified in review
+
+- **v3.9 (2026-01-11):** Structural Clarity & Missing References
+  - ADDED: `.chorus/pending-patterns.json` to directory structure (was referenced but not listed)
+  - ADDED: `.chorus/templates/`, `.chorus/specs/`, `.chorus/hooks/` to directory structure
+  - ADDED: `.agent/learnings-meta.json` to memory architecture (was referenced but not in structure)
+  - ADDED: Directory structure clarification - `.agent/` exists in TWO locations:
+    - Project root `.agent/` (shared learnings, git-tracked)
+    - Worktree `.agent/` (per-agent scratchpad, gitignored)
+  - ADDED: Mode State Hierarchy table (CLI → planning-state → state.json → config.json precedence)
+  - ADDED: TUI 'm' toggle behavior clarification (updates state.json, not config.json)
+  - ADDED: Task Priority Levels table with `-p` flag syntax for all priorities (P0-P4)
+  - ADDED: P0 Blocker task creation example (`bd create -p 0`)
+  - PURPOSE: Resolves structural ambiguities and missing file references identified in review
+
+- **v3.8 (2026-01-11):** Documentation Completeness Review
+  - FIXED: Scratchpad path format consistency (`.worktrees/{agent}-{task-id}/...`)
+  - FIXED: Post-MVP labels updated to M8 Feature for F93-F101 (they have Beads tasks)
+  - ADDED: AGENTS.md loading mechanism clarification (symlink + table)
+  - ADDED: Plan Review error handling section (timeouts, retries, concurrency model)
+  - ADDED: Learning de-duplication algorithm spec (similarity matching, thresholds)
+  - ADDED: Pattern rejection flow (what happens after Reject/Later actions)
+  - ADDED: Pending patterns queue behavior with auto-expire
+  - PURPOSE: Addresses all gaps identified in comprehensive review
 
 - **v3.7 (2026-01-11):** Comprehensive Consistency Review
   - FIXED: PATTERNS.md injection clarified (injected for ALL agents including Claude)
