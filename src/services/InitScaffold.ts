@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import {
+	appendFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 export type ProjectType = "node" | "python" | "go" | "unknown";
@@ -72,6 +79,43 @@ const PLANNING_STATE_TEMPLATE = {
 	tasks: [],
 	reviewIterations: [],
 };
+
+const AGENTS_MD_TEMPLATE = `# Agents
+
+This file documents agent behaviors for AI coding assistants.
+
+## Chorus
+
+This project uses Chorus for multi-agent orchestration.
+See \`.chorus/\` for configuration.
+`;
+
+const PLAN_AGENT_TEMPLATE = `# Plan Agent
+
+You are a planning agent for Chorus multi-agent orchestration.
+
+## Your Role
+- Analyze user goals and create task decomposition
+- Validate task specifications
+- Review and iterate on plans
+
+## Guidelines
+- Keep tasks atomic and testable
+- Estimate test counts accurately
+- Identify dependencies between tasks
+`;
+
+const GITIGNORE_ENTRIES = [".worktrees/", ".chorus/state.json", ".agent/"];
+
+export class BeadsInitError extends Error {
+	constructor(
+		message: string,
+		public exitCode: number,
+	) {
+		super(message);
+		this.name = "BeadsInitError";
+	}
+}
 
 export class InitScaffold {
 	constructor(private projectDir: string) {}
@@ -219,5 +263,94 @@ export class InitScaffold {
 		}
 
 		return result;
+	}
+
+	initBeads(): void {
+		const beadsDir = join(this.projectDir, ".beads");
+
+		if (existsSync(beadsDir)) {
+			return; // Skip if already exists
+		}
+
+		try {
+			execSync("bd init", {
+				cwd: this.projectDir,
+				stdio: "pipe",
+				encoding: "utf-8",
+			});
+		} catch (error) {
+			const err = error as { status?: number; message?: string };
+			throw new BeadsInitError(
+				`bd init failed: ${err.message}`,
+				err.status ?? 1,
+			);
+		}
+	}
+
+	createAgentsMd(): void {
+		const agentsPath = join(this.projectDir, "AGENTS.md");
+		if (!existsSync(agentsPath)) {
+			writeFileSync(agentsPath, AGENTS_MD_TEMPLATE);
+		}
+	}
+
+	createTaskRulesMd(): void {
+		const rulesPath = join(this.projectDir, ".chorus", "task-rules.md");
+		if (!existsSync(rulesPath)) {
+			writeFileSync(rulesPath, TASK_RULES_TEMPLATE);
+		}
+	}
+
+	createPatternsMd(): void {
+		const patternsPath = join(this.projectDir, ".chorus", "PATTERNS.md");
+		if (!existsSync(patternsPath)) {
+			writeFileSync(patternsPath, PATTERNS_TEMPLATE);
+		}
+	}
+
+	createPlanAgentPrompt(): void {
+		const promptPath = join(
+			this.projectDir,
+			".chorus",
+			"prompts",
+			"plan-agent.md",
+		);
+		if (!existsSync(promptPath)) {
+			writeFileSync(promptPath, PLAN_AGENT_TEMPLATE);
+		}
+	}
+
+	createImplAgentPrompt(): void {
+		const promptPath = join(
+			this.projectDir,
+			".chorus",
+			"prompts",
+			"impl-agent.md",
+		);
+		if (!existsSync(promptPath)) {
+			writeFileSync(promptPath, IMPL_AGENT_TEMPLATE);
+		}
+	}
+
+	updateGitignore(): void {
+		const gitignorePath = join(this.projectDir, ".gitignore");
+
+		let content = "";
+		if (existsSync(gitignorePath)) {
+			content = readFileSync(gitignorePath, "utf-8");
+		}
+
+		const linesToAdd: string[] = [];
+		for (const entry of GITIGNORE_ENTRIES) {
+			if (!content.includes(entry)) {
+				linesToAdd.push(entry);
+			}
+		}
+
+		if (linesToAdd.length > 0) {
+			const suffix = content.endsWith("\n") || content === "" ? "" : "\n";
+			const newContent = linesToAdd.join("\n") + "\n";
+			appendFileSync(gitignorePath, suffix + newContent);
+		}
 	}
 }

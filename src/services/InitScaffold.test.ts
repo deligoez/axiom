@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { InitScaffold } from "./InitScaffold.js";
+import { BeadsInitError, InitScaffold } from "./InitScaffold.js";
 
 describe("InitScaffold", () => {
 	let tempDir: string;
@@ -308,6 +308,244 @@ describe("InitScaffold", () => {
 			// Assert
 			expect(settings.projectType).toBe("unknown");
 			expect(settings.testCommand).toBeUndefined();
+		});
+	});
+
+	describe("initBeads()", () => {
+		it("skips bd init when .beads/ directory already exists", () => {
+			// Arrange
+			mkdirSync(join(tempDir, ".beads"), { recursive: true });
+
+			// Act - should not throw
+			scaffold.initBeads();
+
+			// Assert - directory still exists
+			expect(existsSync(join(tempDir, ".beads"))).toBe(true);
+		});
+
+		it("creates .beads/ directory when bd init succeeds", () => {
+			// Arrange - .beads does not exist
+			expect(existsSync(join(tempDir, ".beads"))).toBe(false);
+
+			// Act
+			scaffold.initBeads();
+
+			// Assert - bd init created the directory
+			expect(existsSync(join(tempDir, ".beads"))).toBe(true);
+		});
+
+		it("BeadsInitError has correct properties", () => {
+			// Arrange
+			const error = new BeadsInitError("test error", 42);
+
+			// Assert
+			expect(error.name).toBe("BeadsInitError");
+			expect(error.message).toBe("test error");
+			expect(error.exitCode).toBe(42);
+		});
+	});
+
+	describe("createAgentsMd()", () => {
+		it("creates AGENTS.md with template content when file does not exist", () => {
+			// Arrange & Act
+			scaffold.createAgentsMd();
+
+			// Assert
+			const agentsPath = join(tempDir, "AGENTS.md");
+			expect(existsSync(agentsPath)).toBe(true);
+			const content = readFileSync(agentsPath, "utf-8");
+			expect(content).toContain("# Agents");
+			expect(content).toContain("Chorus");
+		});
+
+		it("skips creation when AGENTS.md already exists", () => {
+			// Arrange
+			const agentsPath = join(tempDir, "AGENTS.md");
+			writeFileSync(agentsPath, "# Custom Content");
+
+			// Act
+			scaffold.createAgentsMd();
+
+			// Assert
+			const content = readFileSync(agentsPath, "utf-8");
+			expect(content).toBe("# Custom Content");
+		});
+	});
+
+	describe("createTaskRulesMd()", () => {
+		beforeEach(() => {
+			scaffold.createDirectories();
+		});
+
+		it("creates .chorus/task-rules.md with default validation rules", () => {
+			// Arrange & Act
+			scaffold.createTaskRulesMd();
+
+			// Assert
+			const rulesPath = join(tempDir, ".chorus/task-rules.md");
+			expect(existsSync(rulesPath)).toBe(true);
+			const content = readFileSync(rulesPath, "utf-8");
+			expect(content).toContain("# Task Validation Rules");
+		});
+
+		it("skips creation when file already exists", () => {
+			// Arrange
+			const rulesPath = join(tempDir, ".chorus/task-rules.md");
+			writeFileSync(rulesPath, "# Custom Rules");
+
+			// Act
+			scaffold.createTaskRulesMd();
+
+			// Assert
+			const content = readFileSync(rulesPath, "utf-8");
+			expect(content).toBe("# Custom Rules");
+		});
+	});
+
+	describe("createPatternsMd()", () => {
+		beforeEach(() => {
+			scaffold.createDirectories();
+		});
+
+		it("creates .chorus/PATTERNS.md with empty category sections", () => {
+			// Arrange & Act
+			scaffold.createPatternsMd();
+
+			// Assert
+			const patternsPath = join(tempDir, ".chorus/PATTERNS.md");
+			expect(existsSync(patternsPath)).toBe(true);
+			const content = readFileSync(patternsPath, "utf-8");
+			expect(content).toContain("# Patterns");
+		});
+
+		it("skips creation when file already exists", () => {
+			// Arrange
+			const patternsPath = join(tempDir, ".chorus/PATTERNS.md");
+			writeFileSync(patternsPath, "# Custom Patterns");
+
+			// Act
+			scaffold.createPatternsMd();
+
+			// Assert
+			const content = readFileSync(patternsPath, "utf-8");
+			expect(content).toBe("# Custom Patterns");
+		});
+	});
+
+	describe("createPlanAgentPrompt()", () => {
+		beforeEach(() => {
+			scaffold.createDirectories();
+		});
+
+		it("creates .chorus/prompts/plan-agent.md with plan agent system prompt", () => {
+			// Arrange & Act
+			scaffold.createPlanAgentPrompt();
+
+			// Assert
+			const promptPath = join(tempDir, ".chorus/prompts/plan-agent.md");
+			expect(existsSync(promptPath)).toBe(true);
+			const content = readFileSync(promptPath, "utf-8");
+			expect(content).toContain("# Plan Agent");
+		});
+
+		it("skips creation when file already exists", () => {
+			// Arrange
+			const promptPath = join(tempDir, ".chorus/prompts/plan-agent.md");
+			writeFileSync(promptPath, "# Custom Prompt");
+
+			// Act
+			scaffold.createPlanAgentPrompt();
+
+			// Assert
+			const content = readFileSync(promptPath, "utf-8");
+			expect(content).toBe("# Custom Prompt");
+		});
+	});
+
+	describe("createImplAgentPrompt()", () => {
+		beforeEach(() => {
+			scaffold.createDirectories();
+		});
+
+		it("creates .chorus/prompts/impl-agent.md with implementation agent prompt", () => {
+			// Arrange & Act
+			scaffold.createImplAgentPrompt();
+
+			// Assert
+			const promptPath = join(tempDir, ".chorus/prompts/impl-agent.md");
+			expect(existsSync(promptPath)).toBe(true);
+			const content = readFileSync(promptPath, "utf-8");
+			expect(content).toContain("# Implementation Agent");
+		});
+
+		it("skips creation when file already exists", () => {
+			// Arrange
+			const promptPath = join(tempDir, ".chorus/prompts/impl-agent.md");
+			writeFileSync(promptPath, "# Custom Implementation");
+
+			// Act
+			scaffold.createImplAgentPrompt();
+
+			// Assert
+			const content = readFileSync(promptPath, "utf-8");
+			expect(content).toBe("# Custom Implementation");
+		});
+	});
+
+	describe("updateGitignore()", () => {
+		it("appends .worktrees/ to .gitignore if not present", () => {
+			// Arrange & Act
+			scaffold.updateGitignore();
+
+			// Assert
+			const gitignorePath = join(tempDir, ".gitignore");
+			const content = readFileSync(gitignorePath, "utf-8");
+			expect(content).toContain(".worktrees/");
+		});
+
+		it("appends .chorus/state.json to .gitignore if not present", () => {
+			// Arrange & Act
+			scaffold.updateGitignore();
+
+			// Assert
+			const gitignorePath = join(tempDir, ".gitignore");
+			const content = readFileSync(gitignorePath, "utf-8");
+			expect(content).toContain(".chorus/state.json");
+		});
+
+		it("appends .agent/ to .gitignore if not present", () => {
+			// Arrange & Act
+			scaffold.updateGitignore();
+
+			// Assert
+			const gitignorePath = join(tempDir, ".gitignore");
+			const content = readFileSync(gitignorePath, "utf-8");
+			expect(content).toContain(".agent/");
+		});
+
+		it("does not duplicate entries already in .gitignore", () => {
+			// Arrange
+			const gitignorePath = join(tempDir, ".gitignore");
+			writeFileSync(gitignorePath, ".worktrees/\nnode_modules/\n");
+
+			// Act
+			scaffold.updateGitignore();
+
+			// Assert
+			const content = readFileSync(gitignorePath, "utf-8");
+			const occurrences = (content.match(/\.worktrees\//g) || []).length;
+			expect(occurrences).toBe(1);
+		});
+
+		it("creates .gitignore if file does not exist", () => {
+			// Arrange - no .gitignore
+
+			// Act
+			scaffold.updateGitignore();
+
+			// Assert
+			const gitignorePath = join(tempDir, ".gitignore");
+			expect(existsSync(gitignorePath)).toBe(true);
 		});
 	});
 });
