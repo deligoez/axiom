@@ -72,6 +72,11 @@ For ALL commits (TDD or otherwise):
 
 **Task ID is required** when working on a Beads task. Format: `[ch-xxxx]`
 
+**CRITICAL: No AI traces in commits**
+- Do NOT add `Co-Authored-By: Claude` or similar AI attribution
+- Do NOT mention "AI", "Claude", "GPT" in commit messages
+- Commits should look like normal human commits
+
 ## Examples
 
 ```bash
