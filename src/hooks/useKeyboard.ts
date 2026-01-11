@@ -5,6 +5,7 @@ interface UseKeyboardOptions {
 	onSpawn?: () => void;
 	onNavigate?: (direction: "next" | "prev") => void;
 	onToggleHelp?: () => void;
+	onMarkDone?: () => void;
 	isActive?: boolean;
 }
 
@@ -13,6 +14,7 @@ export function useKeyboard({
 	onSpawn,
 	onNavigate,
 	onToggleHelp,
+	onMarkDone,
 	isActive = true,
 }: UseKeyboardOptions): void {
 	useInput(
@@ -31,6 +33,9 @@ export function useKeyboard({
 			}
 			if (input === "?") {
 				onToggleHelp?.();
+			}
+			if (input === "d") {
+				onMarkDone?.();
 			}
 		},
 		{ isActive },

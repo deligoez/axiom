@@ -7,12 +7,14 @@ function TestComponent({
 	onQuit,
 	onSpawn,
 	onNavigate,
+	onMarkDone,
 }: {
 	onQuit: () => void;
 	onSpawn?: () => void;
 	onNavigate?: (direction: "next" | "prev") => void;
+	onMarkDone?: () => void;
 }) {
-	useKeyboard({ onQuit, onSpawn, onNavigate });
+	useKeyboard({ onQuit, onSpawn, onNavigate, onMarkDone });
 	return null;
 }
 
@@ -88,5 +90,25 @@ describe("useKeyboard", () => {
 		stdin.write("k");
 
 		expect(onNavigate).toHaveBeenCalledWith("prev");
+	});
+
+	it("calls onMarkDone when d is pressed", () => {
+		const onQuit = vi.fn();
+		const onMarkDone = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onMarkDone={onMarkDone} />,
+		);
+
+		stdin.write("d");
+
+		expect(onMarkDone).toHaveBeenCalledTimes(1);
+		expect(onQuit).not.toHaveBeenCalled();
+	});
+
+	it("does not error when d is pressed without onMarkDone handler", () => {
+		const onQuit = vi.fn();
+		const { stdin } = render(<TestComponent onQuit={onQuit} />);
+
+		expect(() => stdin.write("d")).not.toThrow();
 	});
 });
