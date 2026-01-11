@@ -430,4 +430,167 @@ describe("BeadsCLI", () => {
 		expect(result).toBe(true);
 		expect(mockExistsSync).toHaveBeenCalledWith("/test/project/.beads");
 	});
+
+	// Task Closer tests (8) - F13
+	it("closeTask() runs bd close with id", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: "Closed",
+			stderr: "",
+			exitCode: 0,
+		} as never);
+
+		// Act
+		await cli.closeTask("ch-abc");
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith("bd", ["close", "ch-abc"], {
+			cwd: "/test/project",
+			reject: false,
+		});
+	});
+
+	it("closeTask() supports optional comment", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: "Closed",
+			stderr: "",
+			exitCode: 0,
+		} as never);
+
+		// Act
+		await cli.closeTask("ch-abc", "Task completed successfully");
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith(
+			"bd",
+			["close", "ch-abc", "--comment", "Task completed successfully"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("closeTask() throws on bd error", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: "",
+			stderr: "Error: Cannot close",
+			exitCode: 1,
+		} as never);
+
+		// Act & Assert
+		await expect(cli.closeTask("ch-invalid")).rejects.toThrow("Cannot close");
+	});
+
+	it("reopenTask() changes status back to open", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: "Updated",
+			stderr: "",
+			exitCode: 0,
+		} as never);
+
+		// Act
+		await cli.reopenTask("ch-abc");
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith(
+			"bd",
+			["update", "ch-abc", "--status=open"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("getTaskStatus() returns current status string", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: JSON.stringify({
+				id: "ch-abc",
+				title: "Test",
+				priority: 1,
+				status: "in_progress",
+				labels: [],
+			}),
+			stderr: "",
+			exitCode: 0,
+		} as never);
+
+		// Act
+		const status = await cli.getTaskStatus("ch-abc");
+
+		// Assert
+		expect(status).toBe("in_progress");
+	});
+
+	it("getTaskStatus() returns null for invalid task", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: "",
+			stderr: "Error: Not found",
+			exitCode: 1,
+		} as never);
+
+		// Act
+		const status = await cli.getTaskStatus("ch-invalid");
+
+		// Assert
+		expect(status).toBeNull();
+	});
+
+	it("getInProgressTasks() returns array of in_progress tasks", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: JSON.stringify([
+				{
+					id: "ch-1",
+					title: "Task 1",
+					priority: 1,
+					status: "in_progress",
+					labels: [],
+				},
+			]),
+			stderr: "",
+			exitCode: 0,
+		} as never);
+
+		// Act
+		const tasks = await cli.getInProgressTasks();
+
+		// Assert
+		expect(tasks).toHaveLength(1);
+		expect(tasks[0].status).toBe("in_progress");
+		expect(mockExeca).toHaveBeenCalledWith(
+			"bd",
+			["list", "--status=in_progress", "-n", "0", "--json"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("getClosedTasks() returns array of closed tasks", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			stdout: JSON.stringify([
+				{
+					id: "ch-2",
+					title: "Done Task",
+					priority: 1,
+					status: "closed",
+					labels: [],
+				},
+			]),
+			stderr: "",
+			exitCode: 0,
+		} as never);
+
+		// Act
+		const tasks = await cli.getClosedTasks();
+
+		// Assert
+		expect(tasks).toHaveLength(1);
+		expect(tasks[0].status).toBe("closed");
+		expect(mockExeca).toHaveBeenCalledWith(
+			"bd",
+			["list", "--status=closed", "-n", "0", "--json"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
 });

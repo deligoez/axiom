@@ -146,6 +146,53 @@ export class BeadsCLI {
 		return match[1];
 	}
 
+	async closeTask(id: string, comment?: string): Promise<void> {
+		const args = ["close", id];
+		if (comment) {
+			args.push("--comment", comment);
+		}
+		await this.runBd(args);
+	}
+
+	async reopenTask(id: string): Promise<void> {
+		await this.runBd(["update", id, "--status=open"]);
+	}
+
+	async getTaskStatus(id: string): Promise<string | null> {
+		const task = await this.getTask(id);
+		return task?.status ?? null;
+	}
+
+	async getInProgressTasks(): Promise<Task[]> {
+		try {
+			const { stdout } = await this.runBd([
+				"list",
+				"--status=in_progress",
+				"-n",
+				"0",
+				"--json",
+			]);
+			return this.parseTaskList(stdout);
+		} catch {
+			return [];
+		}
+	}
+
+	async getClosedTasks(): Promise<Task[]> {
+		try {
+			const { stdout } = await this.runBd([
+				"list",
+				"--status=closed",
+				"-n",
+				"0",
+				"--json",
+			]);
+			return this.parseTaskList(stdout);
+		} catch {
+			return [];
+		}
+	}
+
 	isAvailable(): boolean {
 		try {
 			const result = execaSync("which", ["bd"], { reject: false });
