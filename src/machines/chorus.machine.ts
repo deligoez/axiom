@@ -29,6 +29,11 @@ export interface ChorusMachineContext {
 	maxAgents: number;
 	mergeQueue: MergeQueueItem[];
 	stats: SessionStats;
+	// TUI context
+	selectedTaskId: string | null;
+	selectedAgentId: string | null;
+	taskIndex: number;
+	agentIndex: number;
 }
 
 export interface ChorusMachineInput {
@@ -49,7 +54,25 @@ export type ChorusMachineEvent =
 	| { type: "SET_MODE"; mode: "semi-auto" | "autopilot" }
 	// Agent management
 	| { type: "SPAWN_AGENT"; taskId: string }
-	| { type: "STOP_AGENT"; agentId: string };
+	| { type: "STOP_AGENT"; agentId: string }
+	// TUI Focus
+	| { type: "FOCUS_TASK_PANEL" }
+	| { type: "FOCUS_AGENT_GRID" }
+	| { type: "TOGGLE_FOCUS" }
+	// TUI Modals
+	| { type: "OPEN_HELP" }
+	| { type: "OPEN_INTERVENTION" }
+	| { type: "OPEN_LOGS"; agentId: string }
+	| { type: "OPEN_LEARNINGS" }
+	| { type: "OPEN_CONFIRM"; action: string }
+	| { type: "OPEN_SETTINGS" }
+	| { type: "CLOSE_MODAL" }
+	// TUI Selection
+	| { type: "SELECT_TASK"; taskId: string }
+	| { type: "SELECT_AGENT"; agentId: string }
+	| { type: "SELECT_NEXT" }
+	| { type: "SELECT_PREV" }
+	| { type: "CLEAR_SELECTION" };
 
 // ============================================================================
 // Machine
@@ -61,6 +84,7 @@ export const chorusMachine = setup({
 		input: {} as ChorusMachineInput,
 		events: {} as ChorusMachineEvent,
 	},
+	guards: {},
 	actions: {
 		setMode: assign({
 			mode: (_, params: { mode: "semi-auto" | "autopilot" }) => params.mode,
@@ -70,8 +94,6 @@ export const chorusMachine = setup({
 		}),
 		spawnAgent: assign({
 			agents: ({ context }, params: { taskId: string }) => {
-				// In real implementation, this would spawn an actual actor
-				// For now, we add a placeholder
 				const mockAgent = { id: `agent-${params.taskId}` } as AnyActorRef;
 				return [...context.agents, mockAgent];
 			},
@@ -88,6 +110,22 @@ export const chorusMachine = setup({
 				inProgress: Math.max(0, context.stats.inProgress - 1),
 			}),
 		}),
+		selectTask: assign({
+			selectedTaskId: (_, params: { taskId: string }) => params.taskId,
+		}),
+		selectAgent: assign({
+			selectedAgentId: (_, params: { agentId: string }) => params.agentId,
+		}),
+		selectNext: assign({
+			taskIndex: ({ context }) => context.taskIndex + 1,
+		}),
+		selectPrev: assign({
+			taskIndex: ({ context }) => Math.max(0, context.taskIndex - 1),
+		}),
+		clearSelection: assign({
+			selectedTaskId: () => null,
+			selectedAgentId: () => null,
+		}),
 	},
 }).createMachine({
 	id: "chorus",
@@ -99,6 +137,11 @@ export const chorusMachine = setup({
 		maxAgents: input.maxAgents ?? 3,
 		mergeQueue: [],
 		stats: { completed: 0, failed: 0, inProgress: 0 },
+		// TUI context
+		selectedTaskId: null,
+		selectedAgentId: null,
+		taskIndex: 0,
+		agentIndex: 0,
 	}),
 	states: {
 		// App-level state (sequential)
@@ -173,6 +216,94 @@ export const chorusMachine = setup({
 				degraded: {},
 			},
 		},
+		// TUI region (parallel)
+		tui: {
+			type: "parallel",
+			states: {
+				focus: {
+					initial: "agentGrid",
+					states: {
+						agentGrid: {
+							on: {
+								TOGGLE_FOCUS: "taskPanel",
+								FOCUS_TASK_PANEL: "taskPanel",
+							},
+						},
+						taskPanel: {
+							on: {
+								TOGGLE_FOCUS: "agentGrid",
+								FOCUS_AGENT_GRID: "agentGrid",
+							},
+						},
+					},
+				},
+				modal: {
+					initial: "closed",
+					states: {
+						closed: {
+							on: {
+								OPEN_HELP: "help",
+								OPEN_INTERVENTION: "intervention",
+								OPEN_LEARNINGS: "learnings",
+								OPEN_SETTINGS: "settings",
+								OPEN_CONFIRM: "confirm",
+								OPEN_LOGS: "logs",
+								SELECT_NEXT: {
+									actions: "selectNext",
+								},
+								SELECT_PREV: {
+									actions: "selectPrev",
+								},
+							},
+						},
+						help: {
+							on: {
+								CLOSE_MODAL: "closed",
+								OPEN_INTERVENTION: "intervention",
+								OPEN_LEARNINGS: "learnings",
+								OPEN_SETTINGS: "settings",
+							},
+						},
+						intervention: {
+							on: {
+								CLOSE_MODAL: "closed",
+								OPEN_HELP: "help",
+								OPEN_LEARNINGS: "learnings",
+								OPEN_SETTINGS: "settings",
+							},
+						},
+						learnings: {
+							on: {
+								CLOSE_MODAL: "closed",
+								OPEN_HELP: "help",
+								OPEN_INTERVENTION: "intervention",
+								OPEN_SETTINGS: "settings",
+							},
+						},
+						settings: {
+							on: {
+								CLOSE_MODAL: "closed",
+								OPEN_HELP: "help",
+								OPEN_INTERVENTION: "intervention",
+								OPEN_LEARNINGS: "learnings",
+							},
+						},
+						confirm: {
+							on: {
+								CLOSE_MODAL: "closed",
+							},
+						},
+						logs: {
+							on: {
+								CLOSE_MODAL: "closed",
+								OPEN_HELP: "help",
+								OPEN_INTERVENTION: "intervention",
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 	on: {
 		SET_MODE: {
@@ -192,6 +323,21 @@ export const chorusMachine = setup({
 				type: "stopAgent",
 				params: ({ event }) => ({ agentId: event.agentId }),
 			},
+		},
+		SELECT_TASK: {
+			actions: {
+				type: "selectTask",
+				params: ({ event }) => ({ taskId: event.taskId }),
+			},
+		},
+		SELECT_AGENT: {
+			actions: {
+				type: "selectAgent",
+				params: ({ event }) => ({ agentId: event.agentId }),
+			},
+		},
+		CLEAR_SELECTION: {
+			actions: "clearSelection",
 		},
 	},
 });
