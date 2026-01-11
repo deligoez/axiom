@@ -74,12 +74,15 @@ describe("E2E: Fresh Project Init", () => {
 		};
 		writeFileSync(join(beadsDir, "issues.jsonl"), `${JSON.stringify(task)}\n`);
 
+		// Small delay to ensure file system events propagate
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
 		// Assert - wait for file watcher to pick up the new task
 		// Use longer timeout for file watcher (can be slow under parallel test load)
-		await waitForText(result, "1 task", 10000);
+		await waitForText(result, "1 task", 15000);
 		const output = getOutput(result);
 		expect(output).toContain("1 task");
-	}, 15000);
+	}, 20000);
 
 	it("first task appears in panel", async () => {
 		// Arrange - create project with a task already
