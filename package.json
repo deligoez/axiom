@@ -43,10 +43,12 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@xstate/react": "^6.0.0",
     "chokidar": "^5.0.0",
     "execa": "^9.6.1",
     "ink": "^6.6.0",
     "react": "^19.2.3",
+    "xstate": "^5.25.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

@@ -17,6 +17,9 @@ RED → GREEN → QUALITY CHECKS → COMMIT → REFACTOR (if needed) → repeat
 Run these commands in order after tests are GREEN:
 
 ```bash
+# 0. Auto-fix lint issues first
+npm run lint:fix
+
 # 1. Tests (already green at this point)
 npm run test:run
 
@@ -30,11 +33,11 @@ npm run lint
 npm run knip
 ```
 
-**All four must pass before committing.** If lint has auto-fixable issues, run `npm run lint:fix` first.
+**All five must pass before committing.**
 
-Quick combined check (single command):
+Quick combined check (after lint:fix):
 ```bash
-npm run quality
+npm run lint:fix && npm run quality
 ```
 
 ## Rules
