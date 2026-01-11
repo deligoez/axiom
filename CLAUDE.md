@@ -5,7 +5,7 @@ Multi-agent TUI orchestrator using Ink (React for CLI) with XState v5 actor mode
 ## Task Workflow
 
 ```bash
-# 1. Pick a task
+# 1. Pick a task (ALWAYS pick highest priority - P0 > P1 > P2)
 bd ready -n 0 | grep -v deferred
 bd show <id>  # View details
 
