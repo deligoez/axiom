@@ -13,12 +13,16 @@ function StatusIndicator({ status }: { status: AgentStatus }) {
 	switch (status) {
 		case "running":
 			return <Text color="green">●</Text>;
+		case "idle":
+			return <Text color="gray">○</Text>;
+		case "paused":
+			return <Text color="yellow">⏸</Text>;
 		case "stopped":
 			return <Text color="gray">○</Text>;
 		case "error":
 			return <Text color="red">✗</Text>;
 		default:
-			return <Text color="yellow">◌</Text>;
+			return <Text color="gray">?</Text>;
 	}
 }
 

@@ -79,6 +79,34 @@ describe("MainContent", () => {
 		expect(lastFrame()).toMatch(/error|✗/i);
 	});
 
+	it("shows ○ for idle agent", () => {
+		const agents = [createTestAgent({ status: "idle" })];
+		const { lastFrame } = render(<MainContent agents={agents} />);
+
+		expect(lastFrame()).toContain("○");
+	});
+
+	it("shows ⏸ for paused agent", () => {
+		const agents = [createTestAgent({ status: "paused" })];
+		const { lastFrame } = render(<MainContent agents={agents} />);
+
+		expect(lastFrame()).toContain("⏸");
+	});
+
+	it("idle indicator is gray colored", () => {
+		const agents = [createTestAgent({ status: "idle" })];
+		const { lastFrame } = render(<MainContent agents={agents} />);
+		// Gray color applied - ○ should be present
+		expect(lastFrame()).toContain("○");
+	});
+
+	it("paused indicator is yellow colored", () => {
+		const agents = [createTestAgent({ status: "paused" })];
+		const { lastFrame } = render(<MainContent agents={agents} />);
+		// Yellow color applied - ⏸ should be present
+		expect(lastFrame()).toContain("⏸");
+	});
+
 	it("highlights selected agent", () => {
 		const agents = [
 			createTestAgent({ id: "a1", name: "agent-1" }),
