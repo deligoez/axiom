@@ -5,9 +5,9 @@ Multi-agent TUI orchestrator using Ink (React for CLI) with XState v5 actor mode
 ## Task Workflow
 
 ```bash
-# 1. Pick a task (ALWAYS pick highest priority - P0 > P1 > P2)
+# 1. Pick a task
 bd ready -n 0 | grep -v deferred
-bd show <id>  # View details
+bd show <id>  # View details + check "Blocks" section
 
 # 2. Start working
 bd update <id> --status=in_progress
@@ -19,6 +19,12 @@ bd update <id> --status=in_progress
 bd close <id>  # Unblocks dependents
 bd sync        # Sync with git (optional)
 ```
+
+**Task Selection Rules (in order):**
+1. **Priority first:** P0 > P1 > P2
+2. **Fastest completion:** Among same priority, pick the one that completes fastest
+3. **Independent over chain-starter:** If task A starts a chain of dependent tasks but task B can be completed independently, prefer B first (quick win)
+4. **Check test count:** Lower test count often = faster completion
 
 ## Quality Pipeline
 
