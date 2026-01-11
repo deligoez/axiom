@@ -100,3 +100,28 @@ npm run quality   # Runs all checks:
 3. **Agent Model:** Spawned child actors
 4. **Test Pattern:** AAA (Arrange-Act-Assert) mandatory
 5. **MVP Scope:** Claude-only
+
+## Testing Patterns
+
+**AAA Pattern (mandatory):**
+```typescript
+it('should transition from idle to preparing on START', () => {
+  // Arrange
+  const actor = createActor(machine).start();
+
+  // Act
+  actor.send({ type: 'START' });
+
+  // Assert
+  expect(actor.getSnapshot().value).toBe('preparing');
+});
+```
+
+**XState Testing Patterns:**
+
+| Test Type | Arrange | Act | Assert |
+|-----------|---------|-----|--------|
+| State Transition | `createActor(machine).start()` | `actor.send({ type: 'EVENT' })` | `getSnapshot().value` |
+| Context Update | `createActor(machine, { input })` | `actor.send({ type: 'EVENT', data })` | `getSnapshot().context` |
+| Guard Behavior | Set context that fails guard | `actor.send({ type: 'EVENT' })` | State unchanged |
+| Final State | Navigate to final state | Check status | `getSnapshot().status === 'done'` |
