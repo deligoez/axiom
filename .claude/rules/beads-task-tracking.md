@@ -157,7 +157,23 @@ bd show <id>               # Task details
 
 Update this section as you learn:
 
-### 2026-01-11
+### 2026-01-11 (v3.6)
+- Master Plan v3.6: Incremental Planning & Manual Triggers
+- NEW: Implementation-Triggered Task Creation (Just-in-Time planning)
+- NEW: Planning Horizon concept with stop conditions
+- NEW: Spec Lifecycle (Consumed Backlog Pattern) - collapse tasked, archive complete
+- NEW: TUI Manual Triggers (P for planning, Ctrl+L for learning review)
+- NEW FEATURES CREATED:
+  - F98 Incremental Planning Trigger (ch-yhq)
+  - F99 Planning Horizon Manager (ch-wqn)
+  - F100 Spec Evolution Tracker (ch-2yp)
+  - F100a Spec Section Collapser (ch-iru)
+  - F100b Spec Archiver (ch-tr4)
+  - F101a TUI Learning Review Trigger (ch-s8u)
+  - F101b TUI Planning Trigger (ch-fts)
+- Total: 7 new tasks in M8/M12
+
+### 2026-01-11 (v3.0-v3.5)
 - M0 Planning Phase tasks created (25 tasks)
 - m0-planning label added for Planning Phase milestone
 - Existing M1 tasks updated with qualityCommands support
@@ -199,7 +215,8 @@ Update this section as you learn:
 | F80a Project Detector | ch-06m | - | ready |
 | F80b Config Wizard | ch-4ba | ch-06m | blocked |
 | F80c Quality Commands Manager | ch-h0s | - | ready |
-| F80 Init Mode Controller | ch-m9y | ch-06m,ch-4ba,ch-h0s,ch-73s,ch-mdj | blocked |
+| F80d Plan Review Config Wizard | ch-uwx | ch-h0s | blocked |
+| F80 Init Mode Controller | ch-m9y | ch-06m,ch-4ba,ch-h0s,ch-uwx,ch-73s,ch-mdj | blocked |
 | F81a Planning TUI Layout | ch-7h5 | - | ready |
 | F81b Chat Input | ch-3i0 | - | ready |
 | F81 Planning Mode Controller | ch-o5z | ch-7h5,ch-3i0 | blocked |
@@ -305,6 +322,18 @@ Update this section as you learn:
 | F41 Learning Store | ch-a6h | ch-9yl | blocked |
 | F42 Learning Injector | ch-eyd | ch-a6h | blocked |
 | F42b Learnings Panel | ch-g2h | ch-a6h | blocked |
+| F93 Learning Categorizer | ch-sm8 | ch-9yl | blocked |
+| F94 Plan Review Trigger | ch-cjf | ch-sm8,ch-sro | blocked |
+| F95 Plan Review Loop | ch-bmx | ch-cjf,ch-z8g | blocked |
+| F96 Task Updater | ch-dka | ch-bmx | blocked |
+| F97 Plan Review Integration | ch-c3q | ch-dka,ch-nn6 | blocked |
+| F98 Incremental Planning Trigger | ch-yhq | ch-wqn,ch-2yp,ch-z8g | blocked |
+| F99 Planning Horizon Manager | ch-wqn | ch-to7,ch-sro | blocked |
+| F100 Spec Evolution Tracker | ch-2yp | ch-j40 | blocked |
+| F100a Spec Section Collapser | ch-iru | ch-2yp | blocked |
+| F100b Spec Archiver | ch-tr4 | ch-2yp | blocked |
+| F101a TUI Learning Review Trigger | ch-s8u | ch-c3q | blocked |
+| F101b TUI Planning Trigger | ch-fts | ch-yhq | blocked |
 
 ### M9: Human Intervention
 

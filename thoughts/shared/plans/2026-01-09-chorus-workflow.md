@@ -3,7 +3,7 @@
 **Date:** 2026-01-09
 **Updated:** 2026-01-11
 **Status:** APPROVED - Implementation in Progress
-**Version:** 3.2
+**Version:** 3.6
 
 ---
 
@@ -55,7 +55,7 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
 
 | # | Question | Decision |
 |---|----------|----------|
-| 1 | Multi-agent support? | YES - claude, codex, opencode (no aider) |
+| 1 | Multi-agent support? | YES - config supports claude, codex, opencode (see #10 for MVP scope) |
 | 2 | Worktrees? | REQUIRED - with background merge service |
 | 3 | Task management? | Beads only (no built-in) |
 | 4 | Auto-mode control? | Max agents + priority queue |
@@ -64,7 +64,7 @@ Chorus is an Ink-based (React for CLI) TUI that orchestrates multiple AI coding 
 | 7 | Prompt construction? | Inject task context + learnings |
 | 8 | Conflict resolution? | Agent-first, human-fallback |
 | 9 | Operating modes? | Semi-auto (default) + Autopilot |
-| 10 | MVP Scope? | Claude-only (codex/opencode deferred) |
+| 10 | MVP Scope? | **Claude-only implementation** (config ready for all, code implements Claude) |
 | **11** | **Architecture?** | **Planning-first (Ralph-inspired)** |
 | **12** | **Config format?** | **JSON (config) + Markdown (rules, patterns)** |
 | **13** | **Quality gates?** | **Flexible commands (not just test/lint)** |
@@ -116,7 +116,10 @@ interface TaskLedger {
 #### 1. Multi-Agent Support: claude, codex, opencode
 
 > **MVP SCOPE:** Config structure supports all 3 agents, but MVP implements Claude only.
-> Deferred features for codex/opencode: F07b (context injection), F03c (CLI detection), F42 (learning injector)
+> Deferred features for codex/opencode:
+> - **F03c (CLI Detection):** Detect which agent CLIs are installed (`which codex`, `which opencode`)
+> - **F07b (Context Injection):** Inject AGENTS.md + learnings into non-Claude agent prompts
+> - **F42 (Learning Injector):** Inject relevant learnings based on task labels
 > These agents will work in MVP but without context injection - they run with default prompts.
 
 **Rationale:**
@@ -170,8 +173,8 @@ ${taskPrompt}
 #### 2. Worktrees: REQUIRED
 
 Each agent works in an isolated git worktree:
-- Path: `.worktrees/{agent-type}-{task-id}`
-- Branch: `agent/{agent-type}/{task-id}`
+- Path: `.worktrees/{agent}-{task-id}` (e.g., `.worktrees/claude-ch-001`)
+- Branch: `agent/{agent}/{task-id}` (e.g., `agent/claude/ch-001`)
 - Enables true parallel operation
 - Background merge service handles integration
 
@@ -440,25 +443,13 @@ chorus command
                    └─────────────────┘
 ```
 
-### TUI Layout (All Modes)
+### TUI Layout
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ CHORUS [MODE]                                    [Status] [Help]│
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│                                                                  │
-│                    Agent Window (~80%)                           │
-│                                                                  │
-│     Agent conversation, output, forms, etc.                     │
-│                                                                  │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│ > ___________________________________________________________   │
-│                                                                  │
-│ [Tab: Focus] [Enter: Send] [Esc: Cancel] [?: Help]              │
-└─────────────────────────────────────────────────────────────────┘
-```
+All modes share a common layout structure:
+- **Header:** Mode indicator, status, help toggle
+- **Main Area (~80%):** Content varies by mode (agent output, chat, forms)
+- **Input Bar:** Text input with context-sensitive shortcuts
+- **Footer:** Quick stats and shortcuts
 
 ### Planning Mode
 
@@ -579,6 +570,40 @@ After all tasks valid:
 - User chooses mode: Semi-Auto or Full Auto
 - Implementation begins
 
+### Mode Selection UI
+
+When all tasks pass validation, user selects implementation mode:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CHORUS - READY TO IMPLEMENT                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ✓ All 15 tasks validated successfully                          │
+│                                                                  │
+│  ═══ Choose Implementation Mode ═══                              │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ [S] SEMI-AUTO (Recommended for first run)               │    │
+│  │     • You select each task manually                     │    │
+│  │     • Agent completes one task, then stops              │    │
+│  │     • Full control over task order                      │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ [A] AUTOPILOT                                            │    │
+│  │     • Agents auto-assign tasks by priority              │    │
+│  │     • Runs until all tasks complete                     │    │
+│  │     • Press Space to pause anytime                      │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Press S or A to begin, or B to go back to review               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Selection saves `chosenMode` to `planning-state.json` and transitions to Implementation Mode.
+
 ### Planning State Persistence
 
 Planning progress saved to `.chorus/planning-state.json`:
@@ -691,6 +716,21 @@ When entering Implementation Mode:
 4. Render TUI with appropriate layout (TaskPanel + AgentGrid)
 5. Start event loop based on mode (semi-auto waits, autopilot auto-assigns)
 
+Exit Conditions for Implementation Mode:
+```
+┌────────────────────┬───────────────────────────────────────────┐
+│ Condition          │ Behavior                                   │
+├────────────────────┼───────────────────────────────────────────┤
+│ All tasks closed   │ Show summary, prompt to exit or add tasks  │
+│ User quits (q)     │ Confirm if agents running, then exit       │
+│ User pauses        │ Stay in mode, wait for resume              │
+│ No ready tasks     │ Autopilot: wait for blocked tasks to clear │
+│                    │ Semi-auto: show "No tasks available"       │
+│ Critical error     │ Pause, show error, allow recovery          │
+│ Switch to planning │ User presses 'P' to return to planning     │
+└────────────────────┴───────────────────────────────────────────┘
+```
+
 ---
 
 ## Initialization Flow
@@ -701,7 +741,7 @@ Init Mode is conversational - user can type freely at any step.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ CHORUS INIT                                            Step 1/4 │
+│ CHORUS INIT                                            Step 1/5 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  Checking prerequisites...                                       │
@@ -720,7 +760,7 @@ Init Mode is conversational - user can type freely at any step.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ CHORUS INIT                                            Step 2/4 │
+│ CHORUS INIT                                            Step 2/5 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  Project Detection:                                              │
@@ -743,7 +783,7 @@ User can add ANY quality commands - not limited to test/typecheck/lint:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ CHORUS INIT                                            Step 3/4 │
+│ CHORUS INIT                                            Step 3/5 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  Quality Commands                                                │
@@ -772,7 +812,7 @@ User can add ANY quality commands - not limited to test/typecheck/lint:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ CHORUS INIT                                            Step 4/4 │
+│ CHORUS INIT                                            Step 4/5 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  Task Validation Rules                                           │
@@ -794,6 +834,39 @@ User can add ANY quality commands - not limited to test/typecheck/lint:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Plan Review Settings
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CHORUS INIT                                            Step 5/5 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Adaptive Plan Review                                            │
+│  When agents discover cross-cutting patterns, should Chorus      │
+│  automatically review and update pending tasks?                  │
+│                                                                  │
+│  ═══ Plan Review Settings ═══                                   │
+│                                                                  │
+│  Enable plan review:        [Yes]                                │
+│  Max review iterations:     [5]                                  │
+│  Trigger on:                [cross_cutting, architectural]       │
+│  Auto-apply changes:        [minor]                              │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ How it works:                                             │   │
+│  │ • Agent discovers "[CROSS-CUTTING] Rate limiting needed" │   │
+│  │ • Plan Agent reviews all open tasks                       │   │
+│  │ • Updates acceptance criteria, marks redundant tasks      │   │
+│  │ • Iterates until no changes (max 5 iterations)           │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  Type values to change, or "done" to finish                     │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ > done                                                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ### Programmatic Init (Non-Interactive)
 
 For CI/CD or scripted setup, use `chorus init --yes` which:
@@ -803,6 +876,7 @@ For CI/CD or scripted setup, use `chorus init --yes` which:
 3. **Create Directories** - See [Directory Structure](#directory-structure-chorus) below
 4. **Configure Defaults** - Claude as default agent, maxParallel=3
 5. **Update .gitignore** - Add `.worktrees/`, `.chorus/state.json`, `.agent/scratchpad.md`
+6. **Enable Plan Review** - Set planReview.enabled=true, maxIterations=5
 
 ```bash
 # Non-interactive init with defaults
@@ -845,6 +919,38 @@ All events logged to `.chorus/session-log.jsonl`:
 {"ts":"2026-01-11T14:25:00Z","mode":"implementation","event":"agent_assigned","details":{"agentId":"a1","taskId":"ch-abc"}}
 ```
 
+**Event Reference by Mode:**
+
+| Mode | Event | Details |
+|------|-------|---------|
+| **init** | `started` | Init mode began |
+| | `prerequisites_checked` | `{missing: string[]}` |
+| | `project_detected` | `{type, name, prefix}` |
+| | `config_saved` | `{qualityCommands}` |
+| | `completed` | Init finished |
+| **planning** | `agent_started` | Plan Agent spawned |
+| | `user_input` | `{input: string}` |
+| | `tasks_generated` | `{count, source}` |
+| | `spec_parsed` | `{file, chunks}` |
+| **review** | `validation_started` | `{taskCount}` |
+| | `issues_found` | `{issues: Issue[]}` |
+| | `fix_applied` | `{taskId, fixType}` |
+| | `iteration_complete` | `{iteration, issues, fixed}` |
+| | `all_valid` | All tasks passed |
+| **implementation** | `mode_selected` | `{mode: semi-auto\|autopilot}` |
+| | `agent_assigned` | `{agentId, taskId}` |
+| | `agent_iteration` | `{agentId, iteration}` |
+| | `agent_signal` | `{agentId, signal, payload}` |
+| | `task_completed` | `{taskId, duration}` |
+| | `task_failed` | `{taskId, reason}` |
+| | `task_timeout` | `{taskId, iterations}` |
+| | `merge_queued` | `{taskId, branch}` |
+| | `merge_completed` | `{taskId}` |
+| | `merge_conflict` | `{taskId, files}` |
+| | `session_paused` | User paused |
+| | `session_resumed` | User resumed |
+| | `session_completed` | All tasks done |
+
 ### Config File: `.chorus/config.json`
 
 ```json
@@ -854,7 +960,7 @@ All events logged to `.chorus/session-log.jsonl`:
   "project": {
     "name": "my-awesome-app",
     "type": "node",
-    "taskIdPrefix": "ch-"
+    "taskIdPrefix": "ch-"  // For display/filtering only; Beads generates actual IDs
   },
 
   "qualityCommands": [
@@ -886,6 +992,20 @@ All events logged to `.chorus/session-log.jsonl`:
     "agentGrid": "auto"
   },
 
+  "checkpoints": {
+    "beforeAutopilot": true,   // Tag before starting autopilot
+    "beforeMerge": true,       // Tag before each merge
+    "periodic": 5              // Tag every N completed tasks (0 = disabled)
+  },
+
+  "planReview": {
+    "enabled": true,           // Enable learning-triggered plan review
+    "maxIterations": 5,        // Max review cycles (stops early if no changes)
+    "triggerOn": ["cross_cutting", "architectural"],
+    "autoApply": "minor",      // none | minor | all
+    "requireApproval": ["redundant", "dependency_change"]
+  },
+
   "createdAt": "2026-01-11T14:00:00Z",
   "updatedAt": "2026-01-11T14:00:00Z"
 }
@@ -898,9 +1018,22 @@ interface QualityCommand {
   name: string;        // Display name (e.g., "phpstan", "rector")
   command: string;     // Shell command to run
   required: boolean;   // Must pass for task completion
-  order: number;       // Execution order
+  order: number;       // Execution order (lower runs first)
 }
 
+// Execution Order:
+// Commands run sequentially by `order` value (ascending)
+// Recommended order:
+//   1. typecheck  - Catch type errors early (fast)
+//   2. lint       - Catch style issues (fast)
+//   3. test       - Run tests (slower, but catches real bugs)
+//
+// Why order matters:
+// - Fast checks first → fail fast, save time
+// - Type errors often cause test failures → fix types first
+// - If a required command fails, remaining commands still run
+//   (provides complete feedback in one iteration)
+//
 // All required commands must pass before task marked complete
 // Optional commands run but don't block completion
 ```
@@ -1087,22 +1220,23 @@ Beads tasks can include custom fields for Chorus:
 │  • Completed        │  │  • Auto-merge       │
 │  • Merged to main   │  │  • Next task picked │
 └─────────────────────┘  └─────────────────────┘
-        │
-        │ Failure
-        ▼
-┌─────────────────────┐
-│      FAILED         │
-│  • Error occurred   │
-│  • Needs attention  │
-│  • Worktree kept    │
-└─────────────────────┘
-        │
-        │ Recovery options:
-        │ 1. Manual retry (r key)
-        │ 2. Edit task & retry
-        │ 3. Rollback & pending
-        ▼
-  [back to PENDING]
+        │                       │
+        │ Failure               │ Max iterations
+        │ (error/crash)         │ or timeout
+        ▼                       ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│      FAILED         │  │      TIMEOUT        │
+│  • Error occurred   │  │  • Max iter reached │
+│  • Needs attention  │  │  • Or time limit    │
+│  • Worktree kept    │  │  • Worktree kept    │
+└─────────────────────┘  └─────────────────────┘
+        │                       │
+        │ Recovery options:     │ Recovery options:
+        │ 1. Retry (r key)      │ 1. Retry (r key)
+        │ 2. Edit & retry       │ 2. Edit task
+        │ 3. Rollback           │ 3. Increase limit
+        ▼                       ▼
+  [back to PENDING]       [back to PENDING]
 ```
 
 **FAILED Recovery:**
@@ -1110,6 +1244,12 @@ Beads tasks can include custom fields for Chorus:
 - Press `e` to edit task description → Then retry
 - Press `R` to rollback → Reverts commits, task → PENDING
 - Worktree kept for debugging until manually cleaned
+
+**TIMEOUT Recovery:**
+- Press `r` on timed-out task → Fresh iteration counter, retry
+- Press `e` to simplify task → Break into smaller tasks
+- Press `+` to increase maxIterations for this task
+- Distinct from FAILED: No error occurred, agent just couldn't finish in time
 
 ### Dependency Management
 
@@ -1166,8 +1306,23 @@ Chorus behavior:
 
 2. WORKTREE SETUP
    ├── git worktree add .worktrees/{agent}-{task-id} -b agent/{agent}/{task-id}
-   ├── Copy .agent/scratchpad.md template
+   ├── Copy .agent/scratchpad.md template (see below)
    └── Ensure AGENTS.md accessible
+
+   **Scratchpad Template** (`.agent/scratchpad.md`):
+   ```markdown
+   # Task Scratchpad: {task_id}
+
+   ## Notes
+   <!-- Agent writes discoveries, observations, decisions here -->
+
+   ## Learnings
+   <!-- Patterns discovered that should be shared with other agents -->
+   <!-- Extracted to .agent/learnings.md on task completion -->
+
+   ## Blockers
+   <!-- If stuck, document the issue and what you've tried -->
+   ```
 
 3. CLAIM TASK (atomic)
    ├── bd update {task-id} --status=in_progress --assignee={agent}
@@ -1203,16 +1358,26 @@ Chorus behavior:
 ## Acceptance Criteria
 {acceptance_criteria or "All tests pass"}
 
+## Quality Commands (must pass before completion)
+Run these commands in order before signaling COMPLETE:
+{quality_commands_numbered_list}
+
+Example format:
+1. `npm run typecheck` (required)
+2. `npm run lint` (optional)
+3. `npm test` (required)
+
 ## Completion Protocol
-When ALL criteria are met:
-1. Ensure all required quality commands pass (see config.qualityCommands)
+When ALL criteria are met AND all required quality commands pass:
+1. Run each quality command and verify it passes
 2. Output exactly: <chorus>COMPLETE</chorus>
 
-If blocked, output: <chorus>BLOCKED: reason</chorus>
+If blocked by external issue, output: <chorus>BLOCKED: reason</chorus>
+If you need clarification, output: <chorus>NEEDS_HELP: what you need</chorus>
 
 ## Context
 - Read AGENTS.md for project conventions
-- Read .agent/learnings.md for known patterns
+- Read .chorus/PATTERNS.md for learned patterns
 - Current branch: agent/{agent}/{task_id}
 - Commit format: "type(scope): description [ch-xxx]"
 
@@ -1442,9 +1607,19 @@ When complex conflicts need agent resolution:
 1. DEPENDENCY ORDER (highest priority)
    If ch-002 depends on ch-001, ch-001 must merge first.
 
+   DEPENDENCY WAIT BEHAVIOR:
+   - If ch-002 completes before ch-001:
+     a. ch-002 enters queue with status "waiting_dependency"
+     b. ch-002 waits until ch-001 merges successfully
+     c. After ch-001 merges, ch-002 rebases onto new main
+     d. ch-002 proceeds to merge
+   - If ch-001 merge fails: ch-002 stays waiting, alert user
+   - TUI shows: "ch-002 waiting on ch-001 merge"
+
 2. PRIORITY BOOST
-   P1: +100 queue position
-   P2: +50 queue position
+   P0: +200 queue position (blocker)
+   P1: +100 queue position (critical)
+   P2: +50 queue position (high)
 
 3. FIFO within same priority level
 
@@ -1544,12 +1719,12 @@ When complex conflicts need agent resolution:
 All agent signals use XML-style tags to avoid conflicts with normal output:
 
 ```xml
-<chorus>COMPLETE</chorus>           <!-- Task finished successfully -->
-<chorus>BLOCKED: reason</chorus>    <!-- Cannot proceed, needs help -->
-<chorus>PROGRESS: 45</chorus>       <!-- Optional: progress percentage -->
-<chorus>NEEDS_HELP: question</chorus> <!-- Needs clarification -->
-<chorus>RESOLVED</chorus>           <!-- Conflict resolved (resolver agent) -->
-<chorus>NEEDS_HUMAN: reason</chorus> <!-- Cannot resolve, need human -->
+<chorus>COMPLETE</chorus>              <!-- Task finished successfully -->
+<chorus>BLOCKED: reason</chorus>       <!-- Cannot proceed, external blocker -->
+<chorus>PROGRESS: 45</chorus>          <!-- Optional: progress percentage -->
+<chorus>NEEDS_HELP: clarification</chorus> <!-- Needs user input to continue -->
+<chorus>RESOLVED</chorus>              <!-- Conflict resolved (resolver agent) -->
+<chorus>NEEDS_HUMAN: reason</chorus>   <!-- Cannot resolve, need human -->
 ```
 
 Detection:
@@ -1589,7 +1764,15 @@ interface CompletionCheck {
 // │ NEEDS_HELP       │ (any)           │ Alert user, agent pauses        │
 // │ No Signal        │ All Pass        │ Continue (agent must signal)    │
 // │ No Signal        │ Any Fail        │ Continue iterations             │
+// │ Max Iterations   │ (any)           │ Task → TIMEOUT, agent stops     │
+// │ Timeout          │ (any)           │ Task → TIMEOUT, agent stops     │
 // └──────────────────┴─────────────────┴─────────────────────────────────┘
+//
+// TIMEOUT State Behavior:
+// - Task marked as TIMEOUT (distinct from FAILED)
+// - Worktree preserved for debugging
+// - User can: (r) retry with fresh iterations, (e) edit task, (R) rollback
+// - Autopilot: Skips task, picks next ready task, alerts user
 //
 // Mode-specific behavior for BLOCKED:
 // - Semi-auto: Agent stops, user decides next action
@@ -1726,6 +1909,615 @@ async function extractLearnings(task: Task, agent: Agent): Promise<void> {
 }
 ```
 
+### Learning-Triggered Plan Review (Adaptive Task Refinement)
+
+> **Post-MVP Feature:** Automatically reviews and updates pending tasks when cross-cutting learnings are discovered.
+
+When an agent discovers something that affects multiple tasks, the plan shouldn't stay frozen. This feature creates a feedback loop from implementation back to planning.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│            LEARNING-TRIGGERED PLAN REVIEW FLOW                   │
+└─────────────────────────────────────────────────────────────────┘
+
+Task ch-005 completes
+       │
+       ▼
+Learning extracted: [CROSS-CUTTING] "All API calls need rate limiting"
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    PLAN REVIEW LOOP                              │
+│                                                                  │
+│  Iteration 1:                                                    │
+│  ├── Plan Agent reviews all open tasks                          │
+│  ├── Proposes: Update ch-010, ch-015 acceptance criteria        │
+│  ├── Proposes: Mark ch-020 as redundant                         │
+│  └── Changes: 3                                                  │
+│                                                                  │
+│  Iteration 2:                                                    │
+│  ├── Reviews updated tasks                                       │
+│  ├── Proposes: Add test case to ch-010                          │
+│  └── Changes: 1                                                  │
+│                                                                  │
+│  Iteration 3:                                                    │
+│  ├── Reviews again                                               │
+│  └── Changes: 0 ← STOP (converged)                              │
+│                                                                  │
+│  (maxIterations: 5, but stopped early at iteration 3)           │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+User notified of changes (or auto-applied based on config)
+```
+
+**Learning Categories:**
+
+| Category | Trigger Review? | Example |
+|----------|-----------------|---------|
+| `[LOCAL]` | No | "This specific function needs memoization" |
+| `[CROSS-CUTTING]` | Yes | "All API calls need rate limiting" |
+| `[ARCHITECTURAL]` | Yes + Alert | "State management should use Zustand" |
+
+**Iteration Behavior:**
+- Loop runs until **no changes** in current iteration OR **maxIterations** reached
+- Early stop saves tokens and prevents over-refinement
+- Each iteration can: update acceptance criteria, add/remove tasks, adjust dependencies
+
+**Plan Agent Review Prompt:**
+
+```markdown
+# Learning Review Task
+
+## New Learning
+[CROSS-CUTTING] All API endpoints require rate limiting middleware
+
+## Source
+Task: ch-005 (Implement user authentication)
+Agent: claude
+Discovered: 2026-01-11T14:30:00Z
+
+## Open Tasks (from Beads)
+1. ch-010: Implement notification API (6 tests)
+2. ch-015: Add payment endpoints (8 tests)
+3. ch-020: Create rate limiting middleware (10 tests)
+4. ch-025: TUI dashboard components (12 tests)
+
+## Instructions
+Review each task against this learning:
+1. Should acceptance criteria be updated?
+2. Should task description change?
+3. Is this task now redundant (learning already covers it)?
+4. Are dependencies affected?
+
+## Output Format
+{
+  "updates": [
+    { "taskId": "ch-010", "change": "add_criteria", "value": "Include rate limiting" }
+  ],
+  "redundant": ["ch-020"],
+  "unchanged": ["ch-025"]
+}
+```
+
+**Configuration:**
+
+```json
+{
+  "planReview": {
+    "enabled": true,
+    "maxIterations": 5,
+    "triggerOn": ["cross_cutting", "architectural"],
+    "autoApply": "minor",
+    "requireApproval": ["redundant", "dependency_change", "major_scope"]
+  }
+}
+```
+
+| Setting | Values | Description |
+|---------|--------|-------------|
+| `enabled` | boolean | Feature toggle |
+| `maxIterations` | 1-10 | Max review cycles (stops early if no changes) |
+| `triggerOn` | array | Which learning types trigger review |
+| `autoApply` | `none` / `minor` / `all` | What to apply without approval |
+| `requireApproval` | array | Changes that need user confirmation |
+
+**Anti-Waterfall Benefit:**
+This directly addresses the waterfall problem discussed in the design principles. Instead of frozen plans that diverge from reality, the plan becomes a **living document** that adapts to implementation discoveries.
+
+### Implementation-Triggered Task Creation (Incremental Planning)
+
+> **Post-MVP Feature:** Just-in-time task creation based on implementation progress.
+
+Instead of planning all tasks upfront (waterfall), plan just enough to start, then create more tasks as implementation reveals what's actually needed.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│        INCREMENTAL PLANNING vs UPFRONT PLANNING                  │
+└─────────────────────────────────────────────────────────────────┘
+
+UPFRONT (Waterfall-ish):
+┌─────────┐    ┌──────────────────┐    ┌──────────────────┐
+│  Init   │ → │ Plan 30 tasks    │ → │ Implement all    │
+└─────────┘    └──────────────────┘    └──────────────────┘
+                     ↑
+            Problem: Tasks 25-30 planned
+            without implementation context
+
+INCREMENTAL (Just-in-Time):
+┌─────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+│  Init   │ → │ Plan 10    │ → │ Implement  │ → │ Plan +5    │ → ...
+└─────────┘    │ tasks      │    │ 3-5 tasks  │    │ tasks      │
+               └────────────┘    └────────────┘    └────────────┘
+                                       ↓
+                              Learnings + implementation
+                              context inform next tasks
+```
+
+**Planning Horizon Concept:**
+
+Plan only what you can confidently specify without implementation knowledge:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PLANNING HORIZON                              │
+└─────────────────────────────────────────────────────────────────┘
+
+        HORIZON 1                 HORIZON 2              HORIZON 3
+     (plannable now)          (after H1 done)        (after H2 done)
+    ┌───────────────┐        ┌───────────────┐      ┌───────────────┐
+    │ F01: Types    │───────►│ F07: Prompt   │─────►│ F20: Full     │
+    │ F02: State    │        │ F08: Signal   │      │     Integration│
+    │ F03: Init     │        │ F10: TestRun  │      │ F21: Autopilot│
+    │ F04: Worktree │        │ F11: Checker  │      │ ...           │
+    └───────────────┘        └───────────────┘      └───────────────┘
+           │                        │                      │
+           └────────────────────────┴──────────────────────┘
+                          │
+                 Each horizon is planned
+                 when previous completes
+```
+
+**Stop Conditions for Initial Planning:**
+
+| Condition | Example | Action |
+|-----------|---------|--------|
+| `unknownDependency` | "Need to see how auth is implemented first" | Stop, mark as horizon boundary |
+| `decisionPoint` | "A or B approach - depends on benchmarks" | Stop, decide after implementation |
+| `taskCountReached` | Reached initial task count limit | Stop, resume after progress |
+| `specComplete` | All spec sections have tasks | Planning done |
+
+**Incremental Planning Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│            IMPLEMENTATION-TRIGGERED TASK CREATION                │
+└─────────────────────────────────────────────────────────────────┘
+
+Task ch-005 completes successfully
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Check: Ready task count                                         │
+│  ├── Current ready tasks: 3                                      │
+│  └── Threshold: 5                                                │
+│                                                                  │
+│  Result: Below threshold → Trigger planning                      │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Planning Context:                                               │
+│  ├── Spec: survey-spec.md (sections 4-6 not yet tasked)         │
+│  ├── Learnings: "Rate limiting needed everywhere"               │
+│  ├── Implementation: F01-F05 complete, see patterns             │
+│  └── Dependencies: F06+ can now be planned                      │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Plan Agent creates tasks:                                       │
+│  ├── F06: Response handler (informed by F05 patterns)           │
+│  ├── F07: Validation (learned: needs rate limiting)             │
+│  ├── F08: Storage adapter (F01 types reusable)                  │
+│  └── Stop: F09+ needs F08 implementation first                  │
+│                                                                  │
+│  New ready tasks: 6 (above threshold)                            │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+Implementation continues...
+```
+
+**Spec Lifecycle (Consumed Backlog Pattern):**
+
+Specs are **consumed** as they become tasks. Once tasked, sections collapse. Once complete, specs archive.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       SPEC LIFECYCLE                             │
+└─────────────────────────────────────────────────────────────────┘
+
+Phase 1: CREATION
+┌─────────────────────────────────────────────────────────────────┐
+│ .chorus/specs/survey-spec.md                                     │
+│                                                                  │
+│ # Survey System Spec                                             │
+│ Status: draft                                                    │
+│                                                                  │
+│ ## 📋 1. Overview                    ← All sections DRAFT       │
+│ ## 📋 2. Questions                                               │
+│ ## 📋 3. Responses                                               │
+│ ## 📋 4. Analytics                                               │
+└─────────────────────────────────────────────────────────────────┘
+
+Phase 2: HORIZON 1 PLANNING
+┌─────────────────────────────────────────────────────────────────┐
+│ .chorus/specs/survey-spec.md                                     │
+│                                                                  │
+│ ## ✅ 1. Overview (→ ch-001, ch-002)  ← COLLAPSED               │
+│ <details><summary>Tasked</summary>                               │
+│ Original content here for reference...                           │
+│ </details>                                                       │
+│                                                                  │
+│ ## ✅ 2. Questions (→ ch-003, ch-004, ch-005)  ← COLLAPSED      │
+│ <details><summary>Tasked</summary>...</details>                  │
+│                                                                  │
+│ ## 📋 3. Responses                    ← Still DRAFT (visible)   │
+│ Full content visible, next to be planned...                      │
+│                                                                  │
+│ ## 📋 4. Analytics                    ← Still DRAFT (visible)   │
+│ Full content visible...                                          │
+└─────────────────────────────────────────────────────────────────┘
+
+Phase 3: ALL TASKED → ARCHIVE
+┌─────────────────────────────────────────────────────────────────┐
+│ All sections now ✅ TASKED                                       │
+│                                                                  │
+│ Action: Move to archive                                          │
+│ FROM: .chorus/specs/survey-spec.md                               │
+│   TO: .chorus/specs/archive/survey-spec.md                       │
+│                                                                  │
+│ Archived specs are NEVER loaded into agent context               │
+│ unless user explicitly requests with --include-archived          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Spec Section States:**
+
+| State | Emoji | In Spec File | In Context |
+|-------|-------|--------------|------------|
+| `draft` | 📋 | Full content visible | Yes |
+| `planning` | 🚧 | Full content visible | Yes |
+| `tasked` | ✅ | Collapsed `<details>` | No (collapsed) |
+| `archived` | 🏁 | Moved to archive/ | Never |
+
+**Directory Structure:**
+
+```
+.chorus/specs/
+├── survey-spec.md           # Active spec (only 📋 sections visible)
+├── auth-spec.md             # Another active spec
+├── spec-progress.json       # Tracks all specs and section states
+└── archive/                 # Completed specs (never in context)
+    ├── onboarding-spec.md   # 🏁 All tasks closed
+    └── settings-spec.md     # 🏁 All tasks closed
+```
+
+**spec-progress.json:**
+
+```json
+{
+  "specs": [
+    {
+      "file": "survey-spec.md",
+      "status": "in_progress",
+      "created": "2026-01-11T10:00:00Z",
+      "sections": [
+        {
+          "heading": "## 1. Overview",
+          "status": "tasked",
+          "tasks": ["ch-001", "ch-002"],
+          "taskedAt": "2026-01-11T10:30:00Z"
+        },
+        {
+          "heading": "## 2. Questions",
+          "status": "tasked",
+          "tasks": ["ch-003", "ch-004", "ch-005"],
+          "taskedAt": "2026-01-11T10:30:00Z"
+        },
+        {
+          "heading": "## 3. Responses",
+          "status": "draft",
+          "tasks": [],
+          "taskedAt": null
+        },
+        {
+          "heading": "## 4. Analytics",
+          "status": "draft",
+          "tasks": [],
+          "taskedAt": null
+        }
+      ],
+      "planningHorizon": 2
+    }
+  ],
+  "archivePolicy": "collapse_then_archive"
+}
+```
+
+**Spec File Format (After Tasking):**
+
+```markdown
+# Survey System Spec
+
+**Status:** in_progress
+**Created:** 2026-01-11
+**Last Planning:** 2026-01-11T14:30:00Z
+**Draft Sections:** 2 remaining
+
+---
+
+## 📋 4. Analytics
+
+Display survey results with charts and export options.
+
+### Requirements
+- Pie charts for multiple choice
+- Bar charts for ratings
+- CSV export
+
+### Acceptance Criteria
+- User can view response summary
+- Charts render correctly
+- Export produces valid CSV
+
+---
+
+## 📋 3. Responses
+
+Collect and store survey responses...
+
+---
+
+## ✅ 2. Questions (TASKED)
+
+<details>
+<summary>→ ch-003, ch-004, ch-005 (click to expand)</summary>
+
+Original spec content preserved for reference during implementation.
+This section is collapsed and NOT included in agent context.
+
+</details>
+
+---
+
+## ✅ 1. Overview (TASKED)
+
+<details>
+<summary>→ ch-001, ch-002 (click to expand)</summary>
+
+Original spec content...
+
+</details>
+```
+
+**Configuration:**
+
+```json
+{
+  "incrementalPlanning": {
+    "enabled": true,
+    "mode": "incremental",
+    "horizon": {
+      "initialTaskCount": 10,
+      "minReadyTasks": 5,
+      "stopConditions": ["unknownDependency", "decisionPoint", "taskCountReached"]
+    },
+    "spec": {
+      "path": ".chorus/specs/",
+      "archivePolicy": "collapse_then_archive",
+      "collapseTaskedSections": true,
+      "archiveOnComplete": true
+    },
+    "fullAuto": {
+      "enabled": true,
+      "doneDetection": "allSpecSectionsTaskedAndClosed",
+      "scopeGuard": true
+    }
+  }
+}
+```
+
+| Setting | Values | Description |
+|---------|--------|-------------|
+| `enabled` | boolean | Feature toggle |
+| `mode` | `incremental` / `upfront` | Planning strategy |
+| `initialTaskCount` | 5-20 | How many tasks to create initially |
+| `minReadyTasks` | 3-10 | Threshold to trigger new planning |
+| `stopConditions` | array | When to pause planning for current horizon |
+| `collapseTaskedSections` | boolean | Wrap tasked sections in `<details>` |
+| `archiveOnComplete` | boolean | Move to archive/ when all tasks closed |
+| `doneDetection` | string | How to know feature is complete |
+| `scopeGuard` | boolean | Prevent scope creep beyond spec |
+
+**Archive Policy Options:**
+
+| Policy | Behavior |
+|--------|----------|
+| `collapse_then_archive` | Collapse on task, archive on complete (recommended) |
+| `immediate_archive` | Move section to archive immediately when tasked |
+| `keep_visible` | Never collapse or archive (not recommended) |
+
+**Full-Auto Mode Support:**
+
+For incremental planning to work in autopilot:
+
+1. **Done Detection:** Feature complete when all spec sections tasked AND all tasks closed
+2. **Scope Guard:** New tasks must map to a spec section (prevents endless task creation)
+3. **Planning Autonomy:** Agent decides when more tasks needed (ready count < threshold)
+4. **Auto-Archive:** When complete, spec moves to archive/ without user intervention
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              FULL-AUTO INCREMENTAL PLANNING                      │
+└─────────────────────────────────────────────────────────────────┘
+
+Autopilot running...
+       │
+       ▼
+Ready tasks exhausted (count = 0)
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Check: Can we plan more?                                        │
+│  ├── Spec sections without tasks: 2 (## 4, ## 5)                │
+│  ├── Current implementation: F01-F07 complete                   │
+│  └── Decision: Yes, can plan ## 4                               │
+└─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+Plan Agent creates tasks for ## 4. Analytics
+       │
+       ▼
+Autopilot continues with new tasks
+       │
+       ▼
+All spec sections implemented
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Done Detection:                                                 │
+│  ├── All spec sections have tasks: ✓                            │
+│  ├── All tasks closed: ✓                                        │
+│  └── Result: FEATURE COMPLETE                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Two Mechanisms Working Together:**
+
+| Mechanism | Trigger | Action | Scope |
+|-----------|---------|--------|-------|
+| **Learning-Triggered Plan Review** | Cross-cutting learning discovered | Update EXISTING tasks | Refinement |
+| **Implementation-Triggered Task Creation** | Ready count low OR horizon complete | Create NEW tasks | Extension |
+
+```
+Task completes
+     │
+     ├──► Extract learnings
+     │         │
+     │         ├── [LOCAL] → No action
+     │         └── [CROSS-CUTTING] → Trigger Plan Review
+     │                                    │
+     │                                    ▼
+     │                              Update existing tasks
+     │
+     └──► Check ready task count
+               │
+               ├── Above threshold → Continue
+               └── Below threshold → Trigger Task Creation
+                                          │
+                                          ▼
+                                    Create new tasks from spec
+```
+
+### Manual Review Triggers (TUI)
+
+Users can manually trigger both review mechanisms from the TUI:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CHORUS IMPLEMENTATION                    [P] Plan  [L] Learn    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Status Bar:                                                     │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ 📋 Ready: 4/15  │ 📚 Learnings: 3 new │ 📝 Spec: 3/5     │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│        ↑                    ↑                   ↑               │
+│   Task count          Unreviewed          Sections tasked       │
+│                       learnings                                  │
+│                                                                  │
+│  Press [L] to review learnings and update tasks                 │
+│  Press [P] to plan more tasks from spec                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Manual Trigger Behavior:**
+
+| Shortcut | Action | Condition |
+|----------|--------|-----------|
+| `L` | Learning-Triggered Plan Review | Only if unreviewed learnings exist |
+| `P` | Implementation-Triggered Task Creation | Only if spec has untasked sections |
+| `Shift+L` | Force learning review | Review even if no new learnings |
+| `Shift+P` | Force task creation | Plan even if above threshold |
+
+**Status Indicators:**
+
+```
+LEARNING STATUS:
+📚  Unreviewed learnings exist (can press L)
+📖  All learnings reviewed (L disabled)
+📕  Learning extraction in progress
+
+PLANNING STATUS:
+📝  More spec sections to plan (can press P)
+✅  All spec sections tasked (P disabled)
+📋  Planning in progress
+```
+
+**Manual Trigger Dialog:**
+
+When user presses `L`:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ LEARNING REVIEW                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  3 new learnings since last review:                             │
+│                                                                  │
+│  1. [CROSS-CUTTING] API rate limiting required                  │
+│     Source: ch-005 (claude)                                     │
+│                                                                  │
+│  2. [LOCAL] mb_str_split faster than preg_split                 │
+│     Source: ch-003 (claude)                                     │
+│                                                                  │
+│  3. [ARCHITECTURAL] Zustand better than Context for state       │
+│     Source: ch-006 (claude)                                     │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ [R] Run Review Now  [S] Skip LOCAL  [C] Cancel            │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+When user presses `P`:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ INCREMENTAL PLANNING                                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Current status:                                                 │
+│  ├── Ready tasks: 4 (threshold: 5)                              │
+│  ├── Spec progress: 3/5 sections tasked                         │
+│  └── Next section: ## 4. Analytics                              │
+│                                                                  │
+│  Implementation context:                                         │
+│  ├── Completed: F01-F07 (types, state, responses)               │
+│  ├── Patterns discovered: 3                                     │
+│  └── Learnings available: 5                                     │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ [P] Plan Next Section  [A] Plan All Remaining  [C] Cancel │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ### Cross-Agent Patterns (PATTERNS.md)
 
 Universal patterns that all agents should know, stored in `.chorus/PATTERNS.md`:
@@ -1811,6 +2603,35 @@ Location: .chorus/hooks/
 │ on-conflict        │ When merge conflict detected               │
 └────────────────────┴────────────────────────────────────────────┘
 ```
+
+### Hook Registration
+
+Hooks are registered via **auto-discovery** or **explicit config**:
+
+**Option 1: Auto-Discovery (Recommended)**
+```
+.chorus/hooks/
+├── pre-agent-start.sh      # Executable script
+├── post-task-complete.sh   # Named by event
+└── on-conflict.sh
+```
+Scripts must be executable (`chmod +x`) and named exactly as the event.
+
+**Option 2: Explicit Config**
+```json
+// In .chorus/config.json
+{
+  "hooks": {
+    "post-task-complete": ".chorus/hooks/extract-learnings.sh",
+    "pre-merge": [
+      ".chorus/hooks/validate-branch.sh",
+      ".chorus/hooks/notify-slack.sh"
+    ]
+  }
+}
+```
+
+**Precedence:** Explicit config overrides auto-discovery for the same event.
 
 ### Hook Input/Output Format
 
@@ -2003,26 +2824,18 @@ Level 4: FULL SESSION
 ### Checkpointing
 
 ```
-Automatic checkpoints:
+Automatic checkpoints (configured in config.json under "checkpoints"):
 
-1. BEFORE AUTOPILOT START
+1. BEFORE AUTOPILOT START (checkpoints.beforeAutopilot: true)
    git tag chorus-checkpoint-{timestamp}
 
-2. BEFORE MAJOR MERGE
+2. BEFORE MAJOR MERGE (checkpoints.beforeMerge: true)
    git tag pre-merge-{task-id}
 
-3. PERIODIC (optional)
-   Every N completed tasks
+3. PERIODIC (checkpoints.periodic: N)
+   Every N completed tasks (0 = disabled)
 
-Config:
-{
-  "checkpoints": {
-    "enabled": true,
-    "beforeAutopilot": true,
-    "beforeMerge": true,
-    "periodic": 5
-  }
-}
+Default: all enabled, periodic every 5 tasks
 ```
 
 ### Error Handling Matrix
@@ -2113,10 +2926,11 @@ AGENT STATUS:
 ✗  error (crashed/failed)
 
 PRIORITY BADGES:
-[P1] - Critical (red)
-[P2] - High (orange)
-[P3] - Medium (yellow)
-[P4] - Low (blue)
+[P0] - Blocker (magenta, flashing) - blocks other work
+[P1] - Critical (red) - must fix immediately
+[P2] - High (orange) - important
+[P3] - Medium (yellow) - normal priority
+[P4] - Low (blue) - nice to have
 ```
 
 ### Keyboard Shortcuts
@@ -2144,9 +2958,11 @@ PRIORITY BADGES:
 │  l    View logs                 u      Undo last action          │
 │  L    View learnings                                             │
 │                                                                  │
-│  GENERAL                                                         │
-│  ?    Toggle help               i      Intervention menu         │
-│  q    Quit (confirm if agents)  M      Merge queue view          │
+│  PLANNING & LEARNING            GENERAL                          │
+│  P    Plan more tasks           ?      Toggle help               │
+│  Shift+P Force plan             i      Intervention menu         │
+│  Ctrl+L  Review learnings       q      Quit (confirm if agents)  │
+│  Shift+L Force review           M      Merge queue view          │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -2162,6 +2978,54 @@ PRIORITY BADGES:
 ---
 
 ## Changelog
+
+- **v3.6 (2026-01-11):** Incremental Planning & Manual Triggers
+  - ADDED: Implementation-Triggered Task Creation (Incremental Planning) section
+  - ADDED: Planning Horizon concept with stop conditions
+  - ADDED: Spec Lifecycle (Consumed Backlog Pattern) with collapse and archive
+  - ADDED: Spec section states (draft, planning, tasked, archived)
+  - ADDED: Archive policy configuration (collapse_then_archive, immediate_archive, keep_visible)
+  - ADDED: Full-Auto mode support for incremental planning
+  - ADDED: Manual Review Triggers (TUI) section
+  - ADDED: Learning review dialog (Ctrl+L, Shift+L)
+  - ADDED: Planning dialog (P, Shift+P)
+  - ADDED: Status indicators for learnings and spec progress
+  - ADDED: Configuration for incrementalPlanning (mode, horizon, spec, fullAuto)
+  - UPDATED: Keyboard shortcuts with PLANNING & LEARNING section
+  - PURPOSE: Prevents over-planning by creating tasks just-in-time based on implementation progress
+  - PURPOSE: Specs are consumed as backlog, tasked sections collapse, completed specs archive
+
+- **v3.5 (2026-01-11):** Learning-Triggered Plan Review (Adaptive Task Refinement)
+  - ADDED: Learning-Triggered Plan Review feature to Memory System section
+  - ADDED: planReview config section (enabled, maxIterations, triggerOn, autoApply)
+  - ADDED: Init Flow Step 5/5 for Plan Review settings
+  - ADDED: Learning categories (LOCAL, CROSS-CUTTING, ARCHITECTURAL)
+  - ADDED: Plan Agent Review prompt template
+  - PURPOSE: Addresses waterfall problem by creating feedback loop from implementation to planning
+
+- **v3.4 (2026-01-11):** Diagram & Config Completeness
+  - ADDED: TIMEOUT state to Task States diagram (distinct from FAILED)
+  - ADDED: Checkpoints section to config.json example
+  - ADDED: taskIdPrefix clarification (display/filtering only, Beads generates IDs)
+  - ADDED: Quality commands numbered list format in agent prompt template
+  - ADDED: Hook Registration section (auto-discovery + explicit config)
+  - ADDED: Scratchpad template content in Agent Spawn Sequence
+
+- **v3.3 (2026-01-11):** Comprehensive Audit & Gap Fixes
+  - FIXED: Worktree path format consistency (`{agent}` not `{agent-type}`)
+  - FIXED: Max iteration/timeout → task state now TIMEOUT (distinct from FAILED)
+  - FIXED: Merge queue dependency wait behavior documented
+  - FIXED: Decision #1 vs #10 clarified (config supports all, MVP implements Claude)
+  - FIXED: Agent prompt template - quality commands explicit, NEEDS_HELP signal added
+  - FIXED: NEEDS_HELP signal description clarified
+  - ADDED: F03c (CLI Detection) description in deferred features
+  - ADDED: F91 Implementation Mode exit conditions table
+  - ADDED: qualityCommands.order execution explanation
+  - ADDED: Mode Selection UI screen
+  - ADDED: Session Logger event reference table (all modes)
+  - ADDED: P0 priority level (Blocker)
+  - CONSOLIDATED: TUI Layout section (removed duplication)
+  - CONSOLIDATED: Checkpointing config (reference to main config)
 
 - **v3.2 (2026-01-11):** Consistency & Completeness Review
   - FIXED: Planning State JSON - added `chosenMode` field with status values

@@ -1,6 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
+**Updated:** 2026-01-11T22:00:00Z
 **Status:** Planning Complete, Ready for TDD Implementation
 
 ---
@@ -16,16 +17,106 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 ## Current State
 
 ```
-Done: [x] Master plan v3.1 complete (all reviews done)
-      [x] 127 tasks in Beads (25 M0 + 102 existing)
+Done: [x] Master plan v3.6 complete (Incremental Planning & Manual Triggers)
+      [x] 140 tasks in Beads (26 M0 + 102 existing + 5 v3.5 + 7 v3.6)
       [x] All task dependencies verified
       [x] All acceptance criteria TDD-ready
+      [x] v3.5: Learning-Triggered Plan Review (adaptive task refinement)
+      [x] v3.6: Spec Lifecycle + Incremental Planning + TUI Triggers
 Now:  [→] Begin TDD implementation
 Next: Pick ready task, write tests, implement
 ```
 
 **Ready Tasks:** 48 (use `bd ready -n 0 | grep -v deferred`)
-**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.1)
+**Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.6)
+
+---
+
+## Recent Session (2026-01-11)
+
+### Master Plan v3.6 - Incremental Planning & Manual Triggers
+
+Addresses over-planning problem by creating tasks just-in-time:
+
+| Component | Task ID | Description |
+|-----------|---------|-------------|
+| F98 | ch-yhq | Incremental Planning Trigger (monitors ready count) |
+| F99 | ch-wqn | Planning Horizon Manager (tracks planning state) |
+| F100 | ch-2yp | Spec Evolution Tracker (living spec documents) |
+| F100a | ch-iru | Spec Section Collapser (collapse tasked sections) |
+| F100b | ch-tr4 | Spec Archiver (archive completed specs) |
+| F101a | ch-s8u | TUI Learning Review Trigger (Ctrl+L) |
+| F101b | ch-fts | TUI Planning Trigger (P key) |
+
+**Spec Lifecycle (Consumed Backlog Pattern):**
+- Specs are consumed as tasks are created
+- Tasked sections collapse with `<details>` tags
+- Completed specs move to `.chorus/specs/archive/`
+- Archived specs never in agent context
+
+**Key insight:** Plan only what you know, implement what you planned, learn from implementation, plan more. Stops when:
+- `unknownDependency`: Need to see implementation first
+- `decisionPoint`: Choice depends on benchmarks/reality
+- `taskCountReached`: Initial task limit hit
+
+**Two mechanisms working together:**
+1. **Learning-Triggered Plan Review** → Updates EXISTING tasks
+2. **Implementation-Triggered Task Creation** → Creates NEW tasks
+
+**TUI Manual Triggers:**
+| Shortcut | Action | Condition |
+|----------|--------|-----------|
+| `P` | Plan more tasks | If spec has untasked sections |
+| `Shift+P` | Force planning | Plan even if above threshold |
+| `Ctrl+L` | Review learnings | If unreviewed learnings exist |
+| `Shift+L` | Force review | Review even if no new learnings |
+
+### Master Plan v3.5 - Learning-Triggered Plan Review
+
+New feature added to address "waterfall problem" from Twitter discussion:
+
+| Component | Task ID | Description |
+|-----------|---------|-------------|
+| F80d | ch-uwx | Plan Review Config Wizard (Init Step 5/5) |
+| F93 | ch-sm8 | Learning Categorizer (LOCAL/CROSS_CUTTING/ARCHITECTURAL) |
+| F94 | ch-cjf | Plan Review Trigger |
+| F95 | ch-bmx | Plan Review Loop (iterates until no changes) |
+| F96 | ch-dka | Task Updater (applies changes to Beads) |
+| F97 | ch-c3q | Plan Review Integration (hooks into post-task-complete) |
+
+**Key insight:** When agent discovers cross-cutting pattern, automatically review and update pending tasks. Stops early if no changes (converged).
+
+### Master Plan v3.4 Review - 6 Fixes Applied
+
+| Category | Fix |
+|----------|-----|
+| Diagram | TIMEOUT state added to Task States diagram (distinct from FAILED) |
+| Config | Checkpoints section added to config.json example |
+| Clarification | taskIdPrefix purpose clarified (display/filtering only) |
+| Template | Quality commands numbered list format in agent prompt |
+| Missing | Hook Registration section (auto-discovery + explicit config) |
+| Template | Scratchpad template content in Agent Spawn Sequence |
+
+### Master Plan v3.3 Review - 15 Fixes Applied
+
+| Category | Fix |
+|----------|-----|
+| Contradiction | Worktree path format consistency (`{agent}` not `{agent-type}`) |
+| Missing | Max iteration/timeout → TIMEOUT state (distinct from FAILED) |
+| Missing | Merge queue dependency wait behavior documented |
+| Clarification | Decision #1 vs #10 (config supports all, MVP implements Claude) |
+| Missing | F03c (CLI Detection) description in deferred features |
+| Missing | F91 Implementation Mode exit conditions table |
+| Missing | qualityCommands.order execution explanation |
+| Missing | Mode Selection UI screen |
+| Missing | Session Logger event reference table (all modes) |
+| Missing | P0 priority level (Blocker) |
+| Clarification | NEEDS_HELP signal description |
+| Clarification | Agent prompt template - quality commands explicit |
+| Redundancy | TUI Layout section consolidated |
+| Redundancy | Checkpointing config simplified |
+
+**Previous (v3.2):** 12 fixes (contradictions, gaps, redundancies)
 
 ---
 
@@ -53,7 +144,8 @@ Foundation tasks with no dependencies:
 | 11 | Architecture | Planning-first (Ralph-inspired) |
 | 12 | Config format | JSON (config) + Markdown (rules, patterns) |
 | 13 | Quality gates | Flexible qualityCommands[] |
-| 14 | Context strategy | MVP: Claude compact |
+| 14 | Context strategy | MVP: Claude compact; Post-MVP: custom ledger |
+| 15 | Planning strategy | Incremental (just-in-time) with manual triggers |
 
 ---
 
@@ -61,12 +153,19 @@ Foundation tasks with no dependencies:
 
 ```
 .chorus/
-├── config.json              # qualityCommands[], taskIdPrefix
+├── config.json              # qualityCommands[], taskIdPrefix, checkpoints, incrementalPlanning
 ├── task-rules.md            # Validation rules (agent-readable)
 ├── PATTERNS.md              # Cross-agent patterns
-├── planning-state.json      # Planning progress
+├── planning-state.json      # Planning progress + chosenMode
 ├── session-log.jsonl        # Append-only event log
 ├── state.json               # Runtime state (gitignored)
+├── specs/                   # Living spec documents (v3.6)
+│   ├── feature-spec.md      # Main spec/PRD (only 📋 DRAFT visible)
+│   ├── spec-progress.json   # Tracks which sections have tasks
+│   └── archive/             # Completed specs (never in context)
+├── hooks/                   # Auto-discovered hooks (v3.4)
+│   ├── pre-agent-start.sh
+│   └── post-task-complete.sh
 └── prompts/
     └── plan-agent.md        # Plan agent system prompt
 ```
@@ -97,6 +196,11 @@ npm test                              # Run tests
 
 ## Audit History
 
+- **v3.6:** Incremental Planning & Manual Triggers (7 new tasks - F98-F101b, spec lifecycle, just-in-time planning)
+- **v3.5:** Learning-Triggered Plan Review (6 new tasks - F80d, F93-F97, anti-waterfall feature)
+- **v3.4:** Diagram & config completeness (6 fixes - TIMEOUT state, checkpoints, hooks registration, templates)
+- **v3.3:** Comprehensive audit (15 fixes - gaps, clarifications, consistency)
+- **v3.2:** Consistency review (12 fixes - contradictions, gaps, redundancies)
 - **v3.1:** Master plan comprehensive review (42 issues fixed)
 - **v3.0:** M0 Planning Phase tasks created (25 tasks)
 - **Prev:** 102 tasks audited, 4 deferred
@@ -105,7 +209,7 @@ npm test                              # Run tests
 
 ## Key Files
 
-- Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md`
+- Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v3.6)
 - Task Rules: `.claude/rules/beads-task-tracking.md`
 - This Ledger: `thoughts/ledgers/CONTINUITY_CLAUDE-chorus.md`
 
