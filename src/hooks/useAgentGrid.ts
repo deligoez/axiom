@@ -10,6 +10,7 @@ export type GridOverride = "auto" | "1x1" | "2x2" | "2x3" | "1x4";
 
 const PADDING = 4; // Total horizontal padding between tiles
 
+/** @public - Used in Full TUI Integration (ch-clju) */
 export function useAgentGrid(
 	terminalWidth: number,
 	_agentCount: number,
