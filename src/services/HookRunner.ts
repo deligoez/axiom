@@ -1,12 +1,12 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import {
-	type HookConfig,
-	type HookEvent,
-	type HookHandler,
-	type HookInput,
-	type HookOutput,
-	type HookResult,
+import type {
+	HookConfig,
+	HookEvent,
+	HookHandler,
+	HookInput,
+	HookOutput,
+	HookResult,
 } from "../types/hooks.js";
 import type { HookRegistry } from "./HookRegistry.js";
 
