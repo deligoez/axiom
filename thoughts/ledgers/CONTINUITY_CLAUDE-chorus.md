@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-12T03:00:00Z
+**Updated:** 2026-01-12T03:30:00Z
 **Status:** Ready for TDD - Start ch-lxxb (FX01)
 
 ---
@@ -31,7 +31,7 @@ Next: Start ch-lxxb (FX01: XState Setup) - ONLY READY TASK
 
 **Master Plan:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
 **XState Plan:** `thoughts/shared/plans/2026-01-11-xstate-migration.md` (v1.2 - Testing Strategy)
-**Latest Commit:** `8f5b04d` feat: eighth audit - XState testing patterns and critical task updates
+**Latest Commit:** `73ae15e` docs: ninth audit - 174 tasks reviewed, Zustand cleanup task added
 
 ---
 
@@ -195,6 +195,15 @@ Created ch-g3of with 14 tests. Key simplifications:
 
 **Conclusion:** No blocking issues. Ready for TDD implementation.
 
+### 7. Zustand Test Cleanup Task Added (2026-01-12 03:30)
+
+**New Task:** ch-gzhj (CHORE: Zustand Test Cleanup)
+- Depends on: ch-mzi3 (FX08 Migration Bridge)
+- Deletes: agentStore.test.ts, beadsStore.test.ts
+- Updates: Remaining service tests to AAA pattern
+
+**Why:** Zustand stores will be replaced by XState machines. Their tests become invalid after migration.
+
 ---
 
 ## Key Decisions (Current)
@@ -219,8 +228,8 @@ Created ch-g3of with 14 tests. Key simplifications:
 ## Task Statistics
 
 ```
-Total Tasks:     174 (164 existing + 10 M-1)
-Active:          170 (non-deferred)
+Total Tasks:     175 (164 existing + 11 M-1)
+Active:          171 (non-deferred)
 Deferred:        4   (3 non-Claude + 1 OrchestrationStore replaced)
 Ready:           1   (ch-lxxb - FX01: XState Setup)
 ```
