@@ -5,7 +5,6 @@
 
 # Beads cache (rebuild from JSONL)
 .beads/beads.db
-.beads/issues.jsonl
 
 # Environment files (secrets)
 .env
