@@ -1,7 +1,7 @@
 # Continuity Ledger: Chorus
 
 **Date:** 2026-01-11
-**Updated:** 2026-01-12T02:30:00Z
+**Updated:** 2026-01-12T03:00:00Z
 **Status:** Ready for TDD - Start ch-lxxb (FX01)
 
 ---
@@ -18,15 +18,13 @@ Multi-agent TUI orchestrator using Ink (React for CLI).
 
 ```
 Done: [x] Master plan v4.0 complete (XState architecture)
-      [x] First-Seventh Task Audits (cumulative 119 fixes)
+      [x] First-Eighth Task Audits (cumulative 173 tasks reviewed)
       [x] XState migration plan created
-      [x] M-1 milestone created (9 tasks including FX09 TUI Machine)
+      [x] M-1 milestone created (10 tasks: FX01-FX10)
       [x] 54 task dependencies updated to block on M-1
       [x] ch-8j3 deferred + dependency removed from 7 tasks
-      [x] Zustand references updated to XState in all tasks
-      [x] FX09 TUI Machine added (ch-g3of)
-      [x] Committed: 2a36045
-      [x] EIGHTH AUDIT: XState Testing + AAA Pattern (173 tasks reviewed)
+      [x] FX09 TUI Machine + FX10 RalphLoop Machine added
+      [x] NINTH AUDIT: Comprehensive review (174 tasks, 8 parallel agents)
 Now:  [→] Ready for TDD implementation
 Next: Start ch-lxxb (FX01: XState Setup) - ONLY READY TASK
 ```
@@ -130,7 +128,7 @@ Created ch-g3of with 14 tests. Key simplifications:
 **New Rules Added:**
 - AAA Pattern (Arrange-Act-Assert) MANDATORY for all tests
 - XState testing utilities: `createActor()`, `getSnapshot()`, `waitFor()`
-- Updated: `.claude/rules/beads-task-tracking.md`
+- Updated: 2026-01-11T13:23:32.204Z
 
 **Audit Results by Milestone:**
 
@@ -178,6 +176,25 @@ Created ch-g3of with 14 tests. Key simplifications:
 | **UPDATE** | ch-a0a | F85: ReviewLoop XState events |
 | **UPDATE** | ch-eq5 | F89: AppRouter machine-based routing |
 
+### 6. NINTH AUDIT: Comprehensive Review (2026-01-12 02:30)
+
+**Scope:** 174 tasks reviewed by 8 parallel agents across all 13 milestones.
+
+**Results:**
+- **P0 Issues:** None found (6 "incomplete" reports were false positives from truncated agent output)
+- **P1 Dependencies:** Already fixed (ch-8j3 → ch-vskx migration complete)
+- **XState Architecture:** Verified correct
+  - Display components → ch-mzi3 (Migration Bridge) ✓
+  - Keyboard Router → ch-g3of (TUI Machine) ✓
+  - Key handlers → Keyboard Router (transitive) ✓
+
+**AAA Pattern Compliance:**
+- Exemplary tasks: ch-g3of, ch-lbe7, ch-z8g, ch-a0a
+- M0: 92% compliant (24/26)
+- M1-M12: Need restructuring (will apply during implementation)
+
+**Conclusion:** No blocking issues. Ready for TDD implementation.
+
 ---
 
 ## Key Decisions (Current)
@@ -222,8 +239,9 @@ Ready:           1   (ch-lxxb - FX01: XState Setup)
 | FX07 React Integration | ch-vskx | ch-134l,ch-5gxg,ch-g3of | blocked |
 | FX08 Migration Bridge | ch-mzi3 | ch-vskx | blocked |
 | **FX10 RalphLoop Machine** | **ch-lbe7** | **ch-vskx** | **blocked** |
+| CHORE: Zustand Cleanup | ch-gzhj | ch-mzi3 | blocked |
 
-**Total: 10 tasks, ~88 tests**
+**Total: 11 tasks, ~88 tests + cleanup**
 
 **ch-mzi3 blocks 47 tasks** (all M0+ root tasks)
 

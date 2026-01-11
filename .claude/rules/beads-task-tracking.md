@@ -232,18 +232,38 @@ bd show <id>               # Task details
 
 Update this section as you learn:
 
+### 2026-01-11 (Ninth Audit - Comprehensive Task Review)
+- **174 tasks reviewed** by 8 parallel agents across all 13 milestones
+- **Key Findings:**
+  - P0 "incomplete" tasks were false positives (agent output truncated in parallel execution)
+  - All 6 reported incomplete tasks (ch-555, ch-6ta, ch-1gi, ch-9yl, ch-a6h, ch-nvo) are fully specified
+  - Dependency migration from ch-8j3 to ch-vskx already complete
+  - XState TUI architecture correct: ch-89dk (Keyboard Router) → ch-g3of (TUI Machine)
+- **AAA Pattern Compliance:**
+  - Exemplary: ch-g3of (FX09), ch-lbe7 (FX10), ch-z8g (F82), ch-a0a (F85)
+  - M0 Planning: 92% compliant (24/26 tasks)
+  - M1-M12: Need restructuring to add explicit Arrange-Act-Assert sections
+- **Verified Architecture:**
+  - Display components → ch-mzi3 (Migration Bridge) ✓
+  - Keyboard Router → ch-g3of (TUI Machine) ✓
+  - Key handlers → Keyboard Router (transitive) ✓
+- **No Blocking Issues Found**
+- **Total Tasks:** 174 (10 M-1 + 164 existing)
+- **Ready Tasks:** 1 (ch-lxxb: FX01 XState Setup)
+- **Next After FX01:** FX02 Types + FX03 Root Machine + FX04 Agent Machine (parallel)
+
 ### 2026-01-11 (XState Migration - v4.0)
 - **MAJOR ARCHITECTURE CHANGE:** Migrated from Zustand to XState v5 actor model
-- **New Milestone M-1 (XState Foundation):** 8 tasks, blocks ALL other milestones
+- **New Milestone M-1 (XState Foundation):** 10 tasks (FX01-FX10), blocks ALL other milestones
 - **Key Decisions:**
   - XState v5 for state management (actor model fits multi-agent orchestration)
   - Hybrid persistence: snapshot + event sourcing fallback
   - Spawned child actors for agents (not invoked)
-- **Tasks Created:** ch-lxxb, ch-j321, ch-kjae, ch-qz9m, ch-134l, ch-5gxg, ch-vskx, ch-mzi3
+- **Tasks Created:** ch-lxxb, ch-j321, ch-kjae, ch-qz9m, ch-134l, ch-5gxg, ch-vskx, ch-mzi3, ch-g3of, ch-lbe7
 - **Tasks Deferred:** ch-8j3 (OrchestrationStore - replaced by XState)
 - **Dependencies Updated:** 7 tasks moved from ch-8j3 → ch-vskx
 - **Root Tasks Blocked:** 47 tasks now depend on ch-mzi3 (FX08)
-- **Total Tasks:** 172 (8 new M-1 + 164 existing)
+- **Total Tasks:** 174 (10 new M-1 + 164 existing)
 - **Ready Tasks:** 1 (ch-lxxb - FX01: XState Setup)
 - **Plan Documents:**
   - Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
@@ -256,7 +276,7 @@ Update this section as you learn:
   - 'a' key: No actual conflict - ch-jx9 (Autopilot) and ch-6ta (Approve Merge) are context-dependent
 - **Keyboard Router Fix (ch-89dk):**
   - Was incorrectly depending on individual key handlers
-  - Now depends only on ch-8j3 (OrchestrationStore) for mode/pause context
+  - Now depends on ch-g3of (TUI Machine) for focus/modal state routing
   - Blocks 10 key handlers + Full TUI Integration
 - **Verified:** All 52 ready tasks have correct dependencies satisfied
 - **Total Tasks:** 164 (52 ready, 3 deferred)
@@ -322,6 +342,9 @@ Update this section as you learn:
 | FX06 Event Sourcing | ch-5gxg | ch-kjae | blocked |
 | FX07 React Integration | ch-vskx | ch-134l,ch-5gxg | blocked |
 | FX08 Migration Bridge | ch-mzi3 | ch-vskx | blocked |
+| FX09 TUI Machine | ch-g3of | ch-kjae | blocked |
+| FX10 RalphLoop Machine | ch-lbe7 | ch-vskx | blocked |
+| CHORE: Zustand Test Cleanup | ch-gzhj | ch-mzi3 | blocked |
 
 ### M0: Planning Phase
 
@@ -531,7 +554,7 @@ Update this section as you learn:
 | F63z App-Level Control Keys | ch-nggj | ch-di6,ch-kns | blocked |
 | F64a Layout Integration | ch-d6yv | ch-amw,ch-73t,ch-nvo | blocked |
 | F64b AgentGrid Integration | ch-6rh8 | ch-hhh,ch-c2p,ch-if9,ch-70p | blocked |
-| F64c Keyboard Router | ch-89dk | ch-b8l,ch-akb,ch-4ow,ch-nggj | blocked |
+| F64c Keyboard Router | ch-89dk | ch-g3of | blocked |
 | F64d Full TUI Integration | ch-clju | ch-d6yv,ch-6rh8,ch-89dk | blocked |
 | F63o TUI Exit Handler | ch-bny | ch-cwy | blocked |
 | F63-merge-view Merge Queue View Key | ch-0fwe | ch-glf,ch-105 | blocked |
