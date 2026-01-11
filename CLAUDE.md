@@ -2,30 +2,20 @@
 
 Multi-agent TUI orchestrator using Ink (React for CLI) with XState v5 actor model.
 
-## Session Startup
+## Task Workflow
 
 ```bash
-# See ready tasks (excluding deferred)
+# 1. Pick a task
 bd ready -n 0 | grep -v deferred
+bd show <id>  # View details
 
-# Start working on a task
-bd update <task-id> --status=in_progress
+# 2. Start working
+bd update <id> --status=in_progress
 
-# View task details
-bd show <task-id>
-```
+# 3. Work (TDD: RED → GREEN → quality → commit)
 
-## Session End
-
-```bash
-# 1. Quality gates (if code changed)
-npm run quality
-
-# 2. Update task status
-bd close <id>  # or update status
-
-# 3. Push to remote
-git pull --rebase && bd sync && git push
+# 4. Complete
+bd close <id>  # Unblocks dependents
 ```
 
 ## Quality Pipeline
