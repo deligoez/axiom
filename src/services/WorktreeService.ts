@@ -23,6 +23,20 @@ export class GitError extends Error {
 	}
 }
 
+export class WorktreeNotFoundError extends Error {
+	constructor(agentType: string, taskId: string) {
+		super(`Worktree not found for ${agentType}-${taskId}`);
+		this.name = "WorktreeNotFoundError";
+	}
+}
+
+export class BranchNotFoundError extends Error {
+	constructor(branch: string) {
+		super(`Branch not found: ${branch}`);
+		this.name = "BranchNotFoundError";
+	}
+}
+
 const DEFAULT_TEMPLATE = `# Task Scratchpad: {task_id}
 
 ## Notes
@@ -118,6 +132,71 @@ export class WorktreeService {
 		} catch {
 			return [];
 		}
+	}
+
+	async remove(
+		agentType: string,
+		taskId: string,
+		options?: { deleteBranch?: boolean; force?: boolean },
+	): Promise<void> {
+		const worktreePath = this.getPath(agentType, taskId);
+		const branch = this.getBranch(agentType, taskId);
+		const deleteBranch = options?.deleteBranch ?? true;
+		const force = options?.force ?? false;
+
+		// Check worktree exists
+		if (!this.exists(agentType, taskId)) {
+			throw new WorktreeNotFoundError(agentType, taskId);
+		}
+
+		// Remove worktree
+		const args = ["worktree", "remove"];
+		if (force) {
+			args.push("--force");
+		}
+		args.push(worktreePath);
+
+		await execa("git", args, {
+			cwd: this.projectDir,
+			reject: false,
+		});
+
+		// Handle branch deletion if requested
+		if (deleteBranch) {
+			const isMerged = await this.isBranchMerged(branch);
+			if (isMerged) {
+				await execa("git", ["branch", "-d", branch], {
+					cwd: this.projectDir,
+					reject: false,
+				});
+			}
+		}
+	}
+
+	async isBranchMerged(branch: string): Promise<boolean> {
+		const result = await execa("git", ["branch", "--merged", "main"], {
+			cwd: this.projectDir,
+			reject: false,
+		});
+
+		if (result.exitCode !== 0) {
+			throw new BranchNotFoundError(branch);
+		}
+
+		// Parse output: each line has optional whitespace + branch name
+		const mergedBranches = result.stdout
+			.split("\n")
+			.map((line) => line.trim())
+			.filter((line) => line.length > 0);
+
+		return mergedBranches.includes(branch);
+	}
+
+	async prune(): Promise<void> {
+		await execa("git", ["worktree", "prune"], {
+			cwd: this.projectDir,
+			reject: false,
+		});
 	}
 
 	private loadTemplate(): string {

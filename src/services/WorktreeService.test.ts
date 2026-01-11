@@ -1,8 +1,10 @@
 import * as fs from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	BranchNotFoundError,
 	GitError,
 	WorktreeExistsError,
+	WorktreeNotFoundError,
 	WorktreeService,
 } from "./WorktreeService.js";
 
@@ -31,6 +33,8 @@ const mockExecaSync = vi.mocked(execaSync);
 
 describe("WorktreeService", () => {
 	let service: WorktreeService;
+
+	// F05: Worktree Remove Tests (10)
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -306,5 +310,222 @@ branch refs/heads/agent/aider/ch-x1y2
 			agentType: "aider",
 			taskId: "ch-x1y2",
 		});
+	});
+
+	// F05: remove() tests (6)
+	it("remove() runs git worktree remove command", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.remove("claude", "ch-abc", { deleteBranch: false });
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith(
+			"git",
+			["worktree", "remove", "/test/project/.worktrees/claude-ch-abc"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("remove() throws WorktreeNotFoundError if worktree doesn't exist", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(false);
+
+		// Act & Assert
+		await expect(
+			service.remove("claude", "ch-abc", { deleteBranch: false }),
+		).rejects.toThrow(WorktreeNotFoundError);
+	});
+
+	it("remove() deletes branch when merged and deleteBranch: true (default)", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca
+			.mockResolvedValueOnce({
+				exitCode: 0,
+				stdout: "",
+				stderr: "",
+			} as never) // git worktree remove
+			.mockResolvedValueOnce({
+				exitCode: 0,
+				stdout: "  main\n  agent/claude/ch-abc\n",
+				stderr: "",
+			} as never) // git branch --merged
+			.mockResolvedValueOnce({
+				exitCode: 0,
+				stdout: "",
+				stderr: "",
+			} as never); // git branch -d
+
+		// Act
+		await service.remove("claude", "ch-abc");
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith(
+			"git",
+			["branch", "-d", "agent/claude/ch-abc"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("remove() keeps branch when not merged (no error)", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca
+			.mockResolvedValueOnce({
+				exitCode: 0,
+				stdout: "",
+				stderr: "",
+			} as never) // git worktree remove
+			.mockResolvedValueOnce({
+				exitCode: 0,
+				stdout: "  main\n",
+				stderr: "",
+			} as never); // git branch --merged (branch NOT included)
+
+		// Act
+		await service.remove("claude", "ch-abc");
+
+		// Assert - branch -d should NOT be called
+		const branchDeleteCall = (mockExeca.mock.calls as unknown[][]).find(
+			(call) => {
+				const args = call[1] as string[];
+				return args[0] === "branch" && args[1] === "-d";
+			},
+		);
+		expect(branchDeleteCall).toBeUndefined();
+	});
+
+	it("remove() with force: true uses --force flag", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.remove("claude", "ch-abc", {
+			force: true,
+			deleteBranch: false,
+		});
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith(
+			"git",
+			[
+				"worktree",
+				"remove",
+				"--force",
+				"/test/project/.worktrees/claude-ch-abc",
+			],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("remove() with deleteBranch: false keeps branch even if merged", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.remove("claude", "ch-abc", { deleteBranch: false });
+
+		// Assert - branch --merged should NOT be called
+		const branchMergedCall = (mockExeca.mock.calls as unknown[][]).find(
+			(call) => {
+				const args = call[1] as string[];
+				return args[0] === "branch" && args[1] === "--merged";
+			},
+		);
+		expect(branchMergedCall).toBeUndefined();
+	});
+
+	// F05: isBranchMerged() tests (2)
+	it("isBranchMerged() returns true for merged branch", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "  main\n  agent/claude/ch-abc\n  feature/other\n",
+			stderr: "",
+		} as never);
+
+		// Act
+		const result = await service.isBranchMerged("agent/claude/ch-abc");
+
+		// Assert
+		expect(result).toBe(true);
+		expect(mockExeca).toHaveBeenCalledWith(
+			"git",
+			["branch", "--merged", "main"],
+			{ cwd: "/test/project", reject: false },
+		);
+	});
+
+	it("isBranchMerged() returns false for unmerged branch", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "  main\n  feature/other\n",
+			stderr: "",
+		} as never);
+
+		// Act
+		const result = await service.isBranchMerged("agent/claude/ch-abc");
+
+		// Assert
+		expect(result).toBe(false);
+	});
+
+	// F05: prune() test (1)
+	it("prune() runs git worktree prune", async () => {
+		// Arrange
+		mockExeca.mockResolvedValue({
+			exitCode: 0,
+			stdout: "",
+			stderr: "",
+		} as never);
+
+		// Act
+		await service.prune();
+
+		// Assert
+		expect(mockExeca).toHaveBeenCalledWith("git", ["worktree", "prune"], {
+			cwd: "/test/project",
+			reject: false,
+		});
+	});
+
+	// F05: Edge case (1)
+	it("remove() throws BranchNotFoundError if branch already deleted", async () => {
+		// Arrange
+		mockExistsSync.mockReturnValue(true);
+		mockExeca
+			.mockResolvedValueOnce({
+				exitCode: 0,
+				stdout: "",
+				stderr: "",
+			} as never) // git worktree remove succeeds
+			.mockResolvedValueOnce({
+				exitCode: 1,
+				stdout: "",
+				stderr: "error: malformed object name agent/claude/ch-abc",
+			} as never); // git branch --merged fails
+
+		// Act & Assert
+		await expect(service.remove("claude", "ch-abc")).rejects.toThrow(
+			BranchNotFoundError,
+		);
 	});
 });
