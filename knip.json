@@ -1,6 +1,6 @@
 {
 	"$schema": "https://unpkg.com/knip@5/schema.json",
-	"entry": ["src/cli.ts", "src/machines/index.ts"],
+	"entry": ["src/cli.ts", "src/machines/index.ts", "src/services/event-sourcing.ts"],
 	"ignore": ["**/*.test.ts", "**/*.test.tsx"],
 	"ignoreExportsUsedInFile": true
 }
