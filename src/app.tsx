@@ -1,129 +1,134 @@
-import { useState } from 'react';
-import { Box, Text, useApp } from 'ink';
-import Layout from './components/Layout.js';
-import MainContent from './components/MainContent.js';
-import TaskPanel from './components/TaskPanel.js';
-import HelpPanel from './components/HelpPanel.js';
-import { useKeyboard } from './hooks/useKeyboard.js';
-import { useAgentManager } from './hooks/useAgentManager.js';
-import { useBeadsManager } from './hooks/useBeadsManager.js';
-import { useAgentStore } from './stores/agentStore.js';
-import { useBeadsStore } from './stores/beadsStore.js';
+import { Box, Text, useApp } from "ink";
+import { useState } from "react";
+import HelpPanel from "./components/HelpPanel.js";
+import Layout from "./components/Layout.js";
+import MainContent from "./components/MainContent.js";
+import TaskPanel from "./components/TaskPanel.js";
+import { useAgentManager } from "./hooks/useAgentManager.js";
+import { useBeadsManager } from "./hooks/useBeadsManager.js";
+import { useKeyboard } from "./hooks/useKeyboard.js";
+import { useAgentStore } from "./stores/agentStore.js";
+import { useBeadsStore } from "./stores/beadsStore.js";
 
 interface AppProps {
-  showVersion?: boolean;
-  showHelp?: boolean;
-  onExit?: () => void;
-  projectDir?: string;
+	showVersion?: boolean;
+	showHelp?: boolean;
+	onExit?: () => void;
+	projectDir?: string;
 }
 
-export default function App({ showVersion, showHelp, onExit, projectDir = process.cwd() }: AppProps) {
-  const { exit } = useApp();
-  const [helpVisible, setHelpVisible] = useState(false);
-  const agents = useAgentStore((state) => state.agents);
-  const selectedAgentId = useAgentStore((state) => state.selectedAgentId);
-  const selectAgent = useAgentStore((state) => state.selectAgent);
-  const beads = useBeadsStore((state) => state.beads);
-  const selectedBeadId = useBeadsStore((state) => state.selectedBeadId);
-  const { spawn, killAll } = useAgentManager();
-  useBeadsManager(projectDir);
+export default function App({
+	showVersion,
+	showHelp,
+	onExit,
+	projectDir = process.cwd(),
+}: AppProps) {
+	const { exit } = useApp();
+	const [helpVisible, setHelpVisible] = useState(false);
+	const agents = useAgentStore((state) => state.agents);
+	const selectedAgentId = useAgentStore((state) => state.selectedAgentId);
+	const selectAgent = useAgentStore((state) => state.selectAgent);
+	const beads = useBeadsStore((state) => state.beads);
+	const selectedBeadId = useBeadsStore((state) => state.selectedBeadId);
+	const { spawn, killAll } = useAgentManager();
+	useBeadsManager(projectDir);
 
-  const handleExit = async () => {
-    await killAll();
-    onExit?.();
-    exit();
-  };
+	const handleExit = async () => {
+		await killAll();
+		onExit?.();
+		exit();
+	};
 
-  const handleSpawn = async () => {
-    const agentNumber = agents.length + 1;
-    const agent = await spawn({
-      name: `demo-agent-${agentNumber}`,
-      command: 'bash',
-      args: ['-c', 'for i in {1..5}; do echo "Output line $i"; sleep 1; done'],
-    });
-    // Auto-select the new agent if none selected
-    if (!selectedAgentId) {
-      selectAgent(agent.id);
-    }
-  };
+	const handleSpawn = async () => {
+		const agentNumber = agents.length + 1;
+		const agent = await spawn({
+			name: `demo-agent-${agentNumber}`,
+			command: "bash",
+			args: ["-c", 'for i in {1..5}; do echo "Output line $i"; sleep 1; done'],
+		});
+		// Auto-select the new agent if none selected
+		if (!selectedAgentId) {
+			selectAgent(agent.id);
+		}
+	};
 
-  const handleNavigate = (direction: 'next' | 'prev') => {
-    if (agents.length === 0) return;
+	const handleNavigate = (direction: "next" | "prev") => {
+		if (agents.length === 0) return;
 
-    const currentIndex = agents.findIndex((a) => a.id === selectedAgentId);
-    let nextIndex: number;
+		const currentIndex = agents.findIndex((a) => a.id === selectedAgentId);
+		let nextIndex: number;
 
-    if (currentIndex === -1) {
-      // No selection, select first
-      nextIndex = 0;
-    } else if (direction === 'next') {
-      nextIndex = (currentIndex + 1) % agents.length;
-    } else {
-      nextIndex = (currentIndex - 1 + agents.length) % agents.length;
-    }
+		if (currentIndex === -1) {
+			// No selection, select first
+			nextIndex = 0;
+		} else if (direction === "next") {
+			nextIndex = (currentIndex + 1) % agents.length;
+		} else {
+			nextIndex = (currentIndex - 1 + agents.length) % agents.length;
+		}
 
-    selectAgent(agents[nextIndex].id);
-  };
+		selectAgent(agents[nextIndex].id);
+	};
 
-  const handleToggleHelp = () => {
-    setHelpVisible((prev) => !prev);
-  };
+	const handleToggleHelp = () => {
+		setHelpVisible((prev) => !prev);
+	};
 
-  useKeyboard({
-    onQuit: handleExit,
-    onSpawn: handleSpawn,
-    onNavigate: handleNavigate,
-    onToggleHelp: handleToggleHelp,
-  });
+	useKeyboard({
+		onQuit: handleExit,
+		onSpawn: handleSpawn,
+		onNavigate: handleNavigate,
+		onToggleHelp: handleToggleHelp,
+	});
 
-  if (showVersion) {
-    return <Text>0.1.0</Text>;
-  }
+	if (showVersion) {
+		return <Text>0.1.0</Text>;
+	}
 
-  if (showHelp) {
-    return (
-      <Box flexDirection="column">
-        <Text bold>Usage: chorus [options]</Text>
-        <Text> </Text>
-        <Text>Options:</Text>
-        <Text>  -v, --version  Show version</Text>
-        <Text>  -h, --help     Show help</Text>
-      </Box>
-    );
-  }
+	if (showHelp) {
+		return (
+			<Box flexDirection="column">
+				<Text bold>Usage: chorus [options]</Text>
+				<Text> </Text>
+				<Text>Options:</Text>
+				<Text> -v, --version Show version</Text>
+				<Text> -h, --help Show help</Text>
+			</Box>
+		);
+	}
 
-  return (
-    <Layout agentCount={agents.length} taskCount={beads.length}>
-      <Box flexGrow={1} position="relative">
-        <Box flexDirection="row" flexGrow={1}>
-          {/* Task Panel - Left Side */}
-          <Box
-            width={30}
-            borderStyle="single"
-            borderColor="gray"
-            paddingX={1}
-            flexDirection="column"
-          >
-            <TaskPanel beads={beads} selectedBeadId={selectedBeadId} />
-          </Box>
+	return (
+		<Layout agentCount={agents.length} taskCount={beads.length}>
+			<Box flexGrow={1} position="relative">
+				<Box flexDirection="row" flexGrow={1}>
+					{/* Task Panel - Left Side */}
+					<Box
+						width={30}
+						borderStyle="single"
+						borderColor="gray"
+						paddingX={1}
+						flexDirection="column"
+					>
+						<TaskPanel beads={beads} selectedBeadId={selectedBeadId} />
+					</Box>
 
-          {/* Agent Panel - Right Side */}
-          <Box flexGrow={1}>
-            <MainContent agents={agents} selectedAgentId={selectedAgentId} />
-          </Box>
-        </Box>
-        {helpVisible && (
-          <Box
-            position="absolute"
-            justifyContent="center"
-            alignItems="center"
-            width="100%"
-            height="100%"
-          >
-            <HelpPanel visible={helpVisible} />
-          </Box>
-        )}
-      </Box>
-    </Layout>
-  );
+					{/* Agent Panel - Right Side */}
+					<Box flexGrow={1}>
+						<MainContent agents={agents} selectedAgentId={selectedAgentId} />
+					</Box>
+				</Box>
+				{helpVisible && (
+					<Box
+						position="absolute"
+						justifyContent="center"
+						alignItems="center"
+						width="100%"
+						height="100%"
+					>
+						<HelpPanel visible={helpVisible} />
+					</Box>
+				)}
+			</Box>
+		</Layout>
+	);
 }

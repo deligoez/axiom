@@ -1,86 +1,92 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render } from 'ink-testing-library';
-import { useKeyboard } from './useKeyboard.js';
+import { render } from "ink-testing-library";
+import { describe, expect, it, vi } from "vitest";
+import { useKeyboard } from "./useKeyboard.js";
 
 // Test component that uses the hook
 function TestComponent({
-  onQuit,
-  onSpawn,
-  onNavigate,
+	onQuit,
+	onSpawn,
+	onNavigate,
 }: {
-  onQuit: () => void;
-  onSpawn?: () => void;
-  onNavigate?: (direction: 'next' | 'prev') => void;
+	onQuit: () => void;
+	onSpawn?: () => void;
+	onNavigate?: (direction: "next" | "prev") => void;
 }) {
-  useKeyboard({ onQuit, onSpawn, onNavigate });
-  return null;
+	useKeyboard({ onQuit, onSpawn, onNavigate });
+	return null;
 }
 
-describe('useKeyboard', () => {
-  it('calls onQuit when q is pressed', () => {
-    const onQuit = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} />);
+describe("useKeyboard", () => {
+	it("calls onQuit when q is pressed", () => {
+		const onQuit = vi.fn();
+		const { stdin } = render(<TestComponent onQuit={onQuit} />);
 
-    stdin.write('q');
+		stdin.write("q");
 
-    expect(onQuit).toHaveBeenCalledTimes(1);
-  });
+		expect(onQuit).toHaveBeenCalledTimes(1);
+	});
 
-  it('calls onQuit when ctrl+c is pressed', () => {
-    const onQuit = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} />);
+	it("calls onQuit when ctrl+c is pressed", () => {
+		const onQuit = vi.fn();
+		const { stdin } = render(<TestComponent onQuit={onQuit} />);
 
-    stdin.write('\x03'); // Ctrl+C
+		stdin.write("\x03"); // Ctrl+C
 
-    expect(onQuit).toHaveBeenCalledTimes(1);
-  });
+		expect(onQuit).toHaveBeenCalledTimes(1);
+	});
 
-  it('does not call onQuit for other keys', () => {
-    const onQuit = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} />);
+	it("does not call onQuit for other keys", () => {
+		const onQuit = vi.fn();
+		const { stdin } = render(<TestComponent onQuit={onQuit} />);
 
-    stdin.write('a');
-    stdin.write('b');
-    stdin.write('x');
+		stdin.write("a");
+		stdin.write("b");
+		stdin.write("x");
 
-    expect(onQuit).not.toHaveBeenCalled();
-  });
+		expect(onQuit).not.toHaveBeenCalled();
+	});
 
-  it('calls onSpawn when s is pressed', () => {
-    const onQuit = vi.fn();
-    const onSpawn = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} onSpawn={onSpawn} />);
+	it("calls onSpawn when s is pressed", () => {
+		const onQuit = vi.fn();
+		const onSpawn = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onSpawn={onSpawn} />,
+		);
 
-    stdin.write('s');
+		stdin.write("s");
 
-    expect(onSpawn).toHaveBeenCalledTimes(1);
-    expect(onQuit).not.toHaveBeenCalled();
-  });
+		expect(onSpawn).toHaveBeenCalledTimes(1);
+		expect(onQuit).not.toHaveBeenCalled();
+	});
 
-  it('does not error when s is pressed without onSpawn handler', () => {
-    const onQuit = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} />);
+	it("does not error when s is pressed without onSpawn handler", () => {
+		const onQuit = vi.fn();
+		const { stdin } = render(<TestComponent onQuit={onQuit} />);
 
-    expect(() => stdin.write('s')).not.toThrow();
-  });
+		expect(() => stdin.write("s")).not.toThrow();
+	});
 
-  it('calls onNavigate with "next" when j is pressed', () => {
-    const onQuit = vi.fn();
-    const onNavigate = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} onNavigate={onNavigate} />);
+	it('calls onNavigate with "next" when j is pressed', () => {
+		const onQuit = vi.fn();
+		const onNavigate = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onNavigate={onNavigate} />,
+		);
 
-    stdin.write('j');
+		stdin.write("j");
 
-    expect(onNavigate).toHaveBeenCalledWith('next');
-  });
+		expect(onNavigate).toHaveBeenCalledWith("next");
+	});
 
-  it('calls onNavigate with "prev" when k is pressed', () => {
-    const onQuit = vi.fn();
-    const onNavigate = vi.fn();
-    const { stdin } = render(<TestComponent onQuit={onQuit} onNavigate={onNavigate} />);
+	it('calls onNavigate with "prev" when k is pressed', () => {
+		const onQuit = vi.fn();
+		const onNavigate = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onNavigate={onNavigate} />,
+		);
 
-    stdin.write('k');
+		stdin.write("k");
 
-    expect(onNavigate).toHaveBeenCalledWith('prev');
-  });
+		expect(onNavigate).toHaveBeenCalledWith("prev");
+	});
 });

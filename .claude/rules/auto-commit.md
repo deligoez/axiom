@@ -4,17 +4,39 @@
 
 When committing changes, commit immediately without asking. This applies to ALL commits, not just TDD.
 
-When practicing TDD, commit automatically after each GREEN phase.
+When practicing TDD, commit automatically after quality checks pass.
 
 ## Pattern
 
 ```
-RED → GREEN → COMMIT → REFACTOR (if needed) → repeat
+RED → GREEN → QUALITY CHECKS → COMMIT → REFACTOR (if needed) → repeat
+```
+
+## Quality Checks (After Tests Pass)
+
+Run these commands in order after tests are GREEN:
+
+```bash
+# 1. Tests (already green at this point)
+npm run test:run
+
+# 2. TypeScript type check
+npm run typecheck
+
+# 3. Lint (Biome)
+npm run lint
+```
+
+**All three must pass before committing.** If lint has auto-fixable issues, run `npm run lint:fix` first.
+
+Quick combined check:
+```bash
+npm run test:run && npm run typecheck && npm run lint
 ```
 
 ## Rules
 
-1. **Commit on GREEN**: After tests pass, commit immediately
+1. **Quality checks on GREEN**: After tests pass, run typecheck + lint before commit
 2. **NEVER ask permission**: Don't ask "shall I commit?" or "Shall I proceed?" - JUST DO IT
 3. **Conventional commits**: Use `feat:`, `fix:`, `test:`, `refactor:` prefixes
 4. **Atomic commits**: Each commit = one logical unit of work
