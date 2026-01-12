@@ -4,6 +4,7 @@ import {
 	getOutput,
 	hasExited,
 	renderApp,
+	waitForExit,
 	waitForText,
 } from "./e2e-helpers.js";
 
@@ -40,15 +41,15 @@ describe("E2E Helpers", () => {
 	});
 
 	describe("hasExited", () => {
-		// SKIPPED: timing-dependent test, process may not exit within 1000ms - see ch-a2zx
-		it.skip("detects process exit", async () => {
+		it("detects process exit", async () => {
 			// Arrange
 			const result = await renderApp(["--version"]);
 
-			// Act - wait for exit
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			// Act - wait for exit using polling with timeout
+			const exitCode = await waitForExit(result, 5000);
 
 			// Assert
+			expect(exitCode).toBe(0);
 			const exitInfo = hasExited(result);
 			expect(exitInfo).not.toBeNull();
 			expect(exitInfo?.exitCode).toBe(0);
