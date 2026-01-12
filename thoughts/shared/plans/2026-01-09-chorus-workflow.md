@@ -2345,15 +2345,9 @@ Review Request A arrives
 **Anti-Waterfall Benefit:**
 This directly addresses the waterfall problem discussed in the design principles. Instead of frozen plans that diverge from reality, the plan becomes a **living document** that adapts to implementation discoveries.
 
-**Handling In-Progress Tasks:**
+**Handling In-Progress Tasks (MVP):**
 
-When Plan Review wants to update a task that's currently `in_progress` (agent working on it):
-
-| Scenario | Behavior | Rationale |
-|----------|----------|-----------|
-| **Minor update** (add_criteria) | Queue update, apply after iteration | Don't interrupt agent mid-work |
-| **Major update** (scope change) | Queue + notify user in TUI | User decides: wait or redirect |
-| **Mark redundant** | Queue + alert user | Agent may be doing unnecessary work |
+When Plan Review wants to update a task that's currently `in_progress`:
 
 ```
 Plan Review wants to update ch-010
@@ -2362,16 +2356,12 @@ Plan Review wants to update ch-010
 ┌─────────────────────────────────────────────────────────────────┐
 │  Is ch-010 in_progress?                                          │
 │  ├── No  → Apply update immediately                             │
-│  └── Yes → Queue update                                         │
-│            ├── Minor? → Apply after agent's current iteration   │
-│            │            (agent gets updated context next run)   │
-│            └── Major? → Alert user via TUI                      │
-│                        User can: [Wait] [Redirect] [Stop]       │
+│  └── Yes → Queue update, apply at next iteration                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Update Queue for In-Progress Tasks:**
-- Updates are stored in `.chorus/pending-task-updates.json`
+**Queue Mechanism:**
+- Updates stored in `.chorus/pending-task-updates.json`
 - Checked at start of each agent iteration
 - Applied before building next prompt
 - Cleared after successful application
@@ -2381,14 +2371,15 @@ interface PendingTaskUpdate {
   taskId: string;
   update: TaskUpdate;
   queuedAt: Date;
-  reason: 'in_progress_at_review_time';
 }
 ```
 
-**Why not restart agents immediately?**
-1. Agent may be close to completion - restarting wastes work
-2. Minor criteria additions often don't invalidate current progress
-3. User should decide for major changes (redirect is available via 'r' key)
+**Why queue instead of immediate apply?**
+- Agent may be close to completion - don't interrupt mid-work
+- Next iteration gets fresh context from Beads anyway
+- User can manually redirect if needed ('r' key)
+
+> **Post-MVP (Deferred):** F96c adds severity classification (minor/major/redundant), F96d adds TUI notifications for queued updates.
 
 ### Implementation-Triggered Task Creation (Incremental Planning)
 
@@ -3749,15 +3740,15 @@ PRIORITY BADGES:
 ## Changelog
 
 - **v3.12 (2026-01-12):** In-Progress Task Handling for Plan Review
-  - ADDED: "Handling In-Progress Tasks" section to Learning-Triggered Plan Review
-  - ADDED: Update queue mechanism for in_progress tasks (`.chorus/pending-task-updates.json`)
-  - ADDED: Severity classification (minor/major/redundant) for queued updates
-  - ADDED: TUI notification events for major updates and redundant tasks
-  - UPDATED: F95 (ch-bmx) - Plan Review Loop now tracks task status in results
-  - UPDATED: F96 (ch-dka) - Task Updater handles in_progress task queuing (15 tests)
-  - UPDATED: F97 (ch-c3q) - Plan Review Integration handles open vs in_progress separately
-  - CREATED: F96b (ch-wc53) - Queued Update Applier for agent iteration start
-  - PURPOSE: Prevents interrupting agents mid-work; queued updates applied at next iteration
+  - ADDED: "Handling In-Progress Tasks (MVP)" section - simple queue mechanism
+  - ADDED: Update queue for in_progress tasks (`.chorus/pending-task-updates.json`)
+  - UPDATED: F96 (ch-dka) - Task Updater with queue support (12 tests)
+  - UPDATED: F97 (ch-c3q) - Plan Review Integration (10 tests)
+  - CREATED: F96b (ch-wc53) - Queued Update Applier (6 tests)
+  - CREATED: E2E-68 (ch-uli5) - Plan Review with In-Progress Task E2E tests
+  - DEFERRED: F96c (ch-djom) - Severity classification (minor/major/redundant)
+  - DEFERRED: F96d (ch-24qw) - TUI notifications for queued updates
+  - PURPOSE: MVP queues all in_progress updates; advanced features deferred
 
 - **v3.11 (2026-01-11):** Memory Daemon Pattern Adaptation
   - CHANGED: Learning storage path `.agent/learnings.md` → `.claude/rules/learnings.md`
