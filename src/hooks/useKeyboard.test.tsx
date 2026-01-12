@@ -9,14 +9,23 @@ function TestComponent({
 	onNavigate,
 	onMarkDone,
 	onQuickSelect,
+	onViewLogs,
 }: {
 	onQuit: () => void;
 	onSpawn?: () => void;
 	onNavigate?: (direction: "next" | "prev") => void;
 	onMarkDone?: () => void;
 	onQuickSelect?: (index: number) => void;
+	onViewLogs?: () => void;
 }) {
-	useKeyboard({ onQuit, onSpawn, onNavigate, onMarkDone, onQuickSelect });
+	useKeyboard({
+		onQuit,
+		onSpawn,
+		onNavigate,
+		onMarkDone,
+		onQuickSelect,
+		onViewLogs,
+	});
 	return null;
 }
 
@@ -172,5 +181,21 @@ describe("useKeyboard", () => {
 
 		// Assert
 		expect(onQuickSelect).not.toHaveBeenCalled();
+	});
+
+	it("calls onViewLogs when l is pressed", () => {
+		// Arrange
+		const onQuit = vi.fn();
+		const onViewLogs = vi.fn();
+		const { stdin } = render(
+			<TestComponent onQuit={onQuit} onViewLogs={onViewLogs} />,
+		);
+
+		// Act
+		stdin.write("l");
+
+		// Assert
+		expect(onViewLogs).toHaveBeenCalledTimes(1);
+		expect(onQuit).not.toHaveBeenCalled();
 	});
 });
