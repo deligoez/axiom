@@ -107,7 +107,22 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 	}
 
 	if (snapshot.matches({ app: "implementation" })) {
-		return <ImplementationMode />;
+		return (
+			<ImplementationMode
+				mode={cliArgs?.mode ?? "semi-auto"}
+				tasks={[]}
+				agents={[]}
+				maxAgents={4}
+				onPlanningMode={() => send({ type: "FORCE_PLANNING" })}
+				onToggleMode={() =>
+					send({
+						type: "SET_MODE",
+						mode: cliArgs?.mode === "autopilot" ? "semi-auto" : "autopilot",
+					})
+				}
+				onExit={() => process.exit(0)}
+			/>
+		);
 	}
 
 	// Fallback - should not reach here
