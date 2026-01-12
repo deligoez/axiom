@@ -597,6 +597,61 @@ describe("TaskStore", () => {
 		});
 	});
 
+	describe("tag operations", () => {
+		it("addTag() adds tag if not present", () => {
+			// Arrange
+			const task = store.create({ title: "Task", tags: ["existing"] });
+
+			// Act
+			store.addTag(task.id, "new-tag");
+
+			// Assert
+			const updated = store.get(task.id);
+			expect(updated?.tags).toContain("existing");
+			expect(updated?.tags).toContain("new-tag");
+		});
+
+		it("addTag() does not duplicate existing tag", () => {
+			// Arrange
+			const task = store.create({ title: "Task", tags: ["existing"] });
+
+			// Act
+			store.addTag(task.id, "existing");
+
+			// Assert
+			const updated = store.get(task.id);
+			expect(updated?.tags.filter((t) => t === "existing")).toHaveLength(1);
+		});
+
+		it("removeTag() removes tag from task", () => {
+			// Arrange
+			const task = store.create({ title: "Task", tags: ["keep", "remove"] });
+
+			// Act
+			store.removeTag(task.id, "remove");
+
+			// Assert
+			const updated = store.get(task.id);
+			expect(updated?.tags).toContain("keep");
+			expect(updated?.tags).not.toContain("remove");
+		});
+
+		it("getTags() returns all unique tags across tasks", () => {
+			// Arrange
+			store.create({ title: "Task 1", tags: ["frontend", "urgent"] });
+			store.create({ title: "Task 2", tags: ["backend", "urgent"] });
+			store.create({ title: "Task 3", tags: ["frontend", "docs"] });
+
+			// Act
+			const allTags = store.getTags();
+
+			// Assert
+			expect(allTags.sort()).toEqual(
+				["backend", "docs", "frontend", "urgent"].sort(),
+			);
+		});
+	});
+
 	describe("lifecycle", () => {
 		it("should claim task: todo → doing", () => {
 			// Arrange

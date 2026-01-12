@@ -419,6 +419,44 @@ export class TaskStore {
 	}
 
 	// ─────────────────────────────────────────────────────────
+	// Tag Operations (TS07)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Add a tag to a task if not already present.
+	 */
+	addTag(taskId: string, tag: string): Task {
+		const task = this.getOrThrow(taskId);
+		if (!task.tags.includes(tag)) {
+			return this.update(taskId, { tags: [...task.tags, tag] });
+		}
+		return task;
+	}
+
+	/**
+	 * Remove a tag from a task.
+	 */
+	removeTag(taskId: string, tag: string): Task {
+		const task = this.getOrThrow(taskId);
+		return this.update(taskId, {
+			tags: task.tags.filter((t) => t !== tag),
+		});
+	}
+
+	/**
+	 * Get all unique tags across all tasks.
+	 */
+	getTags(): string[] {
+		const tagSet = new Set<string>();
+		for (const task of this.list()) {
+			for (const tag of task.tags) {
+				tagSet.add(tag);
+			}
+		}
+		return Array.from(tagSet);
+	}
+
+	// ─────────────────────────────────────────────────────────
 	// Dependency Management (TS06)
 	// ─────────────────────────────────────────────────────────
 
