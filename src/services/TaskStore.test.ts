@@ -272,6 +272,92 @@ describe("TaskStore", () => {
 		});
 	});
 
+	describe("list", () => {
+		it("should return all non-deleted tasks when no filters", () => {
+			// Arrange
+			store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+			store.create({ title: "Task 3" });
+
+			// Act
+			const tasks = store.list();
+
+			// Assert
+			expect(tasks).toHaveLength(3);
+		});
+
+		it("should filter by single status", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+			store.claim(task1.id); // Now "doing"
+
+			// Act
+			const doingTasks = store.list({ status: "doing" });
+
+			// Assert
+			expect(doingTasks).toHaveLength(1);
+			expect(doingTasks[0].id).toBe(task1.id);
+		});
+
+		it("should filter by status array", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			const task2 = store.create({ title: "Task 2" });
+			store.create({ title: "Task 3" });
+			store.claim(task1.id);
+			store.claim(task2.id);
+			store.complete(task2.id);
+
+			// Act
+			const activeTasks = store.list({ status: ["doing", "done"] });
+
+			// Assert
+			expect(activeTasks).toHaveLength(2);
+		});
+
+		it("should filter by tags (match ANY)", () => {
+			// Arrange
+			store.create({ title: "Task 1", tags: ["frontend"] });
+			store.create({ title: "Task 2", tags: ["backend", "api"] });
+			store.create({ title: "Task 3", tags: ["docs"] });
+
+			// Act
+			const matched = store.list({ tags: ["frontend", "api"] });
+
+			// Assert
+			expect(matched).toHaveLength(2);
+		});
+
+		it("should filter by excludeTags (exclude if ANY)", () => {
+			// Arrange
+			store.create({ title: "Task 1", tags: ["important"] });
+			store.create({ title: "Task 2", tags: ["wip"] });
+			store.create({ title: "Task 3", tags: ["important", "wip"] });
+
+			// Act
+			const filtered = store.list({ excludeTags: ["wip"] });
+
+			// Assert
+			expect(filtered).toHaveLength(1);
+			expect(filtered[0].title).toBe("Task 1");
+		});
+
+		it("should exclude deleted tasks", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+			store.delete(task1.id);
+
+			// Act
+			const tasks = store.list();
+
+			// Assert
+			expect(tasks).toHaveLength(1);
+			expect(tasks[0].title).toBe("Task 2");
+		});
+	});
+
 	describe("lifecycle", () => {
 		it("should claim task: todo → doing", () => {
 			// Arrange

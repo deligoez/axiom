@@ -9,6 +9,7 @@ import { join } from "node:path";
 import type {
 	CreateTaskInput,
 	Task,
+	TaskFilters,
 	TaskJSONL,
 	TaskStatus,
 	TaskType,
@@ -274,6 +275,68 @@ export class TaskStore {
 		return Array.from(this.tasks.keys()).filter(
 			(id) => !this.deletedIds.has(id),
 		);
+	}
+
+	/**
+	 * List tasks with optional filters.
+	 * Excludes deleted tasks by default.
+	 */
+	list(filters?: TaskFilters): Task[] {
+		const result: Task[] = [];
+
+		for (const task of this.tasks.values()) {
+			// Skip deleted tasks
+			if (this.deletedIds.has(task.id)) {
+				continue;
+			}
+
+			// Apply status filter
+			if (filters?.status !== undefined) {
+				const statuses = Array.isArray(filters.status)
+					? filters.status
+					: [filters.status];
+				if (!statuses.includes(task.status)) {
+					continue;
+				}
+			}
+
+			// Apply type filter
+			if (filters?.type !== undefined) {
+				const types = Array.isArray(filters.type)
+					? filters.type
+					: [filters.type];
+				if (!types.includes(task.type)) {
+					continue;
+				}
+			}
+
+			// Apply tags filter (match ANY)
+			if (filters?.tags !== undefined && filters.tags.length > 0) {
+				const hasMatchingTag = filters.tags.some((tag) =>
+					task.tags.includes(tag),
+				);
+				if (!hasMatchingTag) {
+					continue;
+				}
+			}
+
+			// Apply excludeTags filter (exclude if ANY)
+			if (
+				filters?.excludeTags !== undefined &&
+				filters.excludeTags.length > 0
+			) {
+				const hasExcludedTag = filters.excludeTags.some((tag) =>
+					task.tags.includes(tag),
+				);
+				if (hasExcludedTag) {
+					continue;
+				}
+			}
+
+			result.push(task);
+		}
+
+		return result;
 	}
 
 	// ─────────────────────────────────────────────────────────
