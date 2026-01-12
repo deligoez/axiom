@@ -1,0 +1,53 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { gunzipSync } from "node:zlib";
+
+/**
+ * Audit entry structure.
+ */
+export interface AuditEntry {
+	timestamp: string;
+	type: string;
+	action?: string;
+	[key: string]: unknown;
+}
+
+/**
+ * Read audit log entries for a task.
+ *
+ * Checks for both uncompressed (.jsonl) and compressed (.jsonl.gz) files.
+ * Returns empty array if no audit file exists.
+ *
+ * @param projectDir - The project root directory
+ * @param taskId - The task ID
+ * @returns Array of audit entries
+ */
+export function readAuditLog(projectDir: string, taskId: string): AuditEntry[] {
+	const auditDir = join(projectDir, ".chorus", "audit");
+
+	// Check for uncompressed file first
+	const jsonlPath = join(auditDir, `${taskId}.jsonl`);
+	if (existsSync(jsonlPath)) {
+		const content = readFileSync(jsonlPath, "utf-8");
+		return parseAuditContent(content);
+	}
+
+	// Check for compressed file
+	const gzPath = join(auditDir, `${taskId}.jsonl.gz`);
+	if (existsSync(gzPath)) {
+		const compressed = readFileSync(gzPath);
+		const content = gunzipSync(compressed).toString("utf-8");
+		return parseAuditContent(content);
+	}
+
+	// No audit file found
+	return [];
+}
+
+/**
+ * Parse JSONL content into audit entries.
+ */
+function parseAuditContent(content: string): AuditEntry[] {
+	const lines = content.trim().split("\n").filter(Boolean);
+	return lines.map((line) => JSON.parse(line) as AuditEntry);
+}
