@@ -6,7 +6,7 @@ Multi-agent TUI orchestrator using Ink (React for CLI) with XState v5 actor mode
 
 ```bash
 # 1. Pick a task
-bd ready -n 0 | grep -v deferred
+bd ready -n 0
 bd show <id>  # View details + check "Blocks" section
 
 # 2. Start working
@@ -42,7 +42,7 @@ npm run quality   # Runs all checks:
 
 | Command | Purpose |
 |---------|---------|
-| `bd ready -n 0 \| grep -v deferred` | List available tasks |
+| `bd ready -n 0` | List available tasks |
 | `bd update <id> --status=in_progress` | Start task |
 | `bd close <id>` | Complete task (unblocks dependents) |
 | `bd sync` | Sync with git |

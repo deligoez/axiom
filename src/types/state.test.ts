@@ -58,12 +58,19 @@ describe("State types", () => {
 
 	it("AgentStatus includes all valid states", () => {
 		// Arrange & Act
-		const statuses: AgentStatus[] = ["idle", "running", "paused", "error"];
+		const statuses: AgentStatus[] = [
+			"idle",
+			"running",
+			"paused",
+			"stopped",
+			"error",
+		];
 
 		// Assert
 		expect(statuses).toContain("idle");
 		expect(statuses).toContain("running");
 		expect(statuses).toContain("paused");
+		expect(statuses).toContain("stopped");
 		expect(statuses).toContain("error");
 	});
 

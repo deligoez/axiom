@@ -1,4 +1,4 @@
-export type AgentStatus = "idle" | "running" | "paused" | "error";
+export type AgentStatus = "idle" | "running" | "paused" | "stopped" | "error";
 export type MergeQueueItemStatus =
 	| "pending"
 	| "merging"
