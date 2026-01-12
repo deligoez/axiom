@@ -372,6 +372,134 @@ describe("LearningStore", () => {
 		});
 	});
 
+	// Multi-agent learning tracking - 4 tests
+	describe("Multi-agent tracking", () => {
+		it("formatLearning includes agentType in stored format", () => {
+			// Arrange
+			const learning: Learning = {
+				id: "learn-multi-1",
+				content: "Test learning content",
+				scope: "local",
+				category: "general",
+				source: {
+					taskId: "ch-test1",
+					agentType: "claude",
+					timestamp: new Date("2026-01-11T12:00:00Z"),
+				},
+				suggestPattern: false,
+			};
+
+			// Act - access private method via any
+			const formatted = (store as any).formatLearning(learning);
+
+			// Assert
+			expect(formatted).toContain("claude");
+			expect(formatted).toContain("ch-test1");
+			expect(formatted).toContain("learn-multi-1");
+		});
+
+		it("deduplication works across different agents", async () => {
+			// Arrange
+			const content = "Always use TypeScript strict mode";
+			const hash = store.calculateHash(content);
+			const metaJson = JSON.stringify({
+				hashes: [hash],
+				reviewed: [],
+				lastUpdated: null,
+			});
+
+			// First learning was added by claude
+			mockReadFile.mockResolvedValueOnce("# Learnings\n");
+			mockReadFile.mockResolvedValueOnce(metaJson);
+			mockReadFile.mockResolvedValueOnce(metaJson);
+			mockWriteFile.mockResolvedValue(undefined);
+			mockAccess.mockResolvedValue(undefined);
+
+			// Same content from codex agent
+			const codexLearning: Learning = {
+				id: "learn-codex-1",
+				content,
+				scope: "local",
+				category: "general",
+				source: {
+					taskId: "ch-test2",
+					agentType: "codex",
+					timestamp: new Date(),
+				},
+				suggestPattern: false,
+			};
+
+			// Act
+			const result = await store.append([codexLearning]);
+
+			// Assert - should be skipped as duplicate
+			expect(result.skipped).toHaveLength(1);
+			expect(result.added).toHaveLength(0);
+		});
+
+		it("unique content from different agents is both added", async () => {
+			// Arrange
+			mockReadFile.mockResolvedValueOnce("# Learnings\n");
+			mockReadFile.mockResolvedValueOnce(
+				JSON.stringify({ hashes: [], reviewed: [], lastUpdated: null }),
+			);
+			mockReadFile.mockResolvedValueOnce("# Learnings\n"); // For similarity check
+			mockReadFile.mockResolvedValueOnce(
+				JSON.stringify({ hashes: [], reviewed: [], lastUpdated: null }),
+			);
+			mockReadFile.mockResolvedValueOnce("# Learnings\n"); // For second similarity check
+			mockWriteFile.mockResolvedValue(undefined);
+			mockAccess.mockResolvedValue(undefined);
+
+			const claudeLearning: Learning = {
+				id: "learn-claude-1",
+				content: "Use dependency injection for testability",
+				scope: "cross-cutting",
+				category: "testing",
+				source: {
+					taskId: "ch-test1",
+					agentType: "claude",
+					timestamp: new Date(),
+				},
+				suggestPattern: true,
+			};
+
+			const codexLearning: Learning = {
+				id: "learn-codex-1",
+				content: "Prefer composition over inheritance",
+				scope: "architectural",
+				category: "patterns",
+				source: {
+					taskId: "ch-test2",
+					agentType: "codex",
+					timestamp: new Date(),
+				},
+				suggestPattern: true,
+			};
+
+			// Act
+			const result = await store.append([claudeLearning, codexLearning]);
+
+			// Assert - both should be added
+			expect(result.added).toHaveLength(2);
+			expect(result.skipped).toHaveLength(0);
+		});
+
+		it("commit message includes agent type", async () => {
+			// Arrange
+			mockExecSync.mockReturnValue(Buffer.from(""));
+
+			// Act
+			await store.commit("ch-multi", "codex");
+
+			// Assert
+			expect(mockExecSync).toHaveBeenCalledWith(
+				expect.stringContaining("learn: extract from ch-multi (codex)"),
+				expect.any(Object),
+			);
+		});
+	});
+
 	// F41: Initialization - 2 tests
 	describe("Initialization", () => {
 		it("ensureExists() creates .claude/rules/ directory if needed", async () => {
