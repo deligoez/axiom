@@ -132,6 +132,10 @@ export class MergeQueue {
 		};
 	}
 
+	getItems(): readonly MergeItem[] {
+		return this.items;
+	}
+
 	private hasUnmergedDependencies(dependencies: string[]): boolean {
 		if (!dependencies || dependencies.length === 0) {
 			return false;
