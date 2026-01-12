@@ -1,6 +1,14 @@
 import { Text } from "ink";
 import { render } from "ink-testing-library";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { PlanningLayout } from "./PlanningLayout.js";
 
 // Mock useTerminalSize hook
@@ -10,6 +18,25 @@ vi.mock("../hooks/useTerminalSize.js", () => ({
 
 describe("PlanningLayout", () => {
 	let onMessageMock: ReturnType<typeof vi.fn<(text: string) => void>>;
+	const originalIsTTY = process.stdin.isTTY;
+
+	beforeAll(() => {
+		// Mock isTTY to enable input handling in tests
+		Object.defineProperty(process.stdin, "isTTY", {
+			value: true,
+			writable: true,
+			configurable: true,
+		});
+	});
+
+	afterAll(() => {
+		// Restore original isTTY value
+		Object.defineProperty(process.stdin, "isTTY", {
+			value: originalIsTTY,
+			writable: true,
+			configurable: true,
+		});
+	});
 
 	beforeEach(() => {
 		vi.clearAllMocks();

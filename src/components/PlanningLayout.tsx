@@ -10,6 +10,10 @@ export interface PlanningLayoutProps {
 
 type FocusArea = "agent" | "input";
 
+// Check if stdin supports raw mode (safe check)
+// Using a getter to allow test mocking
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 /**
  * PlanningLayout provides 80% agent window + 20% chat input layout for planning mode
  */
@@ -26,27 +30,31 @@ export function PlanningLayout({
 	const agentHeight = Math.floor(availableHeight * 0.8);
 	const inputHeight = Math.floor(availableHeight * 0.2);
 
-	useInput((input, key) => {
-		// Tab toggles focus
-		if (key.tab) {
-			setFocus((prev) => (prev === "agent" ? "input" : "agent"));
-			return;
-		}
-
-		// Handle input when focused on input area
-		if (focus === "input") {
-			if (key.return) {
-				if (inputText.trim()) {
-					onMessage(inputText);
-					setInputText("");
-				}
-			} else if (key.backspace || key.delete) {
-				setInputText((prev) => prev.slice(0, -1));
-			} else if (!key.ctrl && !key.meta && input) {
-				setInputText((prev) => prev + input);
+	// Only use useInput when raw mode is supported (i.e., in a real TTY)
+	useInput(
+		(input, key) => {
+			// Tab toggles focus
+			if (key.tab) {
+				setFocus((prev) => (prev === "agent" ? "input" : "agent"));
+				return;
 			}
-		}
-	});
+
+			// Handle input when focused on input area
+			if (focus === "input") {
+				if (key.return) {
+					if (inputText.trim()) {
+						onMessage(inputText);
+						setInputText("");
+					}
+				} else if (key.backspace || key.delete) {
+					setInputText((prev) => prev.slice(0, -1));
+				} else if (!key.ctrl && !key.meta && input) {
+					setInputText((prev) => prev + input);
+				}
+			}
+		},
+		{ isActive: getIsTTY() },
+	);
 
 	const agentBorderColor = focus === "agent" ? "cyan" : "gray";
 	const inputBorderColor = focus === "input" ? "cyan" : "gray";

@@ -48,6 +48,10 @@ export interface ChorusMachineInput {
 export type ChorusMachineEvent =
 	// App-level transitions
 	| { type: "CONFIG_COMPLETE"; config: ChorusConfig }
+	| { type: "FORCE_INIT" }
+	| { type: "INIT_REQUIRED" }
+	| { type: "FORCE_PLANNING" }
+	| { type: "RESTORE_STATE"; state: { status: string; chosenMode?: string } }
 	| { type: "PLAN_APPROVED" }
 	| { type: "REVIEW_PASSED" }
 	| { type: "NEEDS_REVISION" }
@@ -205,6 +209,27 @@ export const chorusMachine = setup({
 		// App-level state (sequential)
 		app: {
 			initial: "init",
+			on: {
+				// Global app transitions (can happen from any app state)
+				FORCE_INIT: ".init",
+				INIT_REQUIRED: ".init",
+				FORCE_PLANNING: ".planning",
+				RESTORE_STATE: [
+					{
+						target: ".implementation",
+						guard: ({ event }) =>
+							event.state.status === "ready" ||
+							event.state.status === "implementation",
+					},
+					{
+						target: ".review",
+						guard: ({ event }) => event.state.status === "reviewing",
+					},
+					{
+						target: ".planning",
+					},
+				],
+			},
 			states: {
 				init: {
 					on: {

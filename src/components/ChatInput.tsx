@@ -9,6 +9,10 @@ export interface ChatInputProps {
 	history?: string[];
 }
 
+// Check if stdin supports raw mode (safe check)
+// Using a getter to allow test mocking
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 /**
  * ChatInput component for user text input with send functionality
  */
@@ -22,75 +26,78 @@ export function ChatInput({
 	const [historyIndex, setHistoryIndex] = useState(-1);
 	const [savedInput, setSavedInput] = useState("");
 
-	useInput((inputChar, key) => {
-		// Ctrl+C triggers cancel
-		if (key.ctrl && inputChar === "c") {
-			onCancel?.();
-			return;
-		}
+	useInput(
+		(inputChar, key) => {
+			// Ctrl+C triggers cancel (either as ctrl+c or raw \x03)
+			if ((key.ctrl && inputChar === "c") || inputChar === "\x03") {
+				onCancel?.();
+				return;
+			}
 
-		// Escape clears input
-		if (key.escape) {
-			setInput("");
-			setHistoryIndex(-1);
-			return;
-		}
-
-		// Enter sends message
-		if (key.return) {
-			if (input.trim()) {
-				onSend(input);
+			// Escape clears input
+			if (key.escape) {
 				setInput("");
 				setHistoryIndex(-1);
+				return;
 			}
-			return;
-		}
 
-		// Up arrow navigates to previous history
-		if (key.upArrow) {
-			if (history.length > 0) {
-				if (historyIndex === -1) {
-					// Save current input before navigating
-					setSavedInput(input);
+			// Enter sends message
+			if (key.return) {
+				if (input.trim()) {
+					onSend(input);
+					setInput("");
+					setHistoryIndex(-1);
 				}
-				const newIndex = Math.min(historyIndex + 1, history.length - 1);
-				setHistoryIndex(newIndex);
-				// History is newest-first, so we access from the end
-				setInput(history[history.length - 1 - newIndex]);
+				return;
 			}
-			return;
-		}
 
-		// Down arrow navigates to next history
-		if (key.downArrow) {
-			if (historyIndex > 0) {
-				const newIndex = historyIndex - 1;
-				setHistoryIndex(newIndex);
-				setInput(history[history.length - 1 - newIndex]);
-			} else if (historyIndex === 0) {
-				// Back to saved input
-				setHistoryIndex(-1);
-				setInput(savedInput);
+			// Up arrow navigates to previous history
+			if (key.upArrow) {
+				if (history.length > 0) {
+					if (historyIndex === -1) {
+						// Save current input before navigating
+						setSavedInput(input);
+					}
+					const newIndex = Math.min(historyIndex + 1, history.length - 1);
+					setHistoryIndex(newIndex);
+					// History is newest-first, so we access from the end
+					setInput(history[history.length - 1 - newIndex]);
+				}
+				return;
 			}
-			return;
-		}
 
-		// Backspace/delete removes character
-		if (key.backspace || key.delete) {
-			setInput((prev) => prev.slice(0, -1));
-			return;
-		}
+			// Down arrow navigates to next history
+			if (key.downArrow) {
+				if (historyIndex > 0) {
+					const newIndex = historyIndex - 1;
+					setHistoryIndex(newIndex);
+					setInput(history[history.length - 1 - newIndex]);
+				} else if (historyIndex === 0) {
+					// Back to saved input
+					setHistoryIndex(-1);
+					setInput(savedInput);
+				}
+				return;
+			}
 
-		// Tab - ignore for now
-		if (key.tab) {
-			return;
-		}
+			// Backspace/delete removes character
+			if (key.backspace || key.delete) {
+				setInput((prev) => prev.slice(0, -1));
+				return;
+			}
 
-		// Regular character input (including newlines for shift+enter)
-		if (inputChar && !key.ctrl && !key.meta) {
-			setInput((prev) => prev + inputChar);
-		}
-	});
+			// Tab - ignore for now
+			if (key.tab) {
+				return;
+			}
+
+			// Regular character input (including newlines for shift+enter)
+			if (inputChar && !key.ctrl && !key.meta) {
+				setInput((prev) => prev + inputChar);
+			}
+		},
+		{ isActive: getIsTTY() },
+	);
 
 	const displayText = input || placeholder;
 	const isPlaceholder = !input;
