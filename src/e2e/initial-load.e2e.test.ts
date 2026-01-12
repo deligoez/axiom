@@ -35,7 +35,7 @@ describe("E2E: Initial Load", () => {
 
 		// Assert
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 	});
 
 	it("loads tasks from beads file", async () => {

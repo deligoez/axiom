@@ -38,7 +38,7 @@ describe("E2E: Terminal Resize", () => {
 		// Assert - UI renders correctly
 		const output = getOutput(result);
 		expect(output).toContain("Test Task");
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 	});
 
 	it("handles long task titles with truncation", async () => {

@@ -36,7 +36,7 @@ describe("E2E: Fresh Project Init", () => {
 
 		// Assert
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 		// App should not crash - if it did, we wouldn't get here
 	});
 

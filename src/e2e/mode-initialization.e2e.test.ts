@@ -228,7 +228,7 @@ describe("E2E: Mode Initialization Flow", () => {
 			// Assert - semi-auto should take precedence
 			const output = getOutput(result);
 			// The app should be running with semi-auto mode
-			expect(output).toContain("Chorus");
+			expect(output).toContain("CHORUS");
 		});
 
 		it("defaults to planning when .chorus/ exists but no planning-state.json", async () => {

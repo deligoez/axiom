@@ -16,23 +16,23 @@ describe("E2E: App Renders Correctly", () => {
 		const result = await renderApp();
 
 		// Act
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Assert
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 	});
 
-	it("shows quit hint text", async () => {
+	it("shows help hint text", async () => {
 		// Arrange
 		const result = await renderApp();
 
-		// Act
-		await waitForText(result, "quit", 5000);
+		// Act - footer shows "? help"
+		await waitForText(result, "help", 5000);
 
 		// Assert
 		const output = getOutput(result);
-		expect(output).toContain("quit");
+		expect(output).toContain("help");
 	});
 
 	it("shows task panel area", async () => {
@@ -52,12 +52,11 @@ describe("E2E: App Renders Correctly", () => {
 		// Arrange
 		const result = await renderApp();
 
-		// Act
-		await waitForText(result, "agents", 5000);
+		// Act - grid shows empty slots when no agents
+		await waitForText(result, "empty slot", 5000);
 
 		// Assert
 		const output = getOutput(result);
-		// Shows "0 agents" or "No agents running"
-		expect(output).toMatch(/agents|No agents/i);
+		expect(output).toContain("empty slot");
 	});
 });

@@ -30,24 +30,24 @@ describe("E2E: AgentGrid Shows Slots", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "No agents running", 5000);
+		await waitForText(result, "empty slot", 5000);
 
-		// Assert
+		// Assert - AgentGrid shows [empty slot] when no agents
 		const output = getOutput(result);
-		expect(output).toContain("No agents running");
+		expect(output).toContain("empty slot");
 	});
 
-	it("shows prompt to start agent", async () => {
+	it("shows help hint in header", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-test1", title: "Test Task" }]);
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Press 's' to start", 5000);
+		await waitForText(result, "? for help", 5000);
 
-		// Assert
+		// Assert - HeaderBar shows help hint
 		const output = getOutput(result);
-		expect(output).toContain("Press 's' to start");
+		expect(output).toContain("? for help");
 	});
 
 	it("shows agent grid area in layout", async () => {
@@ -56,11 +56,11 @@ describe("E2E: AgentGrid Shows Slots", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "agents", 5000);
+		await waitForText(result, "empty slot", 5000);
 
-		// Assert - HeaderBar shows "0 agents"
+		// Assert - Shows empty slots in agent grid area
 		const output = getOutput(result);
-		expect(output).toContain("0 agents");
+		expect(output).toContain("empty slot");
 	});
 
 	// Note: Agent tile tests require running agents which need actual
@@ -72,10 +72,10 @@ describe("E2E: AgentGrid Shows Slots", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "0 agents", 5000);
+		await waitForText(result, "0/4", 5000);
 
-		// Assert
+		// Assert - Header shows agent slots as "X/Y" format
 		const output = getOutput(result);
-		expect(output).toContain("0 agents");
+		expect(output).toContain("0/4");
 	});
 });

@@ -36,10 +36,10 @@ describe("E2E: Output Scrolling", () => {
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Active Task", 5000);
 
-		// Assert - app shows agent area
+		// Assert - app shows agent area with empty slots
 		const output = getOutput(result);
 		expect(output).toContain("Active Task");
-		expect(output).toContain("agents");
+		expect(output).toContain("empty slot");
 	});
 
 	it("j/k keys work in main view without error", async () => {

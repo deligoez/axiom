@@ -53,7 +53,7 @@ describe("E2E: Grid Settings (g key)", () => {
 
 		// Assert - app continues to function
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 	});
 
 	it("pressing g multiple times does not cause error", async () => {

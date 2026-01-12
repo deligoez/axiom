@@ -22,7 +22,7 @@ describe("E2E: Panel Focus (Tab)", () => {
 
 		// Assert - app still renders correctly
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 		expect(output).toMatch(/agents/i);
 	});
 
@@ -37,7 +37,7 @@ describe("E2E: Panel Focus (Tab)", () => {
 
 		// Assert - app still renders correctly
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 	});
 
 	it("app continues to function after Tab key", async () => {
@@ -53,6 +53,6 @@ describe("E2E: Panel Focus (Tab)", () => {
 		// Small delay to let the UI update
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		const output = getOutput(result);
-		expect(output).toContain("Chorus");
+		expect(output).toContain("CHORUS");
 	});
 });
