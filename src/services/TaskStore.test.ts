@@ -358,6 +358,99 @@ describe("TaskStore", () => {
 		});
 	});
 
+	describe("convenience queries", () => {
+		it("ready() returns todo tasks with no unmet dependencies", () => {
+			// Arrange
+			const task1 = store.create({ title: "Independent" });
+			store.create({
+				title: "Depends on task1",
+				dependencies: [task1.id],
+			});
+			store.create({ title: "Also independent" });
+
+			// Act
+			const readyTasks = store.ready();
+
+			// Assert - task1 and task3 are ready, task2 is not (has dep)
+			expect(readyTasks).toHaveLength(2);
+			expect(readyTasks.map((t) => t.title)).not.toContain("Depends on task1");
+		});
+
+		it("doing() returns tasks with status doing", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+			store.claim(task1.id);
+
+			// Act
+			const doingTasks = store.doing();
+
+			// Assert
+			expect(doingTasks).toHaveLength(1);
+			expect(doingTasks[0].id).toBe(task1.id);
+		});
+
+		it("done() returns tasks with status done", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+			store.claim(task1.id);
+			store.complete(task1.id);
+
+			// Act
+			const doneTasks = store.done();
+
+			// Assert
+			expect(doneTasks).toHaveLength(1);
+			expect(doneTasks[0].id).toBe(task1.id);
+		});
+
+		it("stuck() returns tasks with unmet dependencies", () => {
+			// Arrange
+			const task1 = store.create({ title: "Blocker" });
+			store.create({ title: "Depends on blocker", dependencies: [task1.id] });
+
+			// Act
+			const stuckTasks = store.stuck();
+
+			// Assert
+			expect(stuckTasks).toHaveLength(1);
+			expect(stuckTasks[0].title).toBe("Depends on blocker");
+		});
+
+		it("later() returns tasks with status later", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+			store.defer(task1.id);
+
+			// Act
+			const laterTasks = store.later();
+
+			// Assert
+			expect(laterTasks).toHaveLength(1);
+			expect(laterTasks[0].id).toBe(task1.id);
+		});
+
+		it("getStats() returns count per status", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			const task2 = store.create({ title: "Task 2" });
+			store.create({ title: "Task 3" });
+			store.claim(task1.id);
+			store.claim(task2.id);
+			store.complete(task2.id);
+
+			// Act
+			const stats = store.getStats();
+
+			// Assert
+			expect(stats.todo).toBe(1);
+			expect(stats.doing).toBe(1);
+			expect(stats.done).toBe(1);
+		});
+	});
+
 	describe("lifecycle", () => {
 		it("should claim task: todo → doing", () => {
 			// Arrange

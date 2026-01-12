@@ -340,6 +340,85 @@ export class TaskStore {
 	}
 
 	// ─────────────────────────────────────────────────────────
+	// Convenience Queries (TS05b)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Get tasks that are ready to work on.
+	 * Returns todo tasks with no unmet dependencies.
+	 */
+	ready(): Task[] {
+		return this.list({ status: "todo" }).filter((task) => {
+			// A task is ready if it has no dependencies or all dependencies are done
+			if (task.dependencies.length === 0) {
+				return true;
+			}
+			return task.dependencies.every((depId) => {
+				const dep = this.get(depId);
+				return dep?.status === "done";
+			});
+		});
+	}
+
+	/**
+	 * Get tasks currently being worked on.
+	 */
+	doing(): Task[] {
+		return this.list({ status: "doing" });
+	}
+
+	/**
+	 * Get completed tasks.
+	 */
+	done(): Task[] {
+		return this.list({ status: "done" });
+	}
+
+	/**
+	 * Get tasks with unmet dependencies.
+	 */
+	stuck(): Task[] {
+		return this.list({ status: "todo" }).filter((task) => {
+			// A task is stuck if it has dependencies that are not done
+			if (task.dependencies.length === 0) {
+				return false;
+			}
+			return task.dependencies.some((depId) => {
+				const dep = this.get(depId);
+				return !dep || dep.status !== "done";
+			});
+		});
+	}
+
+	/**
+	 * Get deferred tasks.
+	 */
+	later(): Task[] {
+		return this.list({ status: "later" });
+	}
+
+	/**
+	 * Get stats by status.
+	 */
+	getStats(): Record<TaskStatus, number> {
+		const stats: Record<TaskStatus, number> = {
+			todo: 0,
+			doing: 0,
+			done: 0,
+			stuck: 0,
+			later: 0,
+			failed: 0,
+			review: 0,
+		};
+
+		for (const task of this.list()) {
+			stats[task.status]++;
+		}
+
+		return stats;
+	}
+
+	// ─────────────────────────────────────────────────────────
 	// Persistence (TS03)
 	// ─────────────────────────────────────────────────────────
 
