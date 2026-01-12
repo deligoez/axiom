@@ -50,12 +50,7 @@ describe("E2E: Fresh Project Init", () => {
 		expect(output).toMatch(/No tasks|Tasks \(0\)/);
 	});
 
-	// SKIPPED: Flaky under parallel load - see ch-211i
-	// Root cause: E2E test infrastructure has timing issues with file watchers.
-	// The app's ImplementationMode component doesn't render in E2E test environment
-	// due to app routing issues (app goes to init/planning mode instead of implementation).
-	// Improvement made: Added awaitWriteFinish option to BeadsService chokidar config.
-	it.skip("can create first task via file", async () => {
+	it("can create first task via file", async () => {
 		// Arrange - pre-create .beads directory so watcher is ready
 		const beadsDir = join(projectDir, ".beads");
 		mkdirSync(beadsDir, { recursive: true });
@@ -64,7 +59,7 @@ describe("E2E: Fresh Project Init", () => {
 
 		// Start app
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "0 tasks", 5000);
+		await waitForText(result, "No tasks", 5000);
 
 		// Act - write a task to the file
 		const task = {
@@ -84,9 +79,10 @@ describe("E2E: Fresh Project Init", () => {
 
 		// Assert - wait for file watcher to pick up the new task
 		// Use longer timeout for file watcher (can be slow under parallel test load)
-		await waitForText(result, "1 task", 15000);
+		await waitForText(result, "Tasks (1)", 15000);
 		const output = getOutput(result);
-		expect(output).toContain("1 task");
+		expect(output).toContain("Tasks (1)");
+		expect(output).toContain("1 pending");
 	}, 20000);
 
 	it("first task appears in panel", async () => {

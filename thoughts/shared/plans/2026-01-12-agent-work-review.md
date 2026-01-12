@@ -2,45 +2,42 @@
 
 **Date:** 2026-01-12
 **Status:** DRAFT
-**Version:** 2.1
+**Version:** 3.0
 
 ---
 
 ## Executive Summary
 
-Chorus'a esnek bir "Human-in-the-Loop" (HITL) review sistemi ekliyoruz. Bu sistem:
+Adding a flexible "Human-in-the-Loop" (HITL) review system to Chorus:
 
-1. **Non-Blocking Review** - Agent işini bitirir, task "reviewing" status'üne geçer, agent başka task alabilir
-2. **Beads Integration** - Yeni "reviewing" status ile kanban'da ayrı kolon
-3. **Task-Level Config** - Her task için farklı review kuralları (labels ile)
-4. **Batch Review UX** - Birden fazla task'ı tek seferde review etme
-5. **Feedback Loop** - Redo ile feedback verme, agent'a inject etme
+1. **Non-Blocking Review** - Agent completes task → "reviewing" status → agent takes next task immediately
+2. **Beads Integration** - New "reviewing" status as kanban column
+3. **Task-Level Config** - Each task can have its own review mode (via labels)
+4. **Unified Review UX** - Single review flow for all pending tasks (single or batch)
+5. **Feedback Loop** - Redo with feedback, injected into agent prompt
+6. **Sprint Planning** - Separate feature for planning which tasks to work on (not review-specific)
 
 ---
 
 ## Why Add Review?
 
-Chorus şu anda iki mod sunuyor:
-- **Semi-auto:** Kullanıcı her task'ı manuel atar → tam kontrol ama yavaş
-- **Autopilot:** Tam otonom çalışır → hızlı ama kontrol yok
+Chorus currently offers two modes:
+- **Semi-auto:** User manually assigns each task → full control but slow
+- **Autopilot:** Fully autonomous → fast but no control
 
-Review sistemi bu iki uç arasında esnek seçenekler sunar:
+Review system provides flexible options between these extremes:
 
 | Need | Solution |
 |------|----------|
-| Agent çalışsın ama sonuçları görmek istiyorum | Batch review |
-| Gece çalışsın, sabah bakayım | Sprint mode |
-| Kritik task'ları mutlaka görmek istiyorum | Per-task review + labels |
-| Trivial task'larla uğraşmak istemiyorum | Auto-approve rules |
-| Beğenmedim, tekrar yapsın | Redo with feedback |
+| Agent should work but I want to see results | Batch review |
+| Run overnight, review in morning | Sprint + batch review |
+| Critical tasks must be reviewed | Per-task review + labels |
+| Don't bother me with trivial tasks | Auto-approve rules |
+| I don't like it, redo | Redo with feedback |
 
 ---
 
-## Core Design: Non-Blocking Review Architecture
-
-### Design Goal
-
-Review sistemi agent'ları bloklamamalı. Agent işini bitirdiğinde hemen sonraki task'a geçebilmeli, kullanıcı istediği zaman review yapabilmeli.
+## Core Design: Non-Blocking Review
 
 ### Architecture
 
@@ -61,13 +58,13 @@ User reviews Task-A (whenever ready)
        └── Reject → Task-A blocked
 ```
 
-**Key Principle:** Agent ve User paralel çalışır, birbirini bloklamaz.
+**Key Principle:** Agent and User work in parallel, never blocking each other.
 
 ---
 
-## Beads Status Integration
+## Beads Status: "reviewing"
 
-### New Status: "reviewing"
+### Task Status Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -96,131 +93,23 @@ bd update ch-xxx --status=reviewing
 # User approves
 bd close ch-xxx
 
-# User requests redo (with feedback in body)
-bd update ch-xxx --status=open --body "FEEDBACK: Fix the lint error..."
+# User requests redo
+bd update ch-xxx --status=open
 
 # User rejects
-bd update ch-xxx --status=blocked --body "REJECTED: Security vulnerability..."
+bd update ch-xxx --status=blocked
 
 # List tasks pending review
-bd list --status=reviewing
-
-# Count reviewing tasks
-bd list --status=reviewing | wc -l
+bd list --status=reviewing -n 0
 ```
 
-### Beads Custom Status Support
-
-Beads'ın custom status desteği olup olmadığını kontrol etmemiz gerekiyor:
-
-**Option A: Native Beads status (preferred)**
-```bash
-bd update ch-xxx --status=reviewing
-```
-
-**Option B: Label workaround (if no custom status)**
-```bash
-bd update ch-xxx --status=open
-bd label add ch-xxx status:reviewing
-```
-
-**Option C: Custom field (if supported)**
-```bash
-bd update ch-xxx --field review_status=pending
-```
-
-> **TODO:** Beads maintainer'a custom status support sorulacak.
+> **Note:** We recently added "deferred" status to Beads. Adding "reviewing" follows the same pattern.
 
 ---
 
-## Task-Level Review Configuration
+## Review Modes
 
-### Why Per-Task Config?
-
-- **Security tasks:** Mutlaka human review gerektirir
-- **Documentation:** Auto-approve yeterli
-- **Refactoring:** Batch review uygun
-- **P0 bugs:** Immediate review gerektirir
-
-### Configuration via Labels
-
-```bash
-# Mark task for required review
-bd label add ch-xxx review:required
-
-# Mark task for auto-approve
-bd label add ch-yyy review:auto
-
-# Mark task to skip review entirely
-bd label add ch-zzz review:skip
-
-# Mark task for batch review (default)
-bd label add ch-aaa review:batch
-```
-
-### Label Rules in Config
-
-```json
-{
-  "review": {
-    "defaultMode": "batch",
-
-    "labelRules": {
-      "review:required": {
-        "mode": "per-task",
-        "autoApprove": false
-      },
-      "review:auto": {
-        "mode": "auto-continue",
-        "autoApprove": true
-      },
-      "review:skip": {
-        "mode": "skip",
-        "autoApprove": true,
-        "skipMergeQueue": false
-      },
-      "review:batch": {
-        "mode": "batch"
-      },
-      "security": {
-        "mode": "per-task",
-        "autoApprove": false,
-        "requireManualApproval": true
-      },
-      "docs": {
-        "mode": "auto-continue",
-        "autoApprove": true
-      },
-      "trivial": {
-        "mode": "skip"
-      }
-    },
-
-    "priorityRules": {
-      "P0": {
-        "mode": "per-task"
-      },
-      "P1": {
-        "mode": "batch"
-      },
-      "P2": {
-        "mode": "auto-continue"
-      }
-    }
-  }
-}
-```
-
-### Rule Resolution Order
-
-1. Task-specific label (`review:required` etc.)
-2. Category label (`security`, `docs` etc.)
-3. Priority rule (`P0`, `P1`, `P2`)
-4. Default mode (`batch`)
-
----
-
-## Review Mode Spectrum
+### Mode Spectrum
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -230,273 +119,211 @@ bd label add ch-aaa review:batch
 │  MOST CONTROL                                        LEAST CONTROL       │
 │       │                                                      │           │
 │       ▼                                                      ▼           │
-│  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   │
-│  │per-task │   │  batch  │   │ sprint  │   │  auto   │   │  skip   │   │
-│  │ review  │   │  review │   │  review │   │ continue│   │ (trust) │   │
-│  └─────────┘   └─────────┘   └─────────┘   └─────────┘   └─────────┘   │
-│       │              │             │             │              │        │
-│  Kritik task     N task        Sprint         Kurallar       Otomatik   │
-│  hemen review    topla         bitince        geçerse        onayla     │
-│                  review        review         devam                     │
+│  ┌─────────┐        ┌─────────┐        ┌─────────┐        ┌─────────┐  │
+│  │per-task │        │  batch  │        │  auto   │        │  skip   │  │
+│  │ review  │        │  review │        │ approve │        │ (trust) │  │
+│  └─────────┘        └─────────┘        └─────────┘        └─────────┘  │
+│       │                   │                  │                  │        │
+│  Review each         Collect in          Auto-approve        Skip       │
+│  task as it          "reviewing",        if quality          review     │
+│  completes           user reviews        checks pass         entirely   │
+│                      when ready                                         │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Mode | When Triggered | User Action | Best For |
-|------|----------------|-------------|----------|
-| **per-task** | Task "reviewing" olunca | Review → Approve/Redo/Reject | Security, architecture |
-| **batch** | N task veya T dakika | Toplu review | Normal daily work |
-| **sprint** | Sprint hedefine ulaşınca | Sprint summary review | Overnight runs |
-| **auto-continue** | Her zaman (rules pass) | Sadece fail durumunda | Low-risk tasks |
-| **skip** | Hiçbir zaman | Yok | Docs, trivial |
+| Mode | Behavior | Best For |
+|------|----------|----------|
+| **per-task** | Task goes to "reviewing", user reviews immediately | Security, architecture changes |
+| **batch** | Task goes to "reviewing", user reviews when ready | Normal workflow (default) |
+| **auto-approve** | Auto-approve if quality checks pass, else "reviewing" | Low-risk, well-tested tasks |
+| **skip** | Skip review, go directly to closed | Docs, trivial changes |
+
+### Task-Level Review Mode Assignment
+
+Users can assign review mode per task via labels:
+
+```bash
+# Assign review mode to task
+bd label add ch-xxx review:per-task
+bd label add ch-yyy review:batch      # default
+bd label add ch-zzz review:auto
+bd label add ch-aaa review:skip
+```
+
+### Plan Agent Review Mode Assignment
+
+When planning tasks, the Plan Agent should:
+1. **Default to auto-approve** - Most tasks should be full-auto
+2. **Mark exceptions** - If agent determines task cannot be full-auto, it sets review mode
+3. **User override** - User can always change review mode
+
+```markdown
+## Task: Add authentication
+Labels: review:per-task  <!-- Agent marked this as needing review -->
+
+## Task: Fix typo in README
+Labels: review:skip  <!-- Trivial, no review needed -->
+
+## Task: Refactor utils
+Labels: review:batch  <!-- Default, user will review in batch -->
+```
 
 ---
 
-## Review Workflow Scenarios
+## Review UX Flow
 
-### Scenario 1: Single Task, Per-Task Review
+### Status Bar
+
+When tasks are pending review, status bar shows:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ REVIEW PENDING │ 5 tasks │ Press [R] to review                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Starting Review
+
+User presses `R` to open review panel. Two modes:
+
+1. **Single task** - If only 1 task pending, open directly
+2. **Batch** - If multiple tasks, show summary first
+
+### Review Summary (Batch)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ REVIEW SUMMARY                                        5 tasks   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Auto-approvable: 3    Need attention: 2                        │
+│                                                                  │
+│  #  Task ID    Title                    Quality   Mode          │
+│  ─────────────────────────────────────────────────────────────  │
+│  1  ch-abc1    Add user auth            ✓✓✓✓     per-task      │
+│  2  ch-abc2    Fix login bug            ✓✓✓✓     batch         │
+│  3  ch-abc3    Rate limiting            ✓✓✗✓     batch         │
+│  4  ch-abc4    Update API               ✓✓✓✓     auto          │
+│  5  ch-abc5    OAuth integration        ✗✗✗✗     batch         │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [A] Approve all auto-approvable (3)                            │
+│  [Enter] Review one by one                                      │
+│  [1-5] Jump to specific task                                    │
+│  [Esc] Cancel                                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Individual Task Review Panel
+
+When reviewing a task (single or from batch), modal covers ~80% of screen:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ TIMELINE                                                                 │
+│ REVIEW TASK                                              [1/5] ch-abc1  │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  T+0m   Agent-1 claims Task-A (security label)                          │
-│  T+5m   Agent-1 completes Task-A                                        │
-│         Task-A → "reviewing" status                                     │
-│         Agent-1 takes Task-B (no block!)                                │
-│         Status bar: [REVIEW PENDING │ 1 task]                           │
-│  T+10m  User opens review panel                                         │
-│  T+12m  User approves Task-A                                            │
-│         Task-A → closed, merge queue                                    │
+│  Task: Add user authentication                                          │
+│  Agent: agent-1 │ Duration: 4m 23s │ Iterations: 2                      │
 │                                                                          │
-│  Agent-1 worked on Task-B entire time (no idle!)                        │
+│  ═══ Changes Summary ═══                                                │
+│  + src/auth/login.ts (new file, 145 lines)                              │
+│  + src/auth/logout.ts (new file, 32 lines)                              │
+│  M src/routes/index.ts (+12 lines)                                      │
+│  + tests/auth.test.ts (new file, 89 lines)                              │
 │                                                                          │
+│  ═══ Quality Results ═══                                                │
+│  Tests: 12/12 passed ✓                                                  │
+│  TypeCheck: No errors ✓                                                 │
+│  Lint: No issues ✓                                                      │
+│  Knip: No dead code ✓                                                   │
+│                                                                          │
+│  ═══ Agent Signal ═══                                                   │
+│  STATUS: DONE                                                            │
+│  MESSAGE: "Implemented JWT-based auth with refresh tokens"              │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  [A] Approve   [R] Redo with feedback   [X] Reject   [D] View diff      │
+│  [N] Next task [P] Previous task        [Esc] Back to summary           │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Scenario 2: Batch Review (5 Tasks)
+### Redo with Feedback
+
+When user presses `R` for redo:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ TIMELINE                                                                 │
+│ REDO WITH FEEDBACK                                          [ch-abc3]   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  T+0m    3 agents start working                                         │
-│  T+4m    Agent-1 completes Task-A → reviewing                           │
-│  T+6m    Agent-2 completes Task-B → reviewing                           │
-│  T+9m    Agent-3 completes Task-C → reviewing                           │
-│  T+11m   Agent-1 completes Task-D → reviewing                           │
-│  T+14m   Agent-2 completes Task-E → reviewing (5th task!)               │
-│          Status bar: [REVIEW PENDING │ 5 tasks │ Press Enter]           │
+│  Task: Add rate limiting to API endpoints                               │
+│  Previous iterations: 3                                                  │
 │                                                                          │
-│  T+15m   User opens batch review panel                                  │
-│          ┌─────────────────────────────────────────────────────────┐    │
-│          │ BATCH REVIEW                              5 tasks       │    │
-│          ├─────────────────────────────────────────────────────────┤    │
-│          │  #  Task              Status   Quality   Decision       │    │
-│          │  ───────────────────────────────────────────────────    │    │
-│          │  1  Task-A            ✓ DONE   ✓✓✓✓     [✓] Approve    │    │
-│          │  2  Task-B            ✓ DONE   ✓✓✓✓     [✓] Approve    │    │
-│          │► 3  Task-C            ✓ DONE   ✓✓✗✓     [ ] ─────      │    │
-│          │  4  Task-D            ✓ DONE   ✓✓✓✓     [✓] Approve    │    │
-│          │  5  Task-E            ✗ FAIL   ─────    [ ] ─────      │    │
-│          │                                                         │    │
-│          │  Auto-approvable: 3  │  Need attention: 2              │    │
-│          ├─────────────────────────────────────────────────────────┤    │
-│          │  [A] Approve all passing   [Space] Toggle selected     │    │
-│          │  [R] Redo selected         [X] Reject selected         │    │
-│          │  [Enter] Apply decisions   [Esc] Cancel                │    │
-│          └─────────────────────────────────────────────────────────┘    │
+│  ═══ Quick Issues ═══ (press number to toggle)                          │
+│  [ ] 1. Tests incomplete                                                │
+│  [✓] 2. Code style issues                                               │
+│  [ ] 3. Missing error handling                                          │
+│  [ ] 4. Performance concerns                                            │
+│  [✓] 5. Security issues                                                 │
 │                                                                          │
-│  T+18m   User reviews:                                                  │
-│          - Task-A, B, D: Auto-approved (✓✓✓✓)                          │
-│          - Task-C: Redo with feedback "Fix lint error"                  │
-│          - Task-E: Reject "Out of scope"                                │
+│  ═══ Custom Feedback ═══                                                │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ The rate limit value (1000) is hardcoded. It should come from     │  │
+│  │ config. Also, add IP-based rate limiting, not just user-based.    │  │
+│  │ See RFC 6585 for 429 response format.                             │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
 │                                                                          │
-│  T+18m   Results applied:                                               │
-│          - Task-A, B, D → closed, merge queue                           │
-│          - Task-C → open (with feedback), priority bumped               │
-│          - Task-E → blocked                                             │
+│  ═══ Redo Options ═══                                                   │
+│  ● Keep current changes (iterate on top)                                │
+│  ○ Reset to before this task (fresh start)                              │
+│  ○ Reset to checkpoint                                                  │
 │                                                                          │
-│  Meanwhile: Agents continued working on Task-F, G, H (no block!)        │
+│  ═══ Priority After Redo ═══                                            │
+│  ○ Same (P1)                                                            │
+│  ● Bump to P0                                                           │
+│  ○ Lower to P2                                                          │
 │                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Scenario 3: Sprint Mode (Overnight Run)
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ TIMELINE                                                                 │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  22:00  User starts sprint: "Run until 08:00"                           │
-│         ┌─────────────────────────────────────────────────────────┐    │
-│         │ SPRINT SETUP                                             │    │
-│         ├─────────────────────────────────────────────────────────┤    │
-│         │  Sprint target: ● Run until [08:00]                     │    │
-│         │                 ○ Complete [20] tasks                   │    │
-│         │                 ○ Run for [8] hours                     │    │
-│         │                                                         │    │
-│         │  Options:                                               │    │
-│         │  [✓] Create checkpoint before start                     │    │
-│         │  [ ] Pause on any error                                 │    │
-│         │                                                         │    │
-│         │  Ready tasks: 47  │  Est. completion: ~15 hours         │    │
-│         └─────────────────────────────────────────────────────────┘    │
-│                                                                          │
-│  22:01  Checkpoint created                                              │
-│  22:02  Sprint starts, 3 agents working                                 │
-│                                                                          │
-│  [Overnight: Tasks completing → "reviewing" status]                     │
-│  [Agents keep working, not blocked by review]                           │
-│                                                                          │
-│  08:00  Sprint ends                                                     │
-│         Status bar: [SPRINT COMPLETE │ 23 tasks ready for review]      │
-│                                                                          │
-│  08:15  User opens sprint review                                        │
-│         ┌─────────────────────────────────────────────────────────┐    │
-│         │ SPRINT REVIEW                             23 tasks       │    │
-│         ├─────────────────────────────────────────────────────────┤    │
-│         │                                                         │    │
-│         │  ═══ Sprint Summary ═══                                 │    │
-│         │  Duration: 9h 58m │ Completed: 23 │ Failed: 4           │    │
-│         │  Lines changed: +4,521 -892 across 67 files             │    │
-│         │                                                         │    │
-│         │  ═══ Quality Overview ═══                               │    │
-│         │  All tests pass: 19/23 (83%)                            │    │
-│         │  No lint errors: 21/23 (91%)                            │    │
-│         │  Auto-approvable: 17/23 (74%)                           │    │
-│         │                                                         │    │
-│         │  ═══ Tasks Needing Attention (6) ═══                    │    │
-│         │  ! ch-abc1: Password reset (lint errors)                │    │
-│         │  ! ch-abc2: Email service (test timeout)                │    │
-│         │  ✗ ch-abc3: OAuth (FAILED - max iterations)             │    │
-│         │  ✗ ch-abc4: Rate limit (FAILED - timeout)               │    │
-│         │  ! ch-abc5: Cache layer (test flaky)                    │    │
-│         │  ✗ ch-abc6: Webhook (FAILED - dependency)               │    │
-│         │                                                         │    │
-│         ├─────────────────────────────────────────────────────────┤    │
-│         │  [A] Approve all auto-approvable (17)                   │    │
-│         │  [1-6] Review attention tasks individually              │    │
-│         │  [S] Start new sprint   [Esc] Return to semi-auto       │    │
-│         └─────────────────────────────────────────────────────────┘    │
-│                                                                          │
-│  08:30  User approves 17, redoes 4, rejects 2                           │
-│  08:35  New sprint or semi-auto continues                               │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### Scenario 4: Redo with Feedback
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ REDO WORKFLOW                                                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  1. User selects Task-C in review panel                                 │
-│  2. User presses [R] for Redo                                           │
-│                                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ FEEDBACK FOR REDO                                   [ch-abc3]   │   │
-│  ├─────────────────────────────────────────────────────────────────┤   │
-│  │                                                                  │   │
-│  │  Task: Add rate limiting to API endpoints                       │   │
-│  │  Previous iterations: 3                                         │   │
-│  │                                                                  │   │
-│  │  ═══ Quick Issues ═══ (press number to toggle)                  │   │
-│  │  [ ] 1. Tests incomplete                                        │   │
-│  │  [✓] 2. Code style issues                                       │   │
-│  │  [ ] 3. Missing error handling                                  │   │
-│  │  [ ] 4. Performance concerns                                    │   │
-│  │  [✓] 5. Security issues                                         │   │
-│  │                                                                  │   │
-│  │  ═══ Custom Feedback ═══                                        │   │
-│  │  ┌───────────────────────────────────────────────────────────┐  │   │
-│  │  │ The rate limit value (1000) is hardcoded. It should come  │  │   │
-│  │  │ from config. Also, add IP-based rate limiting, not just   │  │   │
-│  │  │ user-based. See RFC 6585 for 429 response format.         │  │   │
-│  │  └───────────────────────────────────────────────────────────┘  │   │
-│  │                                                                  │   │
-│  │  ═══ Redo Options ═══                                           │   │
-│  │  ● Keep current changes (iterate on top)                        │   │
-│  │  ○ Reset to before this task (fresh start)                      │   │
-│  │  ○ Reset to checkpoint                                          │   │
-│  │                                                                  │   │
-│  │  ═══ Priority After Redo ═══                                    │   │
-│  │  ○ Same (P1)                                                    │   │
-│  │  ● Bump to P0 (review found issues)                             │   │
-│  │  ○ Lower to P2                                                  │   │
-│  │                                                                  │   │
-│  ├─────────────────────────────────────────────────────────────────┤   │
-│  │  [Enter] Submit & Queue Redo   [Esc] Cancel                     │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-│  3. Feedback saved to task                                              │
-│                                                                          │
-│  Beads update:                                                          │
-│  bd update ch-abc3 --status=open --priority=P0                          │
-│  # Feedback stored in .chorus/feedback/ch-abc3.json                     │
-│                                                                          │
-│  4. Task-C now in "open" with P0 priority                               │
-│     Next available agent picks it up                                    │
-│                                                                          │
-│  5. Agent sees feedback in prompt:                                      │
-│     ┌───────────────────────────────────────────────────────────────┐  │
-│     │ ## Previous Review Feedback (Iteration 3)                     │  │
-│     │                                                                │  │
-│     │ The human reviewer identified these issues:                   │  │
-│     │ - Code style issues                                           │  │
-│     │ - Security issues                                             │  │
-│     │                                                                │  │
-│     │ Detailed feedback:                                            │  │
-│     │ > The rate limit value (1000) is hardcoded. It should come   │  │
-│     │ > from config. Also, add IP-based rate limiting, not just    │  │
-│     │ > user-based. See RFC 6585 for 429 response format.          │  │
-│     │                                                                │  │
-│     │ Please address these concerns in this iteration.              │  │
-│     └───────────────────────────────────────────────────────────────┘  │
-│                                                                          │
+│  [Enter] Submit & Queue Redo   [Esc] Cancel                             │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Feedback Persistence
+## Feedback Storage
 
-### Feedback Storage
+### Location
+
+Feedback is stored in `.chorus/feedback/` when submitted via TUI:
 
 ```
 .chorus/
 ├── feedback/
-│   ├── ch-abc1.json     # Feedback for task ch-abc1
-│   ├── ch-abc3.json     # Feedback for task ch-abc3
+│   ├── ch-abc1.json
+│   ├── ch-abc3.json
 │   └── ...
 ```
 
-### Feedback Schema
+### Schema
 
 ```typescript
 interface TaskFeedback {
   taskId: string;
-  feedbackHistory: FeedbackEntry[];
+  history: FeedbackEntry[];
 }
 
 interface FeedbackEntry {
-  iteration: number;           // Which iteration was reviewed
-  reviewedAt: number;          // Timestamp
-  reviewedBy: string;          // "user" or future: "github:username"
+  iteration: number;
+  timestamp: number;
   decision: 'approved' | 'redo' | 'rejected';
 
   // For redo
-  quickIssues?: string[];      // Selected quick issues
-  customFeedback?: string;     // User's detailed feedback
-  redoOptions?: {
-    resetTo: 'keep' | 'fresh' | 'checkpoint';
-    priorityChange?: 'same' | 'bump' | 'lower';
-  };
+  quickIssues?: string[];
+  customFeedback?: string;
+  redoOption?: 'keep' | 'fresh' | 'checkpoint';
+  priorityChange?: 'same' | 'bump' | 'lower';
 
   // For reject
   rejectReason?: string;
@@ -505,351 +332,161 @@ interface FeedbackEntry {
 
 ### Feedback Injection
 
-```typescript
-// In PromptBuilder
-function buildPromptWithFeedback(task: Task, feedback: TaskFeedback): string {
-  const lastRedo = feedback.feedbackHistory
-    .filter(f => f.decision === 'redo')
-    .pop();
+When agent picks up a task with feedback, it's injected into the prompt:
 
-  if (!lastRedo) return basePrompt;
+```markdown
+## Previous Review Feedback (Iteration 3)
 
-  return `${basePrompt}
-
-## Previous Review Feedback (Iteration ${lastRedo.iteration})
-
-The human reviewer identified these issues:
-${lastRedo.quickIssues?.map(i => `- ${i}`).join('\n') || 'None specified'}
+The reviewer identified these issues:
+- Code style issues
+- Security issues
 
 Detailed feedback:
-${lastRedo.customFeedback ? `> ${lastRedo.customFeedback.split('\n').join('\n> ')}` : 'None provided'}
+> The rate limit value (1000) is hardcoded. It should come from
+> config. Also, add IP-based rate limiting, not just user-based.
+> See RFC 6585 for 429 response format.
 
 Please address these concerns in this iteration.
-`;
-}
 ```
 
 ---
 
 ## Auto-Approve Rules
 
-### Rule Engine
+Auto-approve is based on the project's quality pipeline, not TypeScript-specific checks.
 
-```typescript
-interface AutoApproveRules {
-  enabled: boolean;
-
-  // Quality gates
-  requireAllTestsPass: boolean;     // Default: true
-  requireNoLintErrors: boolean;     // Default: true
-  requireNoTypeErrors: boolean;     // Default: true
-
-  // Iteration limits
-  maxIterations: number;            // Default: 3
-
-  // Signal requirements
-  requireSignalDone: boolean;       // Default: true
-  rejectOnNeedsHelp: boolean;       // Default: true
-
-  // Advanced
-  requireMinCoverage?: number;      // e.g., 80
-  requireNoSecurityWarnings?: boolean;
-  customRules?: CustomRule[];
-}
-
-interface CustomRule {
-  name: string;
-  condition: string;  // JavaScript expression
-  action: 'approve' | 'reject' | 'manual';
-}
-```
-
-### Evaluation
-
-```typescript
-function evaluateAutoApprove(
-  result: AgentResult,
-  rules: AutoApproveRules,
-  taskLabels: string[]
-): AutoApproveDecision {
-  // Check if task has review:required label
-  if (taskLabels.includes('review:required')) {
-    return { canAutoApprove: false, reason: 'Task requires manual review' };
-  }
-
-  // Check if task has review:skip label
-  if (taskLabels.includes('review:skip')) {
-    return { canAutoApprove: true, skipReview: true };
-  }
-
-  if (!rules.enabled) {
-    return { canAutoApprove: false, reason: 'Auto-approve disabled' };
-  }
-
-  // Quality gates
-  if (rules.requireAllTestsPass && !result.quality.allTestsPass) {
-    return { canAutoApprove: false, reason: 'Tests failing' };
-  }
-
-  if (rules.requireNoLintErrors && result.quality.lintErrors > 0) {
-    return { canAutoApprove: false, reason: `${result.quality.lintErrors} lint errors` };
-  }
-
-  if (rules.maxIterations && result.iterations > rules.maxIterations) {
-    return { canAutoApprove: false, reason: `Exceeded ${rules.maxIterations} iterations` };
-  }
-
-  if (rules.requireSignalDone && result.signal?.status !== 'DONE') {
-    return { canAutoApprove: false, reason: `Signal: ${result.signal?.status}` };
-  }
-
-  return { canAutoApprove: true };
-}
-```
-
----
-
-## GitHub Integration (Future)
-
-### Why GitHub?
-
-- **Familiar workflow** - Developers know PR reviews
-- **Rich diff viewing** - Side-by-side, syntax highlighting
-- **Comment threading** - Line-level feedback
-- **Review history** - Audit trail
-- **Multi-reviewer** - Team collaboration
-
-### How It Would Work
-
-```
-Agent completes Task-A
-       │
-       ▼
-Create draft PR: chorus/ch-abc1-add-auth
-       │
-       ▼
-Task-A → "reviewing" status
-PR link stored in .chorus/reviews/ch-abc1.json
-       │
-       ▼
-User reviews on GitHub
-       │
-       ├── Approve PR → Task-A closed, PR merged
-       ├── Request changes → Task-A → open, comments as feedback
-       └── Close PR → Task-A blocked
-```
-
-### Config for GitHub
+### Configuration
 
 ```json
 {
   "review": {
-    "method": "github",
-
-    "github": {
+    "autoApprove": {
       "enabled": true,
-      "repo": "owner/repo",
-      "baseBranch": "main",
-      "draftPR": true,
-      "labelPrefix": "chorus:",
-      "autoMergeOnApprove": true,
-      "requiredReviewers": 1
+      "requireQualityPass": true,
+      "maxIterations": 3,
+      "requireSignalDone": true
     }
   }
 }
 ```
 
-### Hybrid Mode
+### Quality Pipeline Reference
 
+Auto-approve uses the same quality checks defined in the project:
+
+```bash
+# Chorus quality pipeline (from package.json)
+npm run quality
+# Which runs:
+# 1. npm run test:run   - Vitest
+# 2. npm run typecheck  - TypeScript
+# 3. npm run lint       - Biome
+# 4. npm run knip       - Dead code
 ```
-Review method: hybrid
 
-For each task:
-├── Quick tasks (< 50 lines changed) → TUI review
-├── Complex tasks (> 50 lines) → GitHub PR
-└── Security tasks → Always GitHub PR
-```
-
-> **Note:** GitHub integration is a future enhancement. MVP uses TUI-only review.
-
----
-
-## XState Integration
-
-### Review Region
+### Evaluation Logic
 
 ```typescript
-const reviewRegion = {
-  id: 'review',
-  initial: 'inactive',
+function canAutoApprove(result: AgentResult, config: AutoApproveConfig): boolean {
+  // Check task label
+  if (result.taskLabels.includes('review:per-task')) return false;
+  if (result.taskLabels.includes('review:skip')) return true;
 
-  context: {
-    mode: 'batch' as ReviewMode,
-    config: defaultReviewConfig,
-    pendingReviews: [] as ReviewItem[],
-    currentBatch: [] as ReviewItem[],
-    sprint: null as SprintState | null,
-  },
+  if (!config.enabled) return false;
 
-  states: {
-    inactive: {
-      // Review disabled (autopilot mode)
-      on: {
-        SET_REVIEW_MODE: {
-          target: 'collecting',
-          guard: 'isNotAutopilot',
-        },
-      },
-    },
+  // Quality pipeline must pass
+  if (config.requireQualityPass && !result.qualityPassed) return false;
 
-    collecting: {
-      // Collecting completed tasks
-      on: {
-        TASK_COMPLETED: {
-          actions: 'addToPendingReviews',
-        },
+  // Iteration limit
+  if (config.maxIterations && result.iterations > config.maxIterations) return false;
 
-        TRIGGER_REVIEW: 'pending',
+  // Agent signal
+  if (config.requireSignalDone && result.signal?.status !== 'DONE') return false;
 
-        // Auto-trigger conditions
-        '': [
-          { target: 'pending', guard: 'batchFull' },
-          { target: 'pending', guard: 'batchTimeout' },
-          { target: 'pending', guard: 'sprintComplete' },
-        ],
-      },
-    },
-
-    pending: {
-      // Review ready, waiting for user
-      on: {
-        START_REVIEW: 'reviewing',
-        DISMISS: 'collecting',
-      },
-    },
-
-    reviewing: {
-      // User actively reviewing
-      on: {
-        APPROVE_TASK: { actions: 'approveTask' },
-        REDO_TASK: { actions: 'redoTask' },
-        REJECT_TASK: { actions: 'rejectTask' },
-
-        FINISH_REVIEW: [
-          { target: 'collecting', guard: 'hasMoreTasks' },
-          { target: 'idle', guard: 'noMoreTasks' },
-        ],
-      },
-    },
-
-    idle: {
-      // No pending reviews, waiting
-      on: {
-        TASK_COMPLETED: 'collecting',
-      },
-    },
-  },
-};
-```
-
-### Events
-
-```typescript
-type ReviewEvent =
-  // Mode control
-  | { type: 'SET_REVIEW_MODE'; mode: ReviewMode }
-  | { type: 'UPDATE_REVIEW_CONFIG'; config: Partial<ReviewConfig> }
-
-  // Task events (from orchestration region)
-  | { type: 'TASK_COMPLETED'; taskId: string; result: AgentResult }
-  | { type: 'TASK_FAILED'; taskId: string; error: Error }
-
-  // Review triggers
-  | { type: 'TRIGGER_REVIEW'; reason: ReviewTriggerReason }
-  | { type: 'START_REVIEW' }
-  | { type: 'FINISH_REVIEW' }
-  | { type: 'DISMISS' }
-
-  // Review actions
-  | { type: 'APPROVE_TASK'; taskId: string }
-  | { type: 'APPROVE_ALL_AUTO' }
-  | { type: 'REDO_TASK'; taskId: string; feedback: ReviewFeedback }
-  | { type: 'REJECT_TASK'; taskId: string; reason: string }
-
-  // Sprint
-  | { type: 'START_SPRINT'; target: SprintTarget }
-  | { type: 'END_SPRINT' }
-  | { type: 'PAUSE_SPRINT' };
+  return true;
+}
 ```
 
 ---
 
-## TUI Components
+## Sprint Planning (Separate Feature)
 
-### Review Status Bar
+Sprint planning is **separate from review**. It's about deciding which tasks to work on, not reviewing completed work.
+
+### Sprint Planning Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ SPRINT PLANNING                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ═══ Sprint Target ═══                                                  │
+│  ○ Complete [20] tasks                                                  │
+│  ○ Run for [8] hours                                                    │
+│  ● Run until [08:00]                                                    │
+│  ○ Run until no ready tasks                                             │
+│                                                                          │
+│  ═══ Task Selection ═══                                                 │
+│  Ready tasks: 47 │ Est. time: ~15 hours                                 │
+│                                                                          │
+│  [✓] ch-abc1  Add user auth (P0, security)                             │
+│  [✓] ch-abc2  Fix login bug (P0)                                       │
+│  [✓] ch-abc3  Rate limiting (P1)                                       │
+│  [ ] ch-abc4  Update docs (P2, docs)           ← excluded              │
+│  [✓] ch-abc5  Refactor utils (P1)                                      │
+│  ...                                                                    │
+│                                                                          │
+│  Selected: 23 tasks │ Est. completion: ~7 hours                         │
+│                                                                          │
+│  ═══ Options ═══                                                        │
+│  [✓] Create checkpoint before start                                     │
+│  [ ] Pause on any error                                                 │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  [Enter] Start Sprint   [Esc] Cancel                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Sprint Progress
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ BATCH │ Collecting: 3/5 │ Reviewing: 0 │ Agents: 3 active       │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ REVIEW PENDING │ 5 tasks ready │ Press [Enter] to review       │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ SPRINT │ 14/47 tasks │ 2 failed │ Until 08:00 (6h 23m left)    │
+│ SPRINT │ 14/23 tasks │ 2 failed │ Until 08:00 (6h 23m left)    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Keyboard Shortcuts
+### Sprint and Review
 
-| Key | Context | Action |
-|-----|---------|--------|
-| `Shift+R` | Any | Open review mode selector |
-| `Enter` | Review pending | Open batch review panel |
-| `Space` | Batch review | Toggle approve for selected |
-| `A` | Batch review | Approve all auto-approvable |
-| `R` | Batch review | Redo selected with feedback |
-| `X` | Batch review | Reject selected |
-| `D` | Batch review | View diff for selected |
-| `V` | Batch review | View logs for selected |
-| `↑/↓` | Batch review | Navigate tasks |
-| `Esc` | Batch review | Close panel |
-| `Shift+S` | Any | Start sprint dialog |
-| `P` | Sprint running | Pause sprint |
-| `E` | Sprint running | End sprint early |
+- Sprint completes tasks → tasks go to "reviewing" status
+- User reviews them via normal batch review (press `R`)
+- No special "sprint review" - just regular review
 
 ---
 
-## Configuration Schema
+## Configuration
+
+### Review Config Schema
 
 ```typescript
 interface ReviewConfig {
-  // Mode
-  defaultMode: ReviewMode;
+  // Default mode for tasks without label
+  defaultMode: 'per-task' | 'batch' | 'auto-approve' | 'skip';
 
-  // Batch settings
-  batch: {
-    size: number;           // Default: 5
-    timeout: string;        // Default: "30m"
+  // Auto-approve settings
+  autoApprove: {
+    enabled: boolean;
+    requireQualityPass: boolean;
+    maxIterations: number;
+    requireSignalDone: boolean;
   };
 
-  // Sprint settings
-  sprint: {
-    createCheckpoint: boolean;  // Default: true
-    pauseOnError: boolean;      // Default: false
+  // Label rules (optional overrides)
+  labelRules?: {
+    [label: string]: {
+      mode: ReviewMode;
+      autoApprove?: boolean;
+    };
   };
-
-  // Auto-approve
-  autoApproveRules: AutoApproveRules;
-
-  // Label rules
-  labelRules: Record<string, LabelRule>;
-  priorityRules: Record<string, PriorityRule>;
-
-  // GitHub (future)
-  github?: GitHubConfig;
 }
 ```
 
@@ -860,38 +497,17 @@ interface ReviewConfig {
   "review": {
     "defaultMode": "batch",
 
-    "batch": {
-      "size": 5,
-      "timeout": "30m"
-    },
-
-    "sprint": {
-      "createCheckpoint": true,
-      "pauseOnError": false
-    },
-
-    "autoApproveRules": {
+    "autoApprove": {
       "enabled": true,
-      "requireAllTestsPass": true,
-      "requireNoLintErrors": true,
-      "requireNoTypeErrors": true,
+      "requireQualityPass": true,
       "maxIterations": 3,
       "requireSignalDone": true
     },
 
     "labelRules": {
-      "review:required": { "mode": "per-task", "autoApprove": false },
-      "review:auto": { "mode": "auto-continue", "autoApprove": true },
-      "review:skip": { "mode": "skip" },
       "security": { "mode": "per-task", "autoApprove": false },
       "docs": { "mode": "skip" },
-      "trivial": { "mode": "auto-continue" }
-    },
-
-    "priorityRules": {
-      "P0": { "mode": "per-task" },
-      "P1": { "mode": "batch" },
-      "P2": { "mode": "auto-continue" }
+      "trivial": { "mode": "auto-approve" }
     }
   }
 }
@@ -899,73 +515,160 @@ interface ReviewConfig {
 
 ---
 
+## Keyboard Shortcuts
+
+| Key | Context | Action |
+|-----|---------|--------|
+| `R` | Main view | Open review panel (if pending reviews exist) |
+| `A` | Review summary | Approve all auto-approvable |
+| `Enter` | Review summary | Start reviewing one by one |
+| `1-9` | Review summary | Jump to specific task |
+| `A` | Task review | Approve current task |
+| `R` | Task review | Redo with feedback |
+| `X` | Task review | Reject task |
+| `D` | Task review | View diff |
+| `N` | Task review | Next task |
+| `P` | Task review | Previous task |
+| `Esc` | Any | Back / Cancel |
+| `Shift+S` | Main view | Open sprint planning |
+
+---
+
+## XState Integration
+
+### Review Region
+
+```typescript
+const reviewRegion = {
+  id: 'review',
+  initial: 'idle',
+
+  context: {
+    pendingReviews: [] as string[],  // task IDs
+    currentIndex: number,
+    feedback: {} as Record<string, TaskFeedback>,
+  },
+
+  states: {
+    idle: {
+      on: {
+        TASK_COMPLETED: {
+          actions: 'addToPendingReviews',
+        },
+        START_REVIEW: [
+          { target: 'reviewingSingle', guard: 'hasSinglePending' },
+          { target: 'reviewingSummary', guard: 'hasMultiplePending' },
+        ],
+      },
+    },
+
+    reviewingSummary: {
+      on: {
+        APPROVE_ALL_AUTO: { actions: 'approveAllAuto' },
+        START_ONE_BY_ONE: 'reviewingTask',
+        JUMP_TO_TASK: 'reviewingTask',
+        CANCEL: 'idle',
+      },
+    },
+
+    reviewingTask: {
+      on: {
+        APPROVE: { actions: 'approveTask' },
+        REDO: 'feedbackModal',
+        REJECT: { actions: 'rejectTask' },
+        NEXT: { actions: 'nextTask' },
+        PREV: { actions: 'prevTask' },
+        BACK: 'reviewingSummary',
+        CANCEL: 'idle',
+      },
+    },
+
+    reviewingSingle: {
+      on: {
+        APPROVE: { actions: 'approveTask', target: 'idle' },
+        REDO: 'feedbackModal',
+        REJECT: { actions: 'rejectTask', target: 'idle' },
+        CANCEL: 'idle',
+      },
+    },
+
+    feedbackModal: {
+      on: {
+        SUBMIT_FEEDBACK: {
+          actions: ['saveFeedback', 'redoTask'],
+          target: 'reviewingTask',
+        },
+        CANCEL: 'reviewingTask',
+      },
+    },
+  },
+};
+```
+
+---
+
 ## Implementation Tasks
 
-### M13: Review System (New Milestone)
+### M13: Review System
 
-| Feature | Description | Deps | Tests |
-|---------|-------------|------|-------|
-| **FR01** | Review Types & Interfaces | - | 6 |
-| **FR02** | Review Region Machine | FX03 | 16 |
-| **FR03** | Auto-Approve Engine | FR01 | 10 |
-| **FR04** | Batch Collector | FR02 | 8 |
-| **FR05** | Sprint Controller | FR02, FR04 | 12 |
-| **FR06** | Feedback Storage | FR01 | 6 |
-| **FR07** | Feedback Injection | FR06, ch-wk8 | 6 |
-| **FR08** | Review Panel TUI | FR02 | 14 |
-| **FR09** | Batch Review List | FR08 | 10 |
-| **FR10** | Feedback Modal | FR08, FR06 | 8 |
-| **FR11** | Sprint Setup Dialog | FR05, FR08 | 8 |
-| **FR12** | Mode Selector Dialog | FR02, FR08 | 6 |
-| **FR13** | Review Status Bar | FR02 | 4 |
-| **FR14** | Review Keyboard Handlers | FR08, ch-89dk | 10 |
-| **FR15** | Beads Status Integration | FR02 | 6 |
-| **FR16** | Label Rules Engine | FR01, FR03 | 8 |
-| **FR17** | Review Config Integration | FR01, ch-sro | 6 |
-| **FR18** | Review Persistence | FR02, FX05 | 6 |
+| ID | Feature | Description | Deps | Tests |
+|----|---------|-------------|------|-------|
+| **FR01** | Review Types | Types and interfaces | - | 6 |
+| **FR02** | Review Region Machine | XState review region | FX03 | 14 |
+| **FR03** | Beads Reviewing Status | Add "reviewing" status support | FR02 | 4 |
+| **FR04** | Auto-Approve Engine | Quality-based auto-approve | FR01 | 8 |
+| **FR05** | Feedback Storage | Save/load feedback JSON | FR01 | 6 |
+| **FR06** | Feedback Injection | Inject feedback into prompt | FR05, ch-wk8 | 6 |
+| **FR07** | Review Status Bar | Show pending count | FR02 | 4 |
+| **FR08** | Review Summary Panel | Batch review overview | FR02 | 8 |
+| **FR09** | Task Review Panel | Individual task review | FR02 | 10 |
+| **FR10** | Feedback Modal | Redo feedback form | FR05, FR09 | 8 |
+| **FR11** | Review Keyboard Handlers | R, A, N, P, etc. | FR08, FR09 | 10 |
+| **FR12** | Label Rules Engine | Per-task review mode | FR01, FR04 | 6 |
+| **FR13** | Review Config | Config file integration | FR01 | 4 |
+| **FR14** | Review Persistence | Persist review state | FR02, FX05 | 6 |
 
-**Total: 18 tasks, ~150 tests**
+**Subtotal: 14 tasks, ~100 tests**
 
-### Dependency Graph
+### M13b: Sprint Planning (Separate)
 
-```
-FR01 (Types)
-  │
-  ├── FR02 (Machine) ───┬── FR03 (Auto-Approve) ─── FR16 (Label Rules)
-  │                     │
-  │                     ├── FR04 (Batch) ────────── FR05 (Sprint)
-  │                     │                                │
-  │                     ├── FR19 (Persistence)           │
-  │                     │                                │
-  │                     └── FR15 (Beads Status)          │
-  │                                                      │
-  ├── FR06 (Feedback Storage) ── FR07 (Injection)        │
-  │                                                      │
-  ├── FR08 (Panel) ─────┬── FR09 (Batch List)           │
-  │                     │                                │
-  │                     ├── FR10 (Feedback Modal) ───────┤
-  │                     │                                │
-  │                     ├── FR11 (Sprint Dialog) ────────┘
-  │                     │
-  │                     ├── FR12 (Mode Selector)
-  │                     │
-  │                     └── FR14 (Keyboard)
-  │
-  ├── FR13 (Status Bar)
-  │
-  ├── FR17 (Config)
-  │
-  └── FR18 (Persistence)
-```
+| ID | Feature | Description | Deps | Tests |
+|----|---------|-------------|------|-------|
+| **SP01** | Sprint Types | Types and interfaces | - | 4 |
+| **SP02** | Sprint Machine | XState sprint region | FX03 | 10 |
+| **SP03** | Sprint Planning Panel | Task selection UI | SP02 | 8 |
+| **SP04** | Sprint Progress Bar | Status bar integration | SP02 | 4 |
+| **SP05** | Sprint Keyboard Handlers | Shift+S, etc. | SP03 | 4 |
+| **SP06** | Sprint Config | Config file integration | SP01 | 4 |
+
+**Subtotal: 6 tasks, ~34 tests**
+
+### E2E Tests
+
+| ID | Feature | Description | Deps | Tests |
+|----|---------|-------------|------|-------|
+| **E2E-R01** | Single Task Review | Review single pending task | FR09 | 4 |
+| **E2E-R02** | Batch Review Flow | Review multiple tasks | FR08, FR09 | 6 |
+| **E2E-R03** | Redo with Feedback | Submit feedback, verify injection | FR10, FR06 | 4 |
+| **E2E-R04** | Auto-Approve | Tasks auto-approved when quality passes | FR04 | 4 |
+| **E2E-R05** | Task-Level Review Mode | Label assignment affects review | FR12 | 4 |
+| **E2E-R06** | Review Persistence | State survives restart | FR14 | 4 |
+| **E2E-S01** | Sprint Planning | Plan and start sprint | SP03 | 4 |
+| **E2E-S02** | Sprint Progress | Sprint completes, tasks in reviewing | SP02 | 4 |
+
+**Subtotal: 8 tasks, ~34 tests**
+
+### Total
+
+**28 tasks, ~168 tests**
 
 ---
 
 ## Open Questions
 
-1. **Beads "reviewing" status** - Native support or label workaround?
-2. **Diff viewer** - Inline TUI or external tool (delta, diff-so-fancy)?
-3. **GitHub integration timeline** - MVP or future milestone?
-4. **Team review** - Multiple reviewers for same sprint? (Future)
+1. **Diff viewer** - Inline TUI or external tool (delta, diff-so-fancy)?
+2. **GitHub integration** - Deferred to future milestone
+3. **Team review** - Multiple reviewers? (Future)
 
 ---
 
@@ -973,35 +676,39 @@ FR01 (Types)
 
 | # | Decision | Rationale |
 |---|----------|-----------|
-| 36 | **Non-blocking review** | Agent ve user paralel çalışır |
-| 37 | **"reviewing" status in Beads** | Kanban visibility, clear state |
-| 38 | **Labels for task-level config** | Beads native, simple, flexible |
-| 39 | **Config rules (label + priority)** | Centralized, no per-task hardcode |
-| 40 | **Feedback files (.chorus/feedback/)** | Persistent, survives crash |
-| 41 | **Auto-approve engine** | Reduce review burden |
-| 42 | **Sprint checkpoints** | Safety for overnight runs |
-| 43 | **GitHub deferred to future** | MVP focuses on TUI |
+| 36 | **Non-blocking review** | Agent and user work in parallel |
+| 37 | **Beads "reviewing" status** | Native status like "deferred" |
+| 38 | **Labels for task-level config** | Simple, Beads native |
+| 39 | **Feedback in .chorus/feedback/** | Persistent, separate from Beads |
+| 40 | **Auto-approve based on quality pipeline** | Project-agnostic, uses existing checks |
+| 41 | **Sprint planning separate from review** | Different concerns, simpler design |
+| 42 | **Unified review flow** | Single/batch use same panels |
+| 43 | **GitHub deferred** | MVP focuses on TUI |
+| 44 | **Plan Agent marks review mode** | Default auto, agent marks exceptions |
 
 ---
 
 ## Version History
 
+- **v3.0 (2026-01-12):** Major restructure based on feedback
+  - CHANGED: Entire document to English
+  - SIMPLIFIED: Only Beads "reviewing" status (removed alternatives)
+  - ADDED: Unified review UX flow (summary → task panels)
+  - SEPARATED: Sprint planning as distinct feature
+  - SIMPLIFIED: Auto-approve based on quality pipeline (not TypeScript-specific)
+  - ADDED: Plan Agent review mode assignment
+  - ADDED: E2E test tasks for all workflows
+  - REMOVED: Notification system
+  - REMOVED: GitHub integration (deferred)
+  - TOTAL: 28 tasks, ~168 tests
+
 - **v2.1 (2026-01-12):** Simplification
   - REMOVED: Notification system (status bar only)
-  - UPDATED: 18 implementation tasks (~150 tests)
 
 - **v2.0 (2026-01-12):** Architecture refinement
-  - REFINED: Non-blocking review as core design principle
-  - ADDED: Beads "reviewing" status integration
-  - ADDED: Task-level configuration via labels
-  - ADDED: Label and priority rules engine
-  - ADDED: Detailed workflow scenarios (4 scenarios)
-  - ADDED: Feedback persistence and injection
-  - ADDED: GitHub integration design (future)
+  - Non-blocking review architecture
+  - Beads status integration
+  - Task-level configuration via labels
 
 - **v1.0 (2026-01-12):** Initial design
   - NEW FEATURE: Agent Work Review System
-  - 5 review modes (per-task, batch, sprint, auto-continue, skip)
-  - XState review region as parallel state
-  - Feedback system with prompt injection
-  - 14 implementation tasks
