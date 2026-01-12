@@ -471,7 +471,8 @@ Update this section as you learn:
 | F94 Plan Review Trigger | ch-cjf | ch-sm8,ch-sro | blocked |
 | F95 Plan Review Loop | ch-bmx | ch-cjf,ch-z8g | blocked |
 | F96 Task Updater | ch-dka | ch-bmx | blocked |
-| F97 Plan Review Integration | ch-c3q | ch-dka,ch-nn6 | blocked |
+| F96b Queued Update Applier | ch-wc53 | ch-dka | blocked |
+| F97 Plan Review Integration | ch-c3q | ch-dka,ch-wc53,ch-nn6 | blocked |
 | F98 Incremental Planning Trigger | ch-yhq | ch-wqn,ch-2yp,ch-z8g,ch-sro | blocked |
 | F99 Planning Horizon Manager | ch-wqn | ch-to7,ch-sro | blocked |
 | F100 Spec Evolution Tracker | ch-2yp | - | ready |
