@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type {
+	FeedbackEntry,
+	FeedbackType,
 	FileChange,
 	QualityRunResult,
 	ReviewConfig,
 	ReviewMode,
 	TaskCompletionResult,
+	TaskFeedback,
 } from "./review.js";
 
 describe("Review Types", () => {
@@ -131,6 +134,59 @@ describe("Review Types", () => {
 		expect(result.signal?.type).toBe("COMPLETE");
 		expect(result.quality).toHaveLength(3);
 		expect(result.changes).toHaveLength(1);
+	});
+
+	it("FeedbackType union includes all types", () => {
+		// Arrange & Act
+		const types: FeedbackType[] = ["approve", "redo", "reject", "comment"];
+
+		// Assert
+		expect(types.length).toBe(4);
+		expect(types).toContain("approve");
+		expect(types).toContain("redo");
+		expect(types).toContain("reject");
+		expect(types).toContain("comment");
+	});
+
+	it("FeedbackEntry has required fields", () => {
+		// Arrange & Act
+		const entry: FeedbackEntry = {
+			type: "redo",
+			message: "Please fix the error handling",
+			timestamp: "2026-01-12T10:00:00Z",
+			reviewer: "human",
+		};
+
+		// Assert
+		expect(entry.type).toBe("redo");
+		expect(entry.message).toBe("Please fix the error handling");
+		expect(entry.timestamp).toBe("2026-01-12T10:00:00Z");
+		expect(entry.reviewer).toBe("human");
+	});
+
+	it("TaskFeedback has taskId and history", () => {
+		// Arrange & Act
+		const feedback: TaskFeedback = {
+			taskId: "ch-test1",
+			history: [
+				{
+					type: "comment",
+					message: "Looking good",
+					timestamp: "2026-01-12T10:00:00Z",
+				},
+				{
+					type: "approve",
+					message: "Approved",
+					timestamp: "2026-01-12T10:05:00Z",
+				},
+			],
+		};
+
+		// Assert
+		expect(feedback.taskId).toBe("ch-test1");
+		expect(feedback.history).toHaveLength(2);
+		expect(feedback.history[0].type).toBe("comment");
+		expect(feedback.history[1].type).toBe("approve");
 	});
 
 	it("Types are exported correctly", () => {

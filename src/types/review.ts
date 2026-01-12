@@ -68,3 +68,26 @@ export interface TaskCompletionResult {
 	quality: QualityRunResult[];
 	changes: FileChange[];
 }
+
+/**
+ * Type of feedback entry
+ */
+export type FeedbackType = "approve" | "redo" | "reject" | "comment";
+
+/**
+ * A single feedback entry in the history
+ */
+export interface FeedbackEntry {
+	type: FeedbackType;
+	message: string;
+	timestamp: string;
+	reviewer?: string;
+}
+
+/**
+ * Feedback history for a task
+ */
+export interface TaskFeedback {
+	taskId: string;
+	history: FeedbackEntry[];
+}
