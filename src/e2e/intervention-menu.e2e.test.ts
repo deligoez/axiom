@@ -30,13 +30,6 @@ describe("E2E: Intervention Menu (i key)", () => {
 		}
 	});
 
-	// SKIPPED: useInput is disabled in E2E (no TTY), so 'i' key doesn't trigger menu
-	// InterventionPanel rendering is tested via unit tests
-	it.skip("opens intervention menu when i is pressed", async () => {
-		// This test cannot work because useInput requires TTY
-		// See InterventionPanel.test.tsx for keyboard interaction tests
-	});
-
 	it("pressing i does not crash app", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-im2", title: "Test Task" }]);
@@ -67,12 +60,6 @@ describe("E2E: Intervention Menu (i key)", () => {
 		// Assert - app still renders
 		const output = getOutput(result);
 		expect(output).toContain("im3");
-	});
-
-	// SKIPPED: useInput is disabled in E2E (no TTY), so menu options can't be verified
-	it.skip("shows correct menu options", async () => {
-		// This test cannot work because useInput requires TTY
-		// See InterventionPanel.test.tsx for menu options tests
 	});
 
 	it("pressing i multiple times does not crash app", async () => {
