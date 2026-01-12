@@ -8,13 +8,123 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CreateTaskInput } from "../types/task.js";
 import { TaskStore } from "./TaskStore.js";
 
 describe("TaskStore", () => {
 	let tempDir: string;
 	let store: TaskStore;
+
+	describe("events", () => {
+		beforeEach(() => {
+			tempDir = mkdtempSync(join(tmpdir(), "taskstore-test-"));
+			store = new TaskStore(tempDir);
+		});
+
+		afterEach(() => {
+			rmSync(tempDir, { recursive: true, force: true });
+		});
+
+		it("emits task:created on create", () => {
+			// Arrange
+			const handler = vi.fn();
+			store.on("task:created", handler);
+
+			// Act
+			const task = store.create({ title: "New Task" });
+
+			// Assert
+			expect(handler).toHaveBeenCalledWith(task);
+		});
+
+		it("emits task:updated on update", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			const handler = vi.fn();
+			store.on("task:updated", handler);
+
+			// Act
+			store.update(task.id, { title: "Updated" });
+
+			// Assert
+			expect(handler).toHaveBeenCalled();
+			expect(handler.mock.calls[0][0].title).toBe("Updated");
+		});
+
+		it("emits task:updated on lifecycle changes", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			const handler = vi.fn();
+			store.on("task:updated", handler);
+
+			// Act
+			store.claim(task.id);
+
+			// Assert
+			expect(handler).toHaveBeenCalled();
+			expect(handler.mock.calls[0][0].status).toBe("doing");
+		});
+
+		it("emits task:closed on complete", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			store.claim(task.id);
+			const handler = vi.fn();
+			store.on("task:closed", handler);
+
+			// Act
+			store.complete(task.id);
+
+			// Assert
+			expect(handler).toHaveBeenCalled();
+			expect(handler.mock.calls[0][0].status).toBe("done");
+		});
+
+		it("emits task:deleted on delete", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			const handler = vi.fn();
+			store.on("task:deleted", handler);
+
+			// Act
+			store.delete(task.id);
+
+			// Assert
+			expect(handler).toHaveBeenCalledWith(task.id);
+		});
+
+		it("emits change after any mutation", () => {
+			// Arrange
+			const handler = vi.fn();
+			store.on("change", handler);
+
+			// Act
+			store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+
+			// Assert
+			expect(handler).toHaveBeenCalledTimes(2);
+			expect(handler.mock.calls[1][0]).toHaveLength(2);
+		});
+
+		it("emits error on errors", () => {
+			// Arrange
+			const handler = vi.fn();
+			store.on("error", handler);
+
+			// Act
+			try {
+				store.get("non-existent");
+				store.update("non-existent", { title: "Fail" });
+			} catch {
+				// Expected
+			}
+
+			// Assert - error should have been emitted
+			expect(handler).toHaveBeenCalled();
+		});
+	});
 
 	beforeEach(() => {
 		tempDir = mkdtempSync(join(tmpdir(), "taskstore-test-"));

@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import {
 	existsSync,
 	mkdirSync,
@@ -18,8 +19,17 @@ import type {
 
 /**
  * TaskStore - In-memory task storage with CRUD operations and JSONL persistence.
+ * Extends EventEmitter for reactive updates.
+ *
+ * Events:
+ * - task:created - emitted when a task is created
+ * - task:updated - emitted when a task is updated
+ * - task:closed - emitted when a task is completed
+ * - task:deleted - emitted when a task is deleted
+ * - change - emitted after any mutation (with all tasks)
+ * - error - emitted on errors
  */
-export class TaskStore {
+export class TaskStore extends EventEmitter {
 	private tasks: Map<string, Task> = new Map();
 	private deletedIds: Set<string> = new Set();
 	private nextId = 1;
@@ -27,7 +37,15 @@ export class TaskStore {
 	readonly projectDir: string;
 
 	constructor(projectDir: string) {
+		super();
 		this.projectDir = projectDir;
+	}
+
+	/**
+	 * Emit change event with current task list.
+	 */
+	private emitChange(): void {
+		this.emit("change", this.list());
 	}
 
 	/**
@@ -55,6 +73,8 @@ export class TaskStore {
 		};
 
 		this.tasks.set(id, task);
+		this.emit("task:created", task);
+		this.emitChange();
 		return task;
 	}
 
@@ -76,7 +96,9 @@ export class TaskStore {
 	update(id: string, changes: UpdateTaskInput): Task {
 		const task = this.tasks.get(id);
 		if (!task || this.deletedIds.has(id)) {
-			throw new Error(`Task not found: ${id}`);
+			const error = new Error(`Task not found: ${id}`);
+			this.emit("error", error);
+			throw error;
 		}
 
 		const updated: Task = {
@@ -86,6 +108,8 @@ export class TaskStore {
 		};
 
 		this.tasks.set(id, updated);
+		this.emit("task:updated", updated);
+		this.emitChange();
 		return updated;
 	}
 
@@ -95,9 +119,13 @@ export class TaskStore {
 	 */
 	delete(id: string): void {
 		if (!this.tasks.has(id)) {
-			throw new Error(`Task not found: ${id}`);
+			const error = new Error(`Task not found: ${id}`);
+			this.emit("error", error);
+			throw error;
 		}
 		this.deletedIds.add(id);
+		this.emit("task:deleted", id);
+		this.emitChange();
 	}
 
 	// ─────────────────────────────────────────────────────────
@@ -160,12 +188,13 @@ export class TaskStore {
 		const now = new Date().toISOString();
 		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
 
-		return (
-			this.updateExecution(id, {
-				...execution,
-				completedAt: now,
-			}) && this.update(id, { status: "done" })
-		);
+		this.updateExecution(id, {
+			...execution,
+			completedAt: now,
+		});
+		const completed = this.update(id, { status: "done" });
+		this.emit("task:closed", completed);
+		return completed;
 	}
 
 	/**
