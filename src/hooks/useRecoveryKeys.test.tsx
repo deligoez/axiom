@@ -15,15 +15,19 @@ import { useRecoveryKeys } from "./useRecoveryKeys.js";
 // Test component that uses the hook
 function TestComponent({
 	selectedTask,
-	beadsCLI,
+	taskProvider,
 	iterationRollback,
 	worktreeService,
 	onToast,
 	onIterationUpdate,
 }: {
 	selectedTask: TaskProviderTask | null;
-	beadsCLI: {
-		runBdCommand: (args: string[]) => Promise<void>;
+	taskProvider: {
+		updateCustomField: (
+			id: string,
+			key: string,
+			value: string,
+		) => Promise<void>;
 	};
 	iterationRollback: {
 		rollback: (
@@ -48,7 +52,7 @@ function TestComponent({
 }) {
 	useRecoveryKeys({
 		selectedTask,
-		beadsCLI,
+		taskProvider,
 		iterationRollback,
 		worktreeService,
 		onToast,
@@ -87,8 +91,8 @@ describe("useRecoveryKeys", () => {
 
 	// Create mock services
 	const createMocks = () => ({
-		beadsCLI: {
-			runBdCommand: vi.fn().mockResolvedValue(undefined),
+		taskProvider: {
+			updateCustomField: vi.fn().mockResolvedValue(undefined),
 		},
 		iterationRollback: {
 			rollback: vi
@@ -119,7 +123,7 @@ describe("useRecoveryKeys", () => {
 	});
 
 	describe("Retry Key (r)", () => {
-		it("calls runBdCommand to clear flags when r pressed on failed task", () => {
+		it("calls updateCustomField to clear flags when r pressed on failed task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test1", { failed: "true" });
@@ -129,19 +133,22 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("r");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
-			expect(mocks.beadsCLI.runBdCommand).toHaveBeenCalledWith([
-				"update",
+			expect(mocks.taskProvider.updateCustomField).toHaveBeenCalledWith(
 				"ch-test1",
-				"--custom",
-				"failed=",
-				"--custom",
-				"timeout=",
-			]);
+				"failed",
+				"",
+			);
+			expect(mocks.taskProvider.updateCustomField).toHaveBeenCalledWith(
+				"ch-test1",
+				"timeout",
+				"",
+			);
 		});
 
-		it("calls runBdCommand when r pressed on timeout task", () => {
+		it("calls updateCustomField when r pressed on timeout task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test2", { timeout: "true" });
@@ -151,9 +158,10 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("r");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
-			expect(mocks.beadsCLI.runBdCommand).toHaveBeenCalled();
+			expect(mocks.taskProvider.updateCustomField).toHaveBeenCalled();
 		});
 
 		it("calls onToast with confirmation message on retry", async () => {
@@ -174,7 +182,7 @@ describe("useRecoveryKeys", () => {
 			);
 		});
 
-		it("does nothing when r pressed on non-failed task", () => {
+		it("does nothing when r pressed on non-failed task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test4"); // No failed or timeout
@@ -184,9 +192,10 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("r");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
-			expect(mocks.beadsCLI.runBdCommand).not.toHaveBeenCalled();
+			expect(mocks.taskProvider.updateCustomField).not.toHaveBeenCalled();
 		});
 	});
 
@@ -224,14 +233,16 @@ describe("useRecoveryKeys", () => {
 			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
-			expect(mocks.beadsCLI.runBdCommand).toHaveBeenCalledWith([
-				"update",
+			expect(mocks.taskProvider.updateCustomField).toHaveBeenCalledWith(
 				"ch-test6",
-				"--custom",
-				"failed=",
-				"--custom",
-				"timeout=",
-			]);
+				"failed",
+				"",
+			);
+			expect(mocks.taskProvider.updateCustomField).toHaveBeenCalledWith(
+				"ch-test6",
+				"timeout",
+				"",
+			);
 		});
 
 		it("shows confirmation with commit count after rollback", async () => {
@@ -275,7 +286,7 @@ describe("useRecoveryKeys", () => {
 			expect(mocks.iterationRollback.rollback).not.toHaveBeenCalled();
 		});
 
-		it("does nothing when R pressed on non-failed task", () => {
+		it("does nothing when R pressed on non-failed task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test9"); // Not failed
@@ -285,6 +296,7 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("R");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
 			expect(mocks.iterationRollback.rollback).not.toHaveBeenCalled();
@@ -349,7 +361,7 @@ describe("useRecoveryKeys", () => {
 			expect(mocks.worktreeService.remove).not.toHaveBeenCalled();
 		});
 
-		it("does nothing when X pressed on non-failed/timeout task", () => {
+		it("does nothing when X pressed on non-failed/timeout task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test13");
@@ -359,6 +371,7 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("X");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
 			expect(mocks.worktreeService.remove).not.toHaveBeenCalled();
@@ -366,7 +379,7 @@ describe("useRecoveryKeys", () => {
 	});
 
 	describe("Increase Iterations Key (+)", () => {
-		it("calls onIterationUpdate when + pressed on timeout task", () => {
+		it("calls onIterationUpdate when + pressed on timeout task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test14", {
@@ -379,12 +392,13 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("+");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert - should increase by 5 from current 10 to 15
 			expect(mocks.onIterationUpdate).toHaveBeenCalledWith("ch-test14", 15);
 		});
 
-		it("shows confirmation message after iteration increase", () => {
+		it("shows confirmation message after iteration increase", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test15", {
@@ -397,6 +411,7 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("+");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
 			expect(mocks.onToast).toHaveBeenCalledWith(
@@ -404,7 +419,7 @@ describe("useRecoveryKeys", () => {
 			);
 		});
 
-		it("does nothing when + pressed on non-timeout task", () => {
+		it("does nothing when + pressed on non-timeout task", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test16", { failed: "true" }); // failed but not timeout
@@ -414,6 +429,7 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("+");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
 			expect(mocks.onIterationUpdate).not.toHaveBeenCalled();
@@ -421,7 +437,7 @@ describe("useRecoveryKeys", () => {
 	});
 
 	describe("Key State Management", () => {
-		it("all keys disabled when no task selected", () => {
+		it("all keys disabled when no task selected", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const { stdin } = render(
@@ -433,15 +449,16 @@ describe("useRecoveryKeys", () => {
 			stdin.write("R");
 			stdin.write("X");
 			stdin.write("+");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
-			expect(mocks.beadsCLI.runBdCommand).not.toHaveBeenCalled();
+			expect(mocks.taskProvider.updateCustomField).not.toHaveBeenCalled();
 			expect(mocks.iterationRollback.rollback).not.toHaveBeenCalled();
 			expect(mocks.worktreeService.remove).not.toHaveBeenCalled();
 			expect(mocks.onIterationUpdate).not.toHaveBeenCalled();
 		});
 
-		it("all keys disabled when selected task is not failed/timeout", () => {
+		it("all keys disabled when selected task is not failed/timeout", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test17");
@@ -454,15 +471,16 @@ describe("useRecoveryKeys", () => {
 			stdin.write("R");
 			stdin.write("X");
 			stdin.write("+");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert
-			expect(mocks.beadsCLI.runBdCommand).not.toHaveBeenCalled();
+			expect(mocks.taskProvider.updateCustomField).not.toHaveBeenCalled();
 			expect(mocks.iterationRollback.rollback).not.toHaveBeenCalled();
 			expect(mocks.worktreeService.remove).not.toHaveBeenCalled();
 			expect(mocks.onIterationUpdate).not.toHaveBeenCalled();
 		});
 
-		it("uses default maxIterations of 10 when not set", () => {
+		it("uses default maxIterations of 10 when not set", async () => {
 			// Arrange
 			const mocks = createMocks();
 			const task = createTask("ch-test18", { timeout: "true" }); // no maxIterations
@@ -472,6 +490,7 @@ describe("useRecoveryKeys", () => {
 
 			// Act
 			stdin.write("+");
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Assert - default 10 + 5 = 15
 			expect(mocks.onIterationUpdate).toHaveBeenCalledWith("ch-test18", 15);

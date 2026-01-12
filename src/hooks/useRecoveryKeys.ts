@@ -1,5 +1,5 @@
 import { useInput } from "ink";
-import type { TaskProviderTask } from "../types/task-provider.js";
+import type { TaskProvider, TaskProviderTask } from "../types/task-provider.js";
 
 // Check if stdin supports raw mode (safe check)
 // Using a getter to allow test mocking
@@ -7,9 +7,7 @@ const getIsTTY = () => Boolean(process.stdin?.isTTY);
 
 export interface UseRecoveryKeysOptions {
 	selectedTask: TaskProviderTask | null;
-	beadsCLI: {
-		runBdCommand: (args: string[]) => Promise<void>;
-	};
+	taskProvider: Pick<TaskProvider, "updateCustomField">;
 	iterationRollback: {
 		rollback: (
 			worktreePath: string,
@@ -47,7 +45,7 @@ const DEFAULT_AGENT_TYPE = "claude";
  */
 export function useRecoveryKeys({
 	selectedTask,
-	beadsCLI,
+	taskProvider,
 	iterationRollback,
 	worktreeService,
 	onToast,
@@ -98,14 +96,8 @@ export function useRecoveryKeys({
 	async function handleRetry(taskId: string) {
 		try {
 			// Clear failed and timeout flags
-			await beadsCLI.runBdCommand([
-				"update",
-				taskId,
-				"--custom",
-				"failed=",
-				"--custom",
-				"timeout=",
-			]);
+			await taskProvider.updateCustomField(taskId, "failed", "");
+			await taskProvider.updateCustomField(taskId, "timeout", "");
 			onToast?.(`Task ${taskId} returned to pending`);
 		} catch (error) {
 			onToast?.(`Failed to retry task: ${error}`);
@@ -131,14 +123,8 @@ export function useRecoveryKeys({
 
 			if (result.success) {
 				// Clear flags after successful rollback
-				await beadsCLI.runBdCommand([
-					"update",
-					taskId,
-					"--custom",
-					"failed=",
-					"--custom",
-					"timeout=",
-				]);
+				await taskProvider.updateCustomField(taskId, "failed", "");
+				await taskProvider.updateCustomField(taskId, "timeout", "");
 				onToast?.(
 					`Rolled back ${result.revertedCommits.length} commits for ${taskId}`,
 				);

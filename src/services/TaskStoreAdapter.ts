@@ -244,6 +244,46 @@ export class TaskStoreAdapter {
 	}
 
 	/**
+	 * Update a custom field on a task.
+	 * For native TaskStore, maps known fields to store fields.
+	 */
+	async updateCustomField(
+		id: string,
+		key: string,
+		value: string,
+	): Promise<void> {
+		const task = this.store.get(id);
+		if (!task) return;
+
+		// Handle known custom fields
+		switch (key) {
+			case "failed":
+				// Clearing failed flag means setting status back to doing
+				if (value === "" && task.status === "failed") {
+					this.store.update(id, { status: "doing" });
+				}
+				break;
+			case "timeout":
+				// Timeout is tracked separately - clearing it has no direct mapping
+				// This is a no-op for native TaskStore
+				break;
+			case "maxIterations":
+				// Max iterations could be stored in metadata
+				// For now, no-op
+				break;
+			case "model":
+				this.store.update(id, { model: value || undefined });
+				break;
+			case "agent":
+				// Agent type - no direct mapping
+				break;
+			default:
+				// Unknown custom fields are ignored
+				break;
+		}
+	}
+
+	/**
 	 * Get in-progress tasks.
 	 */
 	async getInProgressTasks(): Promise<BeadTask[]> {

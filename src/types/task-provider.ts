@@ -42,4 +42,5 @@ export interface TaskProvider {
 	removeLabel(id: string, label: string): Promise<void>;
 	addNote(id: string, note: string): Promise<void>;
 	updateTask(id: string, field: string, value: string): Promise<void>;
+	updateCustomField(id: string, key: string, value: string): Promise<void>;
 }
