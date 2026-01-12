@@ -69,6 +69,12 @@ describe("TaskPanel", () => {
 			expect(lastFrame()).toContain("⊗");
 		});
 
+		it("shows ⏳ for reviewing tasks", () => {
+			const beads = [createTestBead({ status: "reviewing" })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			expect(lastFrame()).toContain("⏳");
+		});
+
 		it("shows ✗ for failed tasks", () => {
 			const beads = [createTestBead({ status: "failed" })];
 			const { lastFrame } = render(<TaskPanel beads={beads} />);
@@ -251,6 +257,17 @@ describe("TaskPanel", () => {
 			const { lastFrame } = render(<TaskPanel beads={beads} />);
 			// Should show 2 blocked
 			expect(lastFrame()).toContain("2 blocked");
+		});
+
+		it("shows reviewing count in footer", () => {
+			const beads = [
+				createTestBead({ id: "bd-1", status: "open" }),
+				createTestBead({ id: "bd-2", status: "reviewing" }),
+				createTestBead({ id: "bd-3", status: "reviewing" }),
+			];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// Should show 2 reviewing
+			expect(lastFrame()).toContain("2 reviewing");
 		});
 	});
 

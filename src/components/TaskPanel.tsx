@@ -22,6 +22,8 @@ function StatusIndicator({ status }: { status: BeadStatus }) {
 			return <Text color="red">✗</Text>;
 		case "tombstone":
 			return <Text color="gray">⌫</Text>;
+		case "reviewing":
+			return <Text color="cyan">⏳</Text>;
 		default:
 			return <Text color="gray">?</Text>;
 	}
@@ -90,6 +92,7 @@ export default function TaskPanel({
 		(b) => b.status === "open" || b.status === "in_progress",
 	).length;
 	const blockedCount = beads.filter((b) => b.status === "blocked").length;
+	const reviewingCount = beads.filter((b) => b.status === "reviewing").length;
 
 	return (
 		<Box flexDirection="column" flexGrow={1}>
@@ -124,6 +127,9 @@ export default function TaskPanel({
 			<Box marginTop={1} flexDirection="column">
 				<Box gap={2}>
 					<Text dimColor>{readyCount} ready</Text>
+					{reviewingCount > 0 && (
+						<Text dimColor>{reviewingCount} reviewing</Text>
+					)}
 					{blockedCount > 0 && <Text dimColor>{blockedCount} blocked</Text>}
 				</Box>
 				{selectedBeadId && canAssign && (

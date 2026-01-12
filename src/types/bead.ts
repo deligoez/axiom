@@ -4,7 +4,8 @@ export type BeadStatus =
 	| "closed"
 	| "blocked"
 	| "failed"
-	| "tombstone";
+	| "tombstone"
+	| "reviewing";
 export type BeadType = "task" | "bug" | "feature" | "epic";
 export type BeadPriority = 0 | 1 | 2 | 3 | 4; // 0 = highest, 4 = lowest
 
