@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import type { ChorusConfig } from "../types/config.js";
 import type { ConversationManager } from "./ConversationManager.js";
 import type { PlanAgentPromptBuilder } from "./PlanAgentPromptBuilder.js";
@@ -250,11 +251,55 @@ export class PlanAgent {
 	}
 
 	/**
-	 * Execute Claude CLI call (placeholder for real implementation)
+	 * Execute Claude CLI call using spawnSync
+	 *
+	 * @param message - User message to send to Claude
+	 * @returns Claude's response text
 	 */
-	private executeClaudeCall(_message: string): string {
-		// In real implementation, this would spawn Claude CLI
-		// For now, return empty response
-		return "";
+	private executeClaudeCall(message: string): string {
+		// Get agent config
+		const agentConfig = this.config.agents?.available?.claude;
+		const command = agentConfig?.command ?? "claude";
+		const baseArgs = agentConfig?.args ?? ["--print"];
+
+		// Build the full prompt with conversation context
+		const history = this.conversationManager.getHistory();
+		const contextLines: string[] = [];
+
+		for (const msg of history) {
+			if (msg.role === "system") {
+				contextLines.push(`[System]\n${msg.content}`);
+			} else if (msg.role === "user") {
+				contextLines.push(`[User]\n${msg.content}`);
+			} else if (msg.role === "assistant") {
+				contextLines.push(`[Assistant]\n${msg.content}`);
+			}
+		}
+
+		// Add current message
+		contextLines.push(`[User]\n${message}`);
+		const fullPrompt = contextLines.join("\n\n");
+
+		// Spawn Claude CLI with the prompt
+		const result = spawnSync(command, [...baseArgs, "-p", fullPrompt], {
+			encoding: "utf-8",
+			timeout: (this.config.agents?.timeoutMinutes ?? 30) * 60 * 1000,
+			maxBuffer: 10 * 1024 * 1024, // 10MB
+		});
+
+		// Check for errors
+		if (result.error) {
+			throw new Error(`Failed to spawn Claude CLI: ${result.error.message}`);
+		}
+
+		if (result.status !== 0) {
+			const stderr = result.stderr?.trim() ?? "";
+			throw new Error(
+				`Claude CLI exited with code ${result.status}: ${stderr}`,
+			);
+		}
+
+		// Return stdout (the response)
+		return result.stdout?.trim() ?? "";
 	}
 }

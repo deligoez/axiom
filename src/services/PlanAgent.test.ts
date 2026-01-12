@@ -10,6 +10,12 @@ vi.mock("./PlanAgentPromptBuilder.js");
 vi.mock("./SessionLogger.js");
 vi.mock("node:child_process", () => ({
 	spawn: vi.fn(),
+	spawnSync: vi.fn().mockReturnValue({
+		stdout: "Mock Claude response",
+		stderr: "",
+		status: 0,
+		error: null,
+	}),
 }));
 
 describe("PlanAgent", () => {
