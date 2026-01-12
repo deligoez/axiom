@@ -14,12 +14,19 @@ export type PanelMode =
 	| "edit-select"
 	| "block-select";
 
+export interface TaskInfo {
+	id: string;
+	title: string;
+}
+
 export interface InterventionPanelProps {
 	visible: boolean;
 	onClose: () => void;
 	onFocusAgent?: (agentId: string) => void;
 	onStopAgent?: (agentId: string) => void;
 	onBlockTask?: (taskId: string) => void;
+	onRedirectAgent?: (agentId: string, taskId: string) => void;
+	availableTasks?: TaskInfo[];
 }
 
 interface AgentInfo {
@@ -51,15 +58,26 @@ export function InterventionPanel({
 	onFocusAgent,
 	onStopAgent,
 	onBlockTask,
+	onRedirectAgent,
+	availableTasks = [],
 }: InterventionPanelProps): React.ReactElement | null {
 	const [mode, setModeState] = useState<PanelMode>("main");
-	// Use ref to always have latest mode in useInput callback
+	const [selectedAgentId, setSelectedAgentIdState] = useState<string | null>(
+		null,
+	);
+	// Use refs to always have latest values in useInput callback
 	const modeRef = useRef<PanelMode>(mode);
+	const selectedAgentIdRef = useRef<string | null>(selectedAgentId);
 
 	// Update both ref and state together for immediate access
 	const setMode = (newMode: PanelMode) => {
 		modeRef.current = newMode;
 		setModeState(newMode);
+	};
+
+	const setSelectedAgentId = (agentId: string | null) => {
+		selectedAgentIdRef.current = agentId;
+		setSelectedAgentIdState(agentId);
 	};
 
 	// Get config for the hook - in real usage this would come from context
@@ -154,6 +172,32 @@ export function InterventionPanel({
 				if (num >= 1 && num <= 9 && num <= agentInfos.length) {
 					const agent = agentInfos[num - 1];
 					onBlockTask?.(agent.taskId);
+					setMode("main");
+					return;
+				}
+			}
+
+			// Handle number keys in redirect-select mode
+			if (currentMode === "redirect-select") {
+				const num = Number.parseInt(input, 10);
+				if (num >= 1 && num <= 9 && num <= agentInfos.length) {
+					const agent = agentInfos[num - 1];
+					setSelectedAgentId(agent.id);
+					setMode("redirect-task");
+					return;
+				}
+			}
+
+			// Handle number keys in redirect-task mode
+			if (currentMode === "redirect-task") {
+				const num = Number.parseInt(input, 10);
+				if (num >= 1 && num <= 9 && num <= availableTasks.length) {
+					const task = availableTasks[num - 1];
+					const agentId = selectedAgentIdRef.current;
+					if (agentId) {
+						onRedirectAgent?.(agentId, task.id);
+					}
+					setSelectedAgentId(null);
 					setMode("main");
 					return;
 				}
@@ -263,6 +307,25 @@ export function InterventionPanel({
 					<Text bold color="blue">
 						Select agent to redirect (1-9) or ESC to cancel
 					</Text>
+				</Box>
+			)}
+
+			{mode === "redirect-task" && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold color="blue">
+						Select task to redirect to (1-9) or ESC to cancel
+					</Text>
+					{availableTasks.length > 0 && (
+						<Box flexDirection="column" marginTop={1}>
+							{availableTasks.map((task, index) => (
+								<Box key={task.id} gap={1}>
+									<Text color="cyan">[{index + 1}]</Text>
+									<Text color="green">{task.id}</Text>
+									<Text dimColor>{task.title}</Text>
+								</Box>
+							))}
+						</Box>
+					)}
 				</Box>
 			)}
 

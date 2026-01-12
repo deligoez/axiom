@@ -338,4 +338,100 @@ describe("InterventionPanel", () => {
 			});
 		});
 	});
+
+	describe("Redirect Flow (F46c-c)", () => {
+		describe("Redirect Select Mode", () => {
+			it("redirect-select mode shows agent selection prompt", async () => {
+				// Arrange
+				const onClose = vi.fn();
+				const { stdin, lastFrame } = render(
+					<InterventionPanel visible={true} onClose={onClose} />,
+				);
+
+				// Act
+				stdin.write("r"); // enter redirect-select mode
+				await new Promise((resolve) => setTimeout(resolve, 50)); // wait for React update
+
+				// Assert
+				const output = lastFrame();
+				expect(output).toMatch(/select.*agent.*redirect/i);
+			});
+
+			it("number key in redirect-select stores agentId and transitions to redirect-task", async () => {
+				// Arrange
+				const onClose = vi.fn();
+				const availableTasks = [{ id: "ch-003", title: "Task 3" }];
+				const { stdin, lastFrame } = render(
+					<InterventionPanel
+						visible={true}
+						onClose={onClose}
+						availableTasks={availableTasks}
+					/>,
+				);
+
+				// Act
+				stdin.write("r"); // enter redirect-select mode
+				stdin.write("1"); // select first agent
+				await new Promise((resolve) => setTimeout(resolve, 50)); // wait for React update
+
+				// Assert - should now be in redirect-task mode
+				const output = lastFrame();
+				expect(output).toMatch(/select.*task/i);
+			});
+		});
+
+		describe("Redirect Task Mode", () => {
+			it("redirect-task mode shows task selection prompt", async () => {
+				// Arrange
+				const onClose = vi.fn();
+				const availableTasks = [
+					{ id: "ch-003", title: "Task 3" },
+					{ id: "ch-004", title: "Task 4" },
+				];
+				const { stdin, lastFrame } = render(
+					<InterventionPanel
+						visible={true}
+						onClose={onClose}
+						availableTasks={availableTasks}
+					/>,
+				);
+
+				// Act
+				stdin.write("r"); // enter redirect-select mode
+				stdin.write("1"); // select first agent
+				// Now in redirect-task mode
+				await new Promise((resolve) => setTimeout(resolve, 50)); // wait for React update
+
+				// Assert
+				const output = lastFrame();
+				expect(output).toContain("ch-003");
+			});
+
+			it("number key in redirect-task calls onRedirectAgent and returns to main", () => {
+				// Arrange
+				const onClose = vi.fn();
+				const onRedirectAgent = vi.fn();
+				const availableTasks = [
+					{ id: "ch-003", title: "Task 3" },
+					{ id: "ch-004", title: "Task 4" },
+				];
+				const { stdin } = render(
+					<InterventionPanel
+						visible={true}
+						onClose={onClose}
+						onRedirectAgent={onRedirectAgent}
+						availableTasks={availableTasks}
+					/>,
+				);
+
+				// Act
+				stdin.write("r"); // enter redirect-select mode
+				stdin.write("1"); // select first agent
+				stdin.write("1"); // select first task
+
+				// Assert
+				expect(onRedirectAgent).toHaveBeenCalledWith("agent-1", "ch-003");
+			});
+		});
+	});
 });
