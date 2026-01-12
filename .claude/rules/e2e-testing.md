@@ -97,9 +97,75 @@ await pressKey(result, "i");  // Open intervention menu
 
 ## Known Limitations
 
-1. **Keyboard input in tests** - useInput is disabled when no TTY, so keyboard handling relies on cli-testing-library's `userEvent.keyboard()` which may have limitations
+1. **Keyboard input in tests** - useInput is disabled when no TTY (see TTY Testing section below)
 2. **TUI text wrapping** - Task titles wrap across lines in narrow columns (see below)
 3. **Timing sensitivity** - E2E tests can be flaky; use appropriate timeouts
+
+## TTY Testing with node-pty
+
+Ink's `useInput` hook requires a real TTY. `cli-testing-library` uses `child_process.spawn` with pipes, which doesn't provide TTY. For testing keyboard interactions, Ink itself uses `node-pty`:
+
+### How Ink Tests useInput
+
+```typescript
+import {spawn} from 'node-pty';
+
+const ps = spawn('node', ['./app.js'], {
+  name: 'xterm-color',
+  cols: 100,
+  cwd: __dirname,
+  env: {...process.env, NODE_NO_WARNINGS: '1', CI: 'false'},
+});
+
+// Send keyboard input
+ps.write('q');           // Regular character
+ps.write('\u001B');      // Escape key
+ps.write('\u001B[A');    // Up arrow
+ps.write('\u001B[B');    // Down arrow
+ps.write('\t');          // Tab
+ps.write('\r');          // Enter
+
+// Listen for output
+ps.onData(data => {
+  result.output += data;
+});
+
+// Wait for process exit
+ps.onExit(({exitCode}) => { ... });
+```
+
+### Key Codes Reference
+
+| Key | Code | Description |
+|-----|------|-------------|
+| Escape | `\u001B` | ESC character |
+| Tab | `\t` | Tab character |
+| Shift+Tab | `\u001B[Z` | Reverse tab |
+| Enter | `\r` | Carriage return |
+| Up | `\u001B[A` | Up arrow |
+| Down | `\u001B[B` | Down arrow |
+| Left | `\u001B[D` | Left arrow |
+| Right | `\u001B[C` | Right arrow |
+| Ctrl+C | `\u0003` | Interrupt |
+| Ctrl+F | `\u0006` | Ctrl modifier |
+| Backspace | `\u0008` | Backspace |
+| Delete | `\u007F` | Delete |
+| PageUp | `\u001B[5~` | Page up |
+| PageDown | `\u001B[6~` | Page down |
+
+### Current Workaround
+
+Until node-pty is integrated:
+1. **Unit tests** (`ink-testing-library`) - Test keyboard handling via `stdin.write()`
+2. **E2E tests** (`cli-testing-library`) - Test that app doesn't crash on key presses
+3. Skip tests that require actual `useInput` behavior
+
+### Future: node-pty Integration
+
+To enable full TTY testing:
+1. Add `node-pty` as dev dependency (requires native build)
+2. Create PTY test helpers similar to Ink's approach
+3. Replace cli-testing-library for keyboard-dependent tests
 
 ## TUI Text Wrapping Problem (CRITICAL)
 
@@ -282,6 +348,8 @@ await waitForText(result, "This is a very long text", 5000);
 
 ## References
 
-- [cli-testing-library](https://github.com/gmrchk/cli-testing-library) - E2E test framework
+- [cli-testing-library](https://github.com/gmrchk/cli-testing-library) - E2E test framework (no TTY)
 - [ink-testing-library](https://github.com/vadimdemedes/ink-testing-library) - Unit test framework for Ink
 - [Ink useInput docs](https://github.com/vadimdemedes/ink#useinputinputhandler-options) - Input handling
+- [node-pty](https://github.com/microsoft/node-pty) - Pseudo-terminal for TTY testing (used by Ink)
+- [Ink hooks tests](https://github.com/vadimdemedes/ink/blob/master/test/hooks.tsx) - Example of node-pty usage
