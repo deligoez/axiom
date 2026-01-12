@@ -31,8 +31,13 @@ const createMockGitService = (changes: string = "") => ({
 	getDiffStat: vi.fn().mockResolvedValue(changes),
 });
 
-const createMockBeadsCLI = () => ({
+const createMockTaskProvider = () => ({
+	getTask: vi.fn().mockResolvedValue(null),
+	claimTask: vi.fn().mockResolvedValue(undefined),
+	releaseTask: vi.fn().mockResolvedValue(undefined),
+	getReadyTasks: vi.fn().mockResolvedValue([]),
 	closeTask: vi.fn().mockResolvedValue(undefined),
+	getTaskStatus: vi.fn().mockResolvedValue(null),
 	updateStatus: vi.fn().mockResolvedValue(undefined),
 	getTaskLabels: vi.fn().mockResolvedValue([]),
 });
@@ -64,7 +69,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager,
 				storage: createMockStorage(),
 				gitService: createMockGitService(),
-				beadsCLI: createMockBeadsCLI(),
+				taskProvider: createMockTaskProvider(),
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: defaultConfig,
@@ -93,7 +98,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(),
 				storage: createMockStorage(),
 				gitService,
-				beadsCLI: createMockBeadsCLI(),
+				taskProvider: createMockTaskProvider(),
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: defaultConfig,
@@ -123,7 +128,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(qualityResults),
 				storage,
 				gitService: createMockGitService("src/file.ts | 5 +++++"),
-				beadsCLI: createMockBeadsCLI(),
+				taskProvider: createMockTaskProvider(),
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: defaultConfig,
@@ -159,7 +164,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(),
 				storage,
 				gitService: createMockGitService(),
-				beadsCLI: createMockBeadsCLI(),
+				taskProvider: createMockTaskProvider(),
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: defaultConfig,
@@ -184,7 +189,7 @@ describe("AgentCompletionHandler", () => {
 
 		it("auto-approves and closes task when conditions met", async () => {
 			// Arrange
-			const beadsCLI = createMockBeadsCLI();
+			const taskProvider = createMockTaskProvider();
 			const mergeService = createMockMergeService();
 			const qualityResults: RunResult[] = [
 				{ name: "test", success: true, output: "ok", duration: 100 },
@@ -193,7 +198,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(qualityResults),
 				storage: createMockStorage(),
 				gitService: createMockGitService(),
-				beadsCLI,
+				taskProvider,
 				eventEmitter: createMockEventEmitter(),
 				mergeService,
 				config: {
@@ -218,13 +223,13 @@ describe("AgentCompletionHandler", () => {
 
 			// Assert
 			expect(result.autoApproved).toBe(true);
-			expect(beadsCLI.closeTask).toHaveBeenCalledWith("task-1");
+			expect(taskProvider.closeTask).toHaveBeenCalledWith("task-1");
 			expect(mergeService.enqueue).toHaveBeenCalled();
 		});
 
 		it("sets task to reviewing when not auto-approvable", async () => {
 			// Arrange
-			const beadsCLI = createMockBeadsCLI();
+			const taskProvider = createMockTaskProvider();
 			const qualityResults: RunResult[] = [
 				{ name: "test", success: false, output: "fail", duration: 100 },
 			];
@@ -232,7 +237,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(qualityResults),
 				storage: createMockStorage(),
 				gitService: createMockGitService(),
-				beadsCLI,
+				taskProvider,
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: {
@@ -256,8 +261,11 @@ describe("AgentCompletionHandler", () => {
 
 			// Assert
 			expect(result.autoApproved).toBe(false);
-			expect(beadsCLI.updateStatus).toHaveBeenCalledWith("task-1", "reviewing");
-			expect(beadsCLI.closeTask).not.toHaveBeenCalled();
+			expect(taskProvider.updateStatus).toHaveBeenCalledWith(
+				"task-1",
+				"reviewing",
+			);
+			expect(taskProvider.closeTask).not.toHaveBeenCalled();
 		});
 
 		it("sends TASK_COMPLETED event to event emitter", async () => {
@@ -267,7 +275,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(),
 				storage: createMockStorage(),
 				gitService: createMockGitService(),
-				beadsCLI: createMockBeadsCLI(),
+				taskProvider: createMockTaskProvider(),
 				eventEmitter,
 				mergeService: createMockMergeService(),
 				config: defaultConfig,
@@ -294,14 +302,14 @@ describe("AgentCompletionHandler", () => {
 
 		it("does not auto-approve when auto-approve is disabled", async () => {
 			// Arrange
-			const beadsCLI = createMockBeadsCLI();
+			const taskProvider = createMockTaskProvider();
 			const handler = new AgentCompletionHandler({
 				qualityManager: createMockQualityManager([
 					{ name: "test", success: true, output: "ok", duration: 100 },
 				]),
 				storage: createMockStorage(),
 				gitService: createMockGitService(),
-				beadsCLI,
+				taskProvider,
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: {
@@ -325,19 +333,19 @@ describe("AgentCompletionHandler", () => {
 
 			// Assert
 			expect(result.autoApproved).toBe(false);
-			expect(beadsCLI.closeTask).not.toHaveBeenCalled();
+			expect(taskProvider.closeTask).not.toHaveBeenCalled();
 		});
 
 		it("does not auto-approve when iterations exceed max", async () => {
 			// Arrange
-			const beadsCLI = createMockBeadsCLI();
+			const taskProvider = createMockTaskProvider();
 			const handler = new AgentCompletionHandler({
 				qualityManager: createMockQualityManager([
 					{ name: "test", success: true, output: "ok", duration: 100 },
 				]),
 				storage: createMockStorage(),
 				gitService: createMockGitService(),
-				beadsCLI,
+				taskProvider,
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: {
@@ -361,7 +369,10 @@ describe("AgentCompletionHandler", () => {
 
 			// Assert
 			expect(result.autoApproved).toBe(false);
-			expect(beadsCLI.updateStatus).toHaveBeenCalledWith("task-1", "reviewing");
+			expect(taskProvider.updateStatus).toHaveBeenCalledWith(
+				"task-1",
+				"reviewing",
+			);
 		});
 	});
 
@@ -376,7 +387,7 @@ describe("AgentCompletionHandler", () => {
 				qualityManager: createMockQualityManager(),
 				storage,
 				gitService,
-				beadsCLI: createMockBeadsCLI(),
+				taskProvider: createMockTaskProvider(),
 				eventEmitter: createMockEventEmitter(),
 				mergeService: createMockMergeService(),
 				config: defaultConfig,

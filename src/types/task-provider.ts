@@ -35,4 +35,6 @@ export interface TaskProvider {
 	getReadyTasks(options?: GetReadyOptions): Promise<TaskProviderTask[]>;
 	closeTask(id: string, comment?: string): Promise<void>;
 	getTaskStatus(id: string): Promise<string | null>;
+	updateStatus(id: string, status: string): Promise<void>;
+	getTaskLabels(id: string): Promise<string[]>;
 }

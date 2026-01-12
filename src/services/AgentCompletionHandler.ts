@@ -5,6 +5,7 @@ import type {
 	TaskCompletionResult,
 } from "../types/review.js";
 import type { Signal } from "../types/signal.js";
+import type { TaskProvider } from "../types/task-provider.js";
 import { canAutoApprove } from "./AutoApproveEngine.js";
 import type { CompletionResultStorage } from "./CompletionResultStorage.js";
 import type {
@@ -20,12 +21,6 @@ export interface GitService {
 	getDiffStat(worktreePath: string): Promise<string>;
 }
 
-export interface BeadsCLI {
-	closeTask(taskId: string): Promise<void>;
-	updateStatus(taskId: string, status: string): Promise<void>;
-	getTaskLabels(taskId: string): Promise<string[]>;
-}
-
 export interface EventEmitter {
 	emit(event: string, data: unknown): void;
 }
@@ -38,7 +33,7 @@ export interface AgentCompletionHandlerDeps {
 	qualityManager: QualityCommandsManager;
 	storage: CompletionResultStorage;
 	gitService: GitService;
-	beadsCLI: BeadsCLI;
+	taskProvider: TaskProvider;
 	eventEmitter: EventEmitter;
 	mergeService: MergeService;
 	config: {
@@ -105,7 +100,7 @@ export class AgentCompletionHandler {
 		await this.deps.storage.saveCompletionResult(taskId, completionResult);
 
 		// 5. Get task labels for review rules
-		const taskLabels = await this.deps.beadsCLI.getTaskLabels(taskId);
+		const taskLabels = await this.deps.taskProvider.getTaskLabels(taskId);
 
 		// 6. Check auto-approve eligibility
 		const autoApproved = canAutoApprove(
@@ -117,13 +112,13 @@ export class AgentCompletionHandler {
 		// 7. Handle based on auto-approve decision
 		if (autoApproved) {
 			// Auto-approve: close task and send to merge queue
-			await this.deps.beadsCLI.closeTask(taskId);
+			await this.deps.taskProvider.closeTask(taskId);
 			if (branch) {
 				await this.deps.mergeService.enqueue(taskId, branch);
 			}
 		} else {
 			// Not auto-approved: set to reviewing status
-			await this.deps.beadsCLI.updateStatus(taskId, "reviewing");
+			await this.deps.taskProvider.updateStatus(taskId, "reviewing");
 		}
 
 		// 8. Emit TASK_COMPLETED event for review region

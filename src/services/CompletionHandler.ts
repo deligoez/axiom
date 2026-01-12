@@ -1,6 +1,6 @@
 import type { EventEmitter } from "node:events";
 import type { AgentType } from "../types/learning.js";
-import type { BeadsCLI } from "./BeadsCLI.js";
+import type { TaskProvider } from "../types/task-provider.js";
 import type { CompletionChecker } from "./CompletionChecker.js";
 import type { DependencyResolver } from "./DependencyResolver.js";
 import type { LearningExtractor } from "./LearningExtractor.js";
@@ -10,7 +10,7 @@ import type { SignalParser } from "./SignalParser.js";
 
 export interface CompletionHandlerDeps {
 	completionChecker: CompletionChecker;
-	beadsCLI: BeadsCLI;
+	taskProvider: TaskProvider;
 	dependencyResolver: DependencyResolver;
 	scratchpadManager: ScratchpadManager;
 	learningExtractor: LearningExtractor;
@@ -204,7 +204,7 @@ export class CompletionHandler {
 		await this.extractLearnings(taskId, agentType);
 
 		// Close the task
-		await this.deps.beadsCLI.closeTask(taskId, `Completed by ${agentId}`);
+		await this.deps.taskProvider.closeTask(taskId, `Completed by ${agentId}`);
 
 		// Emit completed event
 		this.deps.eventEmitter.emit("completed", {

@@ -19,7 +19,7 @@ describe("CompletionHandler", () => {
 					testsPassed: true,
 				}),
 			} as unknown as CompletionHandlerDeps["completionChecker"],
-			beadsCLI: {
+			taskProvider: {
 				closeTask: vi.fn().mockResolvedValue(undefined),
 				getTask: vi.fn().mockResolvedValue({
 					id: "ch-123",
@@ -29,7 +29,7 @@ describe("CompletionHandler", () => {
 					labels: [],
 					dependencies: [],
 				}),
-			} as unknown as CompletionHandlerDeps["beadsCLI"],
+			} as unknown as CompletionHandlerDeps["taskProvider"],
 			dependencyResolver: {
 				getDependents: vi.fn().mockResolvedValue([]),
 				check: vi.fn().mockResolvedValue({ satisfied: true }),
@@ -87,7 +87,7 @@ describe("CompletionHandler", () => {
 			expect(result.action).toBe("success");
 		});
 
-		it("closes task via beadsCLI.closeTask()", async () => {
+		it("closes task via taskProvider.closeTask()", async () => {
 			// Arrange
 			const params = createParams();
 
@@ -95,7 +95,7 @@ describe("CompletionHandler", () => {
 			await handler.handleAgentExit(params);
 
 			// Assert
-			expect(deps.beadsCLI.closeTask).toHaveBeenCalledWith(
+			expect(deps.taskProvider.closeTask).toHaveBeenCalledWith(
 				"ch-123",
 				expect.any(String),
 			);

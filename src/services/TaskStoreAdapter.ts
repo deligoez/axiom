@@ -133,6 +133,42 @@ export class TaskStoreAdapter {
 	}
 
 	/**
+	 * Update task status.
+	 */
+	async updateStatus(id: string, status: string): Promise<void> {
+		// Map Bead-style status to TaskStore status
+		const statusMap: Record<string, string> = {
+			open: "todo",
+			in_progress: "doing",
+			closed: "done",
+			blocked: "stuck",
+			reviewing: "review",
+			failed: "failed",
+			deferred: "later",
+		};
+
+		const taskStatus = statusMap[status] ?? status;
+		this.store.update(id, {
+			status: taskStatus as
+				| "todo"
+				| "doing"
+				| "done"
+				| "stuck"
+				| "later"
+				| "failed"
+				| "review",
+		});
+	}
+
+	/**
+	 * Get task labels/tags.
+	 */
+	async getTaskLabels(id: string): Promise<string[]> {
+		const task = this.store.get(id);
+		return task?.tags ?? [];
+	}
+
+	/**
 	 * Get in-progress tasks.
 	 */
 	async getInProgressTasks(): Promise<BeadTask[]> {
