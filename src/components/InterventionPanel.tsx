@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import type React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useChorusMachine } from "../hooks/useChorusMachine.js";
 
 // Check if stdin supports raw mode (safe check)
@@ -18,6 +18,8 @@ export interface InterventionPanelProps {
 	visible: boolean;
 	onClose: () => void;
 	onFocusAgent?: (agentId: string) => void;
+	onStopAgent?: (agentId: string) => void;
+	onBlockTask?: (taskId: string) => void;
 }
 
 interface AgentInfo {
@@ -47,8 +49,18 @@ export function InterventionPanel({
 	visible,
 	onClose,
 	onFocusAgent,
+	onStopAgent,
+	onBlockTask,
 }: InterventionPanelProps): React.ReactElement | null {
-	const [mode, setMode] = useState<PanelMode>("main");
+	const [mode, setModeState] = useState<PanelMode>("main");
+	// Use ref to always have latest mode in useInput callback
+	const modeRef = useRef<PanelMode>(mode);
+
+	// Update both ref and state together for immediate access
+	const setMode = (newMode: PanelMode) => {
+		modeRef.current = newMode;
+		setModeState(newMode);
+	};
 
 	// Get config for the hook - in real usage this would come from context
 	const chorusMachineConfig = {
@@ -57,7 +69,8 @@ export function InterventionPanel({
 		},
 	};
 
-	const { agents, isPaused, pause, resume } = useChorusMachine(chorusMachineConfig);
+	const { agents, isPaused, pause, resume } =
+		useChorusMachine(chorusMachineConfig);
 
 	// Transform agent refs to AgentInfo
 	const agentInfos: AgentInfo[] = agents.map((agent) => {
@@ -84,7 +97,9 @@ export function InterventionPanel({
 				return;
 			}
 
-			if (mode === "main") {
+			const currentMode = modeRef.current;
+
+			if (currentMode === "main") {
 				// 'p' toggles pause
 				if (input === "p") {
 					if (isPaused) {
@@ -112,6 +127,34 @@ export function InterventionPanel({
 				// 'r' transitions to redirect-select mode
 				if (input === "r") {
 					setMode("redirect-select");
+					return;
+				}
+
+				// 'b' transitions to block-select mode
+				if (input === "b") {
+					setMode("block-select");
+					return;
+				}
+			}
+
+			// Handle number keys in stop-select mode
+			if (currentMode === "stop-select") {
+				const num = Number.parseInt(input, 10);
+				if (num >= 1 && num <= 9 && num <= agentInfos.length) {
+					const agent = agentInfos[num - 1];
+					onStopAgent?.(agent.id);
+					setMode("main");
+					return;
+				}
+			}
+
+			// Handle number keys in block-select mode
+			if (currentMode === "block-select") {
+				const num = Number.parseInt(input, 10);
+				if (num >= 1 && num <= 9 && num <= agentInfos.length) {
+					const agent = agentInfos[num - 1];
+					onBlockTask?.(agent.taskId);
+					setMode("main");
 					return;
 				}
 			}
@@ -219,6 +262,14 @@ export function InterventionPanel({
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="blue">
 						Select agent to redirect (1-9) or ESC to cancel
+					</Text>
+				</Box>
+			)}
+
+			{mode === "block-select" && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold color="yellow">
+						Select task to block (1-9) or ESC to cancel
 					</Text>
 				</Box>
 			)}
