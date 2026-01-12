@@ -9,8 +9,8 @@ import type {
 	CanAssignResult,
 	TaskAssignment,
 } from "../types/orchestration.js";
+import type { TaskProvider, TaskProviderTask } from "../types/task-provider.js";
 import type { AgentSpawner } from "./AgentSpawner.js";
-import type { BeadsCLI, Task } from "./BeadsCLI.js";
 import type { PromptBuilder, PromptContext } from "./PromptBuilder.js";
 import type { WorktreeService } from "./WorktreeService.js";
 
@@ -18,7 +18,7 @@ export interface OrchestratorDeps {
 	projectDir: string;
 	config: ChorusConfig;
 	worktreeService: WorktreeService;
-	beadsCLI: BeadsCLI;
+	taskProvider: TaskProvider;
 	promptBuilder: PromptBuilder;
 	agentSpawner: AgentSpawner;
 	eventEmitter: EventEmitter;
@@ -43,7 +43,7 @@ export class Orchestrator {
 		const { taskId, modelOverride: _modelOverride } = assignment;
 
 		// Get task
-		const task = await this.deps.beadsCLI.getTask(taskId);
+		const task = await this.deps.taskProvider.getTask(taskId);
 		if (!task) {
 			return { success: false, error: `Task not found: ${taskId}` };
 		}
@@ -64,7 +64,7 @@ export class Orchestrator {
 		);
 
 		// Claim task
-		await this.deps.beadsCLI.claimTask(taskId, agentId);
+		await this.deps.taskProvider.claimTask(taskId, agentId);
 
 		// Build prompt
 		const promptContext: PromptContext = {
@@ -120,7 +120,7 @@ export class Orchestrator {
 
 	async canAssign(taskId: string): Promise<CanAssignResult> {
 		// Get task
-		const task = await this.deps.beadsCLI.getTask(taskId);
+		const task = await this.deps.taskProvider.getTask(taskId);
 		if (!task) {
 			return { can: false, reason: "Task not found" };
 		}
@@ -141,7 +141,7 @@ export class Orchestrator {
 
 		// Check dependencies
 		if (task.dependencies && task.dependencies.length > 0) {
-			const readyTasks = await this.deps.beadsCLI.getReadyTasks({
+			const readyTasks = await this.deps.taskProvider.getReadyTasks({
 				excludeLabels: ["deferred"],
 			});
 			const isReady = readyTasks.some((t) => t.id === taskId);
@@ -154,19 +154,21 @@ export class Orchestrator {
 	}
 
 	async getAgentType(taskId: string): Promise<AgentType> {
-		const task = await this.deps.beadsCLI.getTask(taskId);
+		const task = await this.deps.taskProvider.getTask(taskId);
 		if (task?.custom?.agent) {
 			return task.custom.agent as AgentType;
 		}
 		return this.deps.config.agents.default;
 	}
 
-	async getTask(taskId: string): Promise<Task | null> {
-		return this.deps.beadsCLI.getTask(taskId);
+	async getTask(taskId: string): Promise<TaskProviderTask | null> {
+		return this.deps.taskProvider.getTask(taskId);
 	}
 
-	async getReadyTasks(): Promise<Task[]> {
-		return this.deps.beadsCLI.getReadyTasks({ excludeLabels: ["deferred"] });
+	async getReadyTasks(): Promise<TaskProviderTask[]> {
+		return this.deps.taskProvider.getReadyTasks({
+			excludeLabels: ["deferred"],
+		});
 	}
 
 	getAgentConfig(agentType: AgentType): AgentTypeConfig | undefined {
@@ -209,7 +211,7 @@ export class Orchestrator {
 		}
 
 		// Release the task back to pending
-		await this.deps.beadsCLI.releaseTask(taskId);
+		await this.deps.taskProvider.releaseTask(taskId);
 
 		// Emit timeout event
 		this.deps.eventEmitter.emit("timeout", { agentId, taskId });

@@ -27,7 +27,7 @@ describe("Orchestrator", () => {
 				getPath: vi.fn().mockReturnValue("/project/.worktrees/claude-ch-123"),
 				getBranch: vi.fn().mockReturnValue("agent/claude/ch-123"),
 			} as unknown as OrchestratorDeps["worktreeService"],
-			beadsCLI: {
+			taskProvider: {
 				getTask: vi.fn().mockResolvedValue({
 					id: "ch-123",
 					title: "Test task",
@@ -49,7 +49,7 @@ describe("Orchestrator", () => {
 						dependencies: [],
 					},
 				]),
-			} as unknown as OrchestratorDeps["beadsCLI"],
+			} as unknown as OrchestratorDeps["taskProvider"],
 			promptBuilder: {
 				build: vi.fn().mockResolvedValue("Built prompt for task"),
 			} as unknown as OrchestratorDeps["promptBuilder"],
@@ -93,7 +93,7 @@ describe("Orchestrator", () => {
 			);
 		});
 
-		it("claims task via beadsCLI.claimTask()", async () => {
+		it("claims task via taskProvider.claimTask()", async () => {
 			// Arrange
 			const assignment = { taskId: "ch-123" };
 
@@ -101,7 +101,7 @@ describe("Orchestrator", () => {
 			await orchestrator.assignTask(assignment);
 
 			// Assert
-			expect(deps.beadsCLI.claimTask).toHaveBeenCalledWith(
+			expect(deps.taskProvider.claimTask).toHaveBeenCalledWith(
 				"ch-123",
 				"claude-ch-123",
 			);
@@ -173,7 +173,7 @@ describe("Orchestrator", () => {
 
 		it("returns error if task not found", async () => {
 			// Arrange
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue(null);
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue(null);
 			const assignment = { taskId: "ch-999" };
 
 			// Act
@@ -186,7 +186,7 @@ describe("Orchestrator", () => {
 
 		it("returns error if task already assigned", async () => {
 			// Arrange
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-123",
 				title: "Test task",
 				status: "in_progress",
@@ -220,7 +220,7 @@ describe("Orchestrator", () => {
 
 		it("returns { can: false } for in_progress task", async () => {
 			// Arrange
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-123",
 				title: "Test",
 				status: "in_progress",
@@ -239,7 +239,7 @@ describe("Orchestrator", () => {
 
 		it("returns { can: false } for closed task", async () => {
 			// Arrange
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-123",
 				title: "Test",
 				status: "closed",
@@ -259,7 +259,7 @@ describe("Orchestrator", () => {
 		it("returns { can: false } if max agents reached", async () => {
 			// Arrange - spawn 3 agents (maxParallel = 3)
 			await orchestrator.assignTask({ taskId: "ch-1" });
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-2",
 				title: "Test",
 				status: "open",
@@ -268,7 +268,7 @@ describe("Orchestrator", () => {
 				dependencies: [],
 			});
 			await orchestrator.assignTask({ taskId: "ch-2" });
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-3",
 				title: "Test",
 				status: "open",
@@ -278,7 +278,7 @@ describe("Orchestrator", () => {
 			});
 			await orchestrator.assignTask({ taskId: "ch-3" });
 
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-4",
 				title: "Test",
 				status: "open",
@@ -297,7 +297,7 @@ describe("Orchestrator", () => {
 
 		it("returns { can: false } if dependencies not met", async () => {
 			// Arrange
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-123",
 				title: "Test",
 				status: "open",
@@ -306,7 +306,7 @@ describe("Orchestrator", () => {
 				dependencies: ["ch-dep1", "ch-dep2"],
 			});
 			// Simulate one dep still open
-			vi.mocked(deps.beadsCLI.getReadyTasks).mockResolvedValue([]);
+			vi.mocked(deps.taskProvider.getReadyTasks).mockResolvedValue([]);
 
 			// Act
 			const result = await orchestrator.canAssign("ch-123");
@@ -321,7 +321,7 @@ describe("Orchestrator", () => {
 	describe("getAgentType()", () => {
 		it("uses task custom.agent if specified", async () => {
 			// Arrange
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-123",
 				title: "Test",
 				status: "open",
@@ -351,7 +351,7 @@ describe("Orchestrator", () => {
 
 	// Helper methods - 5 tests
 	describe("getTask()", () => {
-		it("delegates to beadsCLI.getTask()", async () => {
+		it("delegates to taskProvider.getTask()", async () => {
 			// Arrange
 			const taskId = "ch-123";
 
@@ -359,20 +359,20 @@ describe("Orchestrator", () => {
 			const result = await orchestrator.getTask(taskId);
 
 			// Assert
-			expect(deps.beadsCLI.getTask).toHaveBeenCalledWith(taskId);
+			expect(deps.taskProvider.getTask).toHaveBeenCalledWith(taskId);
 			expect(result?.id).toBe("ch-123");
 		});
 	});
 
 	describe("getReadyTasks()", () => {
-		it("delegates to beadsCLI.getReadyTasks() with excludeLabels", async () => {
+		it("delegates to taskProvider.getReadyTasks() with excludeLabels", async () => {
 			// Arrange
 
 			// Act
 			const result = await orchestrator.getReadyTasks();
 
 			// Assert
-			expect(deps.beadsCLI.getReadyTasks).toHaveBeenCalledWith({
+			expect(deps.taskProvider.getReadyTasks).toHaveBeenCalledWith({
 				excludeLabels: ["deferred"],
 			});
 			expect(result.length).toBe(1);
@@ -399,7 +399,7 @@ describe("Orchestrator", () => {
 		it("returns count of active agents", async () => {
 			// Arrange
 			await orchestrator.assignTask({ taskId: "ch-123" });
-			vi.mocked(deps.beadsCLI.getTask).mockResolvedValue({
+			vi.mocked(deps.taskProvider.getTask).mockResolvedValue({
 				id: "ch-456",
 				title: "Test",
 				status: "open",
@@ -476,7 +476,7 @@ describe("Orchestrator", () => {
 			await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
 
 			// Assert
-			expect(deps.beadsCLI.releaseTask).toHaveBeenCalledWith("ch-123");
+			expect(deps.taskProvider.releaseTask).toHaveBeenCalledWith("ch-123");
 
 			vi.useRealTimers();
 		});

@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-13
 **Status:** DRAFT - Pending Review
-**Version:** 3.0
+**Version:** 4.0
 **Author:** Chorus Development Team
 
 > **Purpose:** This document defines personas, names, and personalities for each agent type in Chorus. Personas enhance user experience, make logs more readable, and create a cohesive "team" feeling for the multi-agent orchestrator.
@@ -17,11 +17,14 @@
 4. [Agent Taxonomy](#agent-taxonomy)
 5. [Persona Definitions](#persona-definitions)
 6. [Persona File Structure](#persona-file-structure)
-7. [Agent Numbering](#agent-numbering)
-8. [Agent Log Panel](#agent-log-panel)
-9. [Implementation Strategy](#implementation-strategy)
-10. [TUI Integration](#tui-integration)
-11. [Task Plan](#task-plan)
+7. [Shared Rules System](#shared-rules-system)
+8. [Rule Inheritance](#rule-inheritance)
+9. [Migration from Hardcoded](#migration-from-hardcoded)
+10. [Agent Numbering](#agent-numbering)
+11. [Agent Log Panel](#agent-log-panel)
+12. [Implementation Strategy](#implementation-strategy)
+13. [TUI Integration](#tui-integration)
+14. [Task Plan](#task-plan)
 
 ---
 
