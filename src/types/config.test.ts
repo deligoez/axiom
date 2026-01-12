@@ -5,6 +5,7 @@ import type {
 	QualityCommand,
 } from "./config.js";
 import { getDefaultConfig } from "./config.js";
+import type { SprintConfig } from "./sprint.js";
 
 describe("Config types", () => {
 	it("AgentTypeConfig accepts object with command and args only", () => {
@@ -211,5 +212,108 @@ describe("Config types", () => {
 		// Timestamps should be between before and after
 		expect(config.createdAt! >= before).toBe(true);
 		expect(config.createdAt! <= after).toBe(true);
+	});
+
+	it("ChorusConfig accepts optional sprint configuration", () => {
+		// Arrange & Act
+		const config: ChorusConfig = {
+			version: "3.1",
+			mode: "semi-auto",
+			project: { taskIdPrefix: "ch-" },
+			agents: {
+				default: "claude",
+				maxParallel: 3,
+				timeoutMinutes: 30,
+				available: {},
+			},
+			qualityCommands: [],
+			completion: {
+				signal: "<chorus>COMPLETE</chorus>",
+				requireTests: true,
+				maxIterations: 50,
+				taskTimeout: 30,
+			},
+			merge: {
+				autoResolve: true,
+				agentResolve: true,
+				requireApproval: false,
+			},
+			tui: { agentGrid: "auto" },
+			checkpoints: {
+				beforeAutopilot: true,
+				beforeMerge: true,
+				periodic: 5,
+			},
+			planReview: {
+				enabled: true,
+				maxIterations: 5,
+				triggerOn: [],
+				autoApply: "none",
+				requireApproval: [],
+			},
+			review: {
+				defaultMode: "batch",
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
+			},
+			sprint: {
+				target: { type: "taskCount", count: 5 },
+				iterationSettings: {
+					maxIterations: 50,
+					timeoutMinutes: 30,
+				},
+				pauseOnStuck: true,
+				pauseOnErrors: false,
+			},
+		};
+
+		// Assert
+		expect(config.sprint).toBeDefined();
+		expect(config.sprint?.target.type).toBe("taskCount");
+		expect(config.sprint?.iterationSettings.maxIterations).toBe(50);
+	});
+
+	it("getDefaultConfig() returns sprint config with default values", () => {
+		// Arrange & Act
+		const config = getDefaultConfig();
+
+		// Assert
+		expect(config.sprint).toBeDefined();
+		expect(config.sprint?.iterationSettings.maxIterations).toBe(50);
+		expect(config.sprint?.iterationSettings.timeoutMinutes).toBe(30);
+		expect(config.sprint?.pauseOnStuck).toBe(true);
+		expect(config.sprint?.pauseOnErrors).toBe(true);
+	});
+
+	it("getDefaultConfig() returns sprint target as noReady by default", () => {
+		// Arrange & Act
+		const config = getDefaultConfig();
+
+		// Assert
+		expect(config.sprint?.target.type).toBe("noReady");
+	});
+
+	it("SprintConfig interface can be used directly", () => {
+		// Arrange & Act
+		const sprintConfig: SprintConfig = {
+			target: { type: "duration", minutes: 120 },
+			iterationSettings: {
+				maxIterations: 10,
+				timeoutMinutes: 15,
+			},
+			pauseOnStuck: false,
+			pauseOnErrors: true,
+		};
+
+		// Assert
+		expect(sprintConfig.target.type).toBe("duration");
+		if (sprintConfig.target.type === "duration") {
+			expect(sprintConfig.target.minutes).toBe(120);
+		}
+		expect(sprintConfig.iterationSettings.maxIterations).toBe(10);
 	});
 });

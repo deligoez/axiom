@@ -1,5 +1,6 @@
 import type { AgentType } from "./agent.js";
 import type { ReviewConfig } from "./review.js";
+import type { SprintConfig } from "./sprint.js";
 
 // Re-export AgentType for convenience
 export type { AgentType };
@@ -76,6 +77,8 @@ export interface ChorusConfig {
 
 	review: ReviewConfig;
 
+	sprint?: SprintConfig;
+
 	createdAt?: string;
 	updatedAt?: string;
 }
@@ -129,6 +132,15 @@ export function getDefaultConfig(): ChorusConfig {
 				requireQualityPass: true,
 			},
 			labelRules: [],
+		},
+		sprint: {
+			target: { type: "noReady" },
+			iterationSettings: {
+				maxIterations: 50,
+				timeoutMinutes: 30,
+			},
+			pauseOnStuck: true,
+			pauseOnErrors: true,
 		},
 		createdAt: now,
 		updatedAt: now,
