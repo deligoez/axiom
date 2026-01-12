@@ -153,19 +153,87 @@ ps.onExit(({exitCode}) => { ... });
 | PageUp | `\u001B[5~` | Page up |
 | PageDown | `\u001B[6~` | Page down |
 
-### Current Workaround
+### PTY Test Helpers (IMPLEMENTED)
 
-Until node-pty is integrated:
-1. **Unit tests** (`ink-testing-library`) - Test keyboard handling via `stdin.write()`
-2. **E2E tests** (`cli-testing-library`) - Test that app doesn't crash on key presses
-3. Skip tests that require actual `useInput` behavior
+node-pty is now integrated for TTY-dependent E2E tests. Use the helpers in `src/test-utils/pty-helpers.ts`:
 
-### Future: node-pty Integration
+```typescript
+import {
+  renderAppWithPty,
+  sendKey,
+  Keys,
+  cleanupPty,
+  type PtyTestResult,
+} from "../test-utils/pty-helpers.js";
 
-To enable full TTY testing:
-1. Add `node-pty` as dev dependency (requires native build)
-2. Create PTY test helpers similar to Ink's approach
-3. Replace cli-testing-library for keyboard-dependent tests
+describe("E2E: Keyboard Interactions (PTY)", () => {
+  let ptyResult: PtyTestResult | null = null;
+
+  afterEach(() => {
+    if (ptyResult) cleanupPty(ptyResult);
+  });
+
+  it("j/k navigation works", async () => {
+    // Arrange
+    projectDir = createTestProject([...tasks]);
+    ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+
+    // Wait for app to start (uses ANSI stripping internally)
+    await ptyResult.waitForText("Tasks (3)", 10000);
+
+    // Act - send keyboard input
+    await sendKey(ptyResult, "j", 300);  // j key with 300ms delay
+
+    // Assert - use getCleanOutput() for ANSI-stripped output
+    const output = ptyResult.getCleanOutput();
+    expect(output).toContain("nav1");
+  }, 20000);
+});
+```
+
+### PTY Helper API
+
+| Method | Description |
+|--------|-------------|
+| `renderAppWithPty(args, options)` | Spawn app in real PTY |
+| `ptyResult.waitForText(text, timeout)` | Wait for text (ANSI stripped automatically) |
+| `ptyResult.getOutput()` | Get raw output with ANSI codes |
+| `ptyResult.getCleanOutput()` | Get output with ANSI codes stripped |
+| `sendKey(ptyResult, key, delay)` | Send key with optional delay |
+| `sendKeys(ptyResult, keys, delay)` | Send multiple keys in sequence |
+| `cleanupPty(ptyResult)` | Kill PTY process |
+| `Keys.TAB`, `Keys.ESCAPE`, etc. | Key code constants |
+
+### When to Use PTY vs cli-testing-library
+
+| Test Type | Tool | Reason |
+|-----------|------|--------|
+| Keyboard behavior | PTY (`pty-helpers.ts`) | Requires real TTY for `useInput` |
+| App doesn't crash | cli-testing-library | Faster, broader compatibility |
+| Visual rendering | cli-testing-library | Sufficient for layout tests |
+| Unit keyboard tests | ink-testing-library | Direct stdin.write() works |
+
+### Important: ANSI Stripping
+
+PTY output contains ANSI escape codes. Always use `getCleanOutput()` for assertions:
+
+```typescript
+// ❌ WRONG - ANSI codes break string matching
+const output = ptyResult.getOutput();
+expect(output).toContain("Tasks (1)");  // May fail due to: [1mTasks [22m[2m(1)[22m
+
+// ✅ CORRECT - ANSI codes stripped
+const output = ptyResult.getCleanOutput();
+expect(output).toContain("Tasks (1)");  // Works correctly
+```
+
+### macOS spawn-helper Permissions
+
+If you get `posix_spawnp failed` errors on macOS, fix permissions:
+
+```bash
+chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper
+```
 
 ## TUI Text Wrapping Problem (CRITICAL)
 
