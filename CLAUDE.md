@@ -73,8 +73,7 @@ npm run quality   # Runs all checks:
 
 | File | Purpose |
 |------|---------|
-| `thoughts/shared/plans/2026-01-09-chorus-workflow.md` | Master Plan |
-| `thoughts/shared/plans/2026-01-11-xstate-migration.md` | XState Migration Plan |
+| `thoughts/shared/plans/2026-01-09-chorus-workflow.md` | Master Plan (v5.1 - includes XState & Review) |
 | `.claude/rules/beads-task-tracking.md` | Task tracking rules |
 | `.claude/rules/auto-commit.md` | TDD commit rules |
 

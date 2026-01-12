@@ -266,9 +266,7 @@ Update this section as you learn:
 - **Root Tasks Blocked:** 47 tasks now depend on ch-mzi3 (FX08)
 - **Total Tasks:** 174 (10 new M-1 + 164 existing)
 - **Ready Tasks:** 1 (ch-lxxb - FX01: XState Setup)
-- **Plan Documents:**
-  - Master Plan: `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v4.0)
-  - XState Plan: `thoughts/shared/plans/2026-01-11-xstate-migration.md`
+- **Plan Document:** `thoughts/shared/plans/2026-01-09-chorus-workflow.md` (v5.1 - all plans consolidated)
 
 ### 2026-01-11 (Seventh Audit - M8-M12 Deep Review)
 - **92 tasks reviewed** across M8-M12 with 7 parallel review agents
