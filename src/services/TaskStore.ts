@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import {
+	appendFileSync,
 	existsSync,
 	mkdirSync,
 	readFileSync,
@@ -31,6 +32,16 @@ import { TaskSelector } from "./TaskSelector.js";
  * - change - emitted after any mutation (with all tasks)
  * - error - emitted on errors
  */
+/**
+ * Audit entry structure.
+ */
+interface AuditEntry {
+	timestamp: string;
+	type: string;
+	action?: string;
+	[key: string]: unknown;
+}
+
 export class TaskStore extends EventEmitter {
 	private tasks: Map<string, Task> = new Map();
 	private deletedIds: Set<string> = new Set();
@@ -38,6 +49,7 @@ export class TaskStore extends EventEmitter {
 	private prefix = "ch"; // TODO: Make configurable in TS16a
 	readonly projectDir: string;
 	private selector: TaskSelector;
+	private auditBuffer: Map<string, AuditEntry[]> = new Map();
 
 	constructor(projectDir: string) {
 		super();
@@ -151,6 +163,8 @@ export class TaskStore extends EventEmitter {
 		const now = new Date().toISOString();
 		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
 
+		this.audit(id, { type: "lifecycle", action: "claim" });
+
 		return (
 			this.update(id, {
 				status: "doing",
@@ -174,6 +188,7 @@ export class TaskStore extends EventEmitter {
 			);
 		}
 
+		this.audit(id, { type: "lifecycle", action: "release" });
 		return this.update(id, { status: "todo" });
 	}
 
@@ -192,6 +207,7 @@ export class TaskStore extends EventEmitter {
 		const now = new Date().toISOString();
 		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
 
+		this.audit(id, { type: "lifecycle", action: "complete" });
 		this.updateExecution(id, {
 			...execution,
 			completedAt: now,
@@ -216,6 +232,8 @@ export class TaskStore extends EventEmitter {
 		const now = new Date().toISOString();
 		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
 
+		this.audit(id, { type: "lifecycle", action: "fail", reason });
+
 		return (
 			this.updateExecution(id, {
 				...execution,
@@ -230,6 +248,7 @@ export class TaskStore extends EventEmitter {
 	 */
 	defer(id: string): Task {
 		this.getOrThrow(id);
+		this.audit(id, { type: "lifecycle", action: "defer" });
 		return this.update(id, { status: "later" });
 	}
 
@@ -245,6 +264,7 @@ export class TaskStore extends EventEmitter {
 			);
 		}
 
+		this.audit(id, { type: "lifecycle", action: "reopen" });
 		return this.update(id, { status: "todo" });
 	}
 
@@ -649,6 +669,7 @@ export class TaskStore extends EventEmitter {
 	/**
 	 * Flush all tasks to JSONL file.
 	 * Uses atomic write (temp file → rename).
+	 * Also flushes audit buffer to individual task files.
 	 */
 	async flush(): Promise<void> {
 		// Ensure .chorus directory exists
@@ -670,6 +691,59 @@ export class TaskStore extends EventEmitter {
 		const tempPath = `${this.tasksPath}.tmp`;
 		writeFileSync(tempPath, content, "utf-8");
 		renameSync(tempPath, this.tasksPath);
+
+		// Flush audit buffer
+		await this.flushAudit();
+	}
+
+	// ─────────────────────────────────────────────────────────
+	// Audit (TS14)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Path to the audit directory.
+	 */
+	private get auditDir(): string {
+		return join(this.chorusDir, "audit");
+	}
+
+	/**
+	 * Add an audit entry for a task.
+	 * Entries are buffered and written on flush.
+	 */
+	audit(taskId: string, entry: Omit<AuditEntry, "timestamp">): void {
+		const fullEntry = {
+			...entry,
+			timestamp: new Date().toISOString(),
+		} as AuditEntry;
+
+		const entries = this.auditBuffer.get(taskId) ?? [];
+		entries.push(fullEntry);
+		this.auditBuffer.set(taskId, entries);
+	}
+
+	/**
+	 * Flush audit buffer to individual task files.
+	 */
+	private async flushAudit(): Promise<void> {
+		if (this.auditBuffer.size === 0) {
+			return;
+		}
+
+		// Ensure audit directory exists
+		if (!existsSync(this.auditDir)) {
+			mkdirSync(this.auditDir, { recursive: true });
+		}
+
+		// Write each task's audit entries
+		for (const [taskId, entries] of this.auditBuffer) {
+			const auditPath = join(this.auditDir, `${taskId}.jsonl`);
+			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			appendFileSync(auditPath, content, "utf-8");
+		}
+
+		// Clear buffer
+		this.auditBuffer.clear();
 	}
 
 	/**
