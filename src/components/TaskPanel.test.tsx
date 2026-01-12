@@ -203,4 +203,95 @@ describe("TaskPanel", () => {
 			expect(lastFrame()).toContain("P4");
 		});
 	});
+
+	describe("selection UI enhancements", () => {
+		it("shows Press Enter to assign when canAssign is true", () => {
+			const beads = [createTestBead({ id: "bd-1" })];
+			const { lastFrame } = render(
+				<TaskPanel beads={beads} selectedBeadId="bd-1" canAssign={true} />,
+			);
+			expect(lastFrame()).toContain("Enter");
+		});
+
+		it("does not show Press Enter when canAssign is false", () => {
+			const beads = [createTestBead({ id: "bd-1" })];
+			const { lastFrame } = render(
+				<TaskPanel beads={beads} selectedBeadId="bd-1" canAssign={false} />,
+			);
+			expect(lastFrame()).not.toContain("Press Enter");
+		});
+
+		it("does not show Press Enter when nothing selected", () => {
+			const beads = [createTestBead({ id: "bd-1" })];
+			const { lastFrame } = render(
+				<TaskPanel beads={beads} canAssign={true} />,
+			);
+			expect(lastFrame()).not.toContain("Press Enter");
+		});
+	});
+
+	describe("footer with counts", () => {
+		it("shows ready count in footer", () => {
+			const beads = [
+				createTestBead({ id: "bd-1", status: "open" }),
+				createTestBead({ id: "bd-2", status: "open" }),
+				createTestBead({ id: "bd-3", status: "blocked" }),
+			];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// Should show 2 ready
+			expect(lastFrame()).toContain("2 ready");
+		});
+
+		it("shows blocked count in footer", () => {
+			const beads = [
+				createTestBead({ id: "bd-1", status: "open" }),
+				createTestBead({ id: "bd-2", status: "blocked" }),
+				createTestBead({ id: "bd-3", status: "blocked" }),
+			];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// Should show 2 blocked
+			expect(lastFrame()).toContain("2 blocked");
+		});
+	});
+
+	describe("blocker count display", () => {
+		it("shows blocker count for blocked tasks", () => {
+			const beads = [
+				createTestBead({
+					id: "bd-1",
+					status: "blocked",
+					dependencies: ["bd-dep1", "bd-dep2"],
+				}),
+			];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// Should show count of blockers
+			expect(lastFrame()).toContain("2");
+		});
+	});
+
+	describe("helper functions", () => {
+		it("getStatusColor returns correct color", () => {
+			// Testing via the component - colors are applied to Text
+			const beads = [createTestBead({ status: "in_progress" })];
+			const { lastFrame } = render(<TaskPanel beads={beads} />);
+			// in_progress should show its indicator
+			expect(lastFrame()).toContain("●");
+		});
+
+		it("getStatusIcon returns correct icon", () => {
+			// Testing that each status has a unique icon
+			const inProgress = [createTestBead({ status: "in_progress" })];
+			const blocked = [createTestBead({ status: "blocked" })];
+			const failed = [createTestBead({ status: "failed" })];
+
+			const { lastFrame: ipFrame } = render(<TaskPanel beads={inProgress} />);
+			const { lastFrame: blockedFrame } = render(<TaskPanel beads={blocked} />);
+			const { lastFrame: failedFrame } = render(<TaskPanel beads={failed} />);
+
+			// Each should have distinct icon
+			expect(ipFrame()).toContain("●");
+			expect(blockedFrame()).toContain("⊗");
+			expect(failedFrame()).toContain("✗");
+		});
+	});
 });

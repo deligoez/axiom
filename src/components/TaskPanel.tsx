@@ -5,6 +5,7 @@ import type { Bead, BeadStatus } from "../types/bead.js";
 interface TaskPanelProps {
 	beads: Bead[];
 	selectedBeadId?: string | null;
+	canAssign?: boolean;
 }
 
 function StatusIndicator({ status }: { status: BeadStatus }) {
@@ -65,7 +66,11 @@ function PriorityBadge({ priority }: { priority: number }) {
 	return <Text color={colors[priority] ?? "gray"}>P{priority}</Text>;
 }
 
-export default function TaskPanel({ beads, selectedBeadId }: TaskPanelProps) {
+export default function TaskPanel({
+	beads,
+	selectedBeadId,
+	canAssign = false,
+}: TaskPanelProps) {
 	if (beads.length === 0) {
 		return (
 			<Box
@@ -80,6 +85,12 @@ export default function TaskPanel({ beads, selectedBeadId }: TaskPanelProps) {
 		);
 	}
 
+	// Calculate counts for footer
+	const readyCount = beads.filter(
+		(b) => b.status === "open" || b.status === "in_progress",
+	).length;
+	const blockedCount = beads.filter((b) => b.status === "blocked").length;
+
 	return (
 		<Box flexDirection="column" flexGrow={1}>
 			<Box marginBottom={1}>
@@ -89,6 +100,7 @@ export default function TaskPanel({ beads, selectedBeadId }: TaskPanelProps) {
 			<Box flexDirection="column" flexGrow={1} overflowY="hidden">
 				{beads.map((bead) => {
 					const isSelected = bead.id === selectedBeadId;
+					const blockerCount = bead.dependencies?.length ?? 0;
 
 					return (
 						<Box key={bead.id} gap={1}>
@@ -100,9 +112,23 @@ export default function TaskPanel({ beads, selectedBeadId }: TaskPanelProps) {
 							</Text>
 							<PriorityBadge priority={bead.priority} />
 							{bead.assignee && <Text dimColor>@{bead.assignee}</Text>}
+							{bead.status === "blocked" && blockerCount > 0 && (
+								<Text dimColor>({blockerCount})</Text>
+							)}
 						</Box>
 					);
 				})}
+			</Box>
+
+			{/* Footer with counts and help */}
+			<Box marginTop={1} flexDirection="column">
+				<Box gap={2}>
+					<Text dimColor>{readyCount} ready</Text>
+					{blockedCount > 0 && <Text dimColor>{blockedCount} blocked</Text>}
+				</Box>
+				{selectedBeadId && canAssign && (
+					<Text color="cyan">Press Enter to assign</Text>
+				)}
 			</Box>
 		</Box>
 	);
