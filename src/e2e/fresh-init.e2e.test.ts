@@ -51,6 +51,10 @@ describe("E2E: Fresh Project Init", () => {
 	});
 
 	// SKIPPED: Flaky under parallel load - see ch-211i
+	// Root cause: E2E test infrastructure has timing issues with file watchers.
+	// The app's ImplementationMode component doesn't render in E2E test environment
+	// due to app routing issues (app goes to init/planning mode instead of implementation).
+	// Improvement made: Added awaitWriteFinish option to BeadsService chokidar config.
 	it.skip("can create first task via file", async () => {
 		// Arrange - pre-create .beads directory so watcher is ready
 		const beadsDir = join(projectDir, ".beads");

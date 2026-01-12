@@ -71,6 +71,12 @@ export class BeadsService extends EventEmitter<BeadsServiceEvents> {
 		this.watcher = chokidar.watch(this.beadsPath, {
 			persistent: true,
 			ignoreInitial: true,
+			// Wait for file writes to finish before triggering events
+			// This helps avoid race conditions when files are being written
+			awaitWriteFinish: {
+				stabilityThreshold: 50,
+				pollInterval: 10,
+			},
 		});
 
 		this.watcher.on("change", () => {
