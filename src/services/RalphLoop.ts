@@ -24,6 +24,8 @@ export interface LoopStatus {
 	tasksCompleted: number;
 }
 
+const ERROR_THRESHOLD = 3;
+
 export class RalphLoop {
 	private running = false;
 	private paused = false;
@@ -31,6 +33,8 @@ export class RalphLoop {
 	private tasksCompleted = 0;
 	private stopResolve: (() => void) | null = null;
 	private maxIterations: number;
+	private consecutiveErrors = 0;
+	private diskFull = false;
 
 	constructor(private deps: RalphLoopDeps) {
 		this.maxIterations = deps.maxIterations ?? 3;
@@ -150,6 +154,13 @@ export class RalphLoop {
 	}
 
 	/**
+	 * Check if paused due to disk full.
+	 */
+	isDiskFullPause(): boolean {
+		return this.diskFull;
+	}
+
+	/**
 	 * Process the task assignment loop.
 	 *
 	 * Assigns ready tasks to available slots, respecting priority and FIFO order.
@@ -163,6 +174,11 @@ export class RalphLoop {
 
 		// Assign tasks to available slots
 		for (const task of sortedTasks) {
+			// Check if paused (error threshold or disk full)
+			if (this.paused) {
+				break;
+			}
+
 			// Check if we have available slots
 			if (!this.deps.slotManager.hasAvailable()) {
 				break;
@@ -174,9 +190,17 @@ export class RalphLoop {
 				break;
 			}
 
-			// Assign the task
-			await this.deps.orchestrator.assignTask({ taskId: task.id });
-			this.tasksAssigned++;
+			// Assign the task with error handling
+			try {
+				await this.deps.orchestrator.assignTask({ taskId: task.id });
+				this.tasksAssigned++;
+				this.consecutiveErrors = 0; // Reset on success
+			} catch (error) {
+				// Handle error
+				this.handleAssignmentError(error);
+				// Release the slot we acquired
+				this.deps.slotManager.release();
+			}
 		}
 
 		// Check if all done
@@ -184,6 +208,47 @@ export class RalphLoop {
 		if (sortedTasks.length === 0 && activeSlots === 0) {
 			this.deps.eventEmitter.emit("allDone");
 		}
+	}
+
+	/**
+	 * Handle task assignment errors.
+	 */
+	private handleAssignmentError(error: unknown): void {
+		const err = error instanceof Error ? error : new Error(String(error));
+
+		// Check for disk full (ENOSPC)
+		if (this.isDiskFullError(error)) {
+			this.diskFull = true;
+			this.paused = true;
+			this.deps.eventEmitter.emit("diskFull", err);
+			return;
+		}
+
+		// Emit error event
+		this.deps.eventEmitter.emit("error", err);
+
+		// Track consecutive errors
+		this.consecutiveErrors++;
+
+		// Check error threshold
+		if (this.consecutiveErrors >= ERROR_THRESHOLD) {
+			this.paused = true;
+			this.deps.eventEmitter.emit("errorThreshold", {
+				consecutiveErrors: this.consecutiveErrors,
+				lastError: err,
+			});
+		}
+	}
+
+	/**
+	 * Check if error is disk full (ENOSPC).
+	 */
+	private isDiskFullError(error: unknown): boolean {
+		if (error instanceof Error) {
+			const nodeError = error as NodeJS.ErrnoException;
+			return nodeError.code === "ENOSPC";
+		}
+		return false;
 	}
 
 	/**

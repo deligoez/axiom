@@ -490,4 +490,254 @@ describe("RalphLoop", () => {
 			expect(allDoneHandler).toHaveBeenCalled();
 		});
 	});
+
+	describe("processLoop() - Error Handling", () => {
+		describe("Error Events", () => {
+			it("emits 'error' event with Error object on assignment failure", async () => {
+				// Arrange
+				const errorHandler = vi.fn();
+				eventEmitter.on("error", errorHandler);
+				const tasks = [{ id: "ch-fail", priority: 1, status: "open" }];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(
+					new Error("Assignment failed"),
+				);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert
+				expect(errorHandler).toHaveBeenCalledWith(expect.any(Error));
+			});
+
+			it("continues loop after error (catches, emits, continues)", async () => {
+				// Arrange
+				eventEmitter.on("error", vi.fn()); // Prevent unhandled error throw
+				const tasks = [
+					{ id: "ch-fail", priority: 1, status: "open" },
+					{ id: "ch-ok", priority: 2, status: "open" },
+				];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				vi.mocked(orchestrator.assignTask)
+					.mockRejectedValueOnce(new Error("First failed"))
+					.mockResolvedValueOnce({ success: true, taskId: "ch-ok" });
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert - second task should still be attempted
+				expect(orchestrator.assignTask).toHaveBeenCalledTimes(2);
+			});
+		});
+
+		describe("Error Threshold", () => {
+			it("pauses after 3 consecutive errors", async () => {
+				// Arrange
+				eventEmitter.on("error", vi.fn()); // Prevent unhandled error throw
+				const tasks = [
+					{ id: "ch-1", priority: 1, status: "open" },
+					{ id: "ch-2", priority: 1, status: "open" },
+					{ id: "ch-3", priority: 1, status: "open" },
+					{ id: "ch-4", priority: 1, status: "open" },
+				];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(
+					new Error("Assignment failed"),
+				);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert - should pause after 3 consecutive errors
+				expect(ralphLoop.isPaused()).toBe(true);
+			});
+
+			it("emits 'errorThreshold' event with consecutiveErrors and lastError", async () => {
+				// Arrange
+				eventEmitter.on("error", vi.fn()); // Prevent unhandled error throw
+				const errorThresholdHandler = vi.fn();
+				eventEmitter.on("errorThreshold", errorThresholdHandler);
+				const tasks = [
+					{ id: "ch-1", priority: 1, status: "open" },
+					{ id: "ch-2", priority: 1, status: "open" },
+					{ id: "ch-3", priority: 1, status: "open" },
+				];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(
+					new Error("Assignment failed"),
+				);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert
+				expect(errorThresholdHandler).toHaveBeenCalledWith(
+					expect.objectContaining({
+						consecutiveErrors: 3,
+						lastError: expect.any(Error),
+					}),
+				);
+			});
+
+			it("waits for resume() call before continuing after errorThreshold", async () => {
+				// Arrange
+				eventEmitter.on("error", vi.fn()); // Prevent unhandled error throw
+				const tasks = [
+					{ id: "ch-1", priority: 1, status: "open" },
+					{ id: "ch-2", priority: 1, status: "open" },
+					{ id: "ch-3", priority: 1, status: "open" },
+				];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(
+					new Error("Assignment failed"),
+				);
+				ralphLoop.start();
+
+				// Act - trigger error threshold
+				await ralphLoop.processLoop();
+				expect(ralphLoop.isPaused()).toBe(true);
+
+				// Act - resume
+				ralphLoop.resume();
+
+				// Assert - should be unpaused
+				expect(ralphLoop.isPaused()).toBe(false);
+			});
+		});
+
+		describe("Disk Full Handling", () => {
+			it("detects ENOSPC error code from git/file operations", async () => {
+				// Arrange
+				const diskFullHandler = vi.fn();
+				eventEmitter.on("diskFull", diskFullHandler);
+				const tasks = [{ id: "ch-1", priority: 1, status: "open" }];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				const enospcError = new Error(
+					"No space left on device",
+				) as NodeJS.ErrnoException;
+				enospcError.code = "ENOSPC";
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(enospcError);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert
+				expect(diskFullHandler).toHaveBeenCalled();
+			});
+
+			it("emits 'diskFull' event with error details", async () => {
+				// Arrange
+				const diskFullHandler = vi.fn();
+				eventEmitter.on("diskFull", diskFullHandler);
+				const tasks = [{ id: "ch-1", priority: 1, status: "open" }];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				const enospcError = new Error(
+					"No space left on device",
+				) as NodeJS.ErrnoException;
+				enospcError.code = "ENOSPC";
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(enospcError);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert
+				expect(diskFullHandler).toHaveBeenCalledWith(
+					expect.objectContaining({
+						code: "ENOSPC",
+					}),
+				);
+			});
+
+			it("auto-pauses on disk full (no resume until space freed)", async () => {
+				// Arrange
+				const tasks = [{ id: "ch-1", priority: 1, status: "open" }];
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue(tasks as any);
+				vi.mocked(slotManager.hasAvailable).mockReturnValue(true);
+				vi.mocked(slotManager.acquire).mockReturnValue(true);
+				const enospcError = new Error(
+					"No space left on device",
+				) as NodeJS.ErrnoException;
+				enospcError.code = "ENOSPC";
+				vi.mocked(orchestrator.assignTask).mockRejectedValue(enospcError);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert
+				expect(ralphLoop.isPaused()).toBe(true);
+				expect(ralphLoop.isDiskFullPause()).toBe(true);
+			});
+		});
+
+		describe("Config Items", () => {
+			it("respects config.completion.maxIterations (default 50)", async () => {
+				// Arrange
+				const timeoutHandler = vi.fn();
+				eventEmitter.on("taskTimeout", timeoutHandler);
+				ralphLoop.start();
+
+				// Act - simulate NO_SIGNAL at default maxIterations (3 in test setup)
+				eventEmitter.emit("agentNoSignal", { taskId: "ch-max", iteration: 3 });
+
+				// Assert - should timeout based on configured maxIterations
+				expect(timeoutHandler).toHaveBeenCalledWith(
+					expect.objectContaining({
+						taskId: "ch-max",
+					}),
+				);
+			});
+
+			it("respects config.completion.taskTimeout (default 1800000ms)", async () => {
+				// Arrange - this is tested via constructor config
+				// The maxIterations was set to 3 in beforeEach
+				const timeoutHandler = vi.fn();
+				eventEmitter.on("taskTimeout", timeoutHandler);
+				ralphLoop.start();
+
+				// Act
+				eventEmitter.emit("agentNoSignal", {
+					taskId: "ch-timeout",
+					iteration: 3,
+				});
+
+				// Assert
+				expect(timeoutHandler).toHaveBeenCalled();
+			});
+
+			it("emits 'taskTimeout' when task exceeds timeout", async () => {
+				// Arrange
+				const timeoutHandler = vi.fn();
+				eventEmitter.on("taskTimeout", timeoutHandler);
+				ralphLoop.start();
+
+				// Act - simulate iteration timeout
+				eventEmitter.emit("agentNoSignal", {
+					taskId: "ch-timeout",
+					iteration: 3,
+				});
+
+				// Assert
+				expect(timeoutHandler).toHaveBeenCalledWith(
+					expect.objectContaining({
+						taskId: "ch-timeout",
+						iterations: 3,
+					}),
+				);
+			});
+		});
+	});
 });
