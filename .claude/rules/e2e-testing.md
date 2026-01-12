@@ -235,6 +235,29 @@ If you get `posix_spawnp failed` errors on macOS, fix permissions:
 chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper
 ```
 
+### Important: TTY Detection in node-pty (CRITICAL)
+
+**Problem:** In node-pty spawned processes, `process.stdin.isTTY` is often `false` or `undefined` even though the process is connected to a real PTY. This causes `useInput` hooks to be disabled because they check `process.stdin?.isTTY`.
+
+**Solution:** When writing hooks that use `useInput`, check BOTH stdin AND stdout for TTY:
+
+```typescript
+// ❌ WRONG - stdin.isTTY is false in node-pty spawned processes
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
+// ✅ CORRECT - Check both stdin and stdout
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
+```
+
+**Why this happens:** node-pty creates a pseudo-terminal for stdout/stderr, but stdin may be handled differently (as a PassThrough stream). Checking `process.stdout?.isTTY` correctly detects the PTY environment.
+
+**Files already fixed:**
+- `src/modes/ImplementationMode.tsx`
+- `src/hooks/useInterventionKey.ts`
+- `src/components/InterventionPanel.tsx`
+
+**When adding new hooks with `useInput`:** Always use the combined TTY check pattern above.
+
 ## TUI Text Wrapping Problem (CRITICAL)
 
 The TUI layout has fixed-width columns (~22 chars for task panel). Long text wraps across multiple lines, breaking assertions:
