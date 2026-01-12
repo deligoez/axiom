@@ -62,7 +62,7 @@ describe("InitMode", () => {
 			const { lastFrame } = render(
 				<InitMode projectDir={tempDir} onComplete={vi.fn()} />,
 			);
-			await wait(50);
+			await wait(100); // Need longer wait for React effects to complete
 
 			// Assert
 			expect(lastFrame()).toMatch(/Step 1\/5/);
@@ -73,7 +73,7 @@ describe("InitMode", () => {
 			const { lastFrame } = render(
 				<InitMode projectDir={tempDir} onComplete={vi.fn()} />,
 			);
-			await wait(50);
+			await wait(100); // Need longer wait for React effects to complete
 
 			// Assert - shows checking or results
 			expect(lastFrame()).toMatch(/prerequisites|checking/i);
