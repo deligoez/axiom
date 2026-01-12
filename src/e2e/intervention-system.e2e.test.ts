@@ -16,9 +16,9 @@ import {
 	type OrchestratorControl,
 	PauseHandler,
 } from "../services/PauseHandler.js";
+import type { TaskProvider } from "../types/task-provider.js";
 import {
 	type AgentStopper as BlockerAgentStopper,
-	type BeadsCLI as BlockerBeadsCLI,
 	TaskBlocker,
 } from "../services/TaskBlocker.js";
 
@@ -371,23 +371,26 @@ describe("E2E: Human Intervention System", () => {
 				}),
 			};
 
-			const beadsCLI: BlockerBeadsCLI = {
-				getTask: async (taskId) => ({
+			const taskProvider = {
+				getTask: async (taskId: string) => ({
 					id: taskId,
+					title: `Task ${taskId}`,
+					priority: 2,
 					status: "in_progress",
 					labels: [],
+					dependencies: [],
 				}),
-				addLabel: async (taskId, label) => {
+				addLabel: async (taskId: string, label: string) => {
 					addedLabels.push({ taskId, label });
 				},
 				removeLabel: vi.fn(),
 				updateStatus: vi.fn(),
-				addNote: async (taskId, note) => {
+				addNote: async (taskId: string, note: string) => {
 					addedNotes.push({ taskId, note });
 				},
-			};
+			} as unknown as TaskProvider;
 
-			const blocker = new TaskBlocker(agentStopper, beadsCLI);
+			const blocker = new TaskBlocker(agentStopper, taskProvider);
 
 			// Act
 			const result = await blocker.blockTask("ch-001", "Needs investigation");
@@ -408,19 +411,19 @@ describe("E2E: Human Intervention System", () => {
 			// Arrange
 			const removedLabels: { taskId: string; label: string }[] = [];
 
-			const beadsCLI: BlockerBeadsCLI = {
+			const taskProvider = {
 				getTask: vi.fn(),
 				addLabel: vi.fn(),
-				removeLabel: async (taskId, label) => {
+				removeLabel: async (taskId: string, label: string) => {
 					removedLabels.push({ taskId, label });
 				},
 				updateStatus: vi.fn(),
 				addNote: vi.fn(),
-			};
+			} as unknown as TaskProvider;
 
 			const blocker = new TaskBlocker(
 				{ stopAgentByTask: vi.fn(), getAgentForTask: () => null },
-				beadsCLI,
+				taskProvider,
 			);
 
 			// Act
@@ -436,21 +439,24 @@ describe("E2E: Human Intervention System", () => {
 
 		it("checks if task is blocked", async () => {
 			// Arrange
-			const beadsCLI: BlockerBeadsCLI = {
-				getTask: async (taskId) => ({
+			const taskProvider = {
+				getTask: async (taskId: string) => ({
 					id: taskId,
+					title: `Task ${taskId}`,
+					priority: 2,
 					status: "open",
 					labels: ["blocked", "bug"],
+					dependencies: [],
 				}),
 				addLabel: vi.fn(),
 				removeLabel: vi.fn(),
 				updateStatus: vi.fn(),
 				addNote: vi.fn(),
-			};
+			} as unknown as TaskProvider;
 
 			const blocker = new TaskBlocker(
 				{ stopAgentByTask: vi.fn(), getAgentForTask: () => null },
-				beadsCLI,
+				taskProvider,
 			);
 
 			// Act

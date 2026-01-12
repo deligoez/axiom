@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TaskProvider } from "../types/task-provider.js";
 import { TaskBlocker } from "./TaskBlocker.js";
 
 interface StopResult {
@@ -18,24 +19,10 @@ interface AgentStopper {
 	getAgentForTask(taskId: string): AgentSlot | null;
 }
 
-interface Task {
-	id: string;
-	status: string;
-	labels: string[];
-}
-
-interface BeadsCLI {
-	getTask(taskId: string): Promise<Task | null>;
-	addLabel(taskId: string, label: string): Promise<void>;
-	removeLabel(taskId: string, label: string): Promise<void>;
-	updateStatus(taskId: string, status: string): Promise<void>;
-	addNote(taskId: string, note: string): Promise<void>;
-}
-
 describe("TaskBlocker", () => {
 	let blocker: TaskBlocker;
 	let mockAgentStopper: AgentStopper;
-	let mockBeadsCLI: BeadsCLI;
+	let mockTaskProvider: TaskProvider;
 
 	let mockStopAgentByTask: ReturnType<typeof vi.fn>;
 	let mockGetAgentForTask: ReturnType<typeof vi.fn>;
@@ -45,15 +32,15 @@ describe("TaskBlocker", () => {
 	let mockUpdateStatus: ReturnType<typeof vi.fn>;
 	let mockAddNote: ReturnType<typeof vi.fn>;
 
-	const createMockTask = (
-		id: string,
-		status: string,
-		labels: string[] = [],
-	): Task => ({
-		id,
-		status,
-		labels,
-	});
+	const createMockTask = (id: string, status: string, labels: string[] = []) =>
+		({
+			id,
+			title: `Task ${id}`,
+			priority: 2,
+			status,
+			labels,
+			dependencies: [],
+		}) as const;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -66,19 +53,26 @@ describe("TaskBlocker", () => {
 		};
 
 		mockGetTask = vi.fn();
-		mockAddLabel = vi.fn();
-		mockRemoveLabel = vi.fn();
-		mockUpdateStatus = vi.fn();
-		mockAddNote = vi.fn();
-		mockBeadsCLI = {
-			getTask: mockGetTask as BeadsCLI["getTask"],
-			addLabel: mockAddLabel as BeadsCLI["addLabel"],
-			removeLabel: mockRemoveLabel as BeadsCLI["removeLabel"],
-			updateStatus: mockUpdateStatus as BeadsCLI["updateStatus"],
-			addNote: mockAddNote as BeadsCLI["addNote"],
-		};
+		mockAddLabel = vi.fn().mockResolvedValue(undefined);
+		mockRemoveLabel = vi.fn().mockResolvedValue(undefined);
+		mockUpdateStatus = vi.fn().mockResolvedValue(undefined);
+		mockAddNote = vi.fn().mockResolvedValue(undefined);
+		mockTaskProvider = {
+			getTask: mockGetTask,
+			claimTask: vi.fn().mockResolvedValue(undefined),
+			releaseTask: vi.fn().mockResolvedValue(undefined),
+			getReadyTasks: vi.fn().mockResolvedValue([]),
+			closeTask: vi.fn().mockResolvedValue(undefined),
+			getTaskStatus: vi.fn().mockResolvedValue(null),
+			updateStatus: mockUpdateStatus,
+			getTaskLabels: vi.fn().mockResolvedValue([]),
+			addLabel: mockAddLabel,
+			removeLabel: mockRemoveLabel,
+			addNote: mockAddNote,
+			updateTask: vi.fn().mockResolvedValue(undefined),
+		} as unknown as TaskProvider;
 
-		blocker = new TaskBlocker(mockAgentStopper, mockBeadsCLI);
+		blocker = new TaskBlocker(mockAgentStopper, mockTaskProvider);
 	});
 
 	describe("blockTask", () => {

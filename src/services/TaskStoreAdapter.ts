@@ -169,6 +169,81 @@ export class TaskStoreAdapter {
 	}
 
 	/**
+	 * Add a label/tag to a task.
+	 */
+	async addLabel(id: string, label: string): Promise<void> {
+		const task = this.store.get(id);
+		if (!task) return;
+		const tags = [...task.tags];
+		if (!tags.includes(label)) {
+			tags.push(label);
+			this.store.update(id, { tags });
+		}
+	}
+
+	/**
+	 * Remove a label/tag from a task.
+	 */
+	async removeLabel(id: string, label: string): Promise<void> {
+		const task = this.store.get(id);
+		if (!task) return;
+		const tags = task.tags.filter((t) => t !== label);
+		this.store.update(id, { tags });
+	}
+
+	/**
+	 * Add a note to a task (appends to description).
+	 */
+	async addNote(id: string, note: string): Promise<void> {
+		const task = this.store.get(id);
+		if (!task) return;
+		const description = task.description
+			? `${task.description}\n\n${note}`
+			: note;
+		this.store.update(id, { description });
+	}
+
+	/**
+	 * Update a task field (generic field update).
+	 */
+	async updateTask(id: string, field: string, value: string): Promise<void> {
+		const task = this.store.get(id);
+		if (!task) return;
+
+		// Map common field names to TaskStore fields
+		switch (field) {
+			case "title":
+				this.store.update(id, { title: value });
+				break;
+			case "description":
+				this.store.update(id, { description: value });
+				break;
+			case "status":
+				await this.updateStatus(id, value);
+				break;
+			case "acceptance_criteria":
+			case "add_criteria": {
+				const criteria = task.acceptanceCriteria ?? [];
+				criteria.push(value);
+				this.store.update(id, { acceptanceCriteria: criteria });
+				break;
+			}
+			case "labels": {
+				const tags = value.split(",").map((l) => l.trim());
+				this.store.update(id, { tags });
+				break;
+			}
+			case "notes":
+				await this.addNote(id, value);
+				break;
+			default:
+				// For unknown fields, try to set them directly if supported
+				// This provides forward compatibility
+				break;
+		}
+	}
+
+	/**
 	 * Get in-progress tasks.
 	 */
 	async getInProgressTasks(): Promise<BeadTask[]> {

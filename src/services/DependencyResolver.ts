@@ -1,4 +1,4 @@
-import type { BeadsCLI } from "./BeadsCLI.js";
+import type { TaskProvider } from "../types/task-provider.js";
 
 export interface DependencyStatus {
 	satisfied: boolean;
@@ -8,10 +8,10 @@ export interface DependencyStatus {
 }
 
 export class DependencyResolver {
-	constructor(private beadsCLI: BeadsCLI) {}
+	constructor(private taskProvider: TaskProvider) {}
 
 	async check(taskId: string): Promise<DependencyStatus> {
-		const task = await this.beadsCLI.getTask(taskId);
+		const task = await this.taskProvider.getTask(taskId);
 		if (!task) {
 			return {
 				satisfied: false,
@@ -36,7 +36,7 @@ export class DependencyResolver {
 		const failed: string[] = [];
 
 		for (const depId of dependencies) {
-			const dep = await this.beadsCLI.getTask(depId);
+			const dep = await this.taskProvider.getTask(depId);
 			if (!dep) {
 				failed.push(depId);
 			} else if (dep.status === "closed") {
@@ -60,7 +60,7 @@ export class DependencyResolver {
 	}
 
 	async getDependencies(taskId: string): Promise<string[]> {
-		const task = await this.beadsCLI.getTask(taskId);
+		const task = await this.taskProvider.getTask(taskId);
 		if (!task) {
 			return [];
 		}
@@ -68,7 +68,7 @@ export class DependencyResolver {
 	}
 
 	async isDependencySatisfied(depId: string): Promise<boolean> {
-		const dep = await this.beadsCLI.getTask(depId);
+		const dep = await this.taskProvider.getTask(depId);
 		if (!dep) {
 			return false;
 		}
@@ -76,7 +76,7 @@ export class DependencyResolver {
 	}
 
 	async getDependents(taskId: string): Promise<string[]> {
-		const allTasks = await this.beadsCLI.getReadyTasks({});
+		const allTasks = await this.taskProvider.getReadyTasks({});
 		const dependents: string[] = [];
 
 		for (const task of allTasks) {
@@ -104,7 +104,7 @@ export class DependencyResolver {
 
 		visited.add(currentId);
 
-		const task = await this.beadsCLI.getTask(currentId);
+		const task = await this.taskProvider.getTask(currentId);
 		if (!task || !task.dependencies || task.dependencies.length === 0) {
 			return false;
 		}

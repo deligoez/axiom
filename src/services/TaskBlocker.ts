@@ -1,4 +1,5 @@
 import type { InterventionResult } from "../types/intervention.js";
+import type { TaskProvider } from "../types/task-provider.js";
 
 interface StopResult {
 	success: boolean;
@@ -17,24 +18,10 @@ export interface AgentStopper {
 	getAgentForTask(taskId: string): AgentSlot | null;
 }
 
-interface Task {
-	id: string;
-	status: string;
-	labels: string[];
-}
-
-export interface BeadsCLI {
-	getTask(taskId: string): Promise<Task | null>;
-	addLabel(taskId: string, label: string): Promise<void>;
-	removeLabel(taskId: string, label: string): Promise<void>;
-	updateStatus(taskId: string, status: string): Promise<void>;
-	addNote(taskId: string, note: string): Promise<void>;
-}
-
 export class TaskBlocker {
 	constructor(
 		private agentStopper: AgentStopper,
-		private beadsCLI: BeadsCLI,
+		private taskProvider: TaskProvider,
 	) {}
 
 	/**
@@ -57,18 +44,18 @@ export class TaskBlocker {
 		await this.agentStopper.stopAgentByTask(taskId);
 
 		// Get task info
-		const task = await this.beadsCLI.getTask(taskId);
+		const task = await this.taskProvider.getTask(taskId);
 
 		// Update status to open if was in_progress
 		if (task && task.status === "in_progress") {
-			await this.beadsCLI.updateStatus(taskId, "open");
+			await this.taskProvider.updateStatus(taskId, "open");
 		}
 
 		// Add blocked label
-		await this.beadsCLI.addLabel(taskId, "blocked");
+		await this.taskProvider.addLabel(taskId, "blocked");
 
 		// Record reason in task notes
-		await this.beadsCLI.addNote(
+		await this.taskProvider.addNote(
 			taskId,
 			`Blocked: ${reason} (${new Date().toISOString()})`,
 		);
@@ -89,7 +76,7 @@ export class TaskBlocker {
 	 */
 	async unblockTask(taskId: string): Promise<InterventionResult> {
 		// Remove blocked label
-		await this.beadsCLI.removeLabel(taskId, "blocked");
+		await this.taskProvider.removeLabel(taskId, "blocked");
 
 		return {
 			success: true,
@@ -104,7 +91,7 @@ export class TaskBlocker {
 	 * - Checks for "blocked" label in task.labels
 	 */
 	async isBlocked(taskId: string): Promise<boolean> {
-		const task = await this.beadsCLI.getTask(taskId);
+		const task = await this.taskProvider.getTask(taskId);
 		if (!task) {
 			return false;
 		}

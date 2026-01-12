@@ -37,4 +37,8 @@ export interface TaskProvider {
 	getTaskStatus(id: string): Promise<string | null>;
 	updateStatus(id: string, status: string): Promise<void>;
 	getTaskLabels(id: string): Promise<string[]>;
+	addLabel(id: string, label: string): Promise<void>;
+	removeLabel(id: string, label: string): Promise<void>;
+	addNote(id: string, note: string): Promise<void>;
+	updateTask(id: string, field: string, value: string): Promise<void>;
 }

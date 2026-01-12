@@ -1,19 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { BeadsCLI, Task } from "./BeadsCLI.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 import { DependencyResolver } from "./DependencyResolver.js";
 
 describe("DependencyResolver", () => {
 	let resolver: DependencyResolver;
-	let mockBeadsCLI: {
-		getTask: ReturnType<typeof vi.fn>;
-		getReadyTasks: ReturnType<typeof vi.fn>;
-	};
+	let mockGetTask: ReturnType<typeof vi.fn>;
+	let mockGetReadyTasks: ReturnType<typeof vi.fn>;
 
 	const createTask = (
 		id: string,
 		status: string,
 		dependencies: string[] = [],
-	): Task => ({
+	): TaskProviderTask => ({
 		id,
 		title: `Task ${id}`,
 		status,
@@ -23,11 +21,23 @@ describe("DependencyResolver", () => {
 	});
 
 	beforeEach(() => {
-		mockBeadsCLI = {
-			getTask: vi.fn(),
-			getReadyTasks: vi.fn().mockResolvedValue([]),
-		};
-		resolver = new DependencyResolver(mockBeadsCLI as unknown as BeadsCLI);
+		mockGetTask = vi.fn();
+		mockGetReadyTasks = vi.fn().mockResolvedValue([]);
+		const mockTaskProvider = {
+			getTask: mockGetTask,
+			claimTask: vi.fn().mockResolvedValue(undefined),
+			releaseTask: vi.fn().mockResolvedValue(undefined),
+			getReadyTasks: mockGetReadyTasks,
+			closeTask: vi.fn().mockResolvedValue(undefined),
+			getTaskStatus: vi.fn().mockResolvedValue(null),
+			updateStatus: vi.fn().mockResolvedValue(undefined),
+			getTaskLabels: vi.fn().mockResolvedValue([]),
+			addLabel: vi.fn().mockResolvedValue(undefined),
+			removeLabel: vi.fn().mockResolvedValue(undefined),
+			addNote: vi.fn().mockResolvedValue(undefined),
+			updateTask: vi.fn().mockResolvedValue(undefined),
+		} as unknown as import("../types/task-provider.js").TaskProvider;
+		resolver = new DependencyResolver(mockTaskProvider);
 	});
 
 	// check() - 5 tests
@@ -35,7 +45,7 @@ describe("DependencyResolver", () => {
 		it("returns satisfied: true when no dependencies", async () => {
 			// Arrange
 			const task = createTask("ch-123", "open", []);
-			mockBeadsCLI.getTask.mockResolvedValue(task);
+			mockGetTask.mockResolvedValue(task);
 
 			// Act
 			const result = await resolver.check("ch-123");
@@ -50,7 +60,7 @@ describe("DependencyResolver", () => {
 			const task = createTask("ch-123", "open", ["ch-dep1", "ch-dep2"]);
 			const dep1 = createTask("ch-dep1", "closed");
 			const dep2 = createTask("ch-dep2", "closed");
-			mockBeadsCLI.getTask
+			mockGetTask
 				.mockResolvedValueOnce(task)
 				.mockResolvedValueOnce(dep1)
 				.mockResolvedValueOnce(dep2);
@@ -67,7 +77,7 @@ describe("DependencyResolver", () => {
 			const task = createTask("ch-123", "open", ["ch-dep1", "ch-dep2"]);
 			const dep1 = createTask("ch-dep1", "open");
 			const dep2 = createTask("ch-dep2", "closed");
-			mockBeadsCLI.getTask
+			mockGetTask
 				.mockResolvedValueOnce(task)
 				.mockResolvedValueOnce(dep1)
 				.mockResolvedValueOnce(dep2);
@@ -84,7 +94,7 @@ describe("DependencyResolver", () => {
 			// Arrange
 			const task = createTask("ch-123", "open", ["ch-dep1"]);
 			const dep1 = createTask("ch-dep1", "in_progress");
-			mockBeadsCLI.getTask
+			mockGetTask
 				.mockResolvedValueOnce(task)
 				.mockResolvedValueOnce(dep1);
 
@@ -99,7 +109,7 @@ describe("DependencyResolver", () => {
 		it("returns failed[] for missing deps", async () => {
 			// Arrange
 			const task = createTask("ch-123", "open", ["ch-missing"]);
-			mockBeadsCLI.getTask
+			mockGetTask
 				.mockResolvedValueOnce(task)
 				.mockResolvedValueOnce(null);
 
@@ -117,7 +127,7 @@ describe("DependencyResolver", () => {
 		it("returns empty array for no deps", async () => {
 			// Arrange
 			const task = createTask("ch-123", "open", []);
-			mockBeadsCLI.getTask.mockResolvedValue(task);
+			mockGetTask.mockResolvedValue(task);
 
 			// Act
 			const result = await resolver.getDependencies("ch-123");
@@ -129,7 +139,7 @@ describe("DependencyResolver", () => {
 		it("returns list of dependency IDs", async () => {
 			// Arrange
 			const task = createTask("ch-123", "open", ["ch-dep1", "ch-dep2"]);
-			mockBeadsCLI.getTask.mockResolvedValue(task);
+			mockGetTask.mockResolvedValue(task);
 
 			// Act
 			const result = await resolver.getDependencies("ch-123");
@@ -144,7 +154,7 @@ describe("DependencyResolver", () => {
 		it("returns true if dep is closed", async () => {
 			// Arrange
 			const dep = createTask("ch-dep1", "closed");
-			mockBeadsCLI.getTask.mockResolvedValue(dep);
+			mockGetTask.mockResolvedValue(dep);
 
 			// Act
 			const result = await resolver.isDependencySatisfied("ch-dep1");
@@ -156,7 +166,7 @@ describe("DependencyResolver", () => {
 		it("returns false if dep is open/in_progress", async () => {
 			// Arrange
 			const dep = createTask("ch-dep1", "open");
-			mockBeadsCLI.getTask.mockResolvedValue(dep);
+			mockGetTask.mockResolvedValue(dep);
 
 			// Act
 			const result = await resolver.isDependencySatisfied("ch-dep1");
@@ -170,12 +180,12 @@ describe("DependencyResolver", () => {
 	describe("getDependents()", () => {
 		it("returns tasks blocked by this task", async () => {
 			// Arrange
-			const allTasks: Task[] = [
+			const allTasks: TaskProviderTask[] = [
 				createTask("ch-a", "open", ["ch-target"]),
 				createTask("ch-b", "open", ["ch-target", "ch-other"]),
 				createTask("ch-c", "open", []),
 			];
-			mockBeadsCLI.getReadyTasks.mockResolvedValue(allTasks);
+			mockGetReadyTasks.mockResolvedValue(allTasks);
 
 			// Act
 			const result = await resolver.getDependents("ch-target");
@@ -188,11 +198,11 @@ describe("DependencyResolver", () => {
 
 		it("returns empty array if nothing blocked", async () => {
 			// Arrange
-			const allTasks: Task[] = [
+			const allTasks: TaskProviderTask[] = [
 				createTask("ch-a", "open", ["ch-other"]),
 				createTask("ch-b", "open", []),
 			];
-			mockBeadsCLI.getReadyTasks.mockResolvedValue(allTasks);
+			mockGetReadyTasks.mockResolvedValue(allTasks);
 
 			// Act
 			const result = await resolver.getDependents("ch-target");
@@ -209,7 +219,7 @@ describe("DependencyResolver", () => {
 			const taskA = createTask("ch-a", "open", ["ch-b"]);
 			const taskB = createTask("ch-b", "open", ["ch-c"]);
 			const taskC = createTask("ch-c", "open", []);
-			mockBeadsCLI.getTask
+			mockGetTask
 				.mockResolvedValueOnce(taskA)
 				.mockResolvedValueOnce(taskB)
 				.mockResolvedValueOnce(taskC);
@@ -225,7 +235,7 @@ describe("DependencyResolver", () => {
 			// Arrange - A -> B -> A (circular)
 			const taskA = createTask("ch-a", "open", ["ch-b"]);
 			const taskB = createTask("ch-b", "open", ["ch-a"]);
-			mockBeadsCLI.getTask
+			mockGetTask
 				.mockResolvedValueOnce(taskA)
 				.mockResolvedValueOnce(taskB);
 
@@ -239,7 +249,7 @@ describe("DependencyResolver", () => {
 		it("returns false for no dependencies", async () => {
 			// Arrange
 			const task = createTask("ch-a", "open", []);
-			mockBeadsCLI.getTask.mockResolvedValue(task);
+			mockGetTask.mockResolvedValue(task);
 
 			// Act
 			const result = await resolver.hasCircularDependency("ch-a");

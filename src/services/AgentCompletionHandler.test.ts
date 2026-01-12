@@ -40,6 +40,10 @@ const createMockTaskProvider = () => ({
 	getTaskStatus: vi.fn().mockResolvedValue(null),
 	updateStatus: vi.fn().mockResolvedValue(undefined),
 	getTaskLabels: vi.fn().mockResolvedValue([]),
+	addLabel: vi.fn().mockResolvedValue(undefined),
+	removeLabel: vi.fn().mockResolvedValue(undefined),
+	addNote: vi.fn().mockResolvedValue(undefined),
+	updateTask: vi.fn().mockResolvedValue(undefined),
 });
 
 const createMockEventEmitter = () => ({

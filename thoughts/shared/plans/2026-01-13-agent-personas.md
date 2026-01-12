@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-13
 **Status:** DRAFT - Pending Review
-**Version:** 4.0
+**Version:** 5.0
 **Author:** Chorus Development Team
 
 > **Purpose:** This document defines personas, names, and personalities for each agent type in Chorus. Personas enhance user experience, make logs more readable, and create a cohesive "team" feeling for the multi-agent orchestrator.
@@ -543,6 +543,132 @@ Claude Code skills can be added per persona:
 - Skills are loaded when the persona is active
 - Each skill is a markdown file with skill definition
 - Follows Claude Code skill format
+
+### Agent Data Storage
+
+Each agent maintains its own data directory for logs, learnings, and metrics:
+
+```text
+.chorus/
+  agents/
+    sage/
+      prompt.md                  # Persona prompt
+      rules.md                   # Persona rules
+      skills/                    # Skill files
+      logs/                      # NEW: Execution logs
+        {taskId}.jsonl           # Per-task agent logs
+      learnings.md               # NEW: Agent-specific learnings
+      metrics.json               # NEW: Performance metrics
+    chip/
+      prompt.md
+      rules.md
+      skills/
+      logs/                      # Per-task logs for each worker
+        ch-abc1.jsonl
+        ch-xyz2.jsonl
+      learnings.md               # Chip-specific learnings
+      metrics.json               # Worker performance stats
+    ... (archie, patch, scout, echo)
+```
+
+#### Execution Logs (`logs/{taskId}.jsonl`)
+
+Per-task execution log in JSONL format:
+
+```json
+{"timestamp":"2026-01-13T10:00:00Z","event":"start","taskId":"ch-abc1"}
+{"timestamp":"2026-01-13T10:01:00Z","event":"iteration","number":1,"input":"...","output":"..."}
+{"timestamp":"2026-01-13T10:02:00Z","event":"signal","type":"PROGRESS","payload":"50"}
+{"timestamp":"2026-01-13T10:05:00Z","event":"complete","durationMs":300000,"iterations":3}
+```
+
+| Field | Description |
+|-------|-------------|
+| `timestamp` | ISO 8601 timestamp |
+| `event` | Event type: start, iteration, signal, complete, error |
+| `taskId` | Task being worked on |
+| `iteration.input` | Prompt sent to agent |
+| `iteration.output` | Response from agent |
+| `signal.type` | Signal type (COMPLETE, BLOCKED, etc.) |
+| `durationMs` | Total task duration |
+
+#### Agent Learnings (`learnings.md`)
+
+Agent-specific learnings (distinct from project-wide `.claude/rules/learnings.md`):
+
+```markdown
+# Chip's Learnings
+
+## Testing Patterns
+- [2026-01-13] Vitest parallel mode causes flaky tests with shared state
+
+## TDD Workflow
+- [2026-01-13] Run quality checks before commit, not after
+```
+
+| Purpose | Description |
+|---------|-------------|
+| Scope | Agent-specific patterns and preferences |
+| Format | Markdown with date prefix |
+| Deduplication | Per-agent (not global) |
+| Use case | Agent learns from own experience |
+
+#### Performance Metrics (`metrics.json`)
+
+Agent performance statistics:
+
+```json
+{
+  "persona": "chip",
+  "updated": "2026-01-13T10:00:00Z",
+  "tasks": {
+    "completed": 47,
+    "failed": 3,
+    "successRate": 0.94
+  },
+  "iterations": {
+    "total": 142,
+    "avgPerTask": 2.84,
+    "maxPerTask": 8
+  },
+  "timing": {
+    "avgDurationMs": 180000,
+    "totalRuntimeMs": 8460000
+  },
+  "tokens": {
+    "input": 245000,
+    "output": 78000,
+    "estimatedCost": 1.23
+  },
+  "errors": {
+    "timeout": 1,
+    "crash": 0,
+    "qualityFail": 2
+  }
+}
+```
+
+| Metric | Description |
+|--------|-------------|
+| `tasks.*` | Task completion statistics |
+| `iterations.*` | Ralph loop iteration stats |
+| `timing.*` | Duration statistics |
+| `tokens.*` | API token usage and cost |
+| `errors.*` | Error type breakdown |
+
+#### Data Flow
+
+```
+Task Execution
+     │
+     ├─► logs/{taskId}.jsonl      (per-task detail)
+     │
+     ├─► metrics.json             (aggregate stats)
+     │
+     └─► learnings.md             (extracted insights)
+           │
+           └─► (optional) propagate to project learnings
+```
 
 ---
 
@@ -1835,11 +1961,141 @@ Update documentation with persona information.
 
 ---
 
+### Milestone: Agent Data Storage - AD##
+
+These tasks implement per-agent data storage for logs, metrics, and learnings.
+
+---
+
+#### AD01: AgentLogService - Per-Agent Execution Logs (ch-gp1s)
+
+**Priority:** P1
+**Depends on:** AP01
+**Label:** m-personas
+
+Service to write per-agent execution logs in JSONL format.
+
+**Files:**
+- `src/services/AgentLogService.ts`
+- `src/services/AgentLogService.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `AgentLogService` class with projectDir injection
+- [ ] `logStart(persona, taskId)` writes start event
+- [ ] `logIteration(persona, taskId, iteration, input, output)` writes iteration event
+- [ ] `logSignal(persona, taskId, type, payload?)` writes signal event
+- [ ] `logComplete(persona, taskId, durationMs, iterations)` writes complete event
+- [ ] `logError(persona, taskId, error)` writes error event
+- [ ] Logs stored in `.chorus/agents/{persona}/logs/{taskId}.jsonl`
+- [ ] Directory created automatically if not exists
+- [ ] 7 tests pass
+
+---
+
+#### AD02: AgentMetricsService - Per-Agent Performance Metrics (ch-shki)
+
+**Priority:** P1
+**Depends on:** AP01
+**Label:** m-personas
+
+Service to track and persist per-agent performance metrics.
+
+**Files:**
+- `src/services/AgentMetricsService.ts`
+- `src/services/AgentMetricsService.test.ts`
+- `src/types/agent-metrics.ts`
+
+**Acceptance Criteria:**
+- [ ] `AgentMetrics` interface with tasks, iterations, timing, tokens, errors
+- [ ] `AgentMetricsService` class with projectDir injection
+- [ ] `load(persona)` reads from `.chorus/agents/{persona}/metrics.json`
+- [ ] `recordTaskComplete(persona, durationMs, iterations)` updates stats
+- [ ] `recordTaskFail(persona, errorType)` increments error count
+- [ ] `recordTokens(persona, input, output)` updates token usage
+- [ ] `flush(persona)` persists to disk (atomic write)
+- [ ] Calculates `successRate` and `avgPerTask` automatically
+- [ ] Returns default metrics if file doesn't exist
+- [ ] 9 tests pass
+
+---
+
+#### AD03: AgentLearningsService - Per-Agent Learnings Storage (ch-22ib)
+
+**Priority:** P1
+**Depends on:** AP01
+**Label:** m-personas
+
+Service to manage per-agent learnings (distinct from global project learnings).
+
+**Files:**
+- `src/services/AgentLearningsService.ts`
+- `src/services/AgentLearningsService.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `AgentLearningsService` class with projectDir injection
+- [ ] `load(persona)` reads from `.chorus/agents/{persona}/learnings.md`
+- [ ] `add(persona, category, learning)` appends to learnings file
+- [ ] Date prefix added automatically: `[2026-01-13] learning text`
+- [ ] Deduplication per-agent (SHA-256 hash check)
+- [ ] Creates category header if not exists
+- [ ] Returns empty learnings if file doesn't exist
+- [ ] `getByCategory(persona, category)` filters learnings
+- [ ] 8 tests pass
+
+---
+
+#### AD04: AgentDataIntegration - Wire Data Services to Agent Lifecycle (ch-10zc)
+
+**Priority:** P1
+**Depends on:** AD01, AD02, AD03, AP17
+**Label:** m-personas
+
+Integrate AgentLogService, AgentMetricsService, AgentLearningsService with agent lifecycle.
+
+**Files:**
+- `src/machines/agentMachine.ts` (update)
+- `src/services/AgentDataIntegration.ts`
+- `src/services/AgentDataIntegration.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `AgentDataIntegration` orchestrates all three data services
+- [ ] On agent start: call `logService.logStart(persona, taskId)`
+- [ ] On iteration: call `logService.logIteration(...)`
+- [ ] On signal: call `logService.logSignal(...)`
+- [ ] On complete: call `logService.logComplete(...)` + `metricsService.recordTaskComplete(...)`
+- [ ] On error: call `logService.logError(...)` + `metricsService.recordTaskFail(...)`
+- [ ] Learning extraction triggers `learningsService.add(...)`
+- [ ] All services flushed on task completion
+- [ ] 7 tests pass
+
+---
+
+#### AD05: E2E - Agent Data Storage Integration (ch-khuv)
+
+**Priority:** P2
+**Depends on:** AD04
+**Label:** m-personas
+
+E2E tests for the full agent data storage lifecycle.
+
+**Files:**
+- `src/integration/agent-data.integration.test.ts`
+
+**Acceptance Criteria:**
+- [ ] E2E test: Agent task creates log file in correct location
+- [ ] E2E test: Log file contains all lifecycle events (start, iteration, complete)
+- [ ] E2E test: Metrics file updated after task completion
+- [ ] E2E test: Multiple tasks accumulate in metrics correctly
+- [ ] E2E test: Agent learnings stored in agent-specific file
+- [ ] 5 tests pass
+
+---
+
 ## Task Summary
 
 | Milestone | Tasks | Tests |
 |-----------|-------|-------|
-| Shared Rules (SR01-SR05) | 5 | 26 |
+| Shared Rules (SR01-SR05, SR05a) | 6 | 29 |
 | Migration (MH01-MH07) | 7 | 30 |
 | Sage (SA01-SA05) | 5 | 28 |
 | Persona Types (AP01-AP02) | 2 | 7 |
@@ -1847,8 +2103,9 @@ Update documentation with persona information.
 | Agent Machine (AP08) | 1 | 5 |
 | TUI (AP09-AP12) | 4 | 18 |
 | Agent Integration (AP13-AP16) | 4 | 16 |
-| E2E and Docs (AP17-AP18) | 2 | 6 |
-| **Total** | **35 tasks** | **~172 tests** |
+| E2E and Docs (AP17-AP18, AP17a) | 3 | 10 |
+| Agent Data Storage (AD01-AD05) | 5 | 36 |
+| **Total** | **42 tasks** | **~215 tests** |
 
 ---
 
