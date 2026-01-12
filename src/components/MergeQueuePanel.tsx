@@ -220,5 +220,3 @@ export function MergeQueuePanel({
 		</Box>
 	);
 }
-
-export default MergeQueuePanel;

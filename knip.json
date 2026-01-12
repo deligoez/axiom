@@ -1,6 +1,14 @@
 {
 	"$schema": "https://unpkg.com/knip@5/schema.json",
-	"entry": ["src/machines/index.ts", "src/services/event-sourcing.ts", "src/services/persistence.ts", "src/services/AgentSpawner.ts"],
+	"entry": [
+		"src/machines/index.ts",
+		"src/services/event-sourcing.ts",
+		"src/services/persistence.ts",
+		"src/services/AgentSpawner.ts",
+		"src/hooks/useExitHandler.ts",
+		"src/hooks/useMergeViewKey.ts",
+		"src/hooks/useQuickControlKeys.ts"
+	],
 	"ignore": ["**/*.test.ts", "**/*.test.tsx"],
 	"ignoreBinaries": ["bd", "which"],
 	"ignoreExportsUsedInFile": true
