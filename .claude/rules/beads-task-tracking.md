@@ -472,7 +472,10 @@ Update this section as you learn:
 | F95 Plan Review Loop | ch-bmx | ch-cjf,ch-z8g | blocked |
 | F96 Task Updater | ch-dka | ch-bmx | blocked |
 | F96b Queued Update Applier | ch-wc53 | ch-dka | blocked |
+| F96c Severity Classification | ch-djom | ch-dka | blocked (deferred) |
+| F96d TUI Update Notifications | ch-24qw | ch-djom | blocked (deferred) |
 | F97 Plan Review Integration | ch-c3q | ch-dka,ch-wc53,ch-nn6 | blocked |
+| E2E-68 Plan Review In-Progress | ch-uli5 | ch-c3q | blocked |
 | F98 Incremental Planning Trigger | ch-yhq | ch-wqn,ch-2yp,ch-z8g,ch-sro | blocked |
 | F99 Planning Horizon Manager | ch-wqn | ch-to7,ch-sro | blocked |
 | F100 Spec Evolution Tracker | ch-2yp | - | ready |

@@ -61,7 +61,7 @@ describe("E2E: File Watcher Integration", () => {
 
 			// Act - create issues.jsonl
 			const bead = createBead("ch-test1", "Test Task", "open", 1);
-			writeFileSync(issuesPath, JSON.stringify(bead) + "\n");
+			writeFileSync(issuesPath, `${JSON.stringify(bead)}\n`);
 
 			// Assert - wait for change event (with timeout)
 			const result = await Promise.race([
@@ -74,7 +74,7 @@ describe("E2E: File Watcher Integration", () => {
 		it("detects when task is appended to file", async () => {
 			// Arrange - create initial file
 			const initialBead = createBead("ch-test2", "Initial Task", "open", 1);
-			writeFileSync(issuesPath, JSON.stringify(initialBead) + "\n");
+			writeFileSync(issuesPath, `${JSON.stringify(initialBead)}\n`);
 
 			// Start watching
 			const changePromise = new Promise<void>((resolve) => {
@@ -87,7 +87,7 @@ describe("E2E: File Watcher Integration", () => {
 			const newBead = createBead("ch-test3", "New Task", "open", 2);
 			writeFileSync(
 				issuesPath,
-				JSON.stringify(initialBead) + "\n" + JSON.stringify(newBead) + "\n",
+				`${JSON.stringify(initialBead)}\n${JSON.stringify(newBead)}\n`,
 			);
 
 			// Assert

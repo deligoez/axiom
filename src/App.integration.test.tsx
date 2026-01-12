@@ -14,11 +14,7 @@ import {
 	createReadyTasks,
 	createTestTask,
 } from "./test/fixtures/mockBeadsCLI.js";
-import {
-	createMockAgent,
-	createMockOrchestrator,
-	createMockTasks,
-} from "./test/fixtures/mockOrchestrator.js";
+import { createMockAgent } from "./test/fixtures/mockOrchestrator.js";
 import type { Bead } from "./types/bead.js";
 
 // Mock useTerminalSize hook

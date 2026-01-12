@@ -177,7 +177,7 @@ export class TaskValidator {
 	): string {
 		// For description-length errors, truncate the description
 		if (error.rule === "description-length" && task.description) {
-			return task.description.slice(0, 500) + "...";
+			return `${task.description.slice(0, 500)}...`;
 		}
 
 		// Default: return original

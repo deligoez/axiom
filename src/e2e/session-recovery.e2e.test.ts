@@ -9,7 +9,6 @@ import {
 	type MergeQueueProvider,
 	SessionRecovery,
 	type StateProvider,
-	type WorktreeManager,
 } from "../services/SessionRecovery.js";
 import type {
 	AgentState,
@@ -23,19 +22,15 @@ describe("E2E: Session Recovery on Crash", () => {
 
 	const createRealCommandRunner = (): CommandRunner => ({
 		run: async (command: string, cwd?: string) => {
-			try {
-				const result = spawnSync("sh", ["-c", command], {
-					cwd,
-					encoding: "utf-8",
-					stdio: ["pipe", "pipe", "pipe"],
-				});
-				if (result.status === 0) {
-					return { success: true, output: result.stdout || "" };
-				}
-				throw new Error(result.stderr || `Exit code: ${result.status}`);
-			} catch (error) {
-				throw error;
+			const result = spawnSync("sh", ["-c", command], {
+				cwd,
+				encoding: "utf-8",
+				stdio: ["pipe", "pipe", "pipe"],
+			});
+			if (result.status === 0) {
+				return { success: true, output: result.stdout || "" };
 			}
+			throw new Error(result.stderr || `Exit code: ${result.status}`);
 		},
 	});
 

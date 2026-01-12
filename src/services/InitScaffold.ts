@@ -349,7 +349,7 @@ export class InitScaffold {
 
 		if (linesToAdd.length > 0) {
 			const suffix = content.endsWith("\n") || content === "" ? "" : "\n";
-			const newContent = linesToAdd.join("\n") + "\n";
+			const newContent = `${linesToAdd.join("\n")}\n`;
 			appendFileSync(gitignorePath, suffix + newContent);
 		}
 	}
