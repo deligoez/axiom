@@ -8,7 +8,6 @@ import {
 import {
 	AgentStopper,
 	type AgentTracker,
-	type BeadsCLIProvider,
 	type CommandRunner,
 	type ProcessKiller,
 } from "../services/AgentStopper.js";
@@ -113,11 +112,11 @@ describe("E2E: Human Intervention System", () => {
 				},
 			};
 
-			const beadsCLI: BeadsCLIProvider = {
-				releaseTask: async (taskId) => {
+			const taskProvider = {
+				releaseTask: async (taskId: string) => {
 					releasedTasks.push(taskId);
 				},
-			};
+			} as unknown as TaskProvider;
 
 			const processKiller: ProcessKiller = {
 				kill: (pid) => {
@@ -131,7 +130,7 @@ describe("E2E: Human Intervention System", () => {
 
 			const stopper = new AgentStopper(
 				agentTracker,
-				beadsCLI,
+				taskProvider,
 				processKiller,
 				commandRunner,
 			);
@@ -176,7 +175,7 @@ describe("E2E: Human Intervention System", () => {
 
 			const stopper = new AgentStopper(
 				agentTracker,
-				{ releaseTask: vi.fn() },
+				{ releaseTask: vi.fn() } as unknown as TaskProvider,
 				{ kill: (pid) => killedPids.push(pid) },
 				{ run: async () => ({ success: true, output: "" }) },
 			);
@@ -201,7 +200,7 @@ describe("E2E: Human Intervention System", () => {
 
 			const stopper = new AgentStopper(
 				agentTracker,
-				{ releaseTask: vi.fn() },
+				{ releaseTask: vi.fn() } as unknown as TaskProvider,
 				{ kill: vi.fn() },
 				{ run: async () => ({ success: true, output: "" }) },
 			);
@@ -499,7 +498,7 @@ describe("E2E: Human Intervention System", () => {
 
 			const stopper = new AgentStopper(
 				agentTracker,
-				{ releaseTask: vi.fn() },
+				{ releaseTask: vi.fn() } as unknown as TaskProvider,
 				{ kill: vi.fn() },
 				{ run: async () => ({ success: true, output: "" }) },
 			);

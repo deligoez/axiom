@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TaskProvider } from "../types/task-provider.js";
 import {
 	type AgentSlot,
 	AgentStopper,
 	type AgentTracker,
-	type BeadsCLIProvider,
 	type CommandRunner,
 	type ProcessKiller,
 } from "./AgentStopper.js";
@@ -11,7 +11,7 @@ import {
 describe("AgentStopper", () => {
 	let stopper: AgentStopper;
 	let mockAgentTracker: AgentTracker;
-	let mockBeadsCLI: BeadsCLIProvider;
+	let mockTaskProvider: TaskProvider;
 	let mockProcessKiller: ProcessKiller;
 	let mockCommandRunner: CommandRunner;
 
@@ -48,10 +48,10 @@ describe("AgentStopper", () => {
 			removeAgent: mockRemoveAgent as AgentTracker["removeAgent"],
 		};
 
-		mockReleaseTask = vi.fn();
-		mockBeadsCLI = {
-			releaseTask: mockReleaseTask as BeadsCLIProvider["releaseTask"],
-		};
+		mockReleaseTask = vi.fn().mockResolvedValue(undefined);
+		mockTaskProvider = {
+			releaseTask: mockReleaseTask,
+		} as unknown as TaskProvider;
 
 		mockKill = vi.fn();
 		mockProcessKiller = {
@@ -65,7 +65,7 @@ describe("AgentStopper", () => {
 
 		stopper = new AgentStopper(
 			mockAgentTracker,
-			mockBeadsCLI,
+			mockTaskProvider,
 			mockProcessKiller,
 			mockCommandRunner,
 		);

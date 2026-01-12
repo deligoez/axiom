@@ -1,3 +1,5 @@
+import type { TaskProvider } from "../types/task-provider.js";
+
 export interface AgentSlot {
 	agentId: string;
 	taskId: string;
@@ -10,10 +12,6 @@ export interface AgentTracker {
 	getAgentByTask(taskId: string): AgentSlot | null;
 	getAllAgents(): AgentSlot[];
 	removeAgent(agentId: string): void;
-}
-
-export interface BeadsCLIProvider {
-	releaseTask(taskId: string): Promise<void>;
 }
 
 export interface ProcessKiller {
@@ -42,7 +40,7 @@ export interface StopAllResult {
 export class AgentStopper {
 	constructor(
 		private agentTracker: AgentTracker,
-		private beadsCLI: BeadsCLIProvider,
+		private taskProvider: TaskProvider,
 		private processKiller: ProcessKiller,
 		private commandRunner: CommandRunner,
 	) {}
@@ -66,7 +64,7 @@ export class AgentStopper {
 		await this.stashWorktreeChanges(slot.worktreePath);
 
 		// Release the task back to pending
-		await this.beadsCLI.releaseTask(slot.taskId);
+		await this.taskProvider.releaseTask(slot.taskId);
 
 		// Remove agent from tracker
 		this.agentTracker.removeAgent(agentId);

@@ -1,6 +1,9 @@
 import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { BeadsCLI, Task } from "./BeadsCLI.js";
+import type {
+	TaskProvider,
+	TaskProviderTask,
+} from "../types/task-provider.js";
 import { IncrementalPlanningTrigger } from "./IncrementalPlanningTrigger.js";
 import type { PlanAgent } from "./PlanAgent.js";
 import type { PlanningHorizonManager } from "./PlanningHorizonManager.js";
@@ -8,13 +11,13 @@ import type { SpecEvolutionTracker } from "./SpecEvolutionTracker.js";
 
 describe("IncrementalPlanningTrigger", () => {
 	let trigger: IncrementalPlanningTrigger;
-	let mockBeadsCLI: BeadsCLI;
+	let mockTaskProvider: TaskProvider;
 	let mockHorizonManager: PlanningHorizonManager;
 	let mockSpecTracker: SpecEvolutionTracker;
 	let mockPlanAgent: PlanAgent;
 	let eventEmitter: EventEmitter;
 
-	const createMockTask = (id: string, title: string): Task => ({
+	const createMockTask = (id: string, title: string): TaskProviderTask => ({
 		id,
 		title,
 		description: "",
@@ -25,9 +28,9 @@ describe("IncrementalPlanningTrigger", () => {
 	});
 
 	beforeEach(() => {
-		mockBeadsCLI = {
+		mockTaskProvider = {
 			getReadyTasks: vi.fn().mockResolvedValue([]),
-		} as unknown as BeadsCLI;
+		} as unknown as TaskProvider;
 
 		mockHorizonManager = {
 			getHorizonConfig: vi.fn().mockReturnValue({
@@ -57,7 +60,7 @@ describe("IncrementalPlanningTrigger", () => {
 		eventEmitter = new EventEmitter();
 
 		trigger = new IncrementalPlanningTrigger({
-			beadsCLI: mockBeadsCLI,
+			taskProvider: mockTaskProvider,
 			horizonManager: mockHorizonManager,
 			specTracker: mockSpecTracker,
 			planAgent: mockPlanAgent,
@@ -68,7 +71,7 @@ describe("IncrementalPlanningTrigger", () => {
 	describe("checkTriggerCondition", () => {
 		it("should return true if ready count < minReadyTasks", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),
 				createMockTask("ch-2", "Task 2"),
 			]);
@@ -82,7 +85,7 @@ describe("IncrementalPlanningTrigger", () => {
 
 		it("should return false if ready count >= minReadyTasks", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),
 				createMockTask("ch-2", "Task 2"),
 				createMockTask("ch-3", "Task 3"),
@@ -100,7 +103,7 @@ describe("IncrementalPlanningTrigger", () => {
 	describe("getReadyTaskCount", () => {
 		it("should query Beads for ready task count", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),
 				createMockTask("ch-2", "Task 2"),
 				createMockTask("ch-3", "Task 3"),
@@ -111,7 +114,7 @@ describe("IncrementalPlanningTrigger", () => {
 
 			// Assert
 			expect(count).toBe(3);
-			expect(mockBeadsCLI.getReadyTasks).toHaveBeenCalledWith({
+			expect(mockTaskProvider.getReadyTasks).toHaveBeenCalledWith({
 				excludeLabels: ["deferred"],
 			});
 		});
@@ -183,7 +186,7 @@ describe("IncrementalPlanningTrigger", () => {
 	describe("onTaskComplete", () => {
 		it("should check if planning needed after task completion", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),
 			]);
 
@@ -191,12 +194,12 @@ describe("IncrementalPlanningTrigger", () => {
 			await trigger.onTaskComplete("ch-done");
 
 			// Assert
-			expect(mockBeadsCLI.getReadyTasks).toHaveBeenCalled();
+			expect(mockTaskProvider.getReadyTasks).toHaveBeenCalled();
 		});
 
 		it("should trigger planning if ready count drops below threshold", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),
 			]);
 
@@ -209,7 +212,7 @@ describe("IncrementalPlanningTrigger", () => {
 
 		it("should not trigger planning if ready count is sufficient", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),
 				createMockTask("ch-2", "Task 2"),
 				createMockTask("ch-3", "Task 3"),
@@ -239,7 +242,7 @@ describe("IncrementalPlanningTrigger", () => {
 
 		it("should check stopConditions from PlanningHorizonManager", async () => {
 			// Arrange
-			vi.mocked(mockBeadsCLI.getReadyTasks).mockResolvedValue([]);
+			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([]);
 
 			// Act
 			await trigger.checkTriggerCondition();

@@ -1,11 +1,11 @@
 import type { EventEmitter } from "node:events";
-import type { BeadsCLI } from "./BeadsCLI.js";
+import type { TaskProvider } from "../types/task-provider.js";
 import type { ExtractedTask, PlanAgent } from "./PlanAgent.js";
 import type { PlanningHorizonManager } from "./PlanningHorizonManager.js";
 import type { SpecEvolutionTracker } from "./SpecEvolutionTracker.js";
 
 export interface IncrementalPlanningTriggerDeps {
-	beadsCLI: BeadsCLI;
+	taskProvider: TaskProvider;
 	horizonManager: PlanningHorizonManager;
 	specTracker: SpecEvolutionTracker;
 	planAgent: PlanAgent;
@@ -33,7 +33,7 @@ export class IncrementalPlanningTrigger {
 	 * Get the current count of ready tasks (excluding deferred).
 	 */
 	async getReadyTaskCount(): Promise<number> {
-		const tasks = await this.deps.beadsCLI.getReadyTasks({
+		const tasks = await this.deps.taskProvider.getReadyTasks({
 			excludeLabels: ["deferred"],
 		});
 		return tasks.length;
