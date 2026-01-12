@@ -451,6 +451,152 @@ describe("TaskStore", () => {
 		});
 	});
 
+	describe("dependency management", () => {
+		it("addDependency() adds dependency to task", () => {
+			// Arrange
+			const task1 = store.create({ title: "Blocker" });
+			const task2 = store.create({ title: "Depends on blocker" });
+
+			// Act
+			store.addDependency(task2.id, task1.id);
+
+			// Assert
+			const updated = store.get(task2.id);
+			expect(updated?.dependencies).toContain(task1.id);
+		});
+
+		it("removeDependency() removes dependency from task", () => {
+			// Arrange
+			const task1 = store.create({ title: "Blocker" });
+			const task2 = store.create({
+				title: "Depends",
+				dependencies: [task1.id],
+			});
+
+			// Act
+			store.removeDependency(task2.id, task1.id);
+
+			// Assert
+			const updated = store.get(task2.id);
+			expect(updated?.dependencies).not.toContain(task1.id);
+		});
+
+		it("getDependents() returns tasks that depend on given task", () => {
+			// Arrange
+			const task1 = store.create({ title: "Blocker" });
+			store.create({ title: "Depends 1", dependencies: [task1.id] });
+			store.create({ title: "Depends 2", dependencies: [task1.id] });
+			store.create({ title: "Independent" });
+
+			// Act
+			const dependents = store.getDependents(task1.id);
+
+			// Assert
+			expect(dependents).toHaveLength(2);
+		});
+
+		it("getBlockers() returns unmet dependency tasks", () => {
+			// Arrange
+			const task1 = store.create({ title: "Done blocker" });
+			const task2 = store.create({ title: "Pending blocker" });
+			store.claim(task1.id);
+			store.complete(task1.id);
+			const task3 = store.create({
+				title: "Blocked",
+				dependencies: [task1.id, task2.id],
+			});
+
+			// Act
+			const blockers = store.getBlockers(task3.id);
+
+			// Assert - only task2 is unmet (task1 is done)
+			expect(blockers).toHaveLength(1);
+			expect(blockers[0].id).toBe(task2.id);
+		});
+
+		it("hasCircularDependency() detects direct cycle", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			const task2 = store.create({
+				title: "Task 2",
+				dependencies: [task1.id],
+			});
+
+			// Act & Assert - adding task1 -> task2 would create cycle
+			expect(store.hasCircularDependency(task1.id, task2.id)).toBe(true);
+		});
+
+		it("hasCircularDependency() detects indirect cycle", () => {
+			// Arrange: A -> B -> C, try to add C -> A
+			const taskA = store.create({ title: "A" });
+			const taskB = store.create({ title: "B", dependencies: [taskA.id] });
+			const taskC = store.create({ title: "C", dependencies: [taskB.id] });
+
+			// Act & Assert
+			expect(store.hasCircularDependency(taskA.id, taskC.id)).toBe(true);
+		});
+
+		it("addDependency() throws on circular dependency", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			const task2 = store.create({
+				title: "Task 2",
+				dependencies: [task1.id],
+			});
+
+			// Act & Assert
+			expect(() => store.addDependency(task1.id, task2.id)).toThrow(
+				"Circular dependency detected",
+			);
+		});
+
+		it("isBlocked() returns true for tasks with unmet dependencies", () => {
+			// Arrange
+			const blocker = store.create({ title: "Blocker" });
+			const blocked = store.create({
+				title: "Blocked",
+				dependencies: [blocker.id],
+			});
+
+			// Act & Assert
+			expect(store.isBlocked(blocked.id)).toBe(true);
+			expect(store.isBlocked(blocker.id)).toBe(false);
+		});
+
+		it("isReady() returns true for todo tasks with no unmet deps", () => {
+			// Arrange
+			const blocker = store.create({ title: "Blocker" });
+			const blocked = store.create({
+				title: "Blocked",
+				dependencies: [blocker.id],
+			});
+			const independent = store.create({ title: "Independent" });
+
+			// Act & Assert
+			expect(store.isReady(independent.id)).toBe(true);
+			expect(store.isReady(blocked.id)).toBe(false);
+			expect(store.isReady(blocker.id)).toBe(true);
+		});
+
+		it("completing task unblocks dependents", () => {
+			// Arrange
+			const blocker = store.create({ title: "Blocker" });
+			const blocked = store.create({
+				title: "Blocked",
+				dependencies: [blocker.id],
+			});
+			expect(store.isBlocked(blocked.id)).toBe(true);
+
+			// Act
+			store.claim(blocker.id);
+			store.complete(blocker.id);
+
+			// Assert
+			expect(store.isBlocked(blocked.id)).toBe(false);
+			expect(store.isReady(blocked.id)).toBe(true);
+		});
+	});
+
 	describe("lifecycle", () => {
 		it("should claim task: todo → doing", () => {
 			// Arrange

@@ -419,6 +419,112 @@ export class TaskStore {
 	}
 
 	// ─────────────────────────────────────────────────────────
+	// Dependency Management (TS06)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Add a dependency to a task.
+	 * @throws Error if circular dependency would be created
+	 */
+	addDependency(taskId: string, dependsOnId: string): Task {
+		if (this.hasCircularDependency(taskId, dependsOnId)) {
+			throw new Error(
+				`Circular dependency detected: ${taskId} -> ${dependsOnId}`,
+			);
+		}
+
+		const task = this.getOrThrow(taskId);
+		if (!task.dependencies.includes(dependsOnId)) {
+			return this.update(taskId, {
+				dependencies: [...task.dependencies, dependsOnId],
+			});
+		}
+		return task;
+	}
+
+	/**
+	 * Remove a dependency from a task.
+	 */
+	removeDependency(taskId: string, dependsOnId: string): Task {
+		const task = this.getOrThrow(taskId);
+		return this.update(taskId, {
+			dependencies: task.dependencies.filter((id) => id !== dependsOnId),
+		});
+	}
+
+	/**
+	 * Get tasks that depend on the given task.
+	 */
+	getDependents(taskId: string): Task[] {
+		return this.list().filter((task) => task.dependencies.includes(taskId));
+	}
+
+	/**
+	 * Get unmet dependency tasks for a given task.
+	 */
+	getBlockers(taskId: string): Task[] {
+		const task = this.get(taskId);
+		if (!task) {
+			return [];
+		}
+
+		return task.dependencies
+			.map((depId) => this.get(depId))
+			.filter((dep): dep is Task => dep !== undefined && dep.status !== "done");
+	}
+
+	/**
+	 * Check if adding a dependency would create a cycle (DFS).
+	 * Returns true if taskId transitively depends on newDepId.
+	 */
+	hasCircularDependency(taskId: string, newDepId: string): boolean {
+		const visited = new Set<string>();
+
+		const hasCycle = (currentId: string): boolean => {
+			if (currentId === taskId) {
+				return true;
+			}
+			if (visited.has(currentId)) {
+				return false;
+			}
+			visited.add(currentId);
+
+			const current = this.get(currentId);
+			if (!current) {
+				return false;
+			}
+
+			for (const depId of current.dependencies) {
+				if (hasCycle(depId)) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		return hasCycle(newDepId);
+	}
+
+	/**
+	 * Check if a task has unmet dependencies.
+	 */
+	isBlocked(taskId: string): boolean {
+		return this.getBlockers(taskId).length > 0;
+	}
+
+	/**
+	 * Check if a task is ready to be worked on.
+	 * A task is ready if it's in 'todo' status and has no unmet dependencies.
+	 */
+	isReady(taskId: string): boolean {
+		const task = this.get(taskId);
+		if (!task || task.status !== "todo") {
+			return false;
+		}
+		return !this.isBlocked(taskId);
+	}
+
+	// ─────────────────────────────────────────────────────────
 	// Persistence (TS03)
 	// ─────────────────────────────────────────────────────────
 
