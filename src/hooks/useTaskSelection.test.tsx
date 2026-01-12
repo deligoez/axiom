@@ -1,6 +1,6 @@
 import { render } from "ink-testing-library";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Bead } from "../types/bead.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 import type { UseTaskSelectionResult } from "./useTaskSelection.js";
 import { useTaskSelection } from "./useTaskSelection.js";
 
@@ -14,8 +14,8 @@ function TestComponent({
 	hasRunningAgents = false,
 	onSpawnAgent,
 }: {
-	tasks: Bead[];
-	deferredTasks?: Bead[];
+	tasks: TaskProviderTask[];
+	deferredTasks?: TaskProviderTask[];
 	hasRunningAgents?: boolean;
 	onSpawnAgent?: (taskId: string) => void;
 }) {
@@ -32,17 +32,19 @@ function TestComponent({
 
 describe("useTaskSelection", () => {
 	// Sample tasks for tests
-	const createTask = (id: string, status: Bead["status"] = "open"): Bead => ({
+	const createTask = (
+		id: string,
+		status: TaskProviderTask["status"] = "open",
+	): TaskProviderTask => ({
 		id,
 		title: `Task ${id}`,
 		status,
 		priority: 1,
-		type: "task",
-		created: "2026-01-10T00:00:00Z",
-		updated: "2026-01-10T00:00:00Z",
+		labels: [],
+		dependencies: [],
 	});
 
-	const sampleTasks: Bead[] = [
+	const sampleTasks: TaskProviderTask[] = [
 		createTask("ch-001"),
 		createTask("ch-002"),
 		createTask("ch-003"),

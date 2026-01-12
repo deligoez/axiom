@@ -1,12 +1,12 @@
 import { useInput } from "ink";
 import { useCallback, useState } from "react";
-import type { Bead } from "../types/bead.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 
 const getIsTTY = () => Boolean(process.stdin?.isTTY);
 
 export interface UseTaskSelectionOptions {
-	tasks: Bead[];
-	deferredTasks?: Bead[];
+	tasks: TaskProviderTask[];
+	deferredTasks?: TaskProviderTask[];
 	hasRunningAgents?: boolean;
 	onSpawnAgent?: (taskId: string) => void;
 	isActive?: boolean;

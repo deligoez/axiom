@@ -9,7 +9,7 @@ import { PlanningMode } from "./modes/PlanningMode.js";
 import { ReviewLoop } from "./modes/ReviewLoop.js";
 import { BeadsService } from "./services/BeadsService.js";
 import { PlanningState } from "./services/PlanningState.js";
-import type { Bead } from "./types/bead.js";
+import type { TaskProviderTask } from "./types/task-provider.js";
 
 export interface CliArgs {
 	command?: "init" | "plan";
@@ -41,16 +41,30 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		[projectRoot],
 	);
 
-	// Load and watch beads
-	const [beads, setBeads] = useState<Bead[]>([]);
+	// Load and watch beads (converted to TaskProviderTask format)
+	const [tasks, setTasks] = useState<TaskProviderTask[]>([]);
 
 	useEffect(() => {
+		// Helper to convert Bead to TaskProviderTask
+		const convertBeadToTask = (
+			bead: ReturnType<typeof beadsService.getBeads>[number],
+		): TaskProviderTask => ({
+			id: bead.id,
+			title: bead.title,
+			description: bead.description,
+			priority: bead.priority,
+			status: bead.status,
+			labels: [],
+			dependencies: bead.dependencies ?? [],
+			custom: bead.assignee ? { agent: bead.assignee } : undefined,
+		});
+
 		// Initial load
-		setBeads(beadsService.getBeads());
+		setTasks(beadsService.getBeads().map(convertBeadToTask));
 
 		// Watch for changes
 		beadsService.on("change", (newBeads) => {
-			setBeads(newBeads);
+			setTasks(newBeads.map(convertBeadToTask));
 		});
 
 		beadsService.watch();
@@ -139,7 +153,7 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		return (
 			<ImplementationMode
 				mode={cliArgs?.mode ?? "semi-auto"}
-				tasks={beads}
+				tasks={tasks}
 				agents={[]}
 				maxAgents={4}
 				onPlanningMode={() => send({ type: "FORCE_PLANNING" })}

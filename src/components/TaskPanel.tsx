@@ -1,14 +1,16 @@
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
-import type { Bead, BeadStatus } from "../types/bead.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 
 interface TaskPanelProps {
-	beads: Bead[];
-	selectedBeadId?: string | null;
+	tasks: TaskProviderTask[];
+	selectedTaskId?: string | null;
 	canAssign?: boolean;
 }
 
-function StatusIndicator({ status }: { status: BeadStatus }) {
+type TaskStatus = TaskProviderTask["status"];
+
+function StatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case "open":
 			return <Text color="yellow">→</Text>;
@@ -69,11 +71,11 @@ function PriorityBadge({ priority }: { priority: number }) {
 }
 
 export default function TaskPanel({
-	beads,
-	selectedBeadId,
+	tasks,
+	selectedTaskId,
 	canAssign = false,
 }: TaskPanelProps) {
-	if (beads.length === 0) {
+	if (tasks.length === 0) {
 		return (
 			<Box
 				flexDirection="column"
@@ -82,40 +84,40 @@ export default function TaskPanel({
 				flexGrow={1}
 			>
 				<Text dimColor>No tasks</Text>
-				<Text dimColor>Watch .beads/issues.jsonl</Text>
+				<Text dimColor>Watch .chorus/tasks.jsonl</Text>
 			</Box>
 		);
 	}
 
 	// Calculate counts for footer
-	const readyCount = beads.filter(
-		(b) => b.status === "open" || b.status === "in_progress",
+	const readyCount = tasks.filter(
+		(t) => t.status === "open" || t.status === "in_progress",
 	).length;
-	const blockedCount = beads.filter((b) => b.status === "blocked").length;
-	const reviewingCount = beads.filter((b) => b.status === "reviewing").length;
+	const blockedCount = tasks.filter((t) => t.status === "blocked").length;
+	const reviewingCount = tasks.filter((t) => t.status === "reviewing").length;
 
 	return (
 		<Box flexDirection="column" flexGrow={1}>
 			<Box marginBottom={1}>
-				<Text bold>📋 Tasks </Text>
-				<Text dimColor>({beads.length})</Text>
+				<Text bold>Tasks </Text>
+				<Text dimColor>({tasks.length})</Text>
 			</Box>
 			<Box flexDirection="column" flexGrow={1} overflowY="hidden">
-				{beads.map((bead) => {
-					const isSelected = bead.id === selectedBeadId;
-					const blockerCount = bead.dependencies?.length ?? 0;
+				{tasks.map((task) => {
+					const isSelected = task.id === selectedTaskId;
+					const blockerCount = task.dependencies?.length ?? 0;
 
 					return (
-						<Box key={bead.id} gap={1}>
+						<Box key={task.id} gap={1}>
 							{isSelected ? <Text color="cyan">►</Text> : <Text> </Text>}
-							<StatusIndicator status={bead.status} />
-							<Text dimColor>{getShortId(bead.id)}</Text>
+							<StatusIndicator status={task.status} />
+							<Text dimColor>{getShortId(task.id)}</Text>
 							<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
-								{bead.title}
+								{task.title}
 							</Text>
-							<PriorityBadge priority={bead.priority} />
-							{bead.assignee && <Text dimColor>@{bead.assignee}</Text>}
-							{bead.status === "blocked" && blockerCount > 0 && (
+							<PriorityBadge priority={task.priority} />
+							{task.custom?.agent && <Text dimColor>@{task.custom.agent}</Text>}
+							{task.status === "blocked" && blockerCount > 0 && (
 								<Text dimColor>({blockerCount})</Text>
 							)}
 						</Box>
@@ -132,7 +134,7 @@ export default function TaskPanel({
 					)}
 					{blockedCount > 0 && <Text dimColor>{blockedCount} blocked</Text>}
 				</Box>
-				{selectedBeadId && canAssign && (
+				{selectedTaskId && canAssign && (
 					<Text color="cyan">Press Enter to assign</Text>
 				)}
 			</Box>

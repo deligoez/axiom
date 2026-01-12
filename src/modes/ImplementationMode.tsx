@@ -11,7 +11,7 @@ import { useAgentGrid } from "../hooks/useAgentGrid.js";
 import { useInterventionKey } from "../hooks/useInterventionKey.js";
 import { useNavigationKeys } from "../hooks/useNavigationKeys.js";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
-import type { Bead } from "../types/bead.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 
 // Check if we're in an interactive terminal
 // Using a getter to allow test mocking
@@ -21,7 +21,7 @@ const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 export interface ImplementationModeProps {
 	mode: "semi-auto" | "autopilot";
-	tasks: Bead[];
+	tasks: TaskProviderTask[];
 	agents: Agent[];
 	maxAgents: number;
 	selectedTaskId?: string | null;
@@ -256,8 +256,8 @@ export function ImplementationMode({
 						rightWidth={70}
 						left={
 							<TaskPanel
-								beads={tasks}
-								selectedBeadId={selectedTaskId ?? internalSelectedTaskId}
+								tasks={tasks}
+								selectedTaskId={selectedTaskId ?? internalSelectedTaskId}
 							/>
 						}
 						right={

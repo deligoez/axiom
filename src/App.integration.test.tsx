@@ -15,7 +15,7 @@ import {
 	createTestTask,
 } from "./test/fixtures/mockBeadsCLI.js";
 import { createMockAgent } from "./test/fixtures/mockOrchestrator.js";
-import type { Bead } from "./types/bead.js";
+import type { TaskProviderTask } from "./types/task-provider.js";
 
 // Mock useTerminalSize hook
 vi.mock("./hooks/useTerminalSize.js", () => ({
@@ -288,7 +288,7 @@ describe("Full TUI Integration Tests", () => {
 
 		it("task completion updates all components", () => {
 			// Arrange
-			const initialTasks: Bead[] = [
+			const initialTasks: TaskProviderTask[] = [
 				createTestTask("ch-001", { status: "in_progress" }),
 				createTestTask("ch-002", { status: "open" }),
 			];
@@ -307,7 +307,7 @@ describe("Full TUI Integration Tests", () => {
 			expect(lastFrame()).toBeDefined();
 
 			// Update task to closed and remove agent
-			const updatedTasks: Bead[] = [
+			const updatedTasks: TaskProviderTask[] = [
 				createTestTask("ch-001", { status: "closed" }),
 				createTestTask("ch-002", { status: "open" }),
 			];
