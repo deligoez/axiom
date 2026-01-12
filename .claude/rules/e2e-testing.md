@@ -437,6 +437,102 @@ await waitForText(result, "ImplementationMode", 5000);
 await waitForText(result, "This is a very long text", 5000);
 ```
 
+## Integration Testing (Real Claude CLI)
+
+Integration tests spawn the real Claude CLI to verify end-to-end behavior. Located in `src/integration/`.
+
+### Running Integration Tests
+
+```bash
+npm run test:integration
+```
+
+### Key Discoveries (CRITICAL)
+
+#### 1. Claude CLI --print requires stdin for prompt
+
+When running Claude CLI with `--print` flag from a subprocess, the prompt MUST be sent via stdin, not as a command line argument:
+
+```typescript
+// ❌ WRONG - Prompt as argument fails in subprocess
+const child = spawn(claudePath, ["--print", 'Say "OK"'], { ... });
+
+// ✅ CORRECT - Send prompt via stdin
+const child = spawn(claudePath, ["--print"], { ... });
+child.stdin?.write('Say "OK"');
+child.stdin?.end();
+```
+
+**Why:** Without a TTY, Claude CLI doesn't receive the prompt argument correctly and hangs.
+
+#### 2. Use --dangerously-skip-permissions for tests
+
+For non-interactive integration tests, use `--dangerously-skip-permissions` to bypass permission prompts:
+
+```typescript
+const child = spawn(claudePath, ["--print", "--dangerously-skip-permissions"], { ... });
+```
+
+#### 3. Signal format is `<chorus>TYPE:payload</chorus>`
+
+The actual signal format used by SignalParser:
+
+```typescript
+// Signal types: COMPLETE, BLOCKED, NEEDS_HELP, PROGRESS, RESOLVED, NEEDS_HUMAN
+<chorus>COMPLETE</chorus>           // No payload
+<chorus>BLOCKED:reason</chorus>     // With payload
+<chorus>PROGRESS:75</chorus>        // Numeric payload
+```
+
+**Note:** The task descriptions may show old format `[CHORUS:TYPE:...]` - use the angle bracket format.
+
+#### 4. LearningStore uses content hashing for deduplication
+
+Learnings are deduplicated using SHA-256 hash of normalized (lowercase, trimmed) content. Same content = same hash = skipped.
+
+### Integration Test Patterns
+
+```typescript
+// Standard setup
+let claudePath = "claude";
+
+beforeAll(() => {
+  claudePath = execSync("which claude", { stdio: "pipe", encoding: "utf-8" }).trim();
+});
+
+// Run Claude with prompt
+async function runClaude(prompt: string, cwd: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(claudePath, ["--print", "--dangerously-skip-permissions"], {
+      cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    child.stdin?.write(prompt);
+    child.stdin?.end();
+
+    let stdout = "";
+    child.stdout?.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.on("exit", (code) => code === 0 ? resolve(stdout) : reject(...));
+  });
+}
+```
+
+### Test Files
+
+| File | Purpose |
+|------|---------|
+| `claude-cli.integration.test.ts` | INT-01: Basic CLI spawn |
+| `file-operations.integration.test.ts` | INT-02: File operations |
+| `agent-lifecycle.integration.test.ts` | INT-03: Worktree lifecycle |
+| `multi-agent.integration.test.ts` | INT-04: Parallel agents |
+| `e2e-workflow.integration.test.ts` | INT-05: Full workflow |
+| `signal-parsing.integration.test.ts` | INT-06: Signal parsing |
+| `learnings.integration.test.ts` | INT-07: Learning storage |
+| `learning-propagation.integration.test.ts` | INT-08: Learning propagation |
+| `ralph-iteration.integration.test.ts` | INT-09: Ralph retry pattern |
+| `parallel-learning.integration.test.ts` | INT-10: Parallel learning |
+
 ## References
 
 - [cli-testing-library](https://github.com/gmrchk/cli-testing-library) - E2E test framework (no TTY)
