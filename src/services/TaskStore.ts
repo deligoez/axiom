@@ -1,13 +1,22 @@
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
 import type {
 	CreateTaskInput,
 	Task,
+	TaskJSONL,
 	TaskStatus,
+	TaskType,
 	UpdateTaskInput,
 } from "../types/task.js";
 
 /**
- * TaskStore - In-memory task storage with CRUD operations.
- * Phase 1: Basic CRUD without persistence (TS02)
+ * TaskStore - In-memory task storage with CRUD operations and JSONL persistence.
  */
 export class TaskStore {
 	private tasks: Map<string, Task> = new Map();
@@ -18,7 +27,6 @@ export class TaskStore {
 
 	constructor(projectDir: string) {
 		this.projectDir = projectDir;
-		// Note: Persistence (load/flush) will be added in TS03
 	}
 
 	/**
@@ -126,5 +134,171 @@ export class TaskStore {
 		return Array.from(this.tasks.keys()).filter(
 			(id) => !this.deletedIds.has(id),
 		);
+	}
+
+	// ─────────────────────────────────────────────────────────
+	// Persistence (TS03)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Path to the .chorus directory.
+	 */
+	private get chorusDir(): string {
+		return join(this.projectDir, ".chorus");
+	}
+
+	/**
+	 * Path to the tasks JSONL file.
+	 */
+	private get tasksPath(): string {
+		return join(this.chorusDir, "tasks.jsonl");
+	}
+
+	/**
+	 * Load tasks from JSONL file.
+	 * Creates empty store if file doesn't exist.
+	 */
+	async load(): Promise<void> {
+		if (!existsSync(this.tasksPath)) {
+			return;
+		}
+
+		const content = readFileSync(this.tasksPath, "utf-8");
+		const lines = content.trim().split("\n").filter(Boolean);
+
+		for (const line of lines) {
+			const jsonl = JSON.parse(line) as TaskJSONL;
+			const task = this.fromJSONL(jsonl);
+			this.tasks.set(task.id, task);
+		}
+
+		this.initNextId();
+	}
+
+	/**
+	 * Flush all tasks to JSONL file.
+	 * Uses atomic write (temp file → rename).
+	 */
+	async flush(): Promise<void> {
+		// Ensure .chorus directory exists
+		if (!existsSync(this.chorusDir)) {
+			mkdirSync(this.chorusDir, { recursive: true });
+		}
+
+		// Build JSONL content
+		const lines: string[] = [];
+		for (const task of this.tasks.values()) {
+			if (!this.deletedIds.has(task.id)) {
+				lines.push(JSON.stringify(this.toJSONL(task)));
+			}
+		}
+
+		const content = lines.join("\n") + (lines.length > 0 ? "\n" : "");
+
+		// Atomic write: temp file → rename
+		const tempPath = `${this.tasksPath}.tmp`;
+		writeFileSync(tempPath, content, "utf-8");
+		renameSync(tempPath, this.tasksPath);
+	}
+
+	/**
+	 * Convert Task to JSONL format (camelCase → snake_case).
+	 */
+	private toJSONL(task: Task): TaskJSONL {
+		return {
+			id: task.id,
+			title: task.title,
+			description: task.description,
+			status: task.status,
+			type: task.type,
+			tags: task.tags.length > 0 ? task.tags : undefined,
+			dependencies:
+				task.dependencies.length > 0 ? task.dependencies : undefined,
+			assignee: task.assignee,
+			model: task.model,
+			acceptance_criteria: task.acceptanceCriteria,
+			created_at: task.createdAt,
+			updated_at: task.updatedAt,
+			execution: task.execution
+				? {
+						started_at: task.execution.startedAt,
+						completed_at: task.execution.completedAt,
+						duration_ms: task.execution.durationMs,
+						iterations: task.execution.iterations,
+						retry_count: task.execution.retryCount,
+						worktree: task.execution.worktree,
+						branch: task.execution.branch,
+						final_commit: task.execution.finalCommit,
+						tests_passed: task.execution.testsPassed,
+						tests_total: task.execution.testsTotal,
+						quality_passed: task.execution.qualityPassed,
+						code_changes: task.execution.codeChanges
+							? {
+									files_changed: task.execution.codeChanges.filesChanged,
+									lines_added: task.execution.codeChanges.linesAdded,
+									lines_removed: task.execution.codeChanges.linesRemoved,
+								}
+							: undefined,
+						last_error: task.execution.lastError,
+						failed_at: task.execution.failedAt,
+						signals: task.execution.signals,
+					}
+				: undefined,
+			review_count: task.reviewCount,
+			last_reviewed_at: task.lastReviewedAt,
+			review_result: task.reviewResult,
+			learnings_count: task.learningsCount,
+			has_learnings: task.hasLearnings,
+		};
+	}
+
+	/**
+	 * Convert JSONL to Task format (snake_case → camelCase).
+	 */
+	private fromJSONL(jsonl: TaskJSONL): Task {
+		return {
+			id: jsonl.id,
+			title: jsonl.title,
+			description: jsonl.description,
+			status: jsonl.status as TaskStatus,
+			type: (jsonl.type as TaskType) ?? "task",
+			tags: jsonl.tags ?? [],
+			dependencies: jsonl.dependencies ?? [],
+			assignee: jsonl.assignee,
+			model: jsonl.model,
+			acceptanceCriteria: jsonl.acceptance_criteria,
+			createdAt: jsonl.created_at,
+			updatedAt: jsonl.updated_at,
+			execution: jsonl.execution
+				? {
+						startedAt: jsonl.execution.started_at,
+						completedAt: jsonl.execution.completed_at,
+						durationMs: jsonl.execution.duration_ms,
+						iterations: jsonl.execution.iterations,
+						retryCount: jsonl.execution.retry_count,
+						worktree: jsonl.execution.worktree,
+						branch: jsonl.execution.branch,
+						finalCommit: jsonl.execution.final_commit,
+						testsPassed: jsonl.execution.tests_passed,
+						testsTotal: jsonl.execution.tests_total,
+						qualityPassed: jsonl.execution.quality_passed,
+						codeChanges: jsonl.execution.code_changes
+							? {
+									filesChanged: jsonl.execution.code_changes.files_changed,
+									linesAdded: jsonl.execution.code_changes.lines_added,
+									linesRemoved: jsonl.execution.code_changes.lines_removed,
+								}
+							: undefined,
+						lastError: jsonl.execution.last_error,
+						failedAt: jsonl.execution.failed_at,
+						signals: jsonl.execution.signals,
+					}
+				: undefined,
+			reviewCount: jsonl.review_count,
+			lastReviewedAt: jsonl.last_reviewed_at,
+			reviewResult: jsonl.review_result as Task["reviewResult"],
+			learningsCount: jsonl.learnings_count,
+			hasLearnings: jsonl.has_learnings,
+		};
 	}
 }

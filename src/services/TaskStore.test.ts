@@ -1,4 +1,11 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -149,6 +156,119 @@ describe("TaskStore", () => {
 
 			// Assert
 			expect(task.id).toBe("ch-4");
+		});
+	});
+
+	describe("persistence", () => {
+		it("should create .chorus directory on flush if not exists", async () => {
+			// Arrange
+			store.create({ title: "Test Task" });
+			const chorusDir = join(tempDir, ".chorus");
+
+			// Act
+			await store.flush();
+
+			// Assert
+			expect(existsSync(chorusDir)).toBe(true);
+		});
+
+		it("should write tasks to JSONL file on flush", async () => {
+			// Arrange
+			store.create({ title: "Task 1" });
+			store.create({ title: "Task 2" });
+
+			// Act
+			await store.flush();
+
+			// Assert
+			const jsonlPath = join(tempDir, ".chorus", "tasks.jsonl");
+			expect(existsSync(jsonlPath)).toBe(true);
+
+			const content = readFileSync(jsonlPath, "utf-8");
+			const lines = content.trim().split("\n");
+			expect(lines.length).toBe(2);
+
+			// Verify snake_case format
+			const task1 = JSON.parse(lines[0]);
+			expect(task1.id).toBe("ch-1");
+			expect(task1.created_at).toBeDefined();
+			expect(task1.updated_at).toBeDefined();
+		});
+
+		it("should load tasks from JSONL file", async () => {
+			// Arrange - create tasks and flush
+			store.create({ title: "Task 1", tags: ["test"] });
+			store.create({ title: "Task 2" });
+			await store.flush();
+
+			// Act - create new store and load
+			const newStore = new TaskStore(tempDir);
+			await newStore.load();
+
+			// Assert
+			const task1 = newStore.get("ch-1");
+			const task2 = newStore.get("ch-2");
+			expect(task1?.title).toBe("Task 1");
+			expect(task1?.tags).toEqual(["test"]);
+			expect(task2?.title).toBe("Task 2");
+		});
+
+		it("should handle empty/missing file gracefully", async () => {
+			// Arrange - no tasks, no file
+
+			// Act
+			await store.load();
+
+			// Assert - should not throw, store should be empty
+			expect(store.getAllIds()).toEqual([]);
+		});
+
+		it("should continue sequence after load", async () => {
+			// Arrange - create tasks and flush
+			store.create({ title: "Task 1" }); // ch-1
+			store.create({ title: "Task 2" }); // ch-2
+			await store.flush();
+
+			// Act - create new store, load, and create new task
+			const newStore = new TaskStore(tempDir);
+			await newStore.load();
+			const task3 = newStore.create({ title: "Task 3" });
+
+			// Assert
+			expect(task3.id).toBe("ch-3");
+		});
+
+		it("should parse snake_case to camelCase on load", async () => {
+			// Arrange - write JSONL with snake_case manually
+			const chorusDir = join(tempDir, ".chorus");
+			mkdirSync(chorusDir, { recursive: true });
+
+			const jsonlContent = JSON.stringify({
+				id: "ch-1",
+				title: "Test Task",
+				status: "todo",
+				type: "task",
+				tags: [],
+				dependencies: [],
+				created_at: "2024-01-01T00:00:00.000Z",
+				updated_at: "2024-01-01T00:00:00.000Z",
+				review_count: 0,
+				learnings_count: 0,
+				has_learnings: false,
+			});
+			writeFileSync(join(chorusDir, "tasks.jsonl"), jsonlContent);
+
+			// Act
+			const newStore = new TaskStore(tempDir);
+			await newStore.load();
+
+			// Assert
+			const task = newStore.get("ch-1");
+			expect(task?.createdAt).toBe("2024-01-01T00:00:00.000Z");
+			expect(task?.updatedAt).toBe("2024-01-01T00:00:00.000Z");
+			expect(task?.reviewCount).toBe(0);
+			expect(task?.learningsCount).toBe(0);
+			expect(task?.hasLearnings).toBe(false);
 		});
 	});
 });
