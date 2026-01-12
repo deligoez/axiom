@@ -36,8 +36,11 @@ describe("E2E: Mode Initialization Flow", () => {
 			// Arrange - no .chorus/ directory
 			expect(existsSync(chorusDir)).toBe(false);
 
-			// Act
-			const result = await renderApp([], projectDir);
+			// Act - use skipDefaultMode to test mode routing
+			const result = await renderApp([], {
+				cwd: projectDir,
+				skipDefaultMode: true,
+			});
 			// Init mode starts with "Checking project directory..." then shows prerequisite checks
 			await waitForText(result, "Checking", 8000);
 
@@ -50,8 +53,11 @@ describe("E2E: Mode Initialization Flow", () => {
 		it("init mode shows prerequisite check results", async () => {
 			// Arrange - no .chorus/ directory
 
-			// Act
-			const result = await renderApp([], projectDir);
+			// Act - use skipDefaultMode to test mode routing
+			const result = await renderApp([], {
+				cwd: projectDir,
+				skipDefaultMode: true,
+			});
 			// Wait for prerequisites to show - might take time
 			await waitForText(result, "git", 8000);
 
@@ -136,8 +142,11 @@ describe("E2E: Mode Initialization Flow", () => {
 			mkdirSync(beadsDir, { recursive: true });
 			writeFileSync(join(beadsDir, "issues.jsonl"), "");
 
-			// Act
-			const result = await renderApp([], projectDir);
+			// Act - use skipDefaultMode to test state restoration routing
+			const result = await renderApp([], {
+				cwd: projectDir,
+				skipDefaultMode: true,
+			});
 			await waitForText(result, "PLANNING", 5000);
 
 			// Assert
@@ -177,14 +186,19 @@ describe("E2E: Mode Initialization Flow", () => {
 				`${JSON.stringify(task)}\n`,
 			);
 
-			// Act
-			const result = await renderApp([], projectDir);
-			// Wait for Implementation mode to render
-			await waitForText(result, "ImplementationMode", 5000);
+			// Act - use skipDefaultMode to test state restoration routing
+			const result = await renderApp([], {
+				cwd: projectDir,
+				skipDefaultMode: true,
+			});
+			// Wait for Implementation mode to render - check for CHORUS header and task
+			await waitForText(result, "CHORUS", 5000);
 
-			// Assert - should be in implementation mode
+			// Assert - should be in implementation mode (shows CHORUS header and task)
 			const output = getOutput(result);
-			expect(output).toContain("ImplementationMode");
+			expect(output).toContain("CHORUS");
+			expect(output).toContain("Tasks (1)"); // Task panel shows 1 task
+			expect(output).toContain("1 pending"); // Task stats in footer
 		});
 	});
 
@@ -221,9 +235,11 @@ describe("E2E: Mode Initialization Flow", () => {
 				`${JSON.stringify(task)}\n`,
 			);
 
-			// Act - CLI says semi-auto
-			const result = await renderApp(["--mode", "semi-auto"], projectDir);
-			await waitForText(result, "Chorus", 5000);
+			// Act - CLI says semi-auto (--mode triggers implementation mode)
+			const result = await renderApp(["--mode", "semi-auto"], {
+				cwd: projectDir,
+			});
+			await waitForText(result, "CHORUS", 5000);
 
 			// Assert - semi-auto should take precedence
 			const output = getOutput(result);
@@ -239,8 +255,11 @@ describe("E2E: Mode Initialization Flow", () => {
 			mkdirSync(beadsDir, { recursive: true });
 			writeFileSync(join(beadsDir, "issues.jsonl"), "");
 
-			// Act
-			const result = await renderApp([], projectDir);
+			// Act - use skipDefaultMode to test default behavior
+			const result = await renderApp([], {
+				cwd: projectDir,
+				skipDefaultMode: true,
+			});
 			await waitForText(result, "PLANNING", 5000);
 
 			// Assert - should default to planning mode

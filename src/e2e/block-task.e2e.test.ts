@@ -32,14 +32,14 @@ describe("E2E: Block Task (b key)", () => {
 			createStatusBead("ch-bt1", "Task to Block", "open"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Task to Block", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Act - press b to block
 		await pressKey(result, "b");
 
 		// Assert - app still renders correctly (b is handled without error)
 		const output = getOutput(result);
-		expect(output).toContain("Task to Block");
+		expect(output).toContain("bt1");
 	});
 
 	it("blocked task displays ⊗ indicator", async () => {
@@ -48,14 +48,14 @@ describe("E2E: Block Task (b key)", () => {
 			createStatusBead("ch-bt2", "Blocked Task", "blocked"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Blocked Task", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Act - press b (no-op since already blocked)
 		await pressKey(result, "b");
 
 		// Assert - task shows blocked indicator
 		const output = getOutput(result);
-		expect(output).toContain("Blocked Task");
+		expect(output).toContain("bt2");
 		expect(output).toContain("⊗");
 	});
 });

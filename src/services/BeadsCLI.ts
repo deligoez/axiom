@@ -71,7 +71,15 @@ export class BeadsCLI {
 		try {
 			const { stdout } = await this.runBd(["show", id, "--json"]);
 			const data = JSON.parse(stdout);
-			return this.parseTask(data);
+			// bd show --json returns an array, take first element
+			if (Array.isArray(data) && data.length > 0) {
+				return this.parseTask(data[0]);
+			}
+			// Handle case where it returns a single object (older bd versions)
+			if (data && typeof data === "object" && !Array.isArray(data)) {
+				return this.parseTask(data);
+			}
+			return null;
 		} catch {
 			return null;
 		}
@@ -139,9 +147,11 @@ export class BeadsCLI {
 
 		const { stdout } = await this.runBd(args);
 		// Extract task ID from output:
-		// Real bd: "Created issue: bd-xxx-1" or "Created issue: ch-xxx"
-		// Mocked: "Created ch-abc123: Title"
-		const match = stdout.match(/Created(?:\s+issue:)?\s+([a-z]+-[a-z0-9]+)/i);
+		// Real bd: "Created issue: beads-test-1" or "Created issue: ch-xxx"
+		// Format: prefix-suffix or prefix-suffix-number
+		const match = stdout.match(
+			/Created(?:\s+issue:)?\s+([a-z]+(?:-[a-z0-9]+)+)/i,
+		);
 		if (!match) {
 			throw new Error(`Failed to parse created task ID from: ${stdout}`);
 		}

@@ -33,12 +33,13 @@ describe("E2E: Active Agent Display", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Active Task", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert - active task displayed in app
+		// Assert - active task displayed in app (use short ID)
 		const output = getOutput(result);
-		expect(output).toContain("Active Task");
-		expect(output).toContain("agents"); // lowercase in "0 agents"
+		expect(output).toContain("aa1"); // Short ID
+		expect(output).toContain("●"); // in_progress indicator
+		expect(output).toContain("1 running"); // Footer stats
 	});
 
 	it("shows open and in_progress tasks together", async () => {
@@ -50,12 +51,12 @@ describe("E2E: Active Agent Display", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Waiting Task", 5000);
+		await waitForText(result, "Tasks (2)", 5000);
 
-		// Assert - both tasks visible
+		// Assert - both tasks visible via short IDs
 		const output = getOutput(result);
-		expect(output).toContain("Waiting Task");
-		expect(output).toContain("Running Task");
+		expect(output).toContain("aa2");
+		expect(output).toContain("aa3");
 	});
 
 	it("shows multiple in_progress tasks", async () => {
@@ -67,12 +68,13 @@ describe("E2E: Active Agent Display", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Agent One", 5000);
+		await waitForText(result, "Tasks (2)", 5000);
 
-		// Assert - multiple active agents displayed
+		// Assert - multiple active tasks displayed via short IDs
 		const output = getOutput(result);
-		expect(output).toContain("Agent One");
-		expect(output).toContain("Agent Two");
+		expect(output).toContain("aa4");
+		expect(output).toContain("aa5");
+		expect(output).toContain("2 running"); // Footer shows both running
 	});
 
 	it("handles transition from open to in_progress", async () => {
@@ -84,11 +86,13 @@ describe("E2E: Active Agent Display", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Ready Task", 5000);
+		await waitForText(result, "Tasks (2)", 5000);
 
 		// Assert - both states shown correctly
 		const output = getOutput(result);
-		expect(output).toContain("Ready Task");
-		expect(output).toContain("Started Task");
+		expect(output).toContain("aa6");
+		expect(output).toContain("aa7");
+		expect(output).toContain("1 running");
+		expect(output).toContain("1 pending");
 	});
 });

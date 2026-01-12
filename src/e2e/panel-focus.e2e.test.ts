@@ -15,7 +15,7 @@ describe("E2E: Panel Focus (Tab)", () => {
 	it("Tab switches focus without error", async () => {
 		// Arrange
 		const result = await renderApp();
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Act - press Tab to switch focus
 		await pressKey(result, "{Tab}");
@@ -23,13 +23,13 @@ describe("E2E: Panel Focus (Tab)", () => {
 		// Assert - app still renders correctly
 		const output = getOutput(result);
 		expect(output).toContain("CHORUS");
-		expect(output).toMatch(/agents/i);
+		expect(output).toMatch(/slot/i); // Agent grid contains "empty slot"
 	});
 
 	it("Tab can be pressed multiple times", async () => {
 		// Arrange
 		const result = await renderApp();
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Act - press Tab twice (left -> right -> left)
 		await pressKey(result, "{Tab}");
@@ -43,7 +43,7 @@ describe("E2E: Panel Focus (Tab)", () => {
 	it("app continues to function after Tab key", async () => {
 		// Arrange
 		const result = await renderApp();
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Act - press Tab then verify other keys still work
 		await pressKey(result, "{Tab}");

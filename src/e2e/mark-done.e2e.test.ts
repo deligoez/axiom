@@ -32,14 +32,14 @@ describe("E2E: Mark Done (d key)", () => {
 			createStatusBead("ch-md1", "Task to Mark Done", "open"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Task to Mark Done", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Act - press d to mark done
 		await pressKey(result, "d");
 
 		// Assert - app still renders correctly (d is handled without error)
 		const output = getOutput(result);
-		expect(output).toContain("Task to Mark Done");
+		expect(output).toContain("md1");
 		expect(output).toContain("→"); // Still shows open indicator
 	});
 
@@ -49,14 +49,14 @@ describe("E2E: Mark Done (d key)", () => {
 			createStatusBead("ch-md2", "In Progress Task", "in_progress"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "In Progress Task", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Act - press d
 		await pressKey(result, "d");
 
 		// Assert - app continues to function
 		const output = getOutput(result);
-		expect(output).toContain("In Progress Task");
+		expect(output).toContain("md2");
 		expect(output).toContain("●"); // Still shows in_progress indicator
 	});
 
@@ -68,16 +68,16 @@ describe("E2E: Mark Done (d key)", () => {
 			createStatusBead("ch-md5", "Third Task", "closed"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "First Task", 5000);
+		await waitForText(result, "Tasks (3)", 5000);
 
 		// Act - press d
 		await pressKey(result, "d");
 
-		// Assert - all tasks still visible, stats still correct
+		// Assert - all tasks still visible via short IDs, stats still correct
 		const output = getOutput(result);
-		expect(output).toContain("First Task");
-		expect(output).toContain("Second Task");
-		expect(output).toContain("Third Task");
+		expect(output).toContain("md3");
+		expect(output).toContain("md4");
+		expect(output).toContain("md5");
 		expect(output).toContain("1 done");
 		expect(output).toContain("1 running");
 		expect(output).toContain("1 pending");

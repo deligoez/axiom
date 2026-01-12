@@ -35,12 +35,16 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "First Test Task", 5000);
+		// Wait for the tasks header to appear (indicates tasks are loaded)
+		await waitForText(result, "Tasks (2)", 5000);
 
-		// Assert
+		// Assert - check for task identifiers (short IDs) and key title words
+		// Note: Full titles may be split across lines in TUI, so check for key parts
 		const output = getOutput(result);
-		expect(output).toContain("First Test Task");
-		expect(output).toContain("Second Test Task");
+		expect(output).toContain("abc1"); // Short ID for first task
+		expect(output).toContain("def2"); // Short ID for second task
+		expect(output).toContain("First"); // Part of first title
+		expect(output).toContain("Second"); // Part of second title
 	});
 
 	it("shows → for open tasks", async () => {
@@ -66,11 +70,13 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "In Progress Task", 5000);
+		// Wait for the tasks header to appear
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Assert
 		const output = getOutput(result);
 		expect(output).toContain("●");
+		expect(output).toContain("prog"); // Part of short ID
 	});
 
 	it("shows ✓ for closed tasks", async () => {
@@ -115,11 +121,13 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Blocked Task", 5000);
+		// Wait for the tasks header to appear
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Assert
 		const output = getOutput(result);
 		expect(output).toContain("⊗");
+		expect(output).toContain("blk1"); // Part of short ID
 	});
 
 	it("shows ✗ for failed tasks", async () => {

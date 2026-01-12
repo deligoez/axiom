@@ -33,11 +33,13 @@ describe("E2E: Status Transitions", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Open Task", 5000);
+		// Wait for tasks to load (task count in header)
+		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert - task is displayed
+		// Assert - task is displayed with open status indicator
 		const output = getOutput(result);
-		expect(output).toContain("Open Task");
+		expect(output).toContain("st1"); // Short ID
+		expect(output).toContain("→"); // Open status indicator
 	});
 
 	it("displays in_progress task status correctly", async () => {
@@ -48,11 +50,13 @@ describe("E2E: Status Transitions", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Running Task", 5000);
+		// Wait for tasks to load (task count in header)
+		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert - running task is displayed
+		// Assert - running task is displayed with progress indicator
 		const output = getOutput(result);
-		expect(output).toContain("Running Task");
+		expect(output).toContain("st2"); // Short ID
+		expect(output).toContain("●"); // In-progress indicator
 	});
 
 	it("displays closed task status correctly", async () => {
@@ -63,12 +67,13 @@ describe("E2E: Status Transitions", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Completed Task", 5000);
+		// Wait for tasks to load (task count in header)
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Assert - closed task shows with checkmark
 		const output = getOutput(result);
-		expect(output).toContain("Completed Task");
-		expect(output).toContain("✓");
+		expect(output).toContain("st3"); // Short ID
+		expect(output).toContain("✓"); // Closed status indicator
 	});
 
 	it("displays multiple status types simultaneously", async () => {
@@ -82,13 +87,19 @@ describe("E2E: Status Transitions", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Open One", 5000);
+		// Wait for tasks to load (task count in header)
+		await waitForText(result, "Tasks (4)", 5000);
 
-		// Assert - all tasks displayed
+		// Assert - all tasks displayed via short IDs
 		const output = getOutput(result);
-		expect(output).toContain("Open One");
-		expect(output).toContain("Running One");
-		expect(output).toContain("Done One");
-		expect(output).toContain("Blocked One");
+		expect(output).toContain("st4"); // Open task
+		expect(output).toContain("st5"); // Running task
+		expect(output).toContain("st6"); // Done task
+		expect(output).toContain("st7"); // Blocked task
+		// And status indicators
+		expect(output).toContain("→"); // Open
+		expect(output).toContain("●"); // In-progress
+		expect(output).toContain("✓"); // Closed
+		expect(output).toContain("⊗"); // Blocked
 	});
 });

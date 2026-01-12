@@ -33,11 +33,11 @@ describe("E2E: Blocked Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Blocked Task", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Assert - blocked task shows with ⊗ indicator
 		const output = getOutput(result);
-		expect(output).toContain("Blocked Task");
+		expect(output).toContain("bt1");
 		expect(output).toContain("⊗");
 	});
 
@@ -51,13 +51,13 @@ describe("E2E: Blocked Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Open Task", 5000);
+		await waitForText(result, "Tasks (3)", 5000);
 
 		// Assert - all tasks visible with correct indicators
 		const output = getOutput(result);
-		expect(output).toContain("Open Task");
-		expect(output).toContain("Blocked One");
-		expect(output).toContain("Running Task");
+		expect(output).toContain("bt2");
+		expect(output).toContain("bt3");
+		expect(output).toContain("bt4");
 		expect(output).toContain("⊗");
 	});
 
@@ -71,13 +71,13 @@ describe("E2E: Blocked Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "First Blocked", 5000);
+		await waitForText(result, "Tasks (3)", 5000);
 
-		// Assert - all blocked tasks visible
+		// Assert - all blocked tasks visible via short IDs
 		const output = getOutput(result);
-		expect(output).toContain("First Blocked");
-		expect(output).toContain("Second Blocked");
-		expect(output).toContain("Third Blocked");
+		expect(output).toContain("bt5");
+		expect(output).toContain("bt6");
+		expect(output).toContain("bt7");
 	});
 
 	it("shows resolved and blocked tasks together", async () => {
@@ -89,12 +89,12 @@ describe("E2E: Blocked Tasks", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Completed Task", 5000);
+		await waitForText(result, "Tasks (2)", 5000);
 
-		// Assert - both types visible
+		// Assert - both types visible via short IDs
 		const output = getOutput(result);
-		expect(output).toContain("Completed Task");
-		expect(output).toContain("Waiting Task");
+		expect(output).toContain("bt8");
+		expect(output).toContain("bt9");
 		expect(output).toContain("✓"); // closed
 		expect(output).toContain("⊗"); // blocked
 	});

@@ -350,10 +350,16 @@ describe("InterventionPanel", () => {
 
 				// Act
 				stdin.write("r"); // enter redirect-select mode
-				await new Promise((resolve) => setTimeout(resolve, 50)); // wait for React update
+
+				// Wait for React to process state update with polling
+				let output = "";
+				for (let i = 0; i < 20; i++) {
+					await new Promise((resolve) => setTimeout(resolve, 25));
+					output = lastFrame() ?? "";
+					if (output.match(/select.*agent.*redirect/i)) break;
+				}
 
 				// Assert
-				const output = lastFrame();
 				expect(output).toMatch(/select.*agent.*redirect/i);
 			});
 

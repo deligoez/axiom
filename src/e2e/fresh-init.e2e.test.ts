@@ -32,7 +32,7 @@ describe("E2E: Fresh Project Init", () => {
 	it("starts in fresh directory without errors", async () => {
 		// Arrange & Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Assert
 		const output = getOutput(result);
@@ -43,11 +43,11 @@ describe("E2E: Fresh Project Init", () => {
 	it("shows empty task state", async () => {
 		// Arrange & Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "0 tasks", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
-		// Assert
+		// Assert - empty task state shows "No tasks"
 		const output = getOutput(result);
-		expect(output).toContain("0 tasks");
+		expect(output).toMatch(/No tasks|Tasks \(0\)/);
 	});
 
 	// SKIPPED: Flaky under parallel load - see ch-211i
@@ -94,7 +94,7 @@ describe("E2E: Fresh Project Init", () => {
 		const beadsDir = join(projectDir, ".beads");
 		mkdirSync(beadsDir, { recursive: true });
 		const task = {
-			id: "ch-init1",
+			id: "ch-ft01",
 			title: "Initial Task",
 			description: "",
 			status: "open",
@@ -107,10 +107,11 @@ describe("E2E: Fresh Project Init", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Initial Task", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert
+		// Assert - task appears (via short ID and indicators)
 		const output = getOutput(result);
-		expect(output).toContain("Initial Task");
+		expect(output).toContain("ft01"); // Short ID from ch-ft01
+		expect(output).toContain("1 pending"); // Footer stats
 	});
 });

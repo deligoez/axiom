@@ -18,17 +18,34 @@ const DEFAULT_INTERVAL = 100;
 
 export type AppRenderResult = RenderResult;
 
+export interface RenderAppOptions {
+	/**
+	 * Working directory for the app (defaults to current working dir)
+	 */
+	cwd?: string;
+	/**
+	 * Skip adding default --mode semi-auto. Use this for tests that test mode routing.
+	 */
+	skipDefaultMode?: boolean;
+}
+
 /**
  * Renders the Chorus app for E2E testing.
  *
  * @param args - Optional CLI arguments to pass to chorus
- * @param cwd - Working directory for the app (defaults to current working dir)
+ * @param cwdOrOptions - Working directory string OR options object
  * @returns RenderResult with process and query helpers
  */
 export async function renderApp(
 	args: string[] = [],
-	cwd?: string,
+	cwdOrOptions?: string | RenderAppOptions,
 ): Promise<AppRenderResult> {
+	// Handle backwards compatibility: second arg can be string (cwd) or options object
+	const options: RenderAppOptions =
+		typeof cwdOrOptions === "string"
+			? { cwd: cwdOrOptions }
+			: (cwdOrOptions ?? {});
+	const { cwd, skipDefaultMode = false } = options;
 	// Use dist/index.js as the entry point (compiled from src/index.tsx)
 	const chorusPath = resolve(process.cwd(), "dist/index.js");
 
@@ -38,12 +55,18 @@ export async function renderApp(
 		args.includes("-v") ||
 		args.includes("--help") ||
 		args.includes("-h");
+	// Commands that should NOT have --mode auto-added (they have their own routing)
+	const isCommandMode =
+		args.includes("init") || args.includes("plan") || args.includes("review");
 	// Also add --mode semi-auto to ensure app goes to implementation mode
-	// unless a different mode is explicitly specified
+	// unless a different mode is explicitly specified, using command mode,
+	// or skipDefaultMode is set (for mode routing tests)
 	const hasMode = args.includes("--mode");
 	const baseArgs = isInfoMode ? args : ["--ci", ...args];
 	const effectiveArgs =
-		isInfoMode || hasMode ? baseArgs : ["--mode", "semi-auto", ...baseArgs];
+		isInfoMode || hasMode || isCommandMode || skipDefaultMode
+			? baseArgs
+			: ["--mode", "semi-auto", ...baseArgs];
 
 	return cliRender("node", [chorusPath, ...effectiveArgs], {
 		cwd: cwd ?? process.cwd(),
@@ -185,4 +208,70 @@ export async function cleanup(): Promise<void> {
  */
 export function debug(result: AppRenderResult, maxLength = 7000): void {
 	result.debug(maxLength);
+}
+
+/**
+ * Normalizes TUI output for easier assertions.
+ * - Strips ANSI escape codes
+ * - Removes box drawing characters
+ * - Collapses multiple whitespace into single space
+ * - Useful for matching text that may span multiple lines due to TUI layout
+ *
+ * @param output - Raw output string from getOutput()
+ * @returns Normalized string for assertions
+ */
+export function normalizeOutput(output: string): string {
+	return (
+		output
+			// Strip ANSI escape sequences (control chars are intentional)
+			// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape codes require control characters
+			.replace(/\x1B\[[0-9;]*[A-Za-z]/g, "")
+			// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape codes require control characters
+			.replace(/\x1B\][^\x07]*\x07/g, "")
+			// Remove box drawing characters
+			.replace(/[─│┌┐└┘├┤┬┴┼]/g, " ")
+			// Replace newlines with space
+			.replace(/\n/g, " ")
+			// Collapse multiple whitespace
+			.replace(/\s+/g, " ")
+			.trim()
+	);
+}
+
+/**
+ * Waits for text to appear in normalized output.
+ * Useful for text that may span multiple lines in the TUI.
+ *
+ * @param result - The render result from renderApp
+ * @param text - Text to wait for (will be found even if split across lines)
+ * @param timeout - Optional timeout in ms (default: 10000)
+ */
+export async function waitForNormalizedText(
+	result: AppRenderResult,
+	text: string,
+	timeout = DEFAULT_TIMEOUT,
+): Promise<void> {
+	await waitFor(
+		() => {
+			const output = normalizeOutput(result.getStdallStr());
+			if (!output.includes(text)) {
+				throw new Error(`Text "${text}" not found in normalized output`);
+			}
+		},
+		{
+			instance: result,
+			timeout,
+			interval: DEFAULT_INTERVAL,
+		},
+	);
+}
+
+/**
+ * Gets normalized output for assertions.
+ *
+ * @param result - The render result from renderApp
+ * @returns Normalized stdout + stderr content
+ */
+export function getNormalizedOutput(result: AppRenderResult): string {
+	return normalizeOutput(result.getStdallStr());
 }

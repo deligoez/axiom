@@ -33,15 +33,18 @@ describe("E2E: Redirect Agent (r key)", () => {
 			createStatusBead("ch-ra2", "Available Task", "open"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Running Task", 5000);
+		// Wait for tasks to load (task count in header)
+		await waitForText(result, "Tasks (2)", 5000);
 
 		// Act - press r to redirect
 		await pressKey(result, "r");
 
 		// Assert - app still renders correctly (r is handled without error)
 		const output = getOutput(result);
-		expect(output).toContain("Running Task");
-		expect(output).toContain("Available Task");
+		// Check for short IDs since full titles may span lines
+		expect(output).toContain("ra1");
+		expect(output).toContain("ra2");
+		expect(output).toContain("●"); // in_progress indicator
 	});
 
 	it("pressing r key does not crash app with no running agents", async () => {
@@ -50,13 +53,15 @@ describe("E2E: Redirect Agent (r key)", () => {
 			createStatusBead("ch-ra3", "Open Task", "open"),
 		]);
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Open Task", 5000);
+		// Wait for tasks to load (task count in header)
+		await waitForText(result, "Tasks (1)", 5000);
 
 		// Act - press r (no running agent to redirect)
 		await pressKey(result, "r");
 
 		// Assert - app continues to function
 		const output = getOutput(result);
-		expect(output).toContain("Open Task");
+		// Check for short ID since full title may span lines
+		expect(output).toContain("ra3");
 	});
 });

@@ -31,7 +31,7 @@ describe("E2E: Initial Load", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Assert
 		const output = getOutput(result);
@@ -46,11 +46,12 @@ describe("E2E: Initial Load", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Task From File", 5000);
+		// Wait for tasks to load
+		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert - task loaded from beads file
+		// Assert - task loaded from beads file (check short ID)
 		const output = getOutput(result);
-		expect(output).toContain("Task From File");
+		expect(output).toContain("il1");
 	});
 
 	it("shows empty state for new projects", async () => {
@@ -59,7 +60,7 @@ describe("E2E: Initial Load", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Chorus", 5000);
+		await waitForText(result, "CHORUS", 5000);
 
 		// Assert - shows no tasks message
 		const output = getOutput(result);
@@ -76,12 +77,13 @@ describe("E2E: Initial Load", () => {
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Task One", 5000);
+		// Wait for tasks to load
+		await waitForText(result, "Tasks (3)", 5000);
 
-		// Assert - all tasks visible
+		// Assert - all tasks visible via short IDs
 		const output = getOutput(result);
-		expect(output).toContain("Task One");
-		expect(output).toContain("Task Two");
-		expect(output).toContain("Task Three");
+		expect(output).toContain("il2");
+		expect(output).toContain("il3");
+		expect(output).toContain("il4");
 	});
 });
