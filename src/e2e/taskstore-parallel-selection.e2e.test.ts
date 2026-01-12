@@ -26,8 +26,8 @@ describe("E2E: TaskStore Parallel Selection", () => {
 	it("two agents claim different tasks concurrently", async () => {
 		// Arrange
 		const store = new TaskStore(tempDir);
-		const task1 = store.create({ title: "Task 1" });
-		const task2 = store.create({ title: "Task 2" });
+		store.create({ title: "Task 1" });
+		store.create({ title: "Task 2" });
 
 		// Act - agent1 selects and claims
 		const agent1Task = store.selectNext();

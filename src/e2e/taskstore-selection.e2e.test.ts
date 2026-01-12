@@ -26,7 +26,7 @@ describe("E2E: TaskStore Selection", () => {
 	it("selection prefers unblocking tasks", () => {
 		// Arrange - create tasks where one unblocks others
 		const store = new TaskStore(tempDir);
-		const regularTask = store.create({ title: "Regular Task" });
+		store.create({ title: "Regular Task" }); // Background task
 		const blockerTask = store.create({ title: "Blocker Task" });
 
 		// Create dependent tasks that will be stuck until blocker is done
@@ -57,7 +57,7 @@ describe("E2E: TaskStore Selection", () => {
 			title: "Feature Task 2",
 			tags: ["feature-a"],
 		});
-		const bugTask = store.create({
+		store.create({
 			title: "Bug Task",
 			tags: ["bug"],
 		});
@@ -76,8 +76,8 @@ describe("E2E: TaskStore Selection", () => {
 	it("selection respects next tag override", () => {
 		// Arrange - create multiple tasks, one with 'next' tag
 		const store = new TaskStore(tempDir);
-		const regularTask1 = store.create({ title: "Regular Task 1" });
-		const regularTask2 = store.create({ title: "Regular Task 2" });
+		store.create({ title: "Regular Task 1" }); // Background task
+		store.create({ title: "Regular Task 2" }); // Background task
 		const priorityTask = store.create({
 			title: "Priority Task",
 			tags: ["next"],
@@ -114,10 +114,10 @@ describe("E2E: TaskStore Selection", () => {
 			title: "Milestone A Task 3 (remaining)",
 			tags: ["m1-milestone-a"],
 		});
-		const milestoneBTask = store.create({
+		store.create({
 			title: "Milestone B Task",
 			tags: ["m2-milestone-b"],
-		});
+		}); // Competing milestone task
 
 		// Act
 		const selected = store.selectNext();
