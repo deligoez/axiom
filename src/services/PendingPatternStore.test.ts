@@ -7,13 +7,11 @@ import { PendingPatternStore } from "./PendingPatternStore.js";
 vi.mock("node:fs/promises", () => ({
 	readFile: vi.fn(),
 	writeFile: vi.fn(),
-	mkdir: vi.fn(),
 	access: vi.fn(),
 }));
 
 const mockReadFile = vi.mocked(fs.readFile);
 const mockWriteFile = vi.mocked(fs.writeFile);
-const mockMkdir = vi.mocked(fs.mkdir);
 const mockAccess = vi.mocked(fs.access);
 
 describe("PendingPatternStore", () => {
