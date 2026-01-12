@@ -546,6 +546,255 @@ Claude Code skills can be added per persona:
 
 ---
 
+## Shared Rules System
+
+All agents share common protocols that must be followed regardless of persona. These are stored in `.chorus/rules/` and loaded by all agents.
+
+### Directory Structure
+
+```text
+.chorus/
+  rules/                         # Shared rules (all agents)
+    signal-types.md              # Signal format and valid types
+    learning-format.md           # Learning scope prefixes and categories
+    commit-format.md             # Commit message format with task ID
+    completion-protocol.md       # Quality checks and completion signals
+```
+
+### Signal Types (`signal-types.md`)
+
+Defines the communication protocol between agents and Maestro:
+
+```markdown
+# Signal Types
+
+## Format
+All signals must use: `<chorus>TYPE:payload</chorus>` or `<chorus>TYPE</chorus>`
+
+## Valid Types
+- `COMPLETE` - Task finished successfully (no payload)
+- `BLOCKED` - External blocker (payload: reason)
+- `NEEDS_HELP` - Clarification needed (payload: question)
+- `PROGRESS` - Progress update (payload: percentage or message)
+- `RESOLVED` - Blocker resolved (payload: resolution)
+- `NEEDS_HUMAN` - Human intervention required (payload: reason)
+
+## Examples
+<chorus>COMPLETE</chorus>
+<chorus>BLOCKED:Database schema mismatch</chorus>
+<chorus>PROGRESS:75</chorus>
+```
+
+### Learning Format (`learning-format.md`)
+
+Defines how agents document discoveries:
+
+```markdown
+# Learning Format
+
+## Scope Prefixes (Required)
+- `[LOCAL]` - Only affects this task, not shared
+- `[CROSS-CUTTING]` - Affects multiple features, triggers plan review
+- `[ARCHITECTURAL]` - Fundamental design decision, triggers alert
+
+## Format
+Add learnings to scratchpad's ## Learnings section:
+
+## Learnings
+- [LOCAL] Found that X requires Y configuration
+- [CROSS-CUTTING] All API endpoints need rate limiting
+- [ARCHITECTURAL] Switching from REST to GraphQL
+
+## Categories (Auto-detected)
+- performance, testing, debugging, error-handling, patterns, general
+```
+
+### Commit Format (`commit-format.md`)
+
+Defines commit message rules for rollback support:
+
+```markdown
+# Commit Format
+
+## Required Format
+`<type>: <description> [<task-id>]`
+
+## Types
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code restructure
+- `test:` - Test changes
+- `docs:` - Documentation
+- `chore:` - Maintenance
+
+## Examples
+feat: add login validation [ch-abc1]
+fix: handle null response [ch-xyz9]
+
+## Critical Rules
+- Task ID is REQUIRED for rollback support
+- Keep description under 72 characters
+- Use imperative mood ("add" not "added")
+```
+
+### Completion Protocol (`completion-protocol.md`)
+
+Defines the steps to complete a task:
+
+```markdown
+# Completion Protocol
+
+## Prerequisites
+All of the following must be true before signaling completion:
+
+1. All acceptance criteria in task are met
+2. All tests pass
+3. All quality commands pass (if configured)
+4. Code committed with task ID in message
+
+## Quality Commands
+Run each configured quality command in order:
+- `npm run test:run` - Tests must pass
+- `npm run typecheck` - No type errors
+- `npm run lint` - No lint errors
+- `npm run knip` - No dead code
+
+## Signaling Completion
+When ALL criteria met: `<chorus>COMPLETE</chorus>`
+If blocked: `<chorus>BLOCKED:reason</chorus>`
+If need help: `<chorus>NEEDS_HELP:question</chorus>`
+```
+
+---
+
+## Rule Inheritance
+
+Personas inherit shared rules and can add persona-specific rules. The loading order creates a layered rule system.
+
+### Loading Order
+
+```text
+1. .chorus/rules/*.md           (shared rules - ALL agents)
+2. .chorus/agents/{name}/rules.md  (persona rules - specific agent)
+3. .chorus/agents/{name}/prompt.md (persona prompt - specific agent)
+4. .chorus/agents/{name}/skills/   (persona skills - specific agent)
+```
+
+### Rule Composition
+
+```typescript
+// Conceptual model of rule loading
+interface LoadedRules {
+  shared: {
+    signalTypes: SignalRule[];
+    learningFormat: LearningRule;
+    commitFormat: CommitRule;
+    completionProtocol: CompletionRule;
+  };
+  persona: {
+    prompt: string;
+    rules: string;
+    skills: Skill[];
+  };
+}
+
+// Final prompt = shared rules + persona prompt + persona rules + skills
+```
+
+### Override Behavior
+
+| Rule Type | Can Override? | Notes |
+|-----------|---------------|-------|
+| Signal Types | No | Protocol is fixed |
+| Learning Format | No | Categories can extend |
+| Commit Format | Partial | Can add prefixes |
+| Completion Protocol | Partial | Can add quality commands |
+| Persona Prompt | Yes | Full control |
+| Persona Rules | Yes | Full control |
+
+### Example: Chip's Full Rules
+
+When Chip starts a task, it receives:
+
+```markdown
+# Shared Rules
+[Contents of signal-types.md]
+[Contents of learning-format.md]
+[Contents of commit-format.md]
+[Contents of completion-protocol.md]
+
+# Chip - Worker Agent
+[Contents of .chorus/agents/chip/prompt.md]
+
+# Chip Rules
+[Contents of .chorus/agents/chip/rules.md]
+
+# Skills
+[Contents of .chorus/agents/chip/skills/*.md]
+```
+
+---
+
+## Migration from Hardcoded
+
+Currently, agent instructions are hardcoded in TypeScript files. This section documents the migration to file-based rules.
+
+### Current State (Hardcoded)
+
+| Component | File | Lines | Status |
+|-----------|------|-------|--------|
+| Signal types | SignalParser.ts | 3-12 | Hardcoded |
+| Commit rules | PromptBuilder.ts | 82-88 | Hardcoded |
+| Learning format | PromptBuilder.ts | 91-105 | Hardcoded |
+| Completion protocol | PromptBuilder.ts | 108-121 | Hardcoded |
+| Context section | PromptBuilder.ts | 139-145 | Hardcoded |
+| Plan Agent rules | PlanAgentPromptBuilder.ts | 45-77 | Hardcoded |
+| Conflict resolution | ResolverAgent.ts | 115-138 | Hardcoded |
+| Task generation | TaskGenerator.ts | 90-98 | Hardcoded |
+
+### Target State (File-based)
+
+| Component | Source File | Target Location |
+|-----------|-------------|-----------------|
+| Signal types | SignalParser.ts | `.chorus/rules/signal-types.md` |
+| Commit rules | PromptBuilder.ts | `.chorus/rules/commit-format.md` |
+| Learning format | PromptBuilder.ts | `.chorus/rules/learning-format.md` |
+| Completion protocol | PromptBuilder.ts | `.chorus/rules/completion-protocol.md` |
+| Plan Agent rules | PlanAgentPromptBuilder.ts | `.chorus/agents/archie/rules.md` |
+| Conflict resolution | ResolverAgent.ts | `.chorus/agents/patch/rules.md` |
+| Task generation | TaskGenerator.ts | `.chorus/agents/archie/rules.md` |
+
+### Migration Strategy
+
+1. **Phase 1: Create Files** - Scaffold the rule files with current hardcoded content
+2. **Phase 2: Add Loaders** - Update services to load from files with fallback
+3. **Phase 3: Remove Hardcoded** - Delete hardcoded strings, use files only
+4. **Phase 4: Validate** - E2E tests ensure rules are loaded correctly
+
+### Backward Compatibility
+
+During migration:
+- Services check for file existence first
+- If file missing, use hardcoded fallback
+- Log warning when using fallback
+- After full migration, fallback becomes error
+
+```typescript
+// Example migration pattern
+async loadCommitRules(): Promise<string> {
+  const filePath = '.chorus/rules/commit-format.md';
+
+  if (await exists(filePath)) {
+    return readFile(filePath);
+  }
+
+  console.warn('commit-format.md not found, using hardcoded fallback');
+  return HARDCODED_COMMIT_RULES; // Remove after migration
+}
+```
+
+---
+
 ## Agent Numbering
 
 ### Workers (Multiple Instances)
@@ -799,6 +1048,282 @@ export const PERSONA_COLORS = {
 
 ## Task Plan
 
+### Milestone: Shared Rules (Foundation) - SR##
+
+These tasks create the shared rules infrastructure that all agents inherit.
+
+**Depends on:** TS21 (TaskStore migration complete)
+
+---
+
+#### SR01: Shared Rules Type Definitions
+
+**Priority:** P1
+**Depends on:** TS21 (ch-vemi)
+**Label:** m-personas
+
+Create type definitions for the shared rules system.
+
+**Files:**
+- `src/types/rules.ts`
+
+**Acceptance Criteria:**
+- [ ] `SignalType` union type with 6 values
+- [ ] `SignalRule` interface for signal format definitions
+- [ ] `LearningScope` type: `local`, `cross-cutting`, `architectural`
+- [ ] `LearningRule` interface for learning format
+- [ ] `CommitRule` interface for commit format
+- [ ] `CompletionRule` interface for completion protocol
+- [ ] `SharedRules` interface combining all rule types
+- [ ] Type exports from index
+- [ ] 0 tests (type-only file)
+
+---
+
+#### SR02: Rules Loader Service
+
+**Priority:** P1
+**Depends on:** SR01
+**Label:** m-personas
+
+Service to load shared rules from `.chorus/rules/` directory.
+
+**Files:**
+- `src/services/RulesLoader.ts`
+- `src/services/RulesLoader.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `loadSignalTypes()` reads signal-types.md and parses format
+- [ ] `loadLearningFormat()` reads learning-format.md
+- [ ] `loadCommitFormat()` reads commit-format.md
+- [ ] `loadCompletionProtocol()` reads completion-protocol.md
+- [ ] `loadAllRules()` returns combined SharedRules object
+- [ ] Returns hardcoded fallback if file missing (with warning)
+- [ ] Caches loaded rules for performance
+- [ ] 8 tests pass
+
+---
+
+#### SR03: Rules Scaffold Service
+
+**Priority:** P1
+**Depends on:** SR01
+**Label:** m-personas
+
+Service to scaffold default rules files during init.
+
+**Files:**
+- `src/services/RulesScaffold.ts`
+- `src/services/RulesScaffold.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `scaffoldRulesDir()` creates `.chorus/rules/` directory
+- [ ] `scaffoldSignalTypes()` creates signal-types.md with defaults
+- [ ] `scaffoldLearningFormat()` creates learning-format.md with defaults
+- [ ] `scaffoldCommitFormat()` creates commit-format.md with defaults
+- [ ] `scaffoldCompletionProtocol()` creates completion-protocol.md with defaults
+- [ ] `scaffoldAll()` creates all rule files
+- [ ] Skips existing files (no overwrite)
+- [ ] 7 tests pass
+
+---
+
+#### SR04: Rules Validator Service
+
+**Priority:** P1
+**Depends on:** SR02
+**Label:** m-personas
+
+Service to validate rule file contents and format.
+
+**Files:**
+- `src/services/RulesValidator.ts`
+- `src/services/RulesValidator.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `validateSignalTypes(content)` validates signal-types.md structure
+- [ ] `validateLearningFormat(content)` validates learning-format.md
+- [ ] `validateCommitFormat(content)` validates commit-format.md
+- [ ] `validateCompletionProtocol(content)` validates completion-protocol.md
+- [ ] Returns detailed error messages for invalid content
+- [ ] `validateAll()` checks all rule files
+- [ ] 6 tests pass
+
+---
+
+#### SR05: Shared Rules E2E Tests
+
+**Priority:** P1
+**Depends on:** SR03, SR04
+**Label:** m-personas
+
+E2E tests for shared rules system.
+
+**Files:**
+- `src/e2e/shared-rules.e2e.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Test: Init scaffolds all 4 rule files
+- [ ] Test: RulesLoader loads all rules correctly
+- [ ] Test: Validation catches malformed rules
+- [ ] Test: Fallback works when files missing
+- [ ] Test: Rules are included in agent prompts
+- [ ] 5 tests pass
+
+---
+
+### Milestone: Migration from Hardcoded - MH##
+
+These tasks migrate hardcoded prompts/rules to file-based system.
+
+---
+
+#### MH01: Migrate PromptBuilder to RulesLoader
+
+**Priority:** P1
+**Depends on:** SR02
+**Label:** m-personas
+
+Update PromptBuilder to load rules from files instead of hardcoded strings.
+
+**Files:**
+- `src/services/PromptBuilder.ts`
+- `src/services/PromptBuilder.test.ts`
+
+**Acceptance Criteria:**
+- [ ] `buildCommitRulesSection()` loads from commit-format.md
+- [ ] `buildLearningsFormatSection()` loads from learning-format.md
+- [ ] `buildCompletionSection()` loads from completion-protocol.md
+- [ ] Falls back to hardcoded if file missing (with warning)
+- [ ] Existing tests still pass
+- [ ] 4 new tests for file loading
+- [ ] 10 tests pass total
+
+---
+
+#### MH02: Migrate PlanAgentPromptBuilder
+
+**Priority:** P1
+**Depends on:** SR02
+**Label:** m-personas
+
+Update PlanAgentPromptBuilder to load rules from files.
+
+**Files:**
+- `src/services/PlanAgentPromptBuilder.ts`
+- `src/services/PlanAgentPromptBuilder.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Core task rules (atomic, testable, right-sized) loaded from file
+- [ ] Configuration limits loaded from .chorus/task-rules.md
+- [ ] Falls back to hardcoded defaults if missing
+- [ ] 4 tests pass
+
+---
+
+#### MH03: Migrate ResolverAgent Prompt
+
+**Priority:** P1
+**Depends on:** SR02
+**Label:** m-personas
+
+Update ResolverAgent to load conflict resolution steps from file.
+
+**Files:**
+- `src/services/ResolverAgent.ts`
+- `src/services/ResolverAgent.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Conflict resolution 5-step procedure loaded from `.chorus/agents/patch/rules.md`
+- [ ] Falls back to hardcoded if file missing
+- [ ] 3 tests pass
+
+---
+
+#### MH04: Migrate InitScaffold Templates
+
+**Priority:** P1
+**Depends on:** SR03
+**Label:** m-personas
+
+Update InitScaffold to use shared rules and persona scaffolds.
+
+**Files:**
+- `src/services/InitScaffold.ts`
+- `src/services/InitScaffold.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Calls `RulesScaffold.scaffoldAll()` during init
+- [ ] Calls `PersonaScaffold.scaffoldAll()` during init (after AP03)
+- [ ] Removes duplicate template definitions
+- [ ] 4 tests pass
+
+---
+
+#### MH05: Remove Hardcoded Fallbacks
+
+**Priority:** P1
+**Depends on:** MH01, MH02, MH03, MH04
+**Label:** m-personas
+
+Remove all hardcoded fallback strings, make file-based rules mandatory.
+
+**Files:**
+- `src/services/PromptBuilder.ts`
+- `src/services/PlanAgentPromptBuilder.ts`
+- `src/services/ResolverAgent.ts`
+- `src/services/RulesLoader.ts`
+
+**Acceptance Criteria:**
+- [ ] All `HARDCODED_*` constants removed
+- [ ] Missing rule files throw clear error (not silent fallback)
+- [ ] Error message guides user to run `chorus init`
+- [ ] 4 tests pass (error cases)
+
+---
+
+#### MH06: Migration E2E Tests
+
+**Priority:** P1
+**Depends on:** MH05
+**Label:** m-personas
+
+E2E tests verifying migration is complete.
+
+**Files:**
+- `src/e2e/migration.e2e.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Test: Fresh init creates all rule files
+- [ ] Test: Agent prompts contain file-based rules
+- [ ] Test: No hardcoded prompts in built prompts
+- [ ] Test: Missing rules dir causes clear error
+- [ ] 4 tests pass
+
+---
+
+#### MH07: Verification - No Hardcoded Prompts Remaining
+
+**Priority:** P0
+**Depends on:** MH06
+**Label:** m-personas
+
+Static analysis to verify no hardcoded prompts/rules remain in source code.
+
+**Files:**
+- `src/services/__tests__/no-hardcoded-prompts.test.ts`
+
+**Acceptance Criteria:**
+- [ ] Test scans all .ts files in src/services/
+- [ ] Flags any string literals > 100 chars containing "## " (markdown headers)
+- [ ] Flags any string literals containing signal format `<chorus>`
+- [ ] Flags any string literals containing `[LOCAL]`, `[CROSS-CUTTING]`, `[ARCHITECTURAL]`
+- [ ] Whitelist for legitimate uses (e.g., regex patterns, test fixtures)
+- [ ] All services pass the scan
+- [ ] 1 test pass (but scans entire services directory)
+
+---
+
 ### Milestone: Sage (Project Analyzer) - SA##
 
 These tasks implement the Sage agent for intelligent project analysis during init.
@@ -808,7 +1333,7 @@ These tasks implement the Sage agent for intelligent project analysis during ini
 #### SA01: Sage Type Definitions
 
 **Priority:** P1
-**Depends on:** None
+**Depends on:** SR01
 **Label:** m-personas
 
 Create type definitions for the Sage analyzer.
@@ -854,7 +1379,7 @@ Implement the SageAnalyzer service that performs codebase analysis.
 #### SA03: Sage Prompt Builder
 
 **Priority:** P1
-**Depends on:** SA02
+**Depends on:** SA02, SR02
 **Label:** m-personas
 
 Build prompts for Sage to analyze ambiguous cases via Claude.
@@ -865,10 +1390,11 @@ Build prompts for Sage to analyze ambiguous cases via Claude.
 
 **Acceptance Criteria:**
 - [ ] `buildAnalysisPrompt(partialResult)` creates prompt for Claude
+- [ ] Loads Sage persona from `.chorus/agents/sage/prompt.md`
 - [ ] Includes codebase structure summary
 - [ ] Asks specific questions about unclear patterns
 - [ ] Returns structured format for parsing
-- [ ] 4 tests pass
+- [ ] 5 tests pass
 
 ---
 
@@ -891,7 +1417,10 @@ Integrate Sage into the init wizard flow.
 - [ ] User can override Sage suggestions
 - [ ] Loading state shown during analysis
 - [ ] Graceful fallback if Sage fails
-- [ ] 6 tests pass
+- [ ] Final step: "Would you like to meet your Chorus team?" (optional)
+- [ ] If yes: Shows all agents with roles and file paths
+- [ ] Agent introduction shows prompt/rules/skills paths
+- [ ] 9 tests pass
 
 ---
 
@@ -968,7 +1497,7 @@ Define color theme for TUI.
 #### AP03: Persona File Scaffolding
 
 **Priority:** P1
-**Depends on:** AP01
+**Depends on:** AP01, MH07
 **Label:** m-personas
 
 Create persona file structure during init.
@@ -1310,65 +1839,93 @@ Update documentation with persona information.
 
 | Milestone | Tasks | Tests |
 |-----------|-------|-------|
-| Sage (SA01-SA05) | 5 | 27 |
+| Shared Rules (SR01-SR05) | 5 | 26 |
+| Migration (MH01-MH07) | 7 | 30 |
+| Sage (SA01-SA05) | 5 | 28 |
 | Persona Types (AP01-AP02) | 2 | 7 |
 | Persona Files (AP03-AP07) | 5 | 36 |
 | Agent Machine (AP08) | 1 | 5 |
 | TUI (AP09-AP12) | 4 | 18 |
 | Agent Integration (AP13-AP16) | 4 | 16 |
-| E2E & Docs (AP17-AP18) | 2 | 6 |
-| **Total** | **23 tasks** | **~115 tests** |
+| E2E and Docs (AP17-AP18) | 2 | 6 |
+| **Total** | **35 tasks** | **~172 tests** |
 
 ---
 
 ## Dependency Graph
 
 ```text
-SA01 (Sage Types)
+TS21 (TaskStore Complete)
   |
-  +---> SA02 (Sage Service)
-          |
-          +---> SA03 (Sage Prompt)
-                  |
-                  +---> SA04 (Sage Init Integration)
-                          |
-                          +---> SA05 (Sage E2E)
-                                  |
-+-------------------------------+
-|
-AP01 (Persona Types)
-  |
-  +---> AP02 (Colors) -----------------------------------+
-  |                                                      |
-  +---> AP03 (File Scaffolding)                          |
-          |                                              |
-          +---> AP04 (Persona Manager)                   |
-                  |                                      |
-                  +---> AP07 (PromptBuilder) ---+        |
-                  |                             |        |
-  +---> AP05 (Agent Logger) ----+               |        |
-  |       |                     |               |        |
-  |       +---> AP09 (LogPanel)-+---> AP17 (E2E)        |
-  |       |                     |               |        |
-  |       +---> AP12 (StatusLine)               |        |
-  |       |                     |               |        |
-  |       +---> AP15 (Scout)    |               |        |
-  |       |                     |               |        |
-  |       +---> AP16 (Echo)     |               |        |
-  |                             |               |        |
-  +---> AP06 (Worker Numbers) --+               |        |
-                                |               |        |
-                          AP08 (Agent Machine) -+        |
-                                |                        |
-                          AP02 -+---> AP10 (AgentCard)   |
-                                        |                |
-                                        +---> AP11 (Grid)+
-                                                         |
-                          AP07 -+---> AP13 (Archie)      |
-                                |                        |
-                                +---> AP14 (Patch)       |
-                                                         |
-                          AP17 -----------> AP18 (Docs) -+
+  +---> SR01 (Rules Types) ─────────────────────────────────────────┐
+          |                                                         |
+          +---> SR02 (Rules Loader) ──────────────────────────┐     |
+          |       |                                           |     |
+          |       +---> SR04 (Rules Validator) ──┐            |     |
+          |       |                              |            |     |
+          |       +---> MH01 (Migrate PromptBuilder)          |     |
+          |       |                              |            |     |
+          |       +---> MH02 (Migrate PlanAgent) |            |     |
+          |       |                              |            |     |
+          |       +---> MH03 (Migrate Resolver)  |            |     |
+          |                                      |            |     |
+          +---> SR03 (Rules Scaffold) ──────────────┐         |     |
+                  |                              |  |         |     |
+                  +---> SR05 (Rules E2E) ────────┘  |         |     |
+                  |                                 |         |     |
+                  +---> MH04 (Migrate InitScaffold) |         |     |
+                                                   |         |     |
+                  MH01 + MH02 + MH03 + MH04 ───────────────────┘     |
+                          |                                         |
+                          +---> MH05 (Remove Hardcoded)             |
+                                  |                                 |
+                                  +---> MH06 (Migration E2E)        |
+                                          |                         |
+                                          +---> MH07 (Verification) |
+                                                                    |
+          SA01 (Sage Types) <───────────────────────────────────────┘
+            |
+            +---> SA02 (Sage Service)
+                    |
+                    +---> SA03 (Sage Prompt) ←── SR02
+                            |
+                            +---> SA04 (Sage Init)
+                                    |
+                                    +---> SA05 (Sage E2E)
+                                            |
+          AP01 (Persona Types) <────────────┘
+            |
+            +---> AP02 (Colors) ────────────────────────────────────┐
+            |                                                       |
+            +---> AP03 (File Scaffolding) ←── MH07                  |
+            |       |                                               |
+            |       +---> AP04 (Persona Manager)                    |
+            |               |                                       |
+            |               +---> AP07 (PromptBuilder Integration)  |
+            |               |                                       |
+            +---> AP05 (Agent Logger) ───┐                          |
+            |       |                    |                          |
+            |       +---> AP09 (LogPanel)├─────> AP17 (E2E) ────────┤
+            |       |                    |                          |
+            |       +---> AP12 (StatusLine)                         |
+            |       |                                               |
+            |       +---> AP15 (Scout)                              |
+            |       |                                               |
+            |       +---> AP16 (Echo)                               |
+            |                                                       |
+            +---> AP06 (Worker Numbers) ─┤                          |
+                                         |                          |
+                    AP08 (Agent Machine) ┘                          |
+                            |                                       |
+                    AP02 ───+──> AP10 (AgentCard)                   |
+                                    |                               |
+                                    +──> AP11 (Grid) ───────────────┤
+                                                                    |
+                    AP07 ───+──> AP13 (Archie)                      |
+                            |                                       |
+                            +──> AP14 (Patch)                       |
+                                                                    |
+                    AP17 ──────────> AP18 (Docs) ───────────────────┘
 ```
 
 ---
