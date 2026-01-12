@@ -762,6 +762,56 @@ describe("TaskStore", () => {
 		});
 	});
 
+	describe("selectNext", () => {
+		it("returns best ready task using TaskSelector", () => {
+			// Arrange
+			store.create({ title: "Older", tags: [] });
+			store.create({ title: "With next", tags: ["next"] });
+
+			// Act
+			const result = store.selectNext();
+
+			// Assert - 'next' tag wins
+			expect(result?.title).toBe("With next");
+		});
+
+		it("returns undefined when no ready tasks", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			store.claim(task.id); // Now "doing"
+
+			// Act
+			const result = store.selectNext();
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it("excludes tasks in excludeIds", () => {
+			// Arrange
+			const task1 = store.create({ title: "Task 1" });
+			const task2 = store.create({ title: "Task 2" });
+
+			// Act
+			const result = store.selectNext({ excludeIds: [task1.id] });
+
+			// Assert
+			expect(result?.id).toBe(task2.id);
+		});
+
+		it("considers context for selection", () => {
+			// Arrange
+			store.create({ title: "No match", tags: ["backend"] });
+			store.create({ title: "Has preferred", tags: ["frontend"] });
+
+			// Act
+			const result = store.selectNext({ preferredTags: ["frontend"] });
+
+			// Assert
+			expect(result?.title).toBe("Has preferred");
+		});
+	});
+
 	describe("lifecycle", () => {
 		it("should claim task: todo → doing", () => {
 			// Arrange

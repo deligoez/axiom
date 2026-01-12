@@ -12,10 +12,12 @@ import type {
 	Task,
 	TaskFilters,
 	TaskJSONL,
+	TaskSelectionContext,
 	TaskStatus,
 	TaskType,
 	UpdateTaskInput,
 } from "../types/task.js";
+import { TaskSelector } from "./TaskSelector.js";
 
 /**
  * TaskStore - In-memory task storage with CRUD operations and JSONL persistence.
@@ -35,10 +37,12 @@ export class TaskStore extends EventEmitter {
 	private nextId = 1;
 	private prefix = "ch"; // TODO: Make configurable in TS16a
 	readonly projectDir: string;
+	private selector: TaskSelector;
 
 	constructor(projectDir: string) {
 		super();
 		this.projectDir = projectDir;
+		this.selector = new TaskSelector();
 	}
 
 	/**
@@ -445,6 +449,18 @@ export class TaskStore extends EventEmitter {
 		}
 
 		return stats;
+	}
+
+	// ─────────────────────────────────────────────────────────
+	// Task Selection (TS10)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Select the best next task to work on.
+	 * Uses TaskSelector algorithm with current tasks.
+	 */
+	selectNext(context?: TaskSelectionContext): Task | undefined {
+		return this.selector.selectNextTask(this.list(), context);
 	}
 
 	// ─────────────────────────────────────────────────────────
