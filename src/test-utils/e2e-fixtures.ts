@@ -27,8 +27,11 @@ export function createTestProject(beads: TestBead[]): string {
 		`chorus-e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 	);
 	const beadsDir = join(tempDir, ".beads");
+	const chorusDir = join(tempDir, ".chorus");
 
 	mkdirSync(beadsDir, { recursive: true });
+	// Create .chorus directory to skip init wizard
+	mkdirSync(chorusDir, { recursive: true });
 
 	// Create issues.jsonl with test beads
 	// Field names must match BeadsParser expectations: type, created, updated

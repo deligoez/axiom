@@ -1,5 +1,7 @@
 import { useInput } from "ink";
 
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 interface UseKeyboardOptions {
 	onQuit: () => void;
 	onSpawn?: () => void;
@@ -50,6 +52,6 @@ export function useKeyboard({
 				onQuickSelect?.(num - 1);
 			}
 		},
-		{ isActive },
+		{ isActive: isActive && getIsTTY() },
 	);
 }

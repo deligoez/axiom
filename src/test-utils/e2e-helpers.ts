@@ -38,7 +38,12 @@ export async function renderApp(
 		args.includes("-v") ||
 		args.includes("--help") ||
 		args.includes("-h");
-	const effectiveArgs = isInfoMode ? args : ["--ci", ...args];
+	// Also add --mode semi-auto to ensure app goes to implementation mode
+	// unless a different mode is explicitly specified
+	const hasMode = args.includes("--mode");
+	const baseArgs = isInfoMode ? args : ["--ci", ...args];
+	const effectiveArgs =
+		isInfoMode || hasMode ? baseArgs : ["--mode", "semi-auto", ...baseArgs];
 
 	return cliRender("node", [chorusPath, ...effectiveArgs], {
 		cwd: cwd ?? process.cwd(),

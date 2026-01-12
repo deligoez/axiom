@@ -1,13 +1,15 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type React from "react";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChorusMachine } from "./hooks/useChorusMachine.js";
 import { ImplementationMode } from "./modes/ImplementationMode.js";
 import { InitMode } from "./modes/InitMode.js";
 import { PlanningMode } from "./modes/PlanningMode.js";
 import { ReviewLoop } from "./modes/ReviewLoop.js";
+import { BeadsService } from "./services/BeadsService.js";
 import { PlanningState } from "./services/PlanningState.js";
+import type { Bead } from "./types/bead.js";
 
 export interface CliArgs {
 	command?: "init" | "plan";
@@ -32,6 +34,31 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 
 	// Track if initialization has run (ref persists across renders)
 	const hasInitialized = useRef(false);
+
+	// Create BeadsService instance (memoized to avoid recreating on every render)
+	const beadsService = useMemo(
+		() => new BeadsService(projectRoot),
+		[projectRoot],
+	);
+
+	// Load and watch beads
+	const [beads, setBeads] = useState<Bead[]>([]);
+
+	useEffect(() => {
+		// Initial load
+		setBeads(beadsService.getBeads());
+
+		// Watch for changes
+		beadsService.on("change", (newBeads) => {
+			setBeads(newBeads);
+		});
+
+		beadsService.watch();
+
+		return () => {
+			beadsService.stop();
+		};
+	}, [beadsService]);
 
 	// Handle CLI overrides and state restoration on first render (synchronous)
 	if (!hasInitialized.current) {
@@ -66,7 +93,9 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 	}
 
 	// Route based on machine state
-	if (snapshot.matches({ app: "init" })) {
+	// If --mode was explicitly passed via CLI, skip directly to implementation
+	// (don't wait for state machine update, which happens asynchronously)
+	if (snapshot.matches({ app: "init" }) && !cliArgs?.mode) {
 		return (
 			<InitMode
 				projectDir={projectRoot}
@@ -77,7 +106,7 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		);
 	}
 
-	if (snapshot.matches({ app: "planning" })) {
+	if (snapshot.matches({ app: "planning" }) && !cliArgs?.mode) {
 		return (
 			<PlanningMode onModeSwitch={(mode) => send({ type: "SET_MODE", mode })} />
 		);
@@ -106,11 +135,11 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		);
 	}
 
-	if (snapshot.matches({ app: "implementation" })) {
+	if (snapshot.matches({ app: "implementation" }) || cliArgs?.mode) {
 		return (
 			<ImplementationMode
 				mode={cliArgs?.mode ?? "semi-auto"}
-				tasks={[]}
+				tasks={beads}
 				agents={[]}
 				maxAgents={4}
 				onPlanningMode={() => send({ type: "FORCE_PLANNING" })}

@@ -1,5 +1,7 @@
 import { useInput } from "ink";
 
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 export interface UseNavigationKeysOptions {
 	itemCount: number;
 	selectedIndex: number;
@@ -40,6 +42,6 @@ export function useNavigationKeys({
 				onSelect(prev);
 			}
 		},
-		{ isActive },
+		{ isActive: isActive && getIsTTY() },
 	);
 }

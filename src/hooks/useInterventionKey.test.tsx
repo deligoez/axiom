@@ -1,5 +1,5 @@
-import { render } from "ink-testing-library";
 import { Box, Text } from "ink";
+import { render } from "ink-testing-library";
 import {
 	afterAll,
 	beforeAll,

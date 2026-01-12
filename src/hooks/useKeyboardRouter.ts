@@ -1,5 +1,7 @@
 import { useInput } from "ink";
 
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 export type ModalType =
 	| "help"
 	| "intervention"
@@ -56,18 +58,21 @@ export function useKeyboardRouter(
 	handlers: KeyHandler[],
 	context: KeyContext,
 ): void {
-	useInput((input, key) => {
-		const pressedKey = normalizeKey(input, key);
+	useInput(
+		(input, key) => {
+			const pressedKey = normalizeKey(input, key);
 
-		// Sort handlers by priority (highest first)
-		const sorted = [...handlers].sort((a, b) => b.priority - a.priority);
+			// Sort handlers by priority (highest first)
+			const sorted = [...handlers].sort((a, b) => b.priority - a.priority);
 
-		// Find first matching handler
-		for (const h of sorted) {
-			if (h.keys.includes(pressedKey) && h.condition(context, pressedKey)) {
-				h.handler(context, pressedKey);
-				return; // Only one handler runs per keypress
+			// Find first matching handler
+			for (const h of sorted) {
+				if (h.keys.includes(pressedKey) && h.condition(context, pressedKey)) {
+					h.handler(context, pressedKey);
+					return; // Only one handler runs per keypress
+				}
 			}
-		}
-	});
+		},
+		{ isActive: getIsTTY() },
+	);
 }

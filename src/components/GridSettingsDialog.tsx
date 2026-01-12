@@ -105,12 +105,7 @@ export function GridSettingsDialog({
 							>
 								{layout}
 							</Text>
-							{isCurrent && (
-								<Text dimColor>
-									{" "}
-									(current)
-								</Text>
-							)}
+							{isCurrent && <Text dimColor> (current)</Text>}
 						</Box>
 					);
 				})}

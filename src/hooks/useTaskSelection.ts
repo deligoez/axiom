@@ -2,6 +2,8 @@ import { useInput } from "ink";
 import { useCallback, useState } from "react";
 import type { Bead } from "../types/bead.js";
 
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 export interface UseTaskSelectionOptions {
 	tasks: Bead[];
 	deferredTasks?: Bead[];
@@ -96,7 +98,7 @@ export function useTaskSelection({
 				assignSelected();
 			}
 		},
-		{ isActive },
+		{ isActive: isActive && getIsTTY() },
 	);
 
 	return {

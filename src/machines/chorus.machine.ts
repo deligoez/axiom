@@ -214,6 +214,8 @@ export const chorusMachine = setup({
 				FORCE_INIT: ".init",
 				INIT_REQUIRED: ".init",
 				FORCE_PLANNING: ".planning",
+				// SET_MODE transitions to implementation (used by --mode CLI flag)
+				SET_MODE: ".implementation",
 				RESTORE_STATE: [
 					{
 						target: ".implementation",

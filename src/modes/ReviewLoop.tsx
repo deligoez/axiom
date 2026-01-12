@@ -8,6 +8,8 @@ import type {
 	ValidatorTask,
 } from "../services/TaskValidator.js";
 
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 // Event types emitted to XState machine
 export type ReviewLoopEvent =
 	| { type: "VALIDATION_STARTED"; taskCount: number }
@@ -128,29 +130,32 @@ export function ReviewLoop({
 		onEditRules?.();
 	};
 
-	useInput((input, key) => {
-		if (allValid) {
-			// Mode selection mode
-			if (input === "1") {
-				setSelectedMode("semi-auto");
-			} else if (input === "2") {
-				setSelectedMode("autopilot");
-			} else if (key.return) {
-				handleConfirmMode();
+	useInput(
+		(input, key) => {
+			if (allValid) {
+				// Mode selection mode
+				if (input === "1") {
+					setSelectedMode("semi-auto");
+				} else if (input === "2") {
+					setSelectedMode("autopilot");
+				} else if (key.return) {
+					handleConfirmMode();
+				}
+			} else {
+				// Validation mode
+				if (input === "f") {
+					handleApplyFixes();
+				} else if (input === "r") {
+					handleReviewAgain();
+				} else if (input === "b") {
+					handleBackToPlan();
+				} else if (input === "e") {
+					handleEditRules();
+				}
 			}
-		} else {
-			// Validation mode
-			if (input === "f") {
-				handleApplyFixes();
-			} else if (input === "r") {
-				handleReviewAgain();
-			} else if (input === "b") {
-				handleBackToPlan();
-			} else if (input === "e") {
-				handleEditRules();
-			}
-		}
-	});
+		},
+		{ isActive: getIsTTY() },
+	);
 
 	// All valid - show mode selection
 	if (allValid) {

@@ -2,6 +2,8 @@ import { Box, Text, useInput } from "ink";
 import type React from "react";
 import { useState } from "react";
 
+const getIsTTY = () => Boolean(process.stdin?.isTTY);
+
 export interface TwoColumnLayoutProps {
 	left: React.ReactNode;
 	right: React.ReactNode;
@@ -21,13 +23,16 @@ export function TwoColumnLayout({
 }: TwoColumnLayoutProps): React.ReactElement {
 	const [focus, setFocus] = useState<"left" | "right">("left");
 
-	useInput((_input, key) => {
-		if (key.tab) {
-			const newFocus = focus === "left" ? "right" : "left";
-			setFocus(newFocus);
-			onToggleFocus?.(newFocus);
-		}
-	});
+	useInput(
+		(_input, key) => {
+			if (key.tab) {
+				const newFocus = focus === "left" ? "right" : "left";
+				setFocus(newFocus);
+				onToggleFocus?.(newFocus);
+			}
+		},
+		{ isActive: getIsTTY() },
+	);
 
 	const leftBorderColor = focus === "left" ? "cyan" : "gray";
 	const rightBorderColor = focus === "right" ? "cyan" : "gray";
