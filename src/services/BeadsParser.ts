@@ -18,6 +18,7 @@ function isValidStatus(status: string): status is BeadStatus {
 		"blocked",
 		"failed",
 		"tombstone",
+		"reviewing",
 	].includes(status);
 }
 
