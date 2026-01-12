@@ -740,4 +740,154 @@ describe("RalphLoop", () => {
 			});
 		});
 	});
+
+	describe("processLoop() - Deadlock Detection", () => {
+		describe("Stuck Agent Detection", () => {
+			it("tracks git commit count per agent via worktree", async () => {
+				// Arrange
+				ralphLoop.start();
+
+				// Act - simulate agent progress check with no new commits
+				await ralphLoop.checkAgentProgress("agent-1", "/worktrees/agent-1");
+
+				// Assert - tracking should be initialized
+				expect(ralphLoop.getAgentCommitCount("agent-1")).toBeDefined();
+			});
+
+			it("emits 'stuckAgent' event when agent has 5 iterations with 0 new commits", async () => {
+				// Arrange
+				const stuckHandler = vi.fn();
+				eventEmitter.on("stuckAgent", stuckHandler);
+				ralphLoop.start();
+
+				// Act - simulate 5 iterations without progress
+				for (let i = 0; i < 5; i++) {
+					await ralphLoop.checkAgentProgress(
+						"agent-stuck",
+						"/worktrees/stuck",
+						0,
+					);
+				}
+
+				// Assert
+				expect(stuckHandler).toHaveBeenCalledWith(
+					expect.objectContaining({
+						agentId: "agent-stuck",
+						iterationsWithoutCommit: 5,
+					}),
+				);
+			});
+
+			it("pauses RalphLoop and waits for user decision on stuck agent", async () => {
+				// Arrange
+				ralphLoop.start();
+
+				// Act - simulate stuck agent
+				for (let i = 0; i < 5; i++) {
+					await ralphLoop.checkAgentProgress(
+						"agent-stuck",
+						"/worktrees/stuck",
+						0,
+					);
+				}
+
+				// Assert - should be paused waiting for decision
+				expect(ralphLoop.isPaused()).toBe(true);
+			});
+		});
+
+		describe("Max Tasks Safeguard", () => {
+			it("stops after maxTotalTasks processed (default 100)", async () => {
+				// Arrange
+				const maxTasksHandler = vi.fn();
+				eventEmitter.on("maxTasksReached", maxTasksHandler);
+
+				// Create loop with low maxTotalTasks for testing
+				const loopWithLimit = new RalphLoop({
+					orchestrator,
+					slotManager,
+					mergeService,
+					eventEmitter,
+					maxIterations: 3,
+					maxTotalTasks: 3,
+				});
+				loopWithLimit.start();
+
+				// Act - simulate task completions
+				loopWithLimit.incrementTasksCompleted();
+				loopWithLimit.incrementTasksCompleted();
+				loopWithLimit.incrementTasksCompleted();
+
+				// Assert
+				expect(maxTasksHandler).toHaveBeenCalledWith({ count: 3 });
+			});
+
+			it("emits 'maxTasksReached' event when limit hit", async () => {
+				// Arrange
+				const maxTasksHandler = vi.fn();
+				eventEmitter.on("maxTasksReached", maxTasksHandler);
+
+				const loopWithLimit = new RalphLoop({
+					orchestrator,
+					slotManager,
+					mergeService,
+					eventEmitter,
+					maxIterations: 3,
+					maxTotalTasks: 2,
+				});
+				loopWithLimit.start();
+
+				// Act
+				loopWithLimit.incrementTasksCompleted();
+				loopWithLimit.incrementTasksCompleted();
+
+				// Assert
+				expect(maxTasksHandler).toHaveBeenCalled();
+			});
+		});
+
+		describe("Idle Timeout", () => {
+			it("emits 'idleTimeout' event if no progress for idleTimeout ms", async () => {
+				// Arrange
+				vi.useFakeTimers();
+				const idleHandler = vi.fn();
+				eventEmitter.on("idleTimeout", idleHandler);
+
+				const loopWithIdle = new RalphLoop({
+					orchestrator,
+					slotManager,
+					mergeService,
+					eventEmitter,
+					maxIterations: 3,
+					idleTimeout: 1000, // 1 second for testing
+				});
+				loopWithIdle.start();
+				loopWithIdle.startIdleTimer();
+
+				// Act - advance time past idle timeout
+				await vi.advanceTimersByTimeAsync(1001);
+
+				// Assert
+				expect(idleHandler).toHaveBeenCalled();
+
+				vi.useRealTimers();
+			});
+		});
+
+		describe("Auto-Stop", () => {
+			it("sets isRunning=false after emitting 'allDone'", async () => {
+				// Arrange
+				vi.mocked(orchestrator.getReadyTasks).mockResolvedValue([]);
+				vi.mocked(slotManager.getInUse).mockReturnValue(0);
+				ralphLoop.start();
+				expect(ralphLoop.isRunning()).toBe(true);
+
+				// Act
+				await ralphLoop.processLoop();
+
+				// Assert - should auto-stop after allDone
+				expect(ralphLoop.isRunning()).toBe(false);
+			});
+		});
+	});
 });

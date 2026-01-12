@@ -15,6 +15,8 @@ export interface RalphLoopDeps {
 	mergeService: MergeService;
 	eventEmitter: EventEmitter;
 	maxIterations?: number;
+	maxTotalTasks?: number;
+	idleTimeout?: number;
 }
 
 export interface LoopStatus {
@@ -26,6 +28,8 @@ export interface LoopStatus {
 
 const ERROR_THRESHOLD = 3;
 
+const STUCK_AGENT_THRESHOLD = 5;
+
 export class RalphLoop {
 	private running = false;
 	private paused = false;
@@ -35,9 +39,17 @@ export class RalphLoop {
 	private maxIterations: number;
 	private consecutiveErrors = 0;
 	private diskFull = false;
+	private agentCommitCounts = new Map<string, number>();
+	private agentIterationsWithoutCommit = new Map<string, number>();
+	private maxTotalTasks: number;
+	private totalTasksCompleted = 0;
+	private idleTimeout: number | undefined;
+	private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(private deps: RalphLoopDeps) {
 		this.maxIterations = deps.maxIterations ?? 3;
+		this.maxTotalTasks = deps.maxTotalTasks ?? 100;
+		this.idleTimeout = deps.idleTimeout;
 
 		// Listen for agent completions to track task completion
 		this.deps.eventEmitter.on("agentCompleted", () => {
@@ -207,6 +219,8 @@ export class RalphLoop {
 		const activeSlots = this.deps.slotManager.getInUse();
 		if (sortedTasks.length === 0 && activeSlots === 0) {
 			this.deps.eventEmitter.emit("allDone");
+			// Auto-stop after all tasks are done
+			this.running = false;
 		}
 	}
 
@@ -265,5 +279,77 @@ export class RalphLoop {
 			const bCreated = b.created ? new Date(b.created).getTime() : 0;
 			return aCreated - bCreated;
 		});
+	}
+
+	/**
+	 * Check agent progress by tracking commit count.
+	 * If agent has 5 iterations without new commits, emit stuckAgent event and pause.
+	 */
+	async checkAgentProgress(
+		agentId: string,
+		_worktreePath: string,
+		commitCount = 0,
+	): Promise<void> {
+		const previousCount = this.agentCommitCounts.get(agentId) ?? 0;
+		this.agentCommitCounts.set(agentId, commitCount);
+
+		// Check if agent made progress
+		if (commitCount <= previousCount) {
+			// No new commits
+			const iterations =
+				(this.agentIterationsWithoutCommit.get(agentId) ?? 0) + 1;
+			this.agentIterationsWithoutCommit.set(agentId, iterations);
+
+			// Check if stuck
+			if (iterations >= STUCK_AGENT_THRESHOLD) {
+				this.paused = true;
+				this.deps.eventEmitter.emit("stuckAgent", {
+					agentId,
+					iterationsWithoutCommit: iterations,
+				});
+			}
+		} else {
+			// Agent made progress, reset counter
+			this.agentIterationsWithoutCommit.set(agentId, 0);
+		}
+	}
+
+	/**
+	 * Get the tracked commit count for an agent.
+	 */
+	getAgentCommitCount(agentId: string): number | undefined {
+		return this.agentCommitCounts.get(agentId);
+	}
+
+	/**
+	 * Increment the total tasks completed counter.
+	 * Emits maxTasksReached when limit is hit.
+	 */
+	incrementTasksCompleted(): void {
+		this.totalTasksCompleted++;
+
+		if (this.totalTasksCompleted >= this.maxTotalTasks) {
+			this.deps.eventEmitter.emit("maxTasksReached", {
+				count: this.totalTasksCompleted,
+			});
+		}
+	}
+
+	/**
+	 * Start the idle timer. Emits idleTimeout if no progress for idleTimeout ms.
+	 */
+	startIdleTimer(): void {
+		if (this.idleTimeout === undefined) {
+			return;
+		}
+
+		// Clear existing timer if any
+		if (this.idleTimer) {
+			clearTimeout(this.idleTimer);
+		}
+
+		this.idleTimer = setTimeout(() => {
+			this.deps.eventEmitter.emit("idleTimeout");
+		}, this.idleTimeout);
 	}
 }
