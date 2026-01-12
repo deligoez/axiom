@@ -91,6 +91,33 @@ export class ConfigService {
 			if (!qc.name || !qc.command) return false;
 		}
 
+		// Check review config (optional for backwards compatibility)
+		if (c.review !== undefined) {
+			if (typeof c.review !== "object" || c.review === null) return false;
+			const review = c.review as Record<string, unknown>;
+
+			// Validate defaultMode
+			const validModes = ["per-task", "batch", "auto-approve", "skip"];
+			if (
+				review.defaultMode &&
+				!validModes.includes(review.defaultMode as string)
+			)
+				return false;
+
+			// Validate autoApprove
+			if (review.autoApprove !== undefined) {
+				if (
+					typeof review.autoApprove !== "object" ||
+					review.autoApprove === null
+				)
+					return false;
+			}
+
+			// Validate labelRules
+			if (review.labelRules !== undefined && !Array.isArray(review.labelRules))
+				return false;
+		}
+
 		return true;
 	}
 }

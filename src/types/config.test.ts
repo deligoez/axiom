@@ -88,6 +88,15 @@ describe("Config types", () => {
 				autoApply: "none",
 				requireApproval: [],
 			},
+			review: {
+				defaultMode: "batch",
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
+			},
 		};
 
 		// Assert
@@ -99,6 +108,7 @@ describe("Config types", () => {
 		expect(config.tui).toBeDefined();
 		expect(config.checkpoints).toBeDefined();
 		expect(config.planReview).toBeDefined();
+		expect(config.review).toBeDefined();
 	});
 
 	it("getDefaultConfig() returns valid ChorusConfig with expected defaults", () => {
@@ -171,6 +181,19 @@ describe("Config types", () => {
 		expect(config.planReview.autoApply).toBe("minor");
 		expect(config.planReview.requireApproval).toContain("redundant");
 		expect(config.planReview.requireApproval).toContain("dependency_change");
+	});
+
+	it("getDefaultConfig() returns review config with batch mode as default", () => {
+		// Arrange & Act
+		const config = getDefaultConfig();
+
+		// Assert
+		expect(config.review).toBeDefined();
+		expect(config.review.defaultMode).toBe("batch");
+		expect(config.review.autoApprove.enabled).toBe(true);
+		expect(config.review.autoApprove.maxIterations).toBe(3);
+		expect(config.review.autoApprove.requireQualityPass).toBe(true);
+		expect(config.review.labelRules).toEqual([]);
 	});
 
 	it("getDefaultConfig() sets createdAt and updatedAt to current timestamp", () => {

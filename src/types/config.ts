@@ -1,4 +1,5 @@
 import type { AgentType } from "./agent.js";
+import type { ReviewConfig } from "./review.js";
 
 // Re-export AgentType for convenience
 export type { AgentType };
@@ -73,6 +74,8 @@ export interface ChorusConfig {
 
 	planReview: PlanReviewConfig;
 
+	review: ReviewConfig;
+
 	createdAt?: string;
 	updatedAt?: string;
 }
@@ -117,6 +120,15 @@ export function getDefaultConfig(): ChorusConfig {
 			triggerOn: ["cross_cutting", "architectural"],
 			autoApply: "minor",
 			requireApproval: ["redundant", "dependency_change"],
+		},
+		review: {
+			defaultMode: "batch",
+			autoApprove: {
+				enabled: true,
+				maxIterations: 3,
+				requireQualityPass: true,
+			},
+			labelRules: [],
 		},
 		createdAt: now,
 		updatedAt: now,

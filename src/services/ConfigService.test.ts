@@ -211,6 +211,15 @@ describe("ConfigService", () => {
 				autoApply: "none" as const,
 				requireApproval: [],
 			},
+			review: {
+				defaultMode: "batch" as const,
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
+			},
 		};
 
 		// Act
@@ -255,6 +264,15 @@ describe("ConfigService", () => {
 				triggerOn: [],
 				autoApply: "none" as const,
 				requireApproval: [],
+			},
+			review: {
+				defaultMode: "batch" as const,
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
 			},
 		};
 
@@ -411,5 +429,58 @@ describe("ConfigService", () => {
 
 		// Assert
 		expect(result).toBe(true);
+	});
+
+	// FR15: review config validation tests (2)
+	it("validate() accepts valid review config", () => {
+		// Arrange
+		const validConfig = {
+			version: "1.0",
+			mode: "semi-auto",
+			project: { taskIdPrefix: "ch-" },
+			agents: { default: "claude" },
+			qualityCommands: [],
+			review: {
+				defaultMode: "batch",
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
+			},
+		};
+
+		// Act
+		const result = service.validate(validConfig);
+
+		// Assert
+		expect(result).toBe(true);
+	});
+
+	it("validate() rejects invalid review defaultMode", () => {
+		// Arrange
+		const invalidConfig = {
+			version: "1.0",
+			mode: "semi-auto",
+			project: { taskIdPrefix: "ch-" },
+			agents: { default: "claude" },
+			qualityCommands: [],
+			review: {
+				defaultMode: "invalid-mode",
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
+			},
+		};
+
+		// Act
+		const result = service.validate(invalidConfig);
+
+		// Assert
+		expect(result).toBe(false);
 	});
 });

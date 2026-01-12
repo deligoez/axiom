@@ -82,6 +82,15 @@ describe("PlanAgent", () => {
 				autoApply: "minor",
 				requireApproval: ["redundant"],
 			},
+			review: {
+				defaultMode: "batch",
+				autoApprove: {
+					enabled: true,
+					maxIterations: 3,
+					requireQualityPass: true,
+				},
+				labelRules: [],
+			},
 		};
 
 		options = {
