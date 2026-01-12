@@ -14,16 +14,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.integration.test.{ts,tsx}'],
+    // Only include tests in src/integration/ directory
+    include: ['src/integration/**/*.integration.test.{ts,tsx}'],
     setupFiles: ['./vitest.setup.ts'],
     // Longer timeout for real CLI calls
     testTimeout: 60000,
     // Run sequentially to avoid rate limits
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
+    sequence: {
+      concurrent: false,
     },
   },
 });

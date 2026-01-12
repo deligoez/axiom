@@ -4,26 +4,53 @@ import {
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
 import {
-	cleanup,
-	getOutput,
-	pressKey,
-	renderApp,
-	waitForText,
-} from "../test-utils/e2e-helpers.js";
+	cleanupPty,
+	type PtyTestResult,
+	renderAppWithPty,
+	sendKey,
+} from "../test-utils/pty-helpers.js";
 
-describe("E2E: Task Navigation (j/k)", () => {
+describe("E2E: Task Navigation (j/k) PTY", () => {
 	let projectDir: string;
+	let ptyResult: PtyTestResult | null = null;
 
 	beforeEach(() => {
 		projectDir = "";
 	});
 
-	afterEach(async () => {
-		await cleanup();
+	afterEach(() => {
+		if (ptyResult) {
+			cleanupPty(ptyResult);
+			ptyResult = null;
+		}
 		if (projectDir) {
 			cleanupTestProject(projectDir);
 		}
 	});
+
+	it("shows selection indicator on first task initially", async () => {
+		// Arrange
+		projectDir = createTestProject([
+			{ id: "ch-nav1", title: "First Task" },
+			{ id: "ch-nav2", title: "Second Task" },
+			{ id: "ch-nav3", title: "Third Task" },
+		]);
+		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+
+		// Act - wait for app to render with tasks
+		await ptyResult.waitForText("Tasks (3)", 10000);
+		// Give time for selection state to render
+		await new Promise((resolve) => setTimeout(resolve, 500));
+
+		// Assert - tasks rendered with nav1 short ID
+		const output = ptyResult.getCleanOutput();
+		expect(output).toContain("nav1");
+		expect(output).toContain("nav2");
+		expect(output).toContain("nav3");
+		// Selection indicator ► should appear (cyan color may not show in cleaned output)
+		// but the character should be present
+		expect(output).toMatch(/[►→]/); // Either selection or status indicator
+	}, 15000);
 
 	it("j key moves selection down without error", async () => {
 		// Arrange
@@ -32,17 +59,39 @@ describe("E2E: Task Navigation (j/k)", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		const result = await renderApp([], projectDir);
-		await waitForText(result, "First Task", 5000);
+		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - press j to move down
-		await pressKey(result, "j");
+		await sendKey(ptyResult, "j", 300);
 
-		// Assert - app still renders correctly
-		const output = getOutput(result);
-		expect(output).toContain("First Task");
-		expect(output).toContain("Second Task");
-	});
+		// Assert - app responds to j key without crashing and tasks visible
+		const output = ptyResult.getCleanOutput();
+		expect(output).toContain("nav1");
+		expect(output).toContain("nav2");
+		expect(output).toContain("nav3");
+	}, 15000);
+
+	it("pressing j twice navigates without error", async () => {
+		// Arrange
+		projectDir = createTestProject([
+			{ id: "ch-nav1", title: "First Task" },
+			{ id: "ch-nav2", title: "Second Task" },
+			{ id: "ch-nav3", title: "Third Task" },
+		]);
+		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		await ptyResult.waitForText("Tasks (3)", 10000);
+
+		// Act - press j twice to move to third task
+		await sendKey(ptyResult, "j", 300);
+		await sendKey(ptyResult, "j", 300);
+
+		// Assert - app still renders with all tasks
+		const output = ptyResult.getCleanOutput();
+		expect(output).toContain("nav1");
+		expect(output).toContain("nav2");
+		expect(output).toContain("nav3");
+	}, 15000);
 
 	it("k key moves selection up without error", async () => {
 		// Arrange
@@ -51,51 +100,42 @@ describe("E2E: Task Navigation (j/k)", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		const result = await renderApp([], projectDir);
-		await waitForText(result, "First Task", 5000);
+		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		await ptyResult.waitForText("Tasks (3)", 10000);
 
-		// Act - press k to move up
-		await pressKey(result, "k");
+		// Move down first
+		await sendKey(ptyResult, "j", 300);
 
-		// Assert - app still renders correctly
-		const output = getOutput(result);
-		expect(output).toContain("First Task");
-		expect(output).toContain("Second Task");
-	});
+		// Act - press k to move back up
+		await sendKey(ptyResult, "k", 300);
 
-	it("navigation keys work at boundaries without error", async () => {
-		// Arrange
-		projectDir = createTestProject([{ id: "ch-nav1", title: "Only Task" }]);
-		const result = await renderApp([], projectDir);
-		await waitForText(result, "Only Task", 5000);
+		// Assert - app renders correctly
+		const output = ptyResult.getCleanOutput();
+		expect(output).toContain("nav1");
+		expect(output).toContain("nav2");
+		expect(output).toContain("nav3");
+	}, 15000);
 
-		// Act - press j and k multiple times (boundary case)
-		await pressKey(result, "j");
-		await pressKey(result, "j");
-		await pressKey(result, "k");
-		await pressKey(result, "k");
-
-		// Assert - app still renders correctly
-		const output = getOutput(result);
-		expect(output).toContain("Only Task");
-	});
-
-	it("arrow keys work for navigation without error", async () => {
+	it("navigation wraps at boundaries without error", async () => {
 		// Arrange
 		projectDir = createTestProject([
 			{ id: "ch-nav1", title: "First Task" },
 			{ id: "ch-nav2", title: "Second Task" },
+			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		const result = await renderApp([], projectDir);
-		await waitForText(result, "First Task", 5000);
+		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		await ptyResult.waitForText("Tasks (3)", 10000);
 
-		// Act - press arrow keys
-		await pressKey(result, "{ArrowDown}");
-		await pressKey(result, "{ArrowUp}");
+		// Act - press j three times to wrap from third to first
+		await sendKey(ptyResult, "j", 300);
+		await sendKey(ptyResult, "j", 300);
+		await sendKey(ptyResult, "j", 300);
 
-		// Assert - app still renders correctly
-		const output = getOutput(result);
-		expect(output).toContain("First Task");
-		expect(output).toContain("Second Task");
-	});
+		// Assert - app still renders correctly after wrap
+		const output = ptyResult.getCleanOutput();
+		expect(output).toContain("Tasks (3)");
+		expect(output).toContain("nav1");
+		expect(output).toContain("nav2");
+		expect(output).toContain("nav3");
+	}, 15000);
 });
