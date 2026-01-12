@@ -1,4 +1,5 @@
 import { useInput } from "ink";
+import { useRef } from "react";
 
 const getIsTTY = () => Boolean(process.stdin?.isTTY);
 
@@ -7,6 +8,7 @@ export interface UseNavigationKeysOptions {
 	selectedIndex: number;
 	onSelect: (index: number) => void;
 	isActive?: boolean;
+	wrap?: boolean;
 }
 
 /**
@@ -16,32 +18,59 @@ export interface UseNavigationKeysOptions {
  * @param options.selectedIndex - Current selected index
  * @param options.onSelect - Callback when selection changes
  * @param options.isActive - Whether navigation is active (default: true)
+ * @param options.wrap - Whether to wrap at boundaries (default: false)
  */
 export function useNavigationKeys({
 	itemCount,
 	selectedIndex,
 	onSelect,
 	isActive = true,
+	wrap = false,
 }: UseNavigationKeysOptions): void {
+	// Use refs to always have latest values in useInput callback
+	const isActiveRef = useRef(isActive);
+	const itemCountRef = useRef(itemCount);
+	const selectedIndexRef = useRef(selectedIndex);
+	const wrapRef = useRef(wrap);
+	const onSelectRef = useRef(onSelect);
+
+	// Update refs on each render
+	isActiveRef.current = isActive;
+	itemCountRef.current = itemCount;
+	selectedIndexRef.current = selectedIndex;
+	wrapRef.current = wrap;
+	onSelectRef.current = onSelect;
+
 	useInput(
 		(input, key) => {
+			// No-op if disabled (use ref for latest value)
+			if (!isActiveRef.current) {
+				return;
+			}
+
 			// No-op for empty lists
-			if (itemCount === 0) {
+			if (itemCountRef.current === 0) {
 				return;
 			}
 
 			// Down navigation: j or down arrow
 			if (input === "j" || key.downArrow) {
-				const next = Math.min(selectedIndex + 1, itemCount - 1);
-				onSelect(next);
+				let next = selectedIndexRef.current + 1;
+				if (next >= itemCountRef.current) {
+					next = wrapRef.current ? 0 : itemCountRef.current - 1;
+				}
+				onSelectRef.current(next);
 			}
 
 			// Up navigation: k or up arrow
 			if (input === "k" || key.upArrow) {
-				const prev = Math.max(selectedIndex - 1, 0);
-				onSelect(prev);
+				let prev = selectedIndexRef.current - 1;
+				if (prev < 0) {
+					prev = wrapRef.current ? itemCountRef.current - 1 : 0;
+				}
+				onSelectRef.current(prev);
 			}
 		},
-		{ isActive: isActive && getIsTTY() },
+		{ isActive: getIsTTY() },
 	);
 }

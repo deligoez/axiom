@@ -9,6 +9,7 @@ import TaskPanel from "../components/TaskPanel.js";
 import { TwoColumnLayout } from "../components/TwoColumnLayout.js";
 import { useAgentGrid } from "../hooks/useAgentGrid.js";
 import { useInterventionKey } from "../hooks/useInterventionKey.js";
+import { useNavigationKeys } from "../hooks/useNavigationKeys.js";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
 import type { Bead } from "../types/bead.js";
 
@@ -57,6 +58,20 @@ export function ImplementationMode({
 	const gridConfig = useAgentGrid(width, agents.length, maxAgents);
 	const [showExitConfirm, setShowExitConfirm] = useState(false);
 	const [showIntervention, setShowIntervention] = useState(false);
+	const [selectedIndex, setSelectedIndex] = useState(0);
+
+	// Wire up task list navigation (j/k keys with wrapping)
+	useNavigationKeys({
+		itemCount: tasks.length,
+		selectedIndex,
+		onSelect: setSelectedIndex,
+		isActive: !showIntervention && !showExitConfirm,
+		wrap: true,
+	});
+
+	// Derive selectedTaskId from selectedIndex
+	const internalSelectedTaskId =
+		tasks.length > 0 ? tasks[selectedIndex]?.id : null;
 
 	// Wire up 'i' key to open intervention panel
 	useInterventionKey({
@@ -239,7 +254,12 @@ export function ImplementationMode({
 					<TwoColumnLayout
 						leftWidth={30}
 						rightWidth={70}
-						left={<TaskPanel beads={tasks} selectedBeadId={selectedTaskId} />}
+						left={
+							<TaskPanel
+								beads={tasks}
+								selectedBeadId={selectedTaskId ?? internalSelectedTaskId}
+							/>
+						}
 						right={
 							<AgentGrid
 								agents={agents}
