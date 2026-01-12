@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { gunzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 
 /**
  * Audit entry structure.
@@ -50,4 +50,32 @@ export function readAuditLog(projectDir: string, taskId: string): AuditEntry[] {
 function parseAuditContent(content: string): AuditEntry[] {
 	const lines = content.trim().split("\n").filter(Boolean);
 	return lines.map((line) => JSON.parse(line) as AuditEntry);
+}
+
+/**
+ * Archive (compress) an audit log file.
+ *
+ * Compresses the .jsonl file to .jsonl.gz and deletes the original.
+ * Does nothing if the log file doesn't exist.
+ *
+ * @param projectDir - The project root directory
+ * @param taskId - The task ID
+ */
+export function archiveAuditLog(projectDir: string, taskId: string): void {
+	const auditDir = join(projectDir, ".chorus", "audit");
+	const jsonlPath = join(auditDir, `${taskId}.jsonl`);
+
+	// Do nothing if log file doesn't exist
+	if (!existsSync(jsonlPath)) {
+		return;
+	}
+
+	// Read, compress, write
+	const content = readFileSync(jsonlPath, "utf-8");
+	const compressed = gzipSync(content);
+	const gzPath = join(auditDir, `${taskId}.jsonl.gz`);
+	writeFileSync(gzPath, compressed);
+
+	// Delete original
+	unlinkSync(jsonlPath);
 }

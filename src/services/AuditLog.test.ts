@@ -1,9 +1,9 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { gzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { type AuditEntry, readAuditLog } from "./AuditLog.js";
+import { type AuditEntry, archiveAuditLog, readAuditLog } from "./AuditLog.js";
 
 describe("AuditLog", () => {
 	let tempDir: string;
@@ -113,6 +113,83 @@ describe("AuditLog", () => {
 			expect(result).toHaveLength(2);
 			expect(result[0]).toEqual(entries[0]);
 			expect(result[1]).toEqual(entries[1]);
+		});
+	});
+
+	describe("archiveAuditLog", () => {
+		it("compresses log to .jsonl.gz", () => {
+			// Arrange
+			const taskId = "ch-archive1";
+			const entries: AuditEntry[] = [
+				{
+					timestamp: "2026-01-01T00:00:00.000Z",
+					type: "lifecycle",
+					action: "claim",
+				},
+				{
+					timestamp: "2026-01-01T01:00:00.000Z",
+					type: "lifecycle",
+					action: "complete",
+				},
+			];
+			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			writeFileSync(join(auditDir, `${taskId}.jsonl`), content);
+
+			// Act
+			archiveAuditLog(tempDir, taskId);
+
+			// Assert - .gz file exists and contains correct data
+			const gzPath = join(auditDir, `${taskId}.jsonl.gz`);
+			expect(existsSync(gzPath)).toBe(true);
+			const compressed = require("node:fs").readFileSync(gzPath);
+			const decompressed = gunzipSync(compressed).toString("utf-8");
+			expect(decompressed).toBe(content);
+		});
+
+		it("deletes original .jsonl file after compression", () => {
+			// Arrange
+			const taskId = "ch-archive2";
+			const content =
+				'{"timestamp":"2026-01-01T00:00:00.000Z","type":"test"}\n';
+			const jsonlPath = join(auditDir, `${taskId}.jsonl`);
+			writeFileSync(jsonlPath, content);
+
+			// Act
+			archiveAuditLog(tempDir, taskId);
+
+			// Assert
+			expect(existsSync(jsonlPath)).toBe(false);
+			expect(existsSync(join(auditDir, `${taskId}.jsonl.gz`))).toBe(true);
+		});
+
+		it("does nothing if log file doesn't exist", () => {
+			// Arrange
+			const taskId = "ch-nonexistent";
+
+			// Act - should not throw
+			archiveAuditLog(tempDir, taskId);
+
+			// Assert - no files created
+			expect(existsSync(join(auditDir, `${taskId}.jsonl`))).toBe(false);
+			expect(existsSync(join(auditDir, `${taskId}.jsonl.gz`))).toBe(false);
+		});
+
+		it("uses gzip format for compression", () => {
+			// Arrange
+			const taskId = "ch-archive3";
+			const content =
+				'{"timestamp":"2026-01-01T00:00:00.000Z","type":"test"}\n';
+			writeFileSync(join(auditDir, `${taskId}.jsonl`), content);
+
+			// Act
+			archiveAuditLog(tempDir, taskId);
+
+			// Assert - file has gzip magic bytes (0x1f 0x8b)
+			const compressed = require("node:fs").readFileSync(
+				join(auditDir, `${taskId}.jsonl.gz`),
+			);
+			expect(compressed[0]).toBe(0x1f);
+			expect(compressed[1]).toBe(0x8b);
 		});
 	});
 });

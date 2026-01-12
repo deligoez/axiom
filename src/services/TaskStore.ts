@@ -18,6 +18,7 @@ import type {
 	TaskType,
 	UpdateTaskInput,
 } from "../types/task.js";
+import { archiveAuditLog } from "./AuditLog.js";
 import { TaskSelector } from "./TaskSelector.js";
 
 /**
@@ -50,6 +51,7 @@ export class TaskStore extends EventEmitter {
 	readonly projectDir: string;
 	private selector: TaskSelector;
 	private auditBuffer: Map<string, AuditEntry[]> = new Map();
+	private pendingArchives: Set<string> = new Set();
 
 	constructor(projectDir: string) {
 		super();
@@ -194,6 +196,7 @@ export class TaskStore extends EventEmitter {
 
 	/**
 	 * Complete a task: doing → done
+	 * Archives audit log on next flush.
 	 * @throws Error if task is not in 'doing' status
 	 */
 	complete(id: string, _reason?: string): Task {
@@ -208,6 +211,7 @@ export class TaskStore extends EventEmitter {
 		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
 
 		this.audit(id, { type: "lifecycle", action: "complete" });
+		this.pendingArchives.add(id);
 		this.updateExecution(id, {
 			...execution,
 			completedAt: now,
@@ -219,6 +223,7 @@ export class TaskStore extends EventEmitter {
 
 	/**
 	 * Fail a task: doing → failed
+	 * Archives audit log on next flush.
 	 * @throws Error if task is not in 'doing' status
 	 */
 	fail(id: string, reason?: string): Task {
@@ -233,6 +238,7 @@ export class TaskStore extends EventEmitter {
 		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
 
 		this.audit(id, { type: "lifecycle", action: "fail", reason });
+		this.pendingArchives.add(id);
 
 		return (
 			this.updateExecution(id, {
@@ -669,7 +675,7 @@ export class TaskStore extends EventEmitter {
 	/**
 	 * Flush all tasks to JSONL file.
 	 * Uses atomic write (temp file → rename).
-	 * Also flushes audit buffer to individual task files.
+	 * Also flushes audit buffer to individual task files and archives completed/failed task logs.
 	 */
 	async flush(): Promise<void> {
 		// Ensure .chorus directory exists
@@ -694,6 +700,12 @@ export class TaskStore extends EventEmitter {
 
 		// Flush audit buffer
 		await this.flushAudit();
+
+		// Archive completed/failed task audit logs
+		for (const taskId of this.pendingArchives) {
+			archiveAuditLog(this.projectDir, taskId);
+		}
+		this.pendingArchives.clear();
 	}
 
 	// ─────────────────────────────────────────────────────────

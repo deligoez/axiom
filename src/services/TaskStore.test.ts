@@ -10,11 +10,120 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CreateTaskInput } from "../types/task.js";
+import { readAuditLog } from "./AuditLog.js";
 import { TaskStore } from "./TaskStore.js";
 
 describe("TaskStore", () => {
 	let tempDir: string;
 	let store: TaskStore;
+
+	describe("audit", () => {
+		beforeEach(() => {
+			tempDir = mkdtempSync(join(tmpdir(), "taskstore-test-"));
+			store = new TaskStore(tempDir);
+		});
+
+		afterEach(() => {
+			rmSync(tempDir, { recursive: true, force: true });
+		});
+
+		it("audit() appends to .chorus/audit/{id}.jsonl", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+
+			// Act
+			store.audit(task.id, { type: "manual", action: "note" });
+			await store.flush();
+
+			// Assert
+			const auditPath = join(tempDir, ".chorus", "audit", `${task.id}.jsonl`);
+			expect(existsSync(auditPath)).toBe(true);
+			const content = readFileSync(auditPath, "utf-8");
+			expect(content).toContain('"type":"manual"');
+			expect(content).toContain('"action":"note"');
+		});
+
+		it("creates audit directory if not exists", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			const auditDir = join(tempDir, ".chorus", "audit");
+			expect(existsSync(auditDir)).toBe(false);
+
+			// Act
+			store.audit(task.id, { type: "test" });
+			await store.flush();
+
+			// Assert
+			expect(existsSync(auditDir)).toBe(true);
+		});
+
+		it("audit entry includes timestamp", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			const before = new Date().toISOString();
+
+			// Act
+			store.audit(task.id, { type: "test" });
+			await store.flush();
+
+			// Assert
+			const auditPath = join(tempDir, ".chorus", "audit", `${task.id}.jsonl`);
+			const content = readFileSync(auditPath, "utf-8");
+			const entry = JSON.parse(content.trim());
+			expect(entry.timestamp).toBeDefined();
+			expect(entry.timestamp >= before).toBe(true);
+		});
+
+		it("lifecycle methods auto-audit", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+
+			// Act
+			store.claim(task.id);
+			store.complete(task.id);
+			await store.flush();
+
+			// Assert - use readAuditLog since complete() archives to .gz
+			const entries = readAuditLog(tempDir, task.id);
+			const actions = entries.map((e) => e.action);
+			expect(actions).toContain("claim");
+			expect(actions).toContain("complete");
+		});
+
+		it("complete() archives audit log to .gz", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			store.claim(task.id);
+			await store.flush(); // Flush claim audit entry
+
+			// Act
+			store.complete(task.id);
+			await store.flush();
+
+			// Assert - .jsonl should be archived to .gz
+			const jsonlPath = join(tempDir, ".chorus", "audit", `${task.id}.jsonl`);
+			const gzPath = join(tempDir, ".chorus", "audit", `${task.id}.jsonl.gz`);
+			expect(existsSync(jsonlPath)).toBe(false);
+			expect(existsSync(gzPath)).toBe(true);
+		});
+
+		it("fail() archives audit log to .gz", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			store.claim(task.id);
+			await store.flush(); // Flush claim audit entry
+
+			// Act
+			store.fail(task.id, "Test failure");
+			await store.flush();
+
+			// Assert - .jsonl should be archived to .gz
+			const jsonlPath = join(tempDir, ".chorus", "audit", `${task.id}.jsonl`);
+			const gzPath = join(tempDir, ".chorus", "audit", `${task.id}.jsonl.gz`);
+			expect(existsSync(jsonlPath)).toBe(false);
+			expect(existsSync(gzPath)).toBe(true);
+		});
+	});
 
 	describe("events", () => {
 		beforeEach(() => {
