@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	type BeadsCLIProvider,
 	type CommandRunner,
 	type MergeQueueProvider,
 	SessionRecovery,
 	type StateProvider,
+	type TaskReleaseProvider,
 } from "../services/SessionRecovery.js";
 import type {
 	AgentState,
@@ -128,7 +128,7 @@ describe("E2E: Session Recovery on Crash", () => {
 			const recovery = new SessionRecovery(
 				stateProvider,
 				{ enqueue: vi.fn() },
-				{ reopenTask: vi.fn() },
+				{ releaseTask: vi.fn() },
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -156,7 +156,7 @@ describe("E2E: Session Recovery on Crash", () => {
 			const recovery = new SessionRecovery(
 				stateProvider,
 				{ enqueue: vi.fn() },
-				{ reopenTask: vi.fn() },
+				{ releaseTask: vi.fn() },
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -180,7 +180,7 @@ describe("E2E: Session Recovery on Crash", () => {
 					removeAgent: vi.fn(),
 				},
 				{ enqueue: vi.fn() },
-				{ reopenTask: vi.fn() },
+				{ releaseTask: vi.fn() },
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -202,7 +202,7 @@ describe("E2E: Session Recovery on Crash", () => {
 					removeAgent: vi.fn(),
 				},
 				{ enqueue: vi.fn() },
-				{ reopenTask: vi.fn() },
+				{ releaseTask: vi.fn() },
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -250,8 +250,8 @@ describe("E2E: Session Recovery on Crash", () => {
 				},
 			};
 
-			const beadsCLI: BeadsCLIProvider = {
-				reopenTask: async (taskId) => {
+			const taskProvider: TaskReleaseProvider = {
+				releaseTask: async (taskId) => {
 					reopenedTasks.push(taskId);
 				},
 			};
@@ -259,7 +259,7 @@ describe("E2E: Session Recovery on Crash", () => {
 			const recovery = new SessionRecovery(
 				stateProvider,
 				{ enqueue: vi.fn() },
-				beadsCLI,
+				taskProvider,
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -307,7 +307,7 @@ describe("E2E: Session Recovery on Crash", () => {
 			const recovery = new SessionRecovery(
 				stateProvider,
 				mergeQueueProvider,
-				{ reopenTask: vi.fn() },
+				{ releaseTask: vi.fn() },
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -348,7 +348,7 @@ describe("E2E: Session Recovery on Crash", () => {
 			const recovery = new SessionRecovery(
 				stateProvider,
 				{ enqueue: (item) => enqueuedItems.push(item) },
-				{ reopenTask: vi.fn() },
+				{ releaseTask: vi.fn() },
 				{ remove: vi.fn() },
 				createRealCommandRunner(),
 			);
@@ -410,7 +410,7 @@ describe("E2E: Session Recovery on Crash", () => {
 				stateProvider,
 				{ enqueue: (item) => enqueuedItems.push(item) },
 				{
-					reopenTask: async (taskId) => {
+					releaseTask: async (taskId) => {
 						reopenedTasks.push(taskId);
 					},
 				},

@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TaskUpdate } from "./PlanReviewLoop.js";
 import { QueuedUpdateApplier } from "./QueuedUpdateApplier.js";
 
-// Mock BeadsCLI
-const mockBeadsCLI = {
+// Mock TaskProvider
+const mockTaskProvider = {
 	updateTask: vi.fn(),
 };
 
@@ -25,7 +25,7 @@ describe("QueuedUpdateApplier", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockBeadsCLI.updateTask.mockResolvedValue(undefined);
+		mockTaskProvider.updateTask.mockResolvedValue(undefined);
 
 		// Create temp directory
 		tempDir = join("/tmp", `queued-applier-test-${Date.now()}`);
@@ -34,7 +34,7 @@ describe("QueuedUpdateApplier", () => {
 
 		applier = new QueuedUpdateApplier({
 			queuePath,
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 		});
 	});
 
@@ -101,7 +101,7 @@ describe("QueuedUpdateApplier", () => {
 
 			// Assert
 			expect(applied).toHaveLength(2);
-			expect(mockBeadsCLI.updateTask).toHaveBeenCalledTimes(2);
+			expect(mockTaskProvider.updateTask).toHaveBeenCalledTimes(2);
 
 			// Verify queue file updated
 			const remaining = JSON.parse(
@@ -120,7 +120,7 @@ describe("QueuedUpdateApplier", () => {
 
 			// Assert
 			expect(applied).toHaveLength(0);
-			expect(mockBeadsCLI.updateTask).not.toHaveBeenCalled();
+			expect(mockTaskProvider.updateTask).not.toHaveBeenCalled();
 		});
 
 		it("atomically updates queue file after successful application", async () => {

@@ -13,7 +13,7 @@ interface MockHandler {
 	selectedTask: MockTask | null;
 	agentStopper: { stopAgentByTask: () => Promise<{ success: boolean } | null> };
 	interventionPanel: { open: (mode: string) => void };
-	beadsCLI: { addLabel: (taskId: string, label: string) => Promise<void> };
+	taskProvider: { addLabel: (taskId: string, label: string) => Promise<void> };
 	onAction: (action: string, taskId: string) => void;
 	isDisabled: boolean;
 }
@@ -60,7 +60,7 @@ function handleKeyPress(
 
 		case "b":
 			if (task.status === "open" || task.status === "in_progress") {
-				handler.beadsCLI.addLabel(task.id, "blocked");
+				handler.taskProvider.addLabel(task.id, "blocked");
 				handler.onAction("block", task.id);
 				return { handled: true, action: "block" };
 			}
@@ -79,7 +79,7 @@ describe("useQuickControlKeys", () => {
 		selectedTask: task,
 		agentStopper: { stopAgentByTask: vi.fn() },
 		interventionPanel: { open: vi.fn() },
-		beadsCLI: { addLabel: vi.fn() },
+		taskProvider: { addLabel: vi.fn() },
 		onAction: vi.fn(),
 		isDisabled,
 	});
@@ -209,7 +209,7 @@ describe("useQuickControlKeys", () => {
 			// Assert
 			expect(result.handled).toBe(true);
 			expect(result.action).toBe("block");
-			expect(handler.beadsCLI.addLabel).toHaveBeenCalledWith(
+			expect(handler.taskProvider.addLabel).toHaveBeenCalledWith(
 				"ch-001",
 				"blocked",
 			);
@@ -224,7 +224,7 @@ describe("useQuickControlKeys", () => {
 
 			// Assert
 			expect(result.handled).toBe(true);
-			expect(handler.beadsCLI.addLabel).toHaveBeenCalledWith(
+			expect(handler.taskProvider.addLabel).toHaveBeenCalledWith(
 				"ch-002",
 				"blocked",
 			);
@@ -239,7 +239,7 @@ describe("useQuickControlKeys", () => {
 
 			// Assert
 			expect(result.handled).toBe(false);
-			expect(handler.beadsCLI.addLabel).not.toHaveBeenCalled();
+			expect(handler.taskProvider.addLabel).not.toHaveBeenCalled();
 		});
 	});
 

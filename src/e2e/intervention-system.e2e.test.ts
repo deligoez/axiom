@@ -3,7 +3,7 @@ import {
 	AgentRedirector,
 	type Orchestrator,
 	type AgentStopper as RedirectorAgentStopper,
-	type BeadsCLI as RedirectorBeadsCLI,
+	type RedirectorTaskProvider,
 } from "../services/AgentRedirector.js";
 import {
 	AgentStopper,
@@ -228,14 +228,17 @@ describe("E2E: Human Intervention System", () => {
 				getAgentForTask: () => null,
 			};
 
-			const beadsCLI: RedirectorBeadsCLI = {
+			const taskProvider: RedirectorTaskProvider = {
 				getTask: async (taskId) => ({
 					id: taskId,
+					title: `Task ${taskId}`,
+					priority: 2,
 					status: "open",
 					labels: [],
+					dependencies: [],
 					blockedBy: [],
 				}),
-				claimTask: async (taskId) => {
+				claimTask: async (taskId, _assignee) => {
 					claimedTasks.push(taskId);
 				},
 			};
@@ -255,7 +258,7 @@ describe("E2E: Human Intervention System", () => {
 
 			const redirector = new AgentRedirector(
 				agentStopper,
-				beadsCLI,
+				taskProvider,
 				orchestrator,
 			);
 
@@ -279,11 +282,14 @@ describe("E2E: Human Intervention System", () => {
 				getAgentForTask: () => null,
 			};
 
-			const beadsCLI: RedirectorBeadsCLI = {
+			const taskProvider: RedirectorTaskProvider = {
 				getTask: async () => ({
 					id: "ch-blocked",
+					title: "Blocked Task",
+					priority: 2,
 					status: "open",
 					labels: [],
+					dependencies: [],
 					blockedBy: ["ch-001"],
 				}),
 				claimTask: vi.fn(),
@@ -302,7 +308,7 @@ describe("E2E: Human Intervention System", () => {
 
 			const redirector = new AgentRedirector(
 				agentStopper,
-				beadsCLI,
+				taskProvider,
 				orchestrator,
 			);
 
@@ -332,8 +338,11 @@ describe("E2E: Human Intervention System", () => {
 				{
 					getTask: async () => ({
 						id: "ch-deferred",
+						title: "Deferred Task",
+						priority: 2,
 						status: "open",
 						labels: ["deferred"],
+						dependencies: [],
 						blockedBy: [],
 					}),
 					claimTask: vi.fn(),

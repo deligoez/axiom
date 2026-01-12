@@ -24,7 +24,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 	let tasksInProgress: Set<string>;
 
 	// Mock BeadsCLI
-	const mockBeadsCLI = {
+	const mockTaskProvider = {
 		updateTask: vi.fn().mockResolvedValue(undefined),
 		labelAdd: vi.fn().mockResolvedValue(undefined),
 		close: vi.fn().mockResolvedValue(undefined),
@@ -73,7 +73,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 		tasksInProgress.add(taskA); // Task A is in progress
 
 		const taskUpdater = new TaskUpdater({
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 			orchestrationStore: mockOrchestrationStore as never,
 			projectDir: testDir,
 		});
@@ -103,7 +103,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 		expect(result.queued).toHaveLength(1);
 		expect(result.queued[0].taskId).toBe(taskA);
 		expect(result.applied).toHaveLength(0);
-		expect(mockBeadsCLI.updateTask).not.toHaveBeenCalled();
+		expect(mockTaskProvider.updateTask).not.toHaveBeenCalled();
 	});
 
 	it("creates queue file with correct update structure", async () => {
@@ -112,7 +112,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 		tasksInProgress.add(taskA);
 
 		const taskUpdater = new TaskUpdater({
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 			orchestrationStore: mockOrchestrationStore as never,
 			projectDir: testDir,
 		});
@@ -152,7 +152,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 		// openTask is NOT in tasksInProgress - it's open
 
 		const taskUpdater = new TaskUpdater({
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 			orchestrationStore: mockOrchestrationStore as never,
 			projectDir: testDir,
 		});
@@ -179,7 +179,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 		// Assert
 		expect(result.applied).toHaveLength(1);
 		expect(result.queued).toHaveLength(0);
-		expect(mockBeadsCLI.updateTask).toHaveBeenCalledWith(
+		expect(mockTaskProvider.updateTask).toHaveBeenCalledWith(
 			openTask,
 			"title",
 			"Updated title",
@@ -199,7 +199,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 
 		const applier = new QueuedUpdateApplier({
 			queuePath,
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 		});
 
 		// Act - Simulate next iteration applying queued updates
@@ -208,7 +208,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 		// Assert
 		expect(applied).toHaveLength(1);
 		expect(applied[0].field).toBe("acceptance_criteria");
-		expect(mockBeadsCLI.updateTask).toHaveBeenCalledWith(
+		expect(mockTaskProvider.updateTask).toHaveBeenCalledWith(
 			taskA,
 			"acceptance_criteria",
 			"new criteria",
@@ -229,7 +229,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 
 		const applier = new QueuedUpdateApplier({
 			queuePath,
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 		});
 
 		// Act
@@ -253,7 +253,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 
 		const applier = new QueuedUpdateApplier({
 			queuePath,
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 		});
 
 		// Act
@@ -261,10 +261,10 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 
 		// Assert - all updates applied in order
 		expect(applied).toHaveLength(3);
-		expect(mockBeadsCLI.updateTask).toHaveBeenCalledTimes(3);
+		expect(mockTaskProvider.updateTask).toHaveBeenCalledTimes(3);
 
 		// Verify order
-		const calls = mockBeadsCLI.updateTask.mock.calls;
+		const calls = mockTaskProvider.updateTask.mock.calls;
 		expect(calls[0]).toEqual([taskA, "title", "title1"]);
 		expect(calls[1]).toEqual([taskA, "description", "desc1"]);
 		expect(calls[2]).toEqual([taskA, "acceptance_criteria", "criteria1"]);

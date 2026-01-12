@@ -6,8 +6,8 @@ import { SpecArchiver } from "./SpecArchiver.js";
 import { SpecEvolutionTracker } from "./SpecEvolutionTracker.js";
 
 // Mock BeadsCLI
-const mockBeadsCLI = {
-	getIssue: vi.fn(),
+const mockTaskProvider = {
+	getTaskStatus: vi.fn(),
 };
 
 describe("SpecArchiver", () => {
@@ -26,7 +26,7 @@ describe("SpecArchiver", () => {
 
 		specPath = path.join(specsDir, "test-spec.md");
 		tracker = new SpecEvolutionTracker(tempDir);
-		archiver = new SpecArchiver(tempDir, tracker, mockBeadsCLI as any);
+		archiver = new SpecArchiver(tempDir, tracker, mockTaskProvider as any);
 	});
 
 	afterEach(() => {
@@ -53,10 +53,7 @@ More content.
 			tracker.saveProgress();
 
 			// Mock all tasks as closed
-			mockBeadsCLI.getIssue.mockImplementation((id: string) => ({
-				id,
-				status: "closed",
-			}));
+			mockTaskProvider.getTaskStatus.mockResolvedValue("closed");
 
 			// Act
 			const result = await archiver.shouldArchive(specPath);
@@ -82,9 +79,9 @@ Content.
 			tracker.saveProgress();
 
 			// Mock one task as open
-			mockBeadsCLI.getIssue
-				.mockResolvedValueOnce({ id: "ch-001", status: "closed" })
-				.mockResolvedValueOnce({ id: "ch-002", status: "open" });
+			mockTaskProvider.getTaskStatus
+				.mockResolvedValueOnce("closed")
+				.mockResolvedValueOnce("open");
 
 			// Act
 			const result = await archiver.shouldArchive(specPath);

@@ -1,12 +1,7 @@
 import { useInput } from "ink";
+import type { TaskProvider, TaskProviderTask } from "../types/task-provider.js";
 
 const getIsTTY = () => Boolean(process.stdin?.isTTY);
-
-export interface Task {
-	id: string;
-	status: string;
-	custom?: Record<string, string>;
-}
 
 export interface AgentStopperProvider {
 	stopAgentByTask(taskId: string): Promise<{ success: boolean } | null>;
@@ -16,15 +11,11 @@ export interface InterventionPanelProvider {
 	open(mode: "redirect-select" | "edit-select" | "block-select"): void;
 }
 
-export interface BeadsCLIProvider {
-	addLabel(taskId: string, label: string): Promise<void>;
-}
-
 export interface UseQuickControlKeysOptions {
-	selectedTask: Task | null;
+	selectedTask: TaskProviderTask | null;
 	agentStopper: AgentStopperProvider;
 	interventionPanel: InterventionPanelProvider;
-	beadsCLI: BeadsCLIProvider;
+	taskProvider: Pick<TaskProvider, "addLabel">;
 	onAction?: (action: string, taskId: string) => void;
 	isDisabled?: boolean;
 }
@@ -42,7 +33,7 @@ export function useQuickControlKeys({
 	selectedTask,
 	agentStopper,
 	interventionPanel,
-	beadsCLI,
+	taskProvider,
 	onAction,
 	isDisabled = false,
 }: UseQuickControlKeysOptions): void {
@@ -61,8 +52,10 @@ export function useQuickControlKeys({
 			const task = selectedTask;
 
 			// Check if task is failed/timeout (F63m handles retry for these)
-			const isFailed = task.custom?.failed === "true";
-			const isTimeout = task.custom?.timeout === "true";
+			// Cast custom to access extended fields
+			const custom = task.custom as Record<string, string> | undefined;
+			const isFailed = custom?.failed === "true";
+			const isTimeout = custom?.timeout === "true";
 
 			switch (input) {
 				case "x":
@@ -93,7 +86,7 @@ export function useQuickControlKeys({
 					// Block task
 					if (task.status === "open" || task.status === "in_progress") {
 						// If in progress, stop agent first (handled by TaskBlocker service)
-						beadsCLI.addLabel(task.id, "blocked");
+						taskProvider.addLabel(task.id, "blocked");
 						onAction?.("block", task.id);
 					}
 					break;

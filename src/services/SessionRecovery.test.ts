@@ -5,11 +5,11 @@ import type {
 	MergeQueueItem,
 } from "../types/state.js";
 import {
-	type BeadsCLIProvider,
 	type CommandRunner,
 	type MergeQueueProvider,
 	SessionRecovery,
 	type StateProvider,
+	type TaskReleaseProvider,
 	type WorktreeManager,
 } from "./SessionRecovery.js";
 
@@ -17,7 +17,7 @@ describe("SessionRecovery", () => {
 	let recovery: SessionRecovery;
 	let mockStateProvider: StateProvider;
 	let mockMergeQueueProvider: MergeQueueProvider;
-	let mockBeadsCLI: BeadsCLIProvider;
+	let mockTaskProvider: TaskReleaseProvider;
 	let mockWorktreeManager: WorktreeManager;
 	let mockCommandRunner: CommandRunner;
 
@@ -88,8 +88,8 @@ describe("SessionRecovery", () => {
 		};
 
 		mockReopenTask = vi.fn();
-		mockBeadsCLI = {
-			reopenTask: mockReopenTask as BeadsCLIProvider["reopenTask"],
+		mockTaskProvider = {
+			releaseTask: mockReopenTask as TaskReleaseProvider["releaseTask"],
 		};
 
 		mockRemoveWorktree = vi.fn();
@@ -105,7 +105,7 @@ describe("SessionRecovery", () => {
 		recovery = new SessionRecovery(
 			mockStateProvider,
 			mockMergeQueueProvider,
-			mockBeadsCLI,
+			mockTaskProvider,
 			mockWorktreeManager,
 			mockCommandRunner,
 		);

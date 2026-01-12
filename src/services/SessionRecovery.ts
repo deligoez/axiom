@@ -28,8 +28,8 @@ export interface MergeQueueProvider {
 	enqueue(item: MergeQueueItem): void;
 }
 
-export interface BeadsCLIProvider {
-	reopenTask(taskId: string): Promise<void>;
+export interface TaskReleaseProvider {
+	releaseTask(taskId: string): Promise<void>;
 }
 
 export interface WorktreeManager {
@@ -44,7 +44,7 @@ export class SessionRecovery {
 	constructor(
 		private stateProvider: StateProvider,
 		private mergeQueueProvider: MergeQueueProvider,
-		private beadsCLI: BeadsCLIProvider,
+		private taskProvider: TaskReleaseProvider,
 		private worktreeManager: WorktreeManager,
 		private commandRunner: CommandRunner,
 	) {}
@@ -88,7 +88,7 @@ export class SessionRecovery {
 					await this.commandRunner.run(`kill ${agent.pid}`);
 				}
 				// Return task to pending
-				await this.beadsCLI.reopenTask(agent.taskId);
+				await this.taskProvider.releaseTask(agent.taskId);
 				result.restoredTasks.push(agent.taskId);
 				this.stateProvider.removeAgent(agent.id);
 			} catch (error) {
@@ -165,7 +165,7 @@ export class SessionRecovery {
 		}
 
 		// Return task to pending
-		await this.beadsCLI.reopenTask(agent.taskId);
+		await this.taskProvider.releaseTask(agent.taskId);
 
 		// Remove from state
 		this.stateProvider.removeAgent(agentId);

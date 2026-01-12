@@ -1,16 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PlanReviewConfig } from "../types/config.js";
+import type { TaskProvider } from "../types/task-provider.js";
 import type { PlanReviewResult, TaskUpdate } from "./PlanReviewLoop.js";
-
-/**
- * Interface for BeadsCLI operations
- */
-interface BeadsCLI {
-	updateTask(taskId: string, field: string, value: string): Promise<void>;
-	labelAdd(taskId: string, label: string): Promise<void>;
-	close(taskId: string): Promise<void>;
-}
 
 /**
  * Interface for OrchestrationStore to check agent status
@@ -40,7 +32,7 @@ const MINOR_FIELDS = new Set([
 ]);
 
 export interface TaskUpdaterOptions {
-	beadsCLI: BeadsCLI;
+	taskProvider: Pick<TaskProvider, "updateTask" | "addLabel" | "closeTask">;
 	orchestrationStore: OrchestrationStore;
 	projectDir: string;
 }
@@ -55,13 +47,16 @@ export interface TaskUpdaterOptions {
  * - Marking tasks as redundant
  */
 export class TaskUpdater {
-	private readonly beadsCLI: BeadsCLI;
+	private readonly taskProvider: Pick<
+		TaskProvider,
+		"updateTask" | "addLabel" | "closeTask"
+	>;
 	private readonly orchestrationStore: OrchestrationStore;
 	private readonly projectDir: string;
 	private readonly pendingUpdatesPath: string;
 
 	constructor(options: TaskUpdaterOptions) {
-		this.beadsCLI = options.beadsCLI;
+		this.taskProvider = options.taskProvider;
 		this.orchestrationStore = options.orchestrationStore;
 		this.projectDir = options.projectDir;
 		this.pendingUpdatesPath = join(
@@ -182,10 +177,10 @@ export class TaskUpdater {
 	}
 
 	/**
-	 * Apply an update to a task via BeadsCLI
+	 * Apply an update to a task via TaskProvider
 	 */
 	private async applyUpdate(update: TaskUpdate): Promise<void> {
-		await this.beadsCLI.updateTask(
+		await this.taskProvider.updateTask(
 			update.taskId,
 			update.field,
 			update.newValue,
@@ -196,8 +191,8 @@ export class TaskUpdater {
 	 * Mark a task as redundant (add label and close)
 	 */
 	private async markRedundant(taskId: string): Promise<void> {
-		await this.beadsCLI.labelAdd(taskId, "redundant");
-		await this.beadsCLI.close(taskId);
+		await this.taskProvider.addLabel(taskId, "redundant");
+		await this.taskProvider.closeTask(taskId);
 	}
 
 	/**

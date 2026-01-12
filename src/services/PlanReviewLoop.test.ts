@@ -15,7 +15,7 @@ const mockSessionLogger = {
 	log: vi.fn(),
 };
 
-const mockBeadsCLI = {
+const mockTaskLister = {
 	listAll: vi.fn(),
 };
 
@@ -62,7 +62,7 @@ describe("PlanReviewLoop", () => {
 		);
 
 		// Default mock: return some non-closed tasks
-		mockBeadsCLI.listAll.mockResolvedValue([
+		mockTaskLister.listAll.mockResolvedValue([
 			{ id: "ch-task1", status: "open", title: "Task 1" },
 			{ id: "ch-task2", status: "in_progress", title: "Task 2" },
 			{ id: "ch-task3", status: "closed", title: "Task 3" },
@@ -71,7 +71,7 @@ describe("PlanReviewLoop", () => {
 		loop = new PlanReviewLoop({
 			planAgent: mockPlanAgent as never,
 			sessionLogger: mockSessionLogger as never,
-			beadsCLI: mockBeadsCLI as never,
+			taskLister: mockTaskLister as never,
 		});
 
 		learning = createMockLearning();

@@ -19,16 +19,19 @@ interface AgentStopper {
 	getAgentForTask(taskId: string): AgentSlot | null;
 }
 
-interface Task {
+interface RedirectorTask {
 	id: string;
+	title: string;
+	priority: number;
 	status: string;
 	labels: string[];
+	dependencies: string[];
 	blockedBy: string[];
 }
 
-interface BeadsCLI {
-	getTask(taskId: string): Promise<Task | null>;
-	claimTask(taskId: string): Promise<void>;
+interface RedirectorTaskProvider {
+	getTask(taskId: string): Promise<RedirectorTask | null>;
+	claimTask(taskId: string, assignee: string): Promise<void>;
 }
 
 interface Orchestrator {
@@ -39,7 +42,7 @@ interface Orchestrator {
 describe("AgentRedirector", () => {
 	let redirector: AgentRedirector;
 	let mockAgentStopper: AgentStopper;
-	let mockBeadsCLI: BeadsCLI;
+	let mockTaskProvider: RedirectorTaskProvider;
 	let mockOrchestrator: Orchestrator;
 
 	let mockStopAgent: ReturnType<typeof vi.fn>;
@@ -54,10 +57,13 @@ describe("AgentRedirector", () => {
 		status: string,
 		labels: string[] = [],
 		blockedBy: string[] = [],
-	): Task => ({
+	): RedirectorTask => ({
 		id,
+		title: `Task ${id}`,
+		priority: 2,
 		status,
 		labels,
+		dependencies: [],
 		blockedBy,
 	});
 
@@ -85,9 +91,9 @@ describe("AgentRedirector", () => {
 
 		mockGetTask = vi.fn();
 		mockClaimTask = vi.fn();
-		mockBeadsCLI = {
-			getTask: mockGetTask as BeadsCLI["getTask"],
-			claimTask: mockClaimTask as BeadsCLI["claimTask"],
+		mockTaskProvider = {
+			getTask: mockGetTask as RedirectorTaskProvider["getTask"],
+			claimTask: mockClaimTask as RedirectorTaskProvider["claimTask"],
 		};
 
 		mockSpawnAgentForTask = vi.fn();
@@ -100,7 +106,7 @@ describe("AgentRedirector", () => {
 
 		redirector = new AgentRedirector(
 			mockAgentStopper,
-			mockBeadsCLI,
+			mockTaskProvider,
 			mockOrchestrator,
 		);
 	});
@@ -194,7 +200,7 @@ describe("AgentRedirector", () => {
 			await redirector.redirect("agent-1", "ch-002");
 
 			// Assert
-			expect(mockClaimTask).toHaveBeenCalledWith("ch-002");
+			expect(mockClaimTask).toHaveBeenCalledWith("ch-002", "agent-1");
 		});
 
 		it("spawns agent for new task", async () => {

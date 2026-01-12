@@ -1,16 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import type { TaskProvider } from "../types/task-provider.js";
 import type { TaskUpdate } from "./PlanReviewLoop.js";
-
-/**
- * Interface for BeadsCLI operations
- */
-interface BeadsCLI {
-	updateTask(taskId: string, field: string, value: string): Promise<void>;
-}
 
 export interface QueuedUpdateApplierOptions {
 	queuePath: string;
-	beadsCLI: BeadsCLI;
+	taskProvider: Pick<TaskProvider, "updateTask">;
 }
 
 /**
@@ -22,11 +16,11 @@ export interface QueuedUpdateApplierOptions {
  */
 export class QueuedUpdateApplier {
 	private readonly queuePath: string;
-	private readonly beadsCLI: BeadsCLI;
+	private readonly taskProvider: Pick<TaskProvider, "updateTask">;
 
 	constructor(options: QueuedUpdateApplierOptions) {
 		this.queuePath = options.queuePath;
-		this.beadsCLI = options.beadsCLI;
+		this.taskProvider = options.taskProvider;
 	}
 
 	/**
@@ -56,7 +50,7 @@ export class QueuedUpdateApplier {
 
 		// Apply each update
 		for (const update of updates) {
-			await this.beadsCLI.updateTask(
+			await this.taskProvider.updateTask(
 				update.taskId,
 				update.field,
 				update.newValue,

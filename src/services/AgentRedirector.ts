@@ -1,4 +1,5 @@
 import type { InterventionResult } from "../types/intervention.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 
 interface StopResult {
 	success: boolean;
@@ -18,16 +19,13 @@ export interface AgentStopper {
 	getAgentForTask(taskId: string): AgentSlot | null;
 }
 
-interface Task {
-	id: string;
-	status: string;
-	labels: string[];
+interface RedirectorTask extends TaskProviderTask {
 	blockedBy: string[];
 }
 
-export interface BeadsCLI {
-	getTask(taskId: string): Promise<Task | null>;
-	claimTask(taskId: string): Promise<void>;
+export interface RedirectorTaskProvider {
+	getTask(taskId: string): Promise<RedirectorTask | null>;
+	claimTask(taskId: string, assignee: string): Promise<void>;
 }
 
 export interface Orchestrator {
@@ -38,14 +36,14 @@ export interface Orchestrator {
 export class AgentRedirector {
 	constructor(
 		private agentStopper: AgentStopper,
-		private beadsCLI: BeadsCLI,
+		private taskProvider: RedirectorTaskProvider,
 		private orchestrator: Orchestrator,
 	) {}
 
 	/**
 	 * Redirect agent to new task
 	 * - Stop current work via AgentStopper (stash changes, release task)
-	 * - Claim new task via BeadsCLI.claimTask()
+	 * - Claim new task via TaskProvider.claimTask()
 	 * - Restart agent with new task via Orchestrator.spawnAgentForTask()
 	 * - REUSES the same agent slot (does NOT spawn fresh agent)
 	 */
@@ -66,7 +64,7 @@ export class AgentRedirector {
 		const oldTaskId = agent.taskId;
 
 		// Validate new task is suitable
-		const task = await this.beadsCLI.getTask(newTaskId);
+		const task = await this.taskProvider.getTask(newTaskId);
 		if (!task) {
 			return {
 				success: false,
@@ -103,7 +101,7 @@ export class AgentRedirector {
 		await this.agentStopper.stopAgent(agentId);
 
 		// Claim new task
-		await this.beadsCLI.claimTask(newTaskId);
+		await this.taskProvider.claimTask(newTaskId, agentId);
 
 		// Spawn agent for new task (reusing same agent slot)
 		await this.orchestrator.spawnAgentForTask(agentId, newTaskId);
@@ -137,7 +135,7 @@ export class AgentRedirector {
 		}
 
 		// Check task is suitable
-		const task = await this.beadsCLI.getTask(newTaskId);
+		const task = await this.taskProvider.getTask(newTaskId);
 		if (!task) {
 			return false;
 		}

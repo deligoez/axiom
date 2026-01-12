@@ -5,11 +5,11 @@ import type { PlanReviewConfig } from "../types/config.js";
 import type { PlanReviewResult, TaskUpdate } from "./PlanReviewLoop.js";
 import { TaskUpdater } from "./TaskUpdater.js";
 
-// Mock BeadsCLI
-const mockBeadsCLI = {
+// Mock TaskProvider
+const mockTaskProvider = {
 	updateTask: vi.fn(),
-	labelAdd: vi.fn(),
-	close: vi.fn(),
+	addLabel: vi.fn(),
+	closeTask: vi.fn(),
 };
 
 // Mock OrchestrationStore for checking running agents
@@ -57,9 +57,9 @@ describe("TaskUpdater", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockBeadsCLI.updateTask.mockResolvedValue(undefined);
-		mockBeadsCLI.labelAdd.mockResolvedValue(undefined);
-		mockBeadsCLI.close.mockResolvedValue(undefined);
+		mockTaskProvider.updateTask.mockResolvedValue(undefined);
+		mockTaskProvider.addLabel.mockResolvedValue(undefined);
+		mockTaskProvider.closeTask.mockResolvedValue(undefined);
 		mockOrchestrationStore.getAgentByTaskId.mockReturnValue(null);
 
 		// Create temp directory for pending updates
@@ -67,7 +67,7 @@ describe("TaskUpdater", () => {
 		mkdirSync(join(tempDir, ".chorus"), { recursive: true });
 
 		updater = new TaskUpdater({
-			beadsCLI: mockBeadsCLI as never,
+			taskProvider: mockTaskProvider as never,
 			orchestrationStore: mockOrchestrationStore as never,
 			projectDir: tempDir,
 		});
@@ -111,7 +111,7 @@ describe("TaskUpdater", () => {
 			const summary = await updater.applyTaskUpdates(result, config);
 
 			// Assert
-			expect(mockBeadsCLI.updateTask).toHaveBeenCalledTimes(2);
+			expect(mockTaskProvider.updateTask).toHaveBeenCalledTimes(2);
 			expect(summary.applied).toHaveLength(2);
 		});
 
@@ -146,7 +146,7 @@ describe("TaskUpdater", () => {
 			const summary = await updater.applyTaskUpdates(result, config);
 
 			// Assert
-			expect(mockBeadsCLI.updateTask).not.toHaveBeenCalled();
+			expect(mockTaskProvider.updateTask).not.toHaveBeenCalled();
 			expect(summary.applied).toHaveLength(0);
 			expect(summary.pending).toHaveLength(1);
 		});
@@ -161,7 +161,7 @@ describe("TaskUpdater", () => {
 			await updater.applyTaskUpdates(result, config);
 
 			// Assert
-			expect(mockBeadsCLI.updateTask).toHaveBeenCalledWith(
+			expect(mockTaskProvider.updateTask).toHaveBeenCalledWith(
 				"ch-task1",
 				"description",
 				"new value",
@@ -183,16 +183,16 @@ describe("TaskUpdater", () => {
 			await updater.applyTaskUpdates(result, config);
 
 			// Assert
-			expect(mockBeadsCLI.labelAdd).toHaveBeenCalledWith(
+			expect(mockTaskProvider.addLabel).toHaveBeenCalledWith(
 				"ch-old1",
 				"redundant",
 			);
-			expect(mockBeadsCLI.close).toHaveBeenCalledWith("ch-old1");
-			expect(mockBeadsCLI.labelAdd).toHaveBeenCalledWith(
+			expect(mockTaskProvider.closeTask).toHaveBeenCalledWith("ch-old1");
+			expect(mockTaskProvider.addLabel).toHaveBeenCalledWith(
 				"ch-old2",
 				"redundant",
 			);
-			expect(mockBeadsCLI.close).toHaveBeenCalledWith("ch-old2");
+			expect(mockTaskProvider.closeTask).toHaveBeenCalledWith("ch-old2");
 		});
 
 		it("queues redundant marking when requireApproval includes 'redundant'", async () => {
@@ -209,14 +209,14 @@ describe("TaskUpdater", () => {
 			const summary = await updater.applyTaskUpdates(result, config);
 
 			// Assert
-			expect(mockBeadsCLI.close).not.toHaveBeenCalled();
+			expect(mockTaskProvider.closeTask).not.toHaveBeenCalled();
 			expect(summary.pending).toHaveLength(1);
 			expect(summary.pending[0].field).toBe("_redundant");
 		});
 
 		it("returns summary with applied, pending, queued, failed", async () => {
 			// Arrange
-			mockBeadsCLI.updateTask
+			mockTaskProvider.updateTask
 				.mockResolvedValueOnce(undefined) // success
 				.mockRejectedValueOnce(new Error("Update failed")); // failure
 

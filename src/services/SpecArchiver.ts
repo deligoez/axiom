@@ -1,10 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import type { TaskProvider } from "../types/task-provider.js";
 import type { SpecEvolutionTracker } from "./SpecEvolutionTracker.js";
-
-interface BeadsCLI {
-	getIssue(id: string): Promise<{ id: string; status: string }>;
-}
 
 const ARCHIVE_DIR = ".chorus/specs/archive";
 const PROGRESS_FILE = ".chorus/specs/spec-progress.json";
@@ -12,16 +9,16 @@ const PROGRESS_FILE = ".chorus/specs/spec-progress.json";
 export class SpecArchiver {
 	private projectDir: string;
 	private tracker: SpecEvolutionTracker;
-	private beadsCLI: BeadsCLI;
+	private taskProvider: Pick<TaskProvider, "getTaskStatus">;
 
 	constructor(
 		projectDir: string,
 		tracker: SpecEvolutionTracker,
-		beadsCLI: BeadsCLI,
+		taskProvider: Pick<TaskProvider, "getTaskStatus">,
 	) {
 		this.projectDir = projectDir;
 		this.tracker = tracker;
-		this.beadsCLI = beadsCLI;
+		this.taskProvider = taskProvider;
 	}
 
 	/**
@@ -44,12 +41,12 @@ export class SpecArchiver {
 		// Check if all tasks are closed
 		for (const taskId of taskIds) {
 			try {
-				const issue = await this.beadsCLI.getIssue(taskId);
-				if (issue.status !== "closed") {
+				const status = await this.taskProvider.getTaskStatus(taskId);
+				if (status !== "closed") {
 					return false;
 				}
 			} catch {
-				// If we can't get the issue, assume it's not closed
+				// If we can't get the task, assume it's not closed
 				return false;
 			}
 		}

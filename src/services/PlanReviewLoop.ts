@@ -34,16 +34,16 @@ export interface PlanReviewResult {
 }
 
 /**
- * Interface for BeadsCLI to list tasks
+ * Interface for task listing operations
  */
-interface BeadsCLI {
+export interface TaskLister {
 	listAll(): Promise<Bead[]>;
 }
 
 export interface PlanReviewLoopOptions {
 	planAgent: PlanAgent;
 	sessionLogger: SessionLogger;
-	beadsCLI: BeadsCLI;
+	taskLister: TaskLister;
 }
 
 /**
@@ -58,12 +58,12 @@ export interface PlanReviewLoopOptions {
 export class PlanReviewLoop {
 	private readonly planAgent: PlanAgent;
 	private readonly sessionLogger: SessionLogger;
-	private readonly beadsCLI: BeadsCLI;
+	private readonly taskLister: TaskLister;
 
 	constructor(options: PlanReviewLoopOptions) {
 		this.planAgent = options.planAgent;
 		this.sessionLogger = options.sessionLogger;
-		this.beadsCLI = options.beadsCLI;
+		this.taskLister = options.taskLister;
 	}
 
 	/**
@@ -89,7 +89,7 @@ export class PlanReviewLoop {
 			await this.planAgent.start();
 
 			// Get non-closed tasks
-			const allTasks = await this.beadsCLI.listAll();
+			const allTasks = await this.taskLister.listAll();
 			const nonClosedTasks = allTasks.filter(
 				(task) => task.status !== "closed",
 			);
