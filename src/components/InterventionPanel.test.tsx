@@ -434,4 +434,81 @@ describe("InterventionPanel", () => {
 			});
 		});
 	});
+
+	describe("Edit Mode (F46c-d)", () => {
+		describe("Mode Transition", () => {
+			it("'e' key in main mode transitions to edit-select mode", async () => {
+				// Arrange
+				const onClose = vi.fn();
+				const availableTasks = [{ id: "ch-003", title: "Task 3" }];
+				const { stdin, lastFrame } = render(
+					<InterventionPanel
+						visible={true}
+						onClose={onClose}
+						availableTasks={availableTasks}
+					/>,
+				);
+
+				// Act
+				stdin.write("e"); // enter edit-select mode
+				await new Promise((resolve) => setTimeout(resolve, 50));
+
+				// Assert
+				const output = lastFrame();
+				expect(output).toMatch(/select.*task.*edit/i);
+			});
+		});
+
+		describe("Edit Select Mode", () => {
+			it("edit-select mode shows task selection prompt with numbers", async () => {
+				// Arrange
+				const onClose = vi.fn();
+				const availableTasks = [
+					{ id: "ch-003", title: "Task 3" },
+					{ id: "ch-004", title: "Task 4" },
+				];
+				const { stdin, lastFrame } = render(
+					<InterventionPanel
+						visible={true}
+						onClose={onClose}
+						availableTasks={availableTasks}
+					/>,
+				);
+
+				// Act
+				stdin.write("e"); // enter edit-select mode
+				await new Promise((resolve) => setTimeout(resolve, 50));
+
+				// Assert
+				const output = lastFrame();
+				expect(output).toContain("ch-003");
+				expect(output).toContain("ch-004");
+			});
+
+			it("number key in edit-select calls onEditTask and returns to main", () => {
+				// Arrange
+				const onClose = vi.fn();
+				const onEditTask = vi.fn();
+				const availableTasks = [
+					{ id: "ch-003", title: "Task 3" },
+					{ id: "ch-004", title: "Task 4" },
+				];
+				const { stdin } = render(
+					<InterventionPanel
+						visible={true}
+						onClose={onClose}
+						onEditTask={onEditTask}
+						availableTasks={availableTasks}
+					/>,
+				);
+
+				// Act
+				stdin.write("e"); // enter edit-select mode
+				stdin.write("1"); // select first task
+
+				// Assert
+				expect(onEditTask).toHaveBeenCalledWith("ch-003");
+			});
+		});
+	});
 });

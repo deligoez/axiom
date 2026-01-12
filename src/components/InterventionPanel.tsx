@@ -26,6 +26,7 @@ export interface InterventionPanelProps {
 	onStopAgent?: (agentId: string) => void;
 	onBlockTask?: (taskId: string) => void;
 	onRedirectAgent?: (agentId: string, taskId: string) => void;
+	onEditTask?: (taskId: string) => void;
 	availableTasks?: TaskInfo[];
 }
 
@@ -59,6 +60,7 @@ export function InterventionPanel({
 	onStopAgent,
 	onBlockTask,
 	onRedirectAgent,
+	onEditTask,
 	availableTasks = [],
 }: InterventionPanelProps): React.ReactElement | null {
 	const [mode, setModeState] = useState<PanelMode>("main");
@@ -153,6 +155,12 @@ export function InterventionPanel({
 					setMode("block-select");
 					return;
 				}
+
+				// 'e' transitions to edit-select mode
+				if (input === "e") {
+					setMode("edit-select");
+					return;
+				}
 			}
 
 			// Handle number keys in stop-select mode
@@ -198,6 +206,17 @@ export function InterventionPanel({
 						onRedirectAgent?.(agentId, task.id);
 					}
 					setSelectedAgentId(null);
+					setMode("main");
+					return;
+				}
+			}
+
+			// Handle number keys in edit-select mode
+			if (currentMode === "edit-select") {
+				const num = Number.parseInt(input, 10);
+				if (num >= 1 && num <= 9 && num <= availableTasks.length) {
+					const task = availableTasks[num - 1];
+					onEditTask?.(task.id);
 					setMode("main");
 					return;
 				}
@@ -334,6 +353,25 @@ export function InterventionPanel({
 					<Text bold color="yellow">
 						Select task to block (1-9) or ESC to cancel
 					</Text>
+				</Box>
+			)}
+
+			{mode === "edit-select" && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold color="magenta">
+						Select task to edit (1-9) or ESC to cancel
+					</Text>
+					{availableTasks.length > 0 && (
+						<Box flexDirection="column" marginTop={1}>
+							{availableTasks.map((task, index) => (
+								<Box key={task.id} gap={1}>
+									<Text color="cyan">[{index + 1}]</Text>
+									<Text color="green">{task.id}</Text>
+									<Text dimColor>{task.title}</Text>
+								</Box>
+							))}
+						</Box>
+					)}
 				</Box>
 			)}
 		</Box>
