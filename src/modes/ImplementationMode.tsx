@@ -4,15 +4,19 @@ import { useState } from "react";
 import { type Agent, AgentGrid } from "../components/AgentGrid.js";
 import { FooterBar } from "../components/FooterBar.js";
 import { HeaderBar } from "../components/HeaderBar.js";
+import { InterventionPanel } from "../components/InterventionPanel.js";
 import TaskPanel from "../components/TaskPanel.js";
 import { TwoColumnLayout } from "../components/TwoColumnLayout.js";
 import { useAgentGrid } from "../hooks/useAgentGrid.js";
+import { useInterventionKey } from "../hooks/useInterventionKey.js";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
 import type { Bead } from "../types/bead.js";
 
-// Check if stdin supports raw mode (safe check)
+// Check if we're in an interactive terminal
 // Using a getter to allow test mocking
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Note: In node-pty spawned processes, process.stdin might not be a TTY,
+// but stdout will be. We check both to support all terminal environments.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 export interface ImplementationModeProps {
 	mode: "semi-auto" | "autopilot";
@@ -52,6 +56,13 @@ export function ImplementationMode({
 	const { width } = useTerminalSize();
 	const gridConfig = useAgentGrid(width, agents.length, maxAgents);
 	const [showExitConfirm, setShowExitConfirm] = useState(false);
+	const [showIntervention, setShowIntervention] = useState(false);
+
+	// Wire up 'i' key to open intervention panel
+	useInterventionKey({
+		onOpen: () => setShowIntervention(true),
+		isDisabled: showExitConfirm, // Don't open intervention if exit confirm is showing
+	});
 
 	// Calculate task stats for footer
 	const taskStats = {
@@ -61,9 +72,14 @@ export function ImplementationMode({
 		blocked: tasks.filter((t) => t.status === "blocked").length,
 	};
 
-	// Handle keyboard input
+	// Handle keyboard input (disabled when intervention panel is open)
 	useInput(
 		(input, key) => {
+			// Skip if intervention panel is open (it handles its own keys)
+			if (showIntervention) {
+				return;
+			}
+
 			// Handle exit confirmation
 			if (showExitConfirm) {
 				if (input === "y" || input === "Y") {
@@ -194,6 +210,11 @@ export function ImplementationMode({
 			</Box>
 		) : null;
 
+	// Convert tasks to TaskInfo format for InterventionPanel
+	const availableTasks = tasks
+		.filter((t) => t.status === "open")
+		.map((t) => ({ id: t.id, title: t.title }));
+
 	return (
 		<Box flexDirection="column" height="100%">
 			{/* Header */}
@@ -203,22 +224,32 @@ export function ImplementationMode({
 				maxAgents={maxAgents}
 			/>
 
-			{/* Main content area */}
-			{noTasksMessage || (
-				<TwoColumnLayout
-					leftWidth={30}
-					rightWidth={70}
-					left={<TaskPanel beads={tasks} selectedBeadId={selectedTaskId} />}
-					right={
-						<AgentGrid
-							agents={agents}
-							maxSlots={maxAgents}
-							selectedIndex={selectedAgentIndex}
-							gridConfig={gridConfig}
-						/>
-					}
+			{/* Intervention Panel (modal overlay) */}
+			{showIntervention && (
+				<InterventionPanel
+					visible={showIntervention}
+					onClose={() => setShowIntervention(false)}
+					availableTasks={availableTasks}
 				/>
 			)}
+
+			{/* Main content area */}
+			{!showIntervention &&
+				(noTasksMessage || (
+					<TwoColumnLayout
+						leftWidth={30}
+						rightWidth={70}
+						left={<TaskPanel beads={tasks} selectedBeadId={selectedTaskId} />}
+						right={
+							<AgentGrid
+								agents={agents}
+								maxSlots={maxAgents}
+								selectedIndex={selectedAgentIndex}
+								gridConfig={gridConfig}
+							/>
+						}
+					/>
+				))}
 
 			{/* Footer */}
 			<FooterBar taskStats={taskStats} mergeQueue={{ queued: 0 }} />

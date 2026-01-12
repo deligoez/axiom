@@ -3,8 +3,10 @@ import type React from "react";
 import { useRef, useState } from "react";
 import { useChorusMachine } from "../hooks/useChorusMachine.js";
 
-// Check if stdin supports raw mode (safe check)
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Check if we're in an interactive terminal
+// Note: In node-pty spawned processes, process.stdin might not be a TTY,
+// but stdout will be. We check both to support all terminal environments.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 export type PanelMode =
 	| "main"

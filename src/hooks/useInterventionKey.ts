@@ -1,8 +1,10 @@
 import { useInput } from "ink";
 
-// Check if stdin supports raw mode (safe check)
+// Check if we're in an interactive terminal
 // Using a getter to allow test mocking
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Note: In node-pty spawned processes, process.stdin might not be a TTY,
+// but stdout will be. We check both to support all terminal environments.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 export interface UseInterventionKeyOptions {
 	onOpen: () => void;

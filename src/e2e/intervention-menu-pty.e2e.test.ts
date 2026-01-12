@@ -40,8 +40,7 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 		}
 	});
 
-	// Skip intervention menu tests - feature not wired up yet (M9: ch-6n5)
-	it.skip("opens intervention menu when i is pressed", async () => {
+	it("opens intervention menu when i is pressed", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-pty1", title: "Test Task" }]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
@@ -50,14 +49,15 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 		await ptyResult.waitForText("Tasks (1)", 10000);
 
 		// Act - press 'i' to open intervention menu
-		await sendKey(ptyResult, "i", 500);
+		await sendKey(ptyResult, "i", 100);
 
-		// Assert - intervention menu should appear
+		// Assert - intervention menu should appear (wait for it)
+		await ptyResult.waitForText("INTERVENTION", 5000);
 		const output = ptyResult.getCleanOutput();
 		expect(output).toMatch(/INTERVENTION/i);
 	}, 20000);
 
-	it.skip("shows correct menu options", async () => {
+	it("shows correct menu options", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-pty2", title: "Test Task" }]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
@@ -66,16 +66,17 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 		await ptyResult.waitForText("Tasks (1)", 10000);
 
 		// Act - press 'i' to open intervention menu
-		await sendKey(ptyResult, "i", 500);
+		await sendKey(ptyResult, "i", 100);
 
 		// Assert - menu options should be visible
+		await ptyResult.waitForText("INTERVENTION", 5000);
 		const output = ptyResult.getCleanOutput();
-		expect(output).toMatch(/pause|toggle/i);
+		expect(output).toMatch(/pause|resume/i);
 		expect(output).toMatch(/stop/i);
 		expect(output).toMatch(/redirect/i);
 	}, 20000);
 
-	it.skip("closes intervention menu with Escape", async () => {
+	it("closes intervention menu with Escape", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-pty3", title: "Test Task" }]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
@@ -84,16 +85,14 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 		await ptyResult.waitForText("Tasks (1)", 10000);
 
 		// Act - press 'i' to open, then Escape to close
-		await sendKey(ptyResult, "i", 500);
+		await sendKey(ptyResult, "i", 100);
 		await ptyResult.waitForText("INTERVENTION", 5000);
-		await sendKey(ptyResult, Keys.ESCAPE, 500);
+		await sendKey(ptyResult, Keys.ESCAPE, 300);
 
-		// Assert - should be back to normal view (no INTERVENTION)
-		// Wait a bit for state to update
-		await new Promise((r) => setTimeout(r, 300));
+		// Assert - should be back to normal view (task panel visible)
+		// Wait for state update
+		await ptyResult.waitForText("Tasks (1)", 5000);
 		const output = ptyResult.getCleanOutput();
-
-		// The menu should close - we check that task panel is still visible
 		expect(output).toContain("pty3");
 	}, 20000);
 
