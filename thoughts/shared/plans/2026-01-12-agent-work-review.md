@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-12
 **Status:** DRAFT
-**Version:** 2.0
+**Version:** 2.1
 
 ---
 
@@ -168,8 +168,7 @@ bd label add ch-aaa review:batch
     "labelRules": {
       "review:required": {
         "mode": "per-task",
-        "autoApprove": false,
-        "notifyImmediately": true
+        "autoApprove": false
       },
       "review:auto": {
         "mode": "auto-continue",
@@ -199,8 +198,7 @@ bd label add ch-aaa review:batch
 
     "priorityRules": {
       "P0": {
-        "mode": "per-task",
-        "notifyImmediately": true
+        "mode": "per-task"
       },
       "P1": {
         "mode": "batch"
@@ -267,7 +265,7 @@ bd label add ch-aaa review:batch
 │  T+5m   Agent-1 completes Task-A                                        │
 │         Task-A → "reviewing" status                                     │
 │         Agent-1 takes Task-B (no block!)                                │
-│  T+6m   🔔 Notification: "Task-A ready for review"                      │
+│         Status bar: [REVIEW PENDING │ 1 task]                           │
 │  T+10m  User opens review panel                                         │
 │  T+12m  User approves Task-A                                            │
 │         Task-A → closed, merge queue                                    │
@@ -290,8 +288,6 @@ bd label add ch-aaa review:batch
 │  T+9m    Agent-3 completes Task-C → reviewing                           │
 │  T+11m   Agent-1 completes Task-D → reviewing                           │
 │  T+14m   Agent-2 completes Task-E → reviewing (5th task!)               │
-│                                                                          │
-│  T+14m   🔔 BATCH READY: "5 tasks ready for review"                     │
 │          Status bar: [REVIEW PENDING │ 5 tasks │ Press Enter]           │
 │                                                                          │
 │  T+15m   User opens batch review panel                                  │
@@ -345,7 +341,6 @@ bd label add ch-aaa review:batch
 │         │                                                         │    │
 │         │  Options:                                               │    │
 │         │  [✓] Create checkpoint before start                     │    │
-│         │  [✓] Notify when complete                               │    │
 │         │  [ ] Pause on any error                                 │    │
 │         │                                                         │    │
 │         │  Ready tasks: 47  │  Est. completion: ~15 hours         │    │
@@ -358,9 +353,9 @@ bd label add ch-aaa review:batch
 │  [Agents keep working, not blocked by review]                           │
 │                                                                          │
 │  08:00  Sprint ends                                                     │
-│         🔔 Notification: "Sprint complete - 23 tasks ready for review" │
+│         Status bar: [SPRINT COMPLETE │ 23 tasks ready for review]      │
 │                                                                          │
-│  08:15  User wakes up, opens sprint review                              │
+│  08:15  User opens sprint review                                        │
 │         ┌─────────────────────────────────────────────────────────┐    │
 │         │ SPRINT REVIEW                             23 tasks       │    │
 │         ├─────────────────────────────────────────────────────────┤    │
@@ -727,7 +722,6 @@ const reviewRegion = {
 
     pending: {
       // Review ready, waiting for user
-      entry: 'notifyReviewPending',
       on: {
         START_REVIEW: 'reviewing',
         DISMISS: 'collecting',
@@ -800,7 +794,7 @@ type ReviewEvent =
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│ 🔔 REVIEW PENDING │ 5 tasks ready │ Press [Enter] to review    │
+│ REVIEW PENDING │ 5 tasks ready │ Press [Enter] to review       │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
@@ -844,7 +838,6 @@ interface ReviewConfig {
   // Sprint settings
   sprint: {
     createCheckpoint: boolean;  // Default: true
-    notifyOnComplete: boolean;  // Default: true
     pauseOnError: boolean;      // Default: false
   };
 
@@ -854,15 +847,6 @@ interface ReviewConfig {
   // Label rules
   labelRules: Record<string, LabelRule>;
   priorityRules: Record<string, PriorityRule>;
-
-  // Notifications
-  notify: {
-    sound: boolean;
-    desktop: boolean;
-    onPending: boolean;
-    onSprintEnd: boolean;
-    onError: boolean;
-  };
 
   // GitHub (future)
   github?: GitHubConfig;
@@ -883,7 +867,6 @@ interface ReviewConfig {
 
     "sprint": {
       "createCheckpoint": true,
-      "notifyOnComplete": true,
       "pauseOnError": false
     },
 
@@ -906,17 +889,9 @@ interface ReviewConfig {
     },
 
     "priorityRules": {
-      "P0": { "mode": "per-task", "notifyImmediately": true },
+      "P0": { "mode": "per-task" },
       "P1": { "mode": "batch" },
       "P2": { "mode": "auto-continue" }
-    },
-
-    "notify": {
-      "sound": true,
-      "desktop": true,
-      "onPending": true,
-      "onSprintEnd": true,
-      "onError": true
     }
   }
 }
@@ -947,10 +922,9 @@ interface ReviewConfig {
 | **FR15** | Beads Status Integration | FR02 | 6 |
 | **FR16** | Label Rules Engine | FR01, FR03 | 8 |
 | **FR17** | Review Config Integration | FR01, ch-sro | 6 |
-| **FR18** | Review Notifications | FR02, FR05 | 4 |
-| **FR19** | Review Persistence | FR02, FX05 | 6 |
+| **FR18** | Review Persistence | FR02, FX05 | 6 |
 
-**Total: 19 tasks, ~154 tests**
+**Total: 18 tasks, ~150 tests**
 
 ### Dependency Graph
 
@@ -981,7 +955,7 @@ FR01 (Types)
   │
   ├── FR17 (Config)
   │
-  └── FR18 (Notifications)
+  └── FR18 (Persistence)
 ```
 
 ---
@@ -989,10 +963,9 @@ FR01 (Types)
 ## Open Questions
 
 1. **Beads "reviewing" status** - Native support or label workaround?
-2. **Notification method** - Terminal bell? macOS notification? Webhook?
-3. **Diff viewer** - Inline TUI or external tool (delta, diff-so-fancy)?
-4. **GitHub integration timeline** - MVP or future milestone?
-5. **Team review** - Multiple reviewers for same sprint? (Future)
+2. **Diff viewer** - Inline TUI or external tool (delta, diff-so-fancy)?
+3. **GitHub integration timeline** - MVP or future milestone?
+4. **Team review** - Multiple reviewers for same sprint? (Future)
 
 ---
 
@@ -1013,6 +986,10 @@ FR01 (Types)
 
 ## Version History
 
+- **v2.1 (2026-01-12):** Simplification
+  - REMOVED: Notification system (status bar only)
+  - UPDATED: 18 implementation tasks (~150 tests)
+
 - **v2.0 (2026-01-12):** Architecture refinement
   - REFINED: Non-blocking review as core design principle
   - ADDED: Beads "reviewing" status integration
@@ -1021,7 +998,6 @@ FR01 (Types)
   - ADDED: Detailed workflow scenarios (4 scenarios)
   - ADDED: Feedback persistence and injection
   - ADDED: GitHub integration design (future)
-  - EXPANDED: 19 implementation tasks (~154 tests)
 
 - **v1.0 (2026-01-12):** Initial design
   - NEW FEATURE: Agent Work Review System
