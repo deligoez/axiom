@@ -99,6 +99,146 @@ export class TaskStore {
 		this.deletedIds.add(id);
 	}
 
+	// ─────────────────────────────────────────────────────────
+	// Lifecycle Methods (TS04)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Claim a task: todo → doing
+	 * @throws Error if task is not in 'todo' status
+	 */
+	claim(id: string): Task {
+		const task = this.getOrThrow(id);
+		if (task.status !== "todo") {
+			throw new Error(
+				`Cannot claim task ${id}: status is '${task.status}', expected 'todo'`,
+			);
+		}
+
+		const now = new Date().toISOString();
+		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
+
+		return (
+			this.update(id, {
+				status: "doing",
+			} as Task & { execution: typeof execution & { startedAt: string } }) &&
+			this.updateExecution(id, {
+				...execution,
+				startedAt: now,
+			})
+		);
+	}
+
+	/**
+	 * Release a task: doing → todo
+	 * @throws Error if task is not in 'doing' status
+	 */
+	release(id: string): Task {
+		const task = this.getOrThrow(id);
+		if (task.status !== "doing") {
+			throw new Error(
+				`Cannot release task ${id}: status is '${task.status}', expected 'doing'`,
+			);
+		}
+
+		return this.update(id, { status: "todo" });
+	}
+
+	/**
+	 * Complete a task: doing → done
+	 * @throws Error if task is not in 'doing' status
+	 */
+	complete(id: string, _reason?: string): Task {
+		const task = this.getOrThrow(id);
+		if (task.status !== "doing") {
+			throw new Error(
+				`Cannot complete task ${id}: status is '${task.status}', expected 'doing'`,
+			);
+		}
+
+		const now = new Date().toISOString();
+		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
+
+		return (
+			this.updateExecution(id, {
+				...execution,
+				completedAt: now,
+			}) && this.update(id, { status: "done" })
+		);
+	}
+
+	/**
+	 * Fail a task: doing → failed
+	 * @throws Error if task is not in 'doing' status
+	 */
+	fail(id: string, reason?: string): Task {
+		const task = this.getOrThrow(id);
+		if (task.status !== "doing") {
+			throw new Error(
+				`Cannot fail task ${id}: status is '${task.status}', expected 'doing'`,
+			);
+		}
+
+		const now = new Date().toISOString();
+		const execution = task.execution ?? { iterations: 0, retryCount: 0 };
+
+		return (
+			this.updateExecution(id, {
+				...execution,
+				lastError: reason,
+				failedAt: now,
+			}) && this.update(id, { status: "failed" })
+		);
+	}
+
+	/**
+	 * Defer a task: any → later
+	 */
+	defer(id: string): Task {
+		this.getOrThrow(id);
+		return this.update(id, { status: "later" });
+	}
+
+	/**
+	 * Reopen a task: done/failed → todo
+	 * @throws Error if task is not in 'done' or 'failed' status
+	 */
+	reopen(id: string): Task {
+		const task = this.getOrThrow(id);
+		if (task.status !== "done" && task.status !== "failed") {
+			throw new Error(
+				`Cannot reopen task ${id}: status is '${task.status}', expected 'done' or 'failed'`,
+			);
+		}
+
+		return this.update(id, { status: "todo" });
+	}
+
+	/**
+	 * Get task or throw if not found.
+	 */
+	private getOrThrow(id: string): Task {
+		const task = this.get(id);
+		if (!task) {
+			throw new Error(`Task not found: ${id}`);
+		}
+		return task;
+	}
+
+	/**
+	 * Update execution stats for a task.
+	 */
+	private updateExecution(id: string, execution: Task["execution"]): Task {
+		const task = this.getOrThrow(id);
+		const updated: Task = {
+			...task,
+			execution,
+			updatedAt: new Date().toISOString(),
+		};
+		this.tasks.set(id, updated);
+		return updated;
+	}
+
 	/**
 	 * Generate next sequential task ID.
 	 */

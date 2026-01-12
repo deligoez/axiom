@@ -271,4 +271,157 @@ describe("TaskStore", () => {
 			expect(task?.hasLearnings).toBe(false);
 		});
 	});
+
+	describe("lifecycle", () => {
+		it("should claim task: todo → doing", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			expect(task.status).toBe("todo");
+
+			// Act
+			const claimed = store.claim(task.id);
+
+			// Assert
+			expect(claimed.status).toBe("doing");
+			expect(claimed.execution?.startedAt).toBeDefined();
+		});
+
+		it("should throw when claiming non-todo task", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id); // Now 'doing'
+
+			// Act & Assert
+			expect(() => store.claim(task.id)).toThrow(
+				"Cannot claim task ch-1: status is 'doing', expected 'todo'",
+			);
+		});
+
+		it("should release task: doing → todo", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id);
+
+			// Act
+			const released = store.release(task.id);
+
+			// Assert
+			expect(released.status).toBe("todo");
+		});
+
+		it("should throw when releasing non-doing task", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+
+			// Act & Assert
+			expect(() => store.release(task.id)).toThrow(
+				"Cannot release task ch-1: status is 'todo', expected 'doing'",
+			);
+		});
+
+		it("should complete task: doing → done", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id);
+
+			// Act
+			const completed = store.complete(task.id, "All tests passed");
+
+			// Assert
+			expect(completed.status).toBe("done");
+			expect(completed.execution?.completedAt).toBeDefined();
+		});
+
+		it("should fail task: doing → failed with lastError", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id);
+
+			// Act
+			const failed = store.fail(task.id, "Tests failed");
+
+			// Assert
+			expect(failed.status).toBe("failed");
+			expect(failed.execution?.lastError).toBe("Tests failed");
+			expect(failed.execution?.failedAt).toBeDefined();
+		});
+
+		it("should defer task: any → later", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+
+			// Act
+			const deferred = store.defer(task.id);
+
+			// Assert
+			expect(deferred.status).toBe("later");
+		});
+
+		it("should reopen done task: done → todo", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id);
+			store.complete(task.id);
+
+			// Act
+			const reopened = store.reopen(task.id);
+
+			// Assert
+			expect(reopened.status).toBe("todo");
+		});
+
+		it("should reopen failed task: failed → todo", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id);
+			store.fail(task.id, "Error");
+
+			// Act
+			const reopened = store.reopen(task.id);
+
+			// Assert
+			expect(reopened.status).toBe("todo");
+		});
+
+		it("should throw when reopening non-done/failed task", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+
+			// Act & Assert
+			expect(() => store.reopen(task.id)).toThrow(
+				"Cannot reopen task ch-1: status is 'todo', expected 'done' or 'failed'",
+			);
+		});
+
+		it("should update execution.startedAt on claim", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			const before = new Date().toISOString();
+
+			// Act
+			const claimed = store.claim(task.id);
+
+			// Assert
+			const after = new Date().toISOString();
+			expect(claimed.execution?.startedAt).toBeDefined();
+			expect(claimed.execution!.startedAt! >= before).toBe(true);
+			expect(claimed.execution!.startedAt! <= after).toBe(true);
+		});
+
+		it("should update execution.completedAt on complete", () => {
+			// Arrange
+			const task = store.create({ title: "Test Task" });
+			store.claim(task.id);
+			const before = new Date().toISOString();
+
+			// Act
+			const completed = store.complete(task.id);
+
+			// Assert
+			const after = new Date().toISOString();
+			expect(completed.execution?.completedAt).toBeDefined();
+			expect(completed.execution!.completedAt! >= before).toBe(true);
+			expect(completed.execution!.completedAt! <= after).toBe(true);
+		});
+	});
 });
