@@ -1,5 +1,5 @@
 export type AgentStatus = "idle" | "running" | "paused" | "stopped" | "error";
-export type AgentType = "claude" | "aider" | "codex";
+export type AgentType = "claude" | "codex" | "opencode";
 
 export interface Agent {
 	id: string;

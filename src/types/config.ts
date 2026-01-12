@@ -1,4 +1,8 @@
-export type AgentType = "claude" | "codex" | "opencode";
+import type { AgentType } from "./agent.js";
+
+// Re-export AgentType for convenience
+export type { AgentType };
+
 export type ProjectType = "node" | "php" | "python" | "go" | "rust" | "unknown";
 
 export interface QualityCommand {

@@ -1,3 +1,5 @@
+import type { AgentType } from "./agent.js";
+
 /**
  * Learning scope determines workflow behavior:
  * - local: Only affects this task (no triggers)
@@ -6,10 +8,8 @@
  */
 export type LearningScope = "local" | "cross-cutting" | "architectural";
 
-/**
- * Agent type for source tracking
- */
-export type AgentType = "claude" | "codex" | "opencode";
+// Re-export AgentType for convenience
+export type { AgentType };
 
 /**
  * Source information for a learning

@@ -1,7 +1,8 @@
 import { Box, Text } from "ink";
 import type React from "react";
+import type { AgentType } from "../types/agent.js";
 
-export type AgentType = "claude" | "codex" | "opencode";
+export type { AgentType };
 
 export interface TaskIterationDisplayProps {
 	agentType: AgentType;
