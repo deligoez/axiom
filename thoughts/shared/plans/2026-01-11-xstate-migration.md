@@ -195,8 +195,9 @@ Before M0, we need XState infrastructure:
 | **FX07** | ch-vskx | React Integration - useChorusMachine hook | 6 |
 | **FX08** | ch-mzi3 | XState Migration Bridge - Zustand → XState adapter | 4 |
 | **FX09** | ch-g3of | TUI Machine - Focus, modal, selection states | 14 |
+| **FX10** | ch-lbe7 | RalphLoop Machine - Autopilot state machine | 8 |
 
-**Total: 9 tasks, ~72 tests**
+**Total: 10 tasks, ~80 tests**
 
 ### Tasks to Modify
 
