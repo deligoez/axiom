@@ -1,9 +1,6 @@
 import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-	TaskProvider,
-	TaskProviderTask,
-} from "../types/task-provider.js";
+import type { TaskProvider, TaskProviderTask } from "../types/task-provider.js";
 import { IncrementalPlanningTrigger } from "./IncrementalPlanningTrigger.js";
 import type { PlanAgent } from "./PlanAgent.js";
 import type { PlanningHorizonManager } from "./PlanningHorizonManager.js";

@@ -15,11 +15,11 @@ import {
 	type OrchestratorControl,
 	PauseHandler,
 } from "../services/PauseHandler.js";
-import type { TaskProvider } from "../types/task-provider.js";
 import {
 	type AgentStopper as BlockerAgentStopper,
 	TaskBlocker,
 } from "../services/TaskBlocker.js";
+import type { TaskProvider } from "../types/task-provider.js";
 
 describe("E2E: Human Intervention System", () => {
 	describe("Pause Handler", () => {

@@ -9,7 +9,7 @@ import {
 	it,
 	vi,
 } from "vitest";
-import type { Task } from "../services/BeadsCLI.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 import { useAssignKey } from "./useAssignKey.js";
 
 // Test component that uses the hook
@@ -19,7 +19,7 @@ function TestComponent({
 	onAssigned,
 	onError,
 }: {
-	selectedTask: Task | null;
+	selectedTask: TaskProviderTask | null;
 	slotManager: {
 		hasAvailable: () => boolean;
 		assignTask: (taskId: string) => string;
@@ -65,7 +65,7 @@ describe("useAssignKey", () => {
 	});
 
 	// Helper to create task
-	const createTask = (id: string, status = "open"): Task => ({
+	const createTask = (id: string, status = "open"): TaskProviderTask => ({
 		id,
 		title: "Test Task",
 		priority: 1,

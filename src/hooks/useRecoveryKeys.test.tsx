@@ -9,7 +9,7 @@ import {
 	it,
 	vi,
 } from "vitest";
-import type { Task } from "../services/BeadsCLI.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 import { useRecoveryKeys } from "./useRecoveryKeys.js";
 
 // Test component that uses the hook
@@ -21,7 +21,7 @@ function TestComponent({
 	onToast,
 	onIterationUpdate,
 }: {
-	selectedTask: Task | null;
+	selectedTask: TaskProviderTask | null;
 	beadsCLI: {
 		runBdCommand: (args: string[]) => Promise<void>;
 	};
@@ -108,14 +108,14 @@ describe("useRecoveryKeys", () => {
 	const createTask = (
 		id: string,
 		custom?: { failed?: string; timeout?: string; maxIterations?: string },
-	): Task => ({
+	): TaskProviderTask => ({
 		id,
 		title: "Test Task",
 		priority: 1,
 		status: "open",
 		labels: [],
 		dependencies: [],
-		custom: custom as Task["custom"],
+		custom: custom as TaskProviderTask["custom"],
 	});
 
 	describe("Retry Key (r)", () => {

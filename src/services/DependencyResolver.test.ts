@@ -94,9 +94,7 @@ describe("DependencyResolver", () => {
 			// Arrange
 			const task = createTask("ch-123", "open", ["ch-dep1"]);
 			const dep1 = createTask("ch-dep1", "in_progress");
-			mockGetTask
-				.mockResolvedValueOnce(task)
-				.mockResolvedValueOnce(dep1);
+			mockGetTask.mockResolvedValueOnce(task).mockResolvedValueOnce(dep1);
 
 			// Act
 			const result = await resolver.check("ch-123");
@@ -109,9 +107,7 @@ describe("DependencyResolver", () => {
 		it("returns failed[] for missing deps", async () => {
 			// Arrange
 			const task = createTask("ch-123", "open", ["ch-missing"]);
-			mockGetTask
-				.mockResolvedValueOnce(task)
-				.mockResolvedValueOnce(null);
+			mockGetTask.mockResolvedValueOnce(task).mockResolvedValueOnce(null);
 
 			// Act
 			const result = await resolver.check("ch-123");
@@ -235,9 +231,7 @@ describe("DependencyResolver", () => {
 			// Arrange - A -> B -> A (circular)
 			const taskA = createTask("ch-a", "open", ["ch-b"]);
 			const taskB = createTask("ch-b", "open", ["ch-a"]);
-			mockGetTask
-				.mockResolvedValueOnce(taskA)
-				.mockResolvedValueOnce(taskB);
+			mockGetTask.mockResolvedValueOnce(taskA).mockResolvedValueOnce(taskB);
 
 			// Act
 			const result = await resolver.hasCircularDependency("ch-a");

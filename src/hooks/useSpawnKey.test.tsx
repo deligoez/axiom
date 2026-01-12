@@ -9,7 +9,7 @@ import {
 	it,
 	vi,
 } from "vitest";
-import type { Task } from "../services/BeadsCLI.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 import { useSpawnKey } from "./useSpawnKey.js";
 
 // Test component that uses the hook
@@ -20,7 +20,7 @@ function TestComponent({
 	onSpawned,
 	onError,
 }: {
-	selectedTask: Task | null;
+	selectedTask: TaskProviderTask | null;
 	slotManager: {
 		hasAvailable: () => boolean;
 	};
@@ -69,7 +69,7 @@ describe("useSpawnKey", () => {
 	});
 
 	// Helper to create task
-	const createTask = (id: string, status = "open"): Task => ({
+	const createTask = (id: string, status = "open"): TaskProviderTask => ({
 		id,
 		title: "Test Task",
 		priority: 1,
@@ -174,7 +174,7 @@ describe("useSpawnKey", () => {
 		it("calls onError when task has unmet dependencies", () => {
 			// Arrange
 			const mocks = createMocks();
-			const task: Task = {
+			const task: TaskProviderTask = {
 				...createTask("ch-test5"),
 				dependencies: ["ch-blocker"],
 			};

@@ -1,12 +1,12 @@
 import { useInput } from "ink";
-import type { Task } from "../services/BeadsCLI.js";
+import type { TaskProviderTask } from "../types/task-provider.js";
 
 // Check if stdin supports raw mode (safe check)
 // Using a getter to allow test mocking
 const getIsTTY = () => Boolean(process.stdin?.isTTY);
 
 export interface UseAssignKeyOptions {
-	selectedTask: Task | null;
+	selectedTask: TaskProviderTask | null;
 	slotManager: {
 		hasAvailable: () => boolean;
 		assignTask: (taskId: string) => string;

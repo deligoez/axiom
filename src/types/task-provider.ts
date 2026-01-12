@@ -33,6 +33,7 @@ export interface TaskProvider {
 	claimTask(id: string, assignee: string): Promise<void>;
 	releaseTask(id: string): Promise<void>;
 	getReadyTasks(options?: GetReadyOptions): Promise<TaskProviderTask[]>;
+	getInProgressTasks(): Promise<TaskProviderTask[]>;
 	closeTask(id: string, comment?: string): Promise<void>;
 	getTaskStatus(id: string): Promise<string | null>;
 	updateStatus(id: string, status: string): Promise<void>;

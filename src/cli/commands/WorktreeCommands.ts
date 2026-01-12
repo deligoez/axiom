@@ -9,11 +9,11 @@
  * - chorus worktree list --orphaned
  */
 
-import type { BeadsCLI } from "../../services/BeadsCLI.js";
 import type {
 	WorktreeInfo,
 	WorktreeService,
 } from "../../services/WorktreeService.js";
+import type { TaskProvider } from "../../types/task-provider.js";
 
 export interface OrphanedWorktree extends WorktreeInfo {
 	suggestedAction: string;
@@ -22,7 +22,7 @@ export interface OrphanedWorktree extends WorktreeInfo {
 export class WorktreeCommands {
 	constructor(
 		public readonly worktreeService: WorktreeService,
-		public readonly beadsCLI: BeadsCLI,
+		public readonly taskProvider: TaskProvider,
 	) {}
 
 	/**
@@ -47,7 +47,7 @@ export class WorktreeCommands {
 	 */
 	async cleanFailedWorktrees(): Promise<string> {
 		const worktrees = this.worktreeService.list();
-		const inProgressTasks = await this.beadsCLI.getInProgressTasks();
+		const inProgressTasks = await this.taskProvider.getInProgressTasks();
 		const inProgressTaskIds = new Set(inProgressTasks.map((t) => t.id));
 
 		let cleanedCount = 0;
@@ -103,7 +103,7 @@ export class WorktreeCommands {
 	 */
 	async listOrphanedWorktrees(): Promise<OrphanedWorktree[]> {
 		const worktrees = this.worktreeService.list();
-		const inProgressTasks = await this.beadsCLI.getInProgressTasks();
+		const inProgressTasks = await this.taskProvider.getInProgressTasks();
 		const inProgressTaskIds = new Set(inProgressTasks.map((t) => t.id));
 
 		const orphaned: OrphanedWorktree[] = [];

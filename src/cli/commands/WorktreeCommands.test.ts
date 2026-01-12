@@ -10,9 +10,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Task } from "../../services/BeadsCLI.js";
 import type { WorktreeInfo } from "../../services/WorktreeService.js";
 import { WorktreeNotFoundError } from "../../services/WorktreeService.js";
+import type { TaskProviderTask } from "../../types/task-provider.js";
 import { WorktreeCommands } from "./WorktreeCommands.js";
 
 // Mock dependencies
@@ -23,7 +23,7 @@ const mockWorktreeService = {
 	exists: vi.fn(),
 };
 
-const mockBeadsCLI = {
+const mockTaskProvider = {
 	getInProgressTasks: vi.fn(),
 };
 
@@ -34,7 +34,7 @@ describe("WorktreeCommands", () => {
 		vi.clearAllMocks();
 		commands = new WorktreeCommands(
 			mockWorktreeService as unknown as WorktreeCommands["worktreeService"],
-			mockBeadsCLI as unknown as WorktreeCommands["beadsCLI"],
+			mockTaskProvider as unknown as WorktreeCommands["taskProvider"],
 		);
 	});
 
@@ -96,7 +96,7 @@ describe("WorktreeCommands", () => {
 				},
 			];
 			mockWorktreeService.list.mockReturnValue(worktrees);
-			mockBeadsCLI.getInProgressTasks.mockResolvedValue([]);
+			mockTaskProvider.getInProgressTasks.mockResolvedValue([]);
 			mockWorktreeService.remove.mockResolvedValue(undefined);
 
 			// Act
@@ -124,7 +124,7 @@ describe("WorktreeCommands", () => {
 			];
 			// No tasks are in progress - so both worktrees are orphaned/failed
 			mockWorktreeService.list.mockReturnValue(worktrees);
-			mockBeadsCLI.getInProgressTasks.mockResolvedValue([]);
+			mockTaskProvider.getInProgressTasks.mockResolvedValue([]);
 			mockWorktreeService.remove.mockResolvedValue(undefined);
 
 			// Act
@@ -151,7 +151,7 @@ describe("WorktreeCommands", () => {
 				},
 			];
 			mockWorktreeService.list.mockReturnValue(worktrees);
-			mockBeadsCLI.getInProgressTasks.mockResolvedValue([]);
+			mockTaskProvider.getInProgressTasks.mockResolvedValue([]);
 			mockWorktreeService.remove.mockResolvedValue(undefined);
 
 			// Act
@@ -298,7 +298,7 @@ describe("WorktreeCommands", () => {
 					taskId: "ch-002",
 				},
 			];
-			const inProgressTasks: Task[] = [
+			const inProgressTasks: TaskProviderTask[] = [
 				{
 					id: "ch-001",
 					title: "Task 1",
@@ -309,7 +309,7 @@ describe("WorktreeCommands", () => {
 				},
 			];
 			mockWorktreeService.list.mockReturnValue(worktrees);
-			mockBeadsCLI.getInProgressTasks.mockResolvedValue(inProgressTasks);
+			mockTaskProvider.getInProgressTasks.mockResolvedValue(inProgressTasks);
 
 			// Act
 			const result = await commands.listOrphanedWorktrees();
@@ -330,7 +330,7 @@ describe("WorktreeCommands", () => {
 				},
 			];
 			mockWorktreeService.list.mockReturnValue(worktrees);
-			mockBeadsCLI.getInProgressTasks.mockResolvedValue([]);
+			mockTaskProvider.getInProgressTasks.mockResolvedValue([]);
 
 			// Act
 			const result = await commands.listOrphanedWorktrees();

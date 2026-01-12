@@ -36,6 +36,7 @@ const createMockTaskProvider = () => ({
 	claimTask: vi.fn().mockResolvedValue(undefined),
 	releaseTask: vi.fn().mockResolvedValue(undefined),
 	getReadyTasks: vi.fn().mockResolvedValue([]),
+	getInProgressTasks: vi.fn().mockResolvedValue([]),
 	closeTask: vi.fn().mockResolvedValue(undefined),
 	getTaskStatus: vi.fn().mockResolvedValue(null),
 	updateStatus: vi.fn().mockResolvedValue(undefined),
