@@ -1,8 +1,17 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ChorusConfig } from "../types/config.js";
+import type { AgentLogger } from "./AgentLogger.js";
 import type { ConversationManager } from "./ConversationManager.js";
 import type { PlanAgentPromptBuilder } from "./PlanAgentPromptBuilder.js";
 import type { SessionLogger } from "./SessionLogger.js";
+
+/**
+ * Archie persona constants for logging.
+ */
+const ARCHIE_PERSONA = "archie" as const;
+const ARCHIE_INSTANCE_ID = "archie";
 
 // Event types emitted to XState machine
 export type PlanAgentEvent =
@@ -26,6 +35,10 @@ export interface PlanAgentOptions {
 	sessionLogger: SessionLogger;
 	config: ChorusConfig;
 	onEvent: (event: PlanAgentEvent) => void;
+	/** Optional AgentLogger for Archie persona logging */
+	agentLogger?: AgentLogger;
+	/** Project directory for loading persona prompts */
+	projectDir?: string;
 }
 
 /**
@@ -39,6 +52,8 @@ export class PlanAgent {
 	private readonly sessionLogger: SessionLogger;
 	private readonly config: ChorusConfig;
 	private readonly onEvent: (event: PlanAgentEvent) => void;
+	private readonly agentLogger?: AgentLogger;
+	private readonly projectDir?: string;
 
 	private state: PlanAgentState = "idle";
 	private lastResponse = "";
@@ -52,6 +67,42 @@ export class PlanAgent {
 		this.sessionLogger = options.sessionLogger;
 		this.config = options.config;
 		this.onEvent = options.onEvent;
+		this.agentLogger = options.agentLogger;
+		this.projectDir = options.projectDir;
+	}
+
+	/**
+	 * Log a message as Archie persona.
+	 */
+	private log(level: "info" | "debug", message: string): void {
+		if (this.agentLogger) {
+			this.agentLogger.log({
+				persona: ARCHIE_PERSONA,
+				instanceId: ARCHIE_INSTANCE_ID,
+				level,
+				message,
+			});
+		}
+	}
+
+	/**
+	 * Load Archie's prompt from .chorus/agents/archie/prompt.md if it exists.
+	 */
+	private loadArchiePrompt(): string | undefined {
+		if (!this.projectDir) {
+			return undefined;
+		}
+		const promptPath = join(
+			this.projectDir,
+			".chorus",
+			"agents",
+			"archie",
+			"prompt.md",
+		);
+		if (existsSync(promptPath)) {
+			return readFileSync(promptPath, "utf-8");
+		}
+		return undefined;
 	}
 
 	/**
@@ -62,8 +113,18 @@ export class PlanAgent {
 			return; // Idempotent
 		}
 
+		// Log Archie persona start
+		this.log("info", "[archie] Analyzing feature request...");
+
 		// Build system prompt
-		const systemPrompt = this.promptBuilder.build(this.config);
+		let systemPrompt = this.promptBuilder.build(this.config);
+
+		// Load Archie's custom prompt if available
+		const archiePrompt = this.loadArchiePrompt();
+		if (archiePrompt) {
+			systemPrompt = `${archiePrompt}\n\n${systemPrompt}`;
+		}
+
 		this.conversationManager.addSystemMessage(systemPrompt);
 
 		// Log start event
@@ -163,6 +224,12 @@ export class PlanAgent {
 	 */
 	extractTasks(): ExtractedTask[] {
 		const tasks = this.parseTasksFromResponse(this.lastResponse);
+
+		// Log Archie persona completion
+		this.log(
+			"info",
+			`[archie] Created ${tasks.length} tasks with dependencies`,
+		);
 
 		// Emit extraction event
 		this.onEvent({

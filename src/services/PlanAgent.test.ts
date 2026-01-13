@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChorusConfig } from "../types/config.js";
+import type { AgentLogger, LogInput } from "./AgentLogger.js";
 import { ConversationManager } from "./ConversationManager.js";
 import { PlanAgent, type PlanAgentEvent } from "./PlanAgent.js";
 import type { PlanAgentPromptBuilder } from "./PlanAgentPromptBuilder.js";
@@ -322,6 +323,82 @@ Here are the tasks:
 					eventType: expect.any(String),
 				}),
 			);
+		});
+	});
+
+	// Archie persona logging tests (AP13)
+	describe("Archie persona logging", () => {
+		const createMockAgentLogger = (): {
+			logger: AgentLogger;
+			logs: LogInput[];
+		} => {
+			const logs: LogInput[] = [];
+			const logger = {
+				log: vi.fn((input: LogInput) => logs.push(input)),
+			} as unknown as AgentLogger;
+			return { logger, logs };
+		};
+
+		it("logs with persona: 'archie' and instanceId: 'archie'", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const agent = new PlanAgent({ ...options, agentLogger: logger });
+
+			// Act
+			await agent.start();
+
+			// Assert - all logs have archie persona and instance
+			expect(logs.length).toBeGreaterThan(0);
+			for (const log of logs) {
+				expect(log.persona).toBe("archie");
+				expect(log.instanceId).toBe("archie");
+			}
+		});
+
+		it("logs '[archie] Analyzing feature request...' on start", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const agent = new PlanAgent({ ...options, agentLogger: logger });
+
+			// Act
+			await agent.start();
+
+			// Assert - analysis log present
+			const analysisLog = logs.find((l) =>
+				l.message.includes("Analyzing feature request"),
+			);
+			expect(analysisLog).toBeDefined();
+			expect(analysisLog?.message).toContain(
+				"[archie] Analyzing feature request",
+			);
+		});
+
+		it("logs '[archie] Created N tasks with dependencies' on extractTasks", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const agent = new PlanAgent({ ...options, agentLogger: logger });
+			agent.setMockResponse(
+				"## Task 1: Test\n- Description: Test task\n\n## Task 2: Another\n- Description: Another task",
+			);
+			await agent.start();
+			await agent.send("Create feature");
+			logs.length = 0; // Clear logs from start/send
+
+			// Act
+			agent.extractTasks();
+
+			// Assert - completion log present
+			const completionLog = logs.find((l) => l.message.includes("Created"));
+			expect(completionLog).toBeDefined();
+			expect(completionLog?.message).toContain("[archie] Created 2 tasks");
+		});
+
+		it("does not log when no agentLogger provided", async () => {
+			// Arrange
+			const agent = new PlanAgent(options); // No agentLogger
+
+			// Act & Assert - should not throw
+			expect(() => agent.start()).not.toThrow();
 		});
 	});
 });
