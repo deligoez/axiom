@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentManager } from "./AgentManager.js";
 
 describe("AgentManager", () => {
@@ -78,10 +78,13 @@ describe("AgentManager", () => {
 			args: ["hello world"],
 		});
 
-		// Wait for output
-		await new Promise((r) => setTimeout(r, 100));
-
-		expect(outputs).toContain("hello world");
+		// Wait for output using vi.waitFor (retries until condition met or timeout)
+		await vi.waitFor(
+			() => {
+				expect(outputs).toContain("hello world");
+			},
+			{ timeout: 2000 },
+		);
 	});
 
 	it("emits exit event when process exits naturally", async () => {
@@ -96,12 +99,15 @@ describe("AgentManager", () => {
 			args: ["done"],
 		});
 
-		// Wait for process to exit
-		await new Promise((r) => setTimeout(r, 150));
-
-		expect(exitEvents).toHaveLength(1);
-		expect(exitEvents[0].id).toBe(agent.id);
-		expect(exitEvents[0].code).toBe(0);
+		// Wait for process to exit using vi.waitFor
+		await vi.waitFor(
+			() => {
+				expect(exitEvents).toHaveLength(1);
+				expect(exitEvents[0].id).toBe(agent.id);
+				expect(exitEvents[0].code).toBe(0);
+			},
+			{ timeout: 2000 },
+		);
 	});
 
 	it("sets exitCode after process exits", async () => {
@@ -111,12 +117,15 @@ describe("AgentManager", () => {
 			args: ["test"],
 		});
 
-		// Wait for process to exit
-		await new Promise((r) => setTimeout(r, 150));
-
-		const found = manager.get(agent.id);
-		expect(found?.exitCode).toBe(0);
-		expect(found?.status).toBe("stopped");
+		// Wait for process to exit using vi.waitFor
+		await vi.waitFor(
+			() => {
+				const found = manager.get(agent.id);
+				expect(found?.exitCode).toBe(0);
+				expect(found?.status).toBe("stopped");
+			},
+			{ timeout: 2000 },
+		);
 	});
 
 	it("emits error event for invalid command", async () => {
@@ -130,11 +139,14 @@ describe("AgentManager", () => {
 			command: "nonexistent-command-that-does-not-exist",
 		});
 
-		// Wait for error
-		await new Promise((r) => setTimeout(r, 150));
-
-		expect(errors.length).toBeGreaterThanOrEqual(1);
-		expect(errors[0].id).toBe(agent.id);
+		// Wait for error using vi.waitFor
+		await vi.waitFor(
+			() => {
+				expect(errors.length).toBeGreaterThanOrEqual(1);
+				expect(errors[0].id).toBe(agent.id);
+			},
+			{ timeout: 2000 },
+		);
 	});
 
 	it("captures stderr output", async () => {
@@ -149,10 +161,13 @@ describe("AgentManager", () => {
 			args: ["-c", 'echo "error message" >&2'],
 		});
 
-		// Wait for output
-		await new Promise((r) => setTimeout(r, 150));
-
-		expect(outputs).toContain("error message");
+		// Wait for output using vi.waitFor
+		await vi.waitFor(
+			() => {
+				expect(outputs).toContain("error message");
+			},
+			{ timeout: 2000 },
+		);
 	});
 
 	it("handles killing non-existent agent gracefully", async () => {

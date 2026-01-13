@@ -407,20 +407,23 @@ describe("ImplementationMode", () => {
 			);
 			cleanup = unmount;
 
-			// Move to last task (press j twice)
-			// Use longer delays for parallel test runs where system load varies
+			// Move to last task (press j twice) - use vi.waitFor for stability
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 50));
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/►.*Task 2/), {
+				timeout: 1000,
+			});
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 50));
-			expect(lastFrame()).toMatch(/►.*Task 3/);
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/►.*Task 3/), {
+				timeout: 1000,
+			});
 
 			// Act - Press j at last task to wrap to first
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 50));
 
-			// Assert - Wraps to first task
-			expect(lastFrame()).toMatch(/►.*Task 1/);
+			// Assert - Wraps to first task (use vi.waitFor)
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/►.*Task 1/), {
+				timeout: 1000,
+			});
 		});
 
 		it("selection wraps from top to bottom on k key", async () => {
@@ -439,12 +442,12 @@ describe("ImplementationMode", () => {
 			// First task selected by default
 
 			// Act - Press k at first task to wrap to last
-			// Use longer delay for parallel test runs where system load varies
 			stdin.write("k");
-			await new Promise((resolve) => setTimeout(resolve, 50));
 
-			// Assert - Wraps to last task
-			expect(lastFrame()).toMatch(/►.*Task 3/);
+			// Assert - Wraps to last task (use vi.waitFor for stability)
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/►.*Task 3/), {
+				timeout: 1000,
+			});
 		});
 
 		it("navigation updates selectedTaskId state", async () => {
@@ -493,23 +496,25 @@ describe("ImplementationMode", () => {
 
 			// Act - Open intervention panel with 'i', then try to navigate
 			stdin.write("i");
-			// Wait for state update to propagate
-			await new Promise((resolve) => setTimeout(resolve, 10));
 
-			// Intervention panel should be open
-			const interventionFrame = lastFrame();
-			expect(interventionFrame).toMatch(/intervention|menu|action/i);
+			// Wait for intervention panel to open
+			await vi.waitFor(
+				() => expect(lastFrame()).toMatch(/intervention|menu|action/i),
+				{ timeout: 1000 },
+			);
 
 			// Try navigation while modal open - should be ignored
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 10));
+			// Small yield for event processing (0ms is acceptable per task spec)
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Close modal (Escape)
 			stdin.write("\x1B"); // ESC
-			await new Promise((resolve) => setTimeout(resolve, 10));
 
-			// Assert - Selection should still be at Task 1 (navigation was disabled)
-			expect(lastFrame()).toMatch(/►.*Task 1/);
+			// Wait for modal to close and verify selection unchanged
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/►.*Task 1/), {
+				timeout: 1000,
+			});
 		});
 	});
 
