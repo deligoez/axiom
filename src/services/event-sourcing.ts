@@ -135,29 +135,3 @@ export function clearEventLog(logPath: string): void {
 		fs.unlinkSync(logPath);
 	}
 }
-
-/**
- * Get size of event log in bytes
- */
-export function getEventLogSize(logPath: string): number {
-	if (!fs.existsSync(logPath)) {
-		return 0;
-	}
-	return fs.statSync(logPath).size;
-}
-
-/**
- * Rotate event log if it exceeds max size
- * @internal Used by persistence layer
- */
-export function rotateEventLog(
-	logPath: string,
-	maxSizeBytes: number = 10 * 1024 * 1024,
-): void {
-	const size = getEventLogSize(logPath);
-
-	if (size > maxSizeBytes) {
-		const archivePath = `${logPath}.${Date.now()}.archive`;
-		fs.renameSync(logPath, archivePath);
-	}
-}
