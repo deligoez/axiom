@@ -125,7 +125,7 @@ describe("AgentLearningsService", () => {
 
 			// Assert
 			const learnings = service.load(persona);
-			expect(learnings["Testing"]).toHaveLength(1);
+			expect(learnings.Testing).toHaveLength(1);
 		});
 
 		it("creates directory if not exists", () => {
