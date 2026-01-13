@@ -26,20 +26,79 @@ export async function run(args: string[]): Promise<void> {
 	// For --help, show usage and exit
 	if (parsed.help) {
 		const { waitUntilExit } = render(
-			<Box flexDirection="column">
-				<Text bold>Usage: chorus [options] [command]</Text>
-				<Text> </Text>
-				<Text>Commands:</Text>
-				<Text> init Initialize Chorus in current directory</Text>
-				<Text> plan Start planning mode</Text>
-				<Text> </Text>
-				<Text>Options:</Text>
-				<Text> -v, --version Show version</Text>
-				<Text> -h, --help Show help</Text>
-				<Text>
-					{" "}
-					--mode &lt;mode&gt; Set execution mode (semi-auto | autopilot)
-				</Text>
+			<Box flexDirection="column" gap={1}>
+				{/* Header */}
+				<Box flexDirection="column">
+					<Text bold color="cyan">
+						Chorus v0.1.0
+					</Text>
+					<Text dimColor>
+						Multi-agent TUI orchestrator for AI coding agents
+					</Text>
+				</Box>
+
+				{/* Usage */}
+				<Box flexDirection="column">
+					<Text bold>USAGE</Text>
+					<Text> chorus [command] [options]</Text>
+				</Box>
+
+				{/* Commands */}
+				<Box flexDirection="column">
+					<Text bold>COMMANDS</Text>
+					<Text>
+						{" "}
+						<Text color="green">init</Text>
+						{"          "}Initialize Chorus in current directory
+					</Text>
+					<Text>
+						{" "}
+						<Text color="green">plan</Text>
+						{"          "}Start planning mode
+					</Text>
+				</Box>
+
+				{/* Options */}
+				<Box flexDirection="column">
+					<Text bold>OPTIONS</Text>
+					<Text>
+						{" "}
+						<Text color="yellow">-v, --version</Text>
+						{"   "}Show version
+					</Text>
+					<Text>
+						{" "}
+						<Text color="yellow">-h, --help</Text>
+						{"      "}Show this help
+					</Text>
+					<Text>
+						{" "}
+						<Text color="yellow">--mode &lt;mode&gt;</Text>
+						{"  "}Execution mode (semi-auto | autopilot)
+					</Text>
+					<Text>
+						{" "}
+						<Text color="yellow">--ci</Text>
+						{"            "}Run in CI mode (non-interactive)
+					</Text>
+				</Box>
+
+				{/* Examples */}
+				<Box flexDirection="column">
+					<Text bold>EXAMPLES</Text>
+					<Text dimColor> $ chorus</Text>
+					<Text> Start interactive session</Text>
+					<Text dimColor> $ chorus init</Text>
+					<Text> Initialize new project</Text>
+					<Text dimColor> $ chorus --mode autopilot</Text>
+					<Text> Start in fully autonomous mode</Text>
+				</Box>
+
+				{/* Footer */}
+				<Box flexDirection="column">
+					<Text bold>DOCUMENTATION</Text>
+					<Text color="blue"> https://github.com/deligoez/chorus</Text>
+				</Box>
 			</Box>,
 		);
 		await waitUntilExit();

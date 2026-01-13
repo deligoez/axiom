@@ -27,11 +27,13 @@ describe("E2E: TSX Runtime Compatibility", () => {
 			timeout: 10000,
 		});
 
-		// Assert
-		expect(output).toContain("Usage:");
-		expect(output).toContain("--version");
-		expect(output).toContain("--help");
-		expect(output).toContain("--mode");
+		// Assert - check new help format
+		expect(output).toContain("Chorus v0.1.0");
+		expect(output).toContain("USAGE");
+		expect(output).toContain("COMMANDS");
+		expect(output).toContain("OPTIONS");
+		expect(output).toContain("EXAMPLES");
+		expect(output).toContain("DOCUMENTATION");
 	});
 
 	it("tsx src/index.tsx -v short flag works", () => {
@@ -53,7 +55,8 @@ describe("E2E: TSX Runtime Compatibility", () => {
 		});
 
 		// Assert
-		expect(output).toContain("Usage:");
+		expect(output).toContain("USAGE");
+		expect(output).toContain("Chorus v0.1.0");
 	});
 
 	it("tsx src/index.tsx --unknown-flag shows help", () => {
@@ -64,8 +67,8 @@ describe("E2E: TSX Runtime Compatibility", () => {
 		});
 
 		// Assert - should show help output
-		expect(output).toContain("Usage:");
-		expect(output).toContain("--help");
+		expect(output).toContain("USAGE");
+		expect(output).toContain("COMMANDS");
 	});
 
 	it("tsx src/index.tsx with unknown command shows help", () => {
@@ -76,7 +79,7 @@ describe("E2E: TSX Runtime Compatibility", () => {
 		});
 
 		// Assert - should show help output
-		expect(output).toContain("Usage:");
-		expect(output).toContain("--help");
+		expect(output).toContain("USAGE");
+		expect(output).toContain("COMMANDS");
 	});
 });
