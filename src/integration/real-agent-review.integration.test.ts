@@ -1,5 +1,5 @@
 /**
- * INT-01: Real Agent Review Integration Test
+ * INT-22: Real Agent Review Integration Test
  *
  * Integration tests for full review flow with real Claude agent.
  * Run with: npm run test:integration -- --grep "Real Agent Review"
@@ -119,7 +119,7 @@ function createPendingReviewFromAgent(
 	};
 }
 
-describe("INT-01: Real Agent Review", () => {
+describe("INT-22: Real Agent Review", () => {
 	beforeAll(() => {
 		// Find full path to claude CLI
 		try {

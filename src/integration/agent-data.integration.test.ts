@@ -1,7 +1,7 @@
 /**
- * AD05: E2E - Agent Data Storage Integration
+ * INT-26: Agent Data Storage Integration
  *
- * E2E tests for the full agent data storage lifecycle.
+ * Integration tests for the full agent data storage lifecycle.
  * Tests verify that AgentDataIntegration correctly writes data to disk.
  */
 
@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentDataIntegration } from "../services/AgentDataIntegration.js";
 
-describe("E2E: Agent Data Storage", () => {
+describe("INT-26: Agent Data Storage", () => {
 	let tempDir: string;
 	let integration: AgentDataIntegration;
 

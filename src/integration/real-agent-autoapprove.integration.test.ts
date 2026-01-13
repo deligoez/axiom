@@ -1,5 +1,5 @@
 /**
- * INT-04: Real Agent Auto-Approve Integration Test
+ * INT-25: Real Agent Auto-Approve Integration Test
  *
  * Integration tests for auto-approve flow with real Claude agent.
  * Tests the end-to-end quality pipeline with real quality checks.
@@ -213,7 +213,7 @@ function createPendingReviewWithQuality(
 	};
 }
 
-describe("INT-04: Auto-Approve", () => {
+describe("INT-25: Auto-Approve", () => {
 	beforeAll(() => {
 		// Find full path to claude CLI
 		try {

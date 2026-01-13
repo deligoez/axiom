@@ -150,4 +150,46 @@ describe("INT-06: Signal parsing from real Claude output", () => {
 		const signalRemoved = output.replace(/<chorus>COMPLETE<\/chorus>/g, "");
 		expect(signalRemoved.trim().length).toBeGreaterThan(10);
 	}, 60000);
+
+	it("parses NEEDS_HELP signal with reason payload", async () => {
+		// Arrange
+		const prompt = `Output ONLY this exact text, nothing else: <chorus>NEEDS_HELP:Cannot access API endpoint</chorus>`;
+
+		// Act
+		const output = await runClaude(prompt);
+
+		// Assert
+		const result = signalParser.parse(output);
+		expect(result.hasSignal).toBe(true);
+		expect(result.signal?.type).toBe("NEEDS_HELP");
+		expect(result.signal?.payload).toBeTruthy();
+	}, 60000);
+
+	it("parses NEEDS_HUMAN signal with context payload", async () => {
+		// Arrange
+		const prompt = `Output ONLY this exact text, nothing else: <chorus>NEEDS_HUMAN:Decision required on architecture</chorus>`;
+
+		// Act
+		const output = await runClaude(prompt);
+
+		// Assert
+		const result = signalParser.parse(output);
+		expect(result.hasSignal).toBe(true);
+		expect(result.signal?.type).toBe("NEEDS_HUMAN");
+		expect(result.signal?.payload).toBeTruthy();
+	}, 60000);
+
+	it("parses RESOLVED signal from agent output", async () => {
+		// Arrange
+		const prompt = `Output ONLY this exact text, nothing else: <chorus>RESOLVED:Merge conflict fixed</chorus>`;
+
+		// Act
+		const output = await runClaude(prompt);
+
+		// Assert
+		const result = signalParser.parse(output);
+		expect(result.hasSignal).toBe(true);
+		expect(result.signal?.type).toBe("RESOLVED");
+		expect(result.signal?.payload).toBeTruthy();
+	}, 60000);
 });

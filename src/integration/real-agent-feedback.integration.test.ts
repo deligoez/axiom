@@ -1,5 +1,5 @@
 /**
- * INT-03: Real Agent Feedback Loop Integration Test
+ * INT-24: Real Agent Feedback Loop Integration Test
  *
  * Integration tests for feedback loop with real Claude agent.
  * Tests the multi-turn redo cycle when quality checks fail.
@@ -117,7 +117,7 @@ ${originalPrompt}
 Please address the feedback and complete the task. Output: <chorus>COMPLETE</chorus> when done.`;
 }
 
-describe("INT-03: Feedback Loop", () => {
+describe("INT-24: Feedback Loop", () => {
 	beforeAll(() => {
 		// Find full path to claude CLI
 		try {

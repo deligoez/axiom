@@ -1,5 +1,5 @@
 /**
- * INT-02: Real Agent Sprint Planning Integration Test
+ * INT-23: Real Agent Sprint Planning Integration Test
  *
  * Integration tests for sprint planning flow with real Claude agent.
  * Run with: npm run test:integration -- --grep "Sprint Planning"
@@ -90,7 +90,7 @@ async function runClaudeInDir(
 	});
 }
 
-describe("INT-02: Sprint Planning", () => {
+describe("INT-23: Sprint Planning", () => {
 	beforeAll(() => {
 		// Find full path to claude CLI
 		try {
