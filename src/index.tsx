@@ -40,22 +40,7 @@ export async function run(args: string[]): Promise<void> {
 				{/* Usage */}
 				<Box flexDirection="column">
 					<Text bold>USAGE</Text>
-					<Text> chorus [command] [options]</Text>
-				</Box>
-
-				{/* Commands */}
-				<Box flexDirection="column">
-					<Text bold>COMMANDS</Text>
-					<Text>
-						{" "}
-						<Text color="green">init</Text>
-						{"          "}Initialize Chorus in current directory
-					</Text>
-					<Text>
-						{" "}
-						<Text color="green">plan</Text>
-						{"          "}Start planning mode
-					</Text>
+					<Text> chorus [options]</Text>
 				</Box>
 
 				{/* Options */}
@@ -77,11 +62,9 @@ export async function run(args: string[]): Promise<void> {
 				<Box flexDirection="column">
 					<Text bold>EXAMPLES</Text>
 					<Text dimColor> $ chorus</Text>
-					<Text> Start interactive session</Text>
-					<Text dimColor> $ chorus init</Text>
-					<Text> Initialize new project</Text>
-					<Text dimColor> $ chorus plan</Text>
-					<Text> Start planning mode</Text>
+					<Text> Start interactive TUI</Text>
+					<Text dimColor> $ chorus --version</Text>
+					<Text> Show version number</Text>
 				</Box>
 
 				{/* Footer */}
