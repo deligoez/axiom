@@ -73,8 +73,13 @@ describe("useTerminalSize", () => {
 		mockStdout.rows = 60;
 		mockStdout.emit("resize");
 
-		// Wait for re-render
-		await new Promise((resolve) => setTimeout(resolve, 10));
+		// Poll for re-render instead of fixed timeout to avoid flakiness
+		const maxWait = 1000;
+		const startTime = Date.now();
+		while (Date.now() - startTime < maxWait) {
+			if (lastFrame() === "200x60") break;
+			await new Promise((resolve) => setTimeout(resolve, 5));
+		}
 
 		expect(lastFrame()).toBe("200x60");
 	});
