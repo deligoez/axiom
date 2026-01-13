@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MergeService } from "./MergeService.js";
 import type { Orchestrator } from "./Orchestrator.js";
 import { RalphLoop } from "./RalphLoop.js";
@@ -52,6 +52,11 @@ describe("RalphLoop", () => {
 			eventEmitter,
 			maxIterations: 3,
 		});
+	});
+
+	afterEach(() => {
+		// Clean up event listeners to prevent memory leaks
+		ralphLoop.cleanup();
 	});
 
 	describe("start()", () => {
@@ -888,6 +893,49 @@ describe("RalphLoop", () => {
 				// Assert - should auto-stop after allDone
 				expect(ralphLoop.isRunning()).toBe(false);
 			});
+		});
+	});
+
+	describe("cleanup()", () => {
+		it("removes all event listeners from eventEmitter", () => {
+			// Arrange - verify listeners are registered
+			const initialListenerCount = eventEmitter.listenerCount("agentCompleted");
+			expect(initialListenerCount).toBe(1);
+
+			// Act
+			ralphLoop.cleanup();
+
+			// Assert - listeners should be removed
+			expect(eventEmitter.listenerCount("agentCompleted")).toBe(0);
+			expect(eventEmitter.listenerCount("taskCompleted")).toBe(0);
+			expect(eventEmitter.listenerCount("agentNoSignal")).toBe(0);
+			expect(eventEmitter.listenerCount("agentBlocked")).toBe(0);
+		});
+
+		it("clears idle timer if set", () => {
+			// Arrange
+			vi.useFakeTimers();
+			ralphLoop.startIdleTimer();
+
+			// Act
+			ralphLoop.cleanup();
+
+			// Assert - advancing time should not trigger idle handler
+			const idleHandler = vi.fn();
+			eventEmitter.on("idle", idleHandler);
+			vi.advanceTimersByTime(2000);
+			expect(idleHandler).not.toHaveBeenCalled();
+
+			vi.useRealTimers();
+		});
+
+		it("is idempotent (can be called multiple times safely)", () => {
+			// Arrange & Act
+			ralphLoop.cleanup();
+			ralphLoop.cleanup(); // Should not throw
+
+			// Assert - listeners still removed
+			expect(eventEmitter.listenerCount("agentCompleted")).toBe(0);
 		});
 	});
 });
