@@ -59,15 +59,13 @@ describe("RulesLoader", () => {
 			});
 		});
 
-		it("returns hardcoded fallback if file missing", () => {
+		it("throws RuleFileMissingError if file missing", () => {
 			// Arrange - no file created
 
-			// Act
-			const rules = loader.loadSignalTypes();
-
-			// Assert - should return defaults
-			expect(rules.length).toBeGreaterThan(0);
-			expect(rules.map((r) => r.type)).toContain("COMPLETE");
+			// Act & Assert
+			expect(() => loader.loadSignalTypes()).toThrow("Missing rule file");
+			expect(() => loader.loadSignalTypes()).toThrow("signal-types.md");
+			expect(() => loader.loadSignalTypes()).toThrow("chorus init");
 		});
 	});
 
@@ -106,6 +104,15 @@ describe("RulesLoader", () => {
 				example: "This function needs null check",
 			});
 		});
+
+		it("throws RuleFileMissingError if file missing", () => {
+			// Arrange - no file created
+
+			// Act & Assert
+			expect(() => loader.loadLearningFormat()).toThrow("Missing rule file");
+			expect(() => loader.loadLearningFormat()).toThrow("learning-format.md");
+			expect(() => loader.loadLearningFormat()).toThrow("chorus init");
+		});
 	});
 
 	describe("loadCommitFormat()", () => {
@@ -143,6 +150,15 @@ describe("RulesLoader", () => {
 				example: "feat: add user authentication [ch-123]",
 			});
 		});
+
+		it("throws RuleFileMissingError if file missing", () => {
+			// Arrange - no file created
+
+			// Act & Assert
+			expect(() => loader.loadCommitFormat()).toThrow("Missing rule file");
+			expect(() => loader.loadCommitFormat()).toThrow("commit-format.md");
+			expect(() => loader.loadCommitFormat()).toThrow("chorus init");
+		});
 	});
 
 	describe("loadCompletionProtocol()", () => {
@@ -176,6 +192,19 @@ describe("RulesLoader", () => {
 				verificationMethod: "signal",
 				errorMessage: "Task must emit COMPLETE signal",
 			});
+		});
+
+		it("throws RuleFileMissingError if file missing", () => {
+			// Arrange - no file created
+
+			// Act & Assert
+			expect(() => loader.loadCompletionProtocol()).toThrow(
+				"Missing rule file",
+			);
+			expect(() => loader.loadCompletionProtocol()).toThrow(
+				"completion-protocol.md",
+			);
+			expect(() => loader.loadCompletionProtocol()).toThrow("chorus init");
 		});
 	});
 

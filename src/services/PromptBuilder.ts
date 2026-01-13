@@ -90,17 +90,9 @@ export class PromptBuilder {
 	}
 
 	buildCommitRulesSection(taskId: string): string {
+		// RulesLoader throws RuleFileMissingError if rules files not found
+		// Requires chorus init to have been run
 		const rules = this.rulesLoader?.loadCommitFormat() ?? [];
-
-		if (rules.length === 0) {
-			// Fallback to hardcoded if no rules loaded
-			return `## Commit Message Rules
-**IMPORTANT:** Include task ID in every commit message for rollback support.
-
-Format: \`<type>: <description> [<task-id>]\`
-
-Example: \`feat: implement auth [${taskId}]\``;
-		}
 
 		return this.formatCommitRulesSection(rules, taskId);
 	}
@@ -132,25 +124,9 @@ Example: \`feat: implement auth [${taskId}]\``;
 	}
 
 	buildLearningsFormatSection(): string {
+		// RulesLoader throws RuleFileMissingError if rules files not found
+		// Requires chorus init to have been run
 		const rules = this.rulesLoader?.loadLearningFormat() ?? [];
-
-		if (rules.length === 0) {
-			// Fallback to hardcoded if no rules loaded
-			return `## Learnings Format
-When you discover something useful, add it to your scratchpad's ## Learnings section with a scope prefix:
-
-- **[LOCAL]** - Only affects this task (not shared with other tasks)
-- **[CROSS-CUTTING]** - Affects multiple features (triggers plan review)
-- **[ARCHITECTURAL]** - Fundamental design decision (triggers plan review + alert)
-
-Example:
-\`\`\`
-## Learnings
-- [LOCAL] This function needs memoization for performance
-- [CROSS-CUTTING] All API endpoints require rate limiting middleware
-- [ARCHITECTURAL] Use dependency injection for service instantiation
-\`\`\``;
-		}
 
 		return this.formatLearningsSection(rules);
 	}
@@ -186,23 +162,11 @@ Example:
 	}
 
 	buildCompletionSection(config: ChorusConfig): string {
+		// RulesLoader throws RuleFileMissingError if rules files not found
+		// Requires chorus init to have been run
 		const rules = this.rulesLoader?.loadCompletionProtocol() ?? [];
 		const hasQualityCommands =
 			config.qualityCommands && config.qualityCommands.length > 0;
-
-		if (rules.length === 0) {
-			// Fallback to hardcoded if no rules loaded
-			const qualityNote = hasQualityCommands
-				? " AND all required quality commands pass"
-				: "";
-
-			return `## Completion Protocol
-When ALL criteria are met${qualityNote}:
-1. ${hasQualityCommands ? "Run each quality command and verify it passes\n2. " : ""}Output exactly: <chorus>COMPLETE</chorus>
-
-If blocked by external issue, output: <chorus>BLOCKED: reason</chorus>
-If you need clarification, output: <chorus>NEEDS_HELP: what you need</chorus>`;
-		}
 
 		return this.formatCompletionSection(rules, hasQualityCommands);
 	}

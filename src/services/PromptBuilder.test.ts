@@ -10,6 +10,86 @@ vi.mock("node:fs/promises", () => ({
 	readFile: vi.fn(),
 }));
 
+// Mock RulesLoader
+vi.mock("./RulesLoader.js", () => {
+	return {
+		RulesLoader: class MockRulesLoader {
+			loadCommitFormat() {
+				return [
+					{
+						type: "feat",
+						description: "New feature",
+						scopeRequired: false,
+						breakingChangeMarker: true,
+						format: "feat: description [task-id]",
+						example: "feat: add user authentication [ch-123]",
+					},
+				];
+			}
+			loadLearningFormat() {
+				return [
+					{
+						scope: "local",
+						description: "Only affects this task",
+						categoryPrefix: "local",
+						triggersPlanReview: false,
+						triggersAlert: false,
+						example: "This function needs null check",
+					},
+					{
+						scope: "cross-cutting",
+						description: "Affects multiple features",
+						categoryPrefix: "cross",
+						triggersPlanReview: true,
+						triggersAlert: false,
+						example: "API rate limits require backoff",
+					},
+					{
+						scope: "architectural",
+						description: "Fundamental design decision",
+						categoryPrefix: "arch",
+						triggersPlanReview: true,
+						triggersAlert: true,
+						example: "Database schema change required",
+					},
+				];
+			}
+			loadCompletionProtocol() {
+				return [
+					{
+						id: "emit-complete-signal",
+						description: "Emit COMPLETE signal when done",
+						required: true,
+						verificationMethod: "signal",
+						errorMessage: "Task must emit COMPLETE signal",
+					},
+					{
+						id: "tests-pass",
+						description: "All tests must pass",
+						required: true,
+						verificationMethod: "test",
+						errorMessage: "Tests must pass before completion",
+					},
+					{
+						id: "blocked-signal",
+						description: "Output BLOCKED signal if blocked by external issue",
+						required: false,
+						verificationMethod: "signal",
+						errorMessage: "",
+					},
+					{
+						id: "needs-help-signal",
+						description: "Output NEEDS_HELP signal if you need clarification",
+						required: false,
+						verificationMethod: "signal",
+						errorMessage: "",
+					},
+				];
+			}
+		},
+	};
+});
+
 const mockReadFile = vi.mocked(fs.readFile);
 
 describe("PromptBuilder", () => {
@@ -233,9 +313,21 @@ describe("PromptBuilder", () => {
 	});
 
 	// F07: buildLearningsFormatSection() - 2 tests
+	// Note: These tests use build() to initialize rulesLoader first
 	describe("buildLearningsFormatSection()", () => {
-		it("returns string explaining [LOCAL], [CROSS-CUTTING], [ARCHITECTURAL] prefixes", () => {
-			// Arrange & Act
+		it("returns string explaining [LOCAL], [CROSS-CUTTING], [ARCHITECTURAL] prefixes", async () => {
+			// Arrange - initialize rulesLoader by calling build()
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
+			await builder.build(context);
+
+			// Act
 			const result = builder.buildLearningsFormatSection();
 
 			// Assert
@@ -244,42 +336,85 @@ describe("PromptBuilder", () => {
 			expect(result).toContain("[ARCHITECTURAL]");
 		});
 
-		it("includes when to use each scope", () => {
-			// Arrange & Act
+		it("includes when to use each scope", async () => {
+			// Arrange - initialize rulesLoader by calling build()
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
+			await builder.build(context);
+
+			// Act
 			const result = builder.buildLearningsFormatSection();
 
 			// Assert
 			expect(result).toContain("Only affects this task");
-			expect(result).toContain("multiple features");
-			expect(result).toContain("design decision");
+			expect(result).toContain("Affects multiple features");
+			expect(result).toContain("Fundamental design decision");
 		});
 	});
 
 	// F07: buildCompletionSection() - 3 tests
+	// Note: These tests use build() to initialize rulesLoader first
 	describe("buildCompletionSection()", () => {
-		it('returns string containing "<chorus>"', () => {
-			// Arrange & Act
+		it('returns string containing "<chorus>"', async () => {
+			// Arrange - initialize rulesLoader by calling build()
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
+			await builder.build(context);
+
+			// Act
 			const result = builder.buildCompletionSection(mockConfig);
 
 			// Assert
 			expect(result).toContain("<chorus>");
 		});
 
-		it("returns string containing signal format instructions", () => {
-			// Arrange & Act
+		it("returns string containing signal format instructions", async () => {
+			// Arrange - initialize rulesLoader by calling build()
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
+			await builder.build(context);
+
+			// Act
 			const result = builder.buildCompletionSection(mockConfig);
 
 			// Assert
-			expect(result).toContain("COMPLETE");
+			expect(result).toContain("Emit COMPLETE signal when done");
 			expect(result).toContain("BLOCKED");
 			expect(result).toContain("NEEDS_HELP");
 		});
 
-		it('includes "quality commands must pass" when qualityCommands configured', () => {
-			// Arrange
+		it('includes "quality commands must pass" when qualityCommands configured', async () => {
+			// Arrange - initialize rulesLoader by calling build()
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
 			mockConfig.qualityCommands = [
 				{ name: "test", command: "npm test", required: true, order: 1 },
 			];
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
+			await builder.build(context);
 
 			// Act
 			const result = builder.buildCompletionSection(mockConfig);
@@ -336,38 +471,66 @@ describe("PromptBuilder", () => {
 		});
 	});
 
-	// MH01: File Loading Tests (4 tests)
+	// MH01: RulesLoader Integration Tests (4 tests)
 	describe("RulesLoader Integration", () => {
-		it("buildCommitRulesSection loads from RulesLoader (uses fallback defaults)", () => {
-			// Arrange - uses default rules since no file exists
-			// Act
-			const result = builder.buildCommitRulesSection("ch-abc");
+		it("build() integrates commit rules from RulesLoader", async () => {
+			// Arrange
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
 
-			// Assert - contains commit rules content
-			expect(result).toContain("Commit Message Rules");
+			// Act
+			const result = await builder.build(context);
+
+			// Assert - contains commit rules content from mock RulesLoader
+			expect(result).toContain("## Commit Message Rules");
+			expect(result).toContain("feat");
 			expect(result).toContain("[ch-abc]");
 		});
 
-		it("buildLearningsFormatSection loads from RulesLoader (uses fallback defaults)", () => {
-			// Arrange - uses default rules since no file exists
-			// Act
-			const result = builder.buildLearningsFormatSection();
+		it("build() integrates learnings format from RulesLoader", async () => {
+			// Arrange
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
 
-			// Assert - contains learnings format content
-			expect(result).toContain("Learnings Format");
+			// Act
+			const result = await builder.build(context);
+
+			// Assert - contains learnings format content from mock RulesLoader
+			expect(result).toContain("## Learnings Format");
 			expect(result).toContain("[LOCAL]");
 			expect(result).toContain("[CROSS-CUTTING]");
 			expect(result).toContain("[ARCHITECTURAL]");
 		});
 
-		it("buildCompletionSection loads from RulesLoader (uses fallback defaults)", () => {
-			// Arrange - uses default rules since no file exists
-			// Act
-			const result = builder.buildCompletionSection(mockConfig);
+		it("build() integrates completion protocol from RulesLoader", async () => {
+			// Arrange
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
 
-			// Assert - contains completion protocol content
-			expect(result).toContain("Completion Protocol");
-			expect(result).toContain("COMPLETE");
+			// Act
+			const result = await builder.build(context);
+
+			// Assert - contains completion protocol content from mock RulesLoader
+			expect(result).toContain("## Completion Protocol");
+			expect(result).toContain("Emit COMPLETE signal when done");
 			expect(result).toContain("BLOCKED");
 		});
 

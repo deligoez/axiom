@@ -108,23 +108,21 @@ describe("E2E: Shared Rules System", () => {
 		expect(result.errors.some((e) => e.includes("Example"))).toBe(true);
 	});
 
-	it("Fallback works when files missing", () => {
+	it("Throws error when rule files missing", () => {
 		// Arrange - no scaffolding, empty project
 		const loader = new RulesLoader(tempDir);
 
-		// Act
-		const rules = loader.loadAllRules();
+		// Act & Assert - throws RuleFileMissingError
+		expect(() => loader.loadAllRules()).toThrow("Missing rule file");
+		expect(() => loader.loadSignalTypes()).toThrow("signal-types.md");
+		expect(() => loader.loadLearningFormat()).toThrow("learning-format.md");
+		expect(() => loader.loadCommitFormat()).toThrow("commit-format.md");
+		expect(() => loader.loadCompletionProtocol()).toThrow(
+			"completion-protocol.md",
+		);
 
-		// Assert - returns hardcoded defaults
-		expect(rules.signals.length).toBeGreaterThan(0);
-		expect(rules.learnings.length).toBeGreaterThan(0);
-		expect(rules.commits.length).toBeGreaterThan(0);
-		expect(rules.completion.length).toBeGreaterThan(0);
-
-		// Verify defaults match expected signals
-		expect(rules.signals.map((s) => s.type)).toContain("COMPLETE");
-		expect(rules.signals.map((s) => s.type)).toContain("BLOCKED");
-		expect(rules.signals.map((s) => s.type)).toContain("NEEDS_HELP");
+		// Verify error message guides to chorus init
+		expect(() => loader.loadSignalTypes()).toThrow("chorus init");
 	});
 
 	it("Rules can be formatted for agent prompts", () => {

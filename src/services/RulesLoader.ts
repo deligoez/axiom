@@ -2,7 +2,7 @@
  * RulesLoader Service
  *
  * Loads shared rules from `.chorus/rules/` directory.
- * Provides fallback defaults if files are missing.
+ * Throws RuleFileMissingError if files are missing (requires chorus init).
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -16,153 +16,20 @@ import type {
 } from "../types/rules.js";
 
 /**
- * Default signal rules (fallback when file missing)
+ * Error thrown when a required rule file is missing.
+ * Guides user to run `chorus init` to create default files.
  */
-const DEFAULT_SIGNAL_RULES: SignalRule[] = [
-	{
-		type: "COMPLETE",
-		description: "Task completed successfully",
-		payloadRequired: false,
-		example: "<chorus>COMPLETE</chorus>",
-	},
-	{
-		type: "BLOCKED",
-		description: "Cannot proceed due to blocker",
-		payloadRequired: true,
-		payloadFormat: "Reason for blockage",
-		example: "<chorus>BLOCKED:Missing dependency</chorus>",
-	},
-	{
-		type: "NEEDS_HELP",
-		description: "Need human assistance",
-		payloadRequired: true,
-		payloadFormat: "Description of help needed",
-		example: "<chorus>NEEDS_HELP:Unclear requirements</chorus>",
-	},
-	{
-		type: "PROGRESS",
-		description: "Report progress percentage",
-		payloadRequired: true,
-		payloadFormat: "Percentage (0-100)",
-		example: "<chorus>PROGRESS:50</chorus>",
-	},
-	{
-		type: "RESOLVED",
-		description: "Blocker has been resolved",
-		payloadRequired: false,
-		example: "<chorus>RESOLVED</chorus>",
-	},
-	{
-		type: "NEEDS_HUMAN",
-		description: "Requires human intervention",
-		payloadRequired: true,
-		payloadFormat: "Reason for human intervention",
-		example: "<chorus>NEEDS_HUMAN:Security review required</chorus>",
-	},
-];
-
-/**
- * Default learning rules (fallback when file missing)
- */
-const DEFAULT_LEARNING_RULES: LearningRule[] = [
-	{
-		scope: "local",
-		description: "Only affects this task",
-		categoryPrefix: "local",
-		triggersPlanReview: false,
-		triggersAlert: false,
-		example: "This function needs null check",
-	},
-	{
-		scope: "cross-cutting",
-		description: "Affects multiple features",
-		categoryPrefix: "cross",
-		triggersPlanReview: true,
-		triggersAlert: false,
-		example: "API rate limits require backoff",
-	},
-	{
-		scope: "architectural",
-		description: "Fundamental design decision",
-		categoryPrefix: "arch",
-		triggersPlanReview: true,
-		triggersAlert: true,
-		example: "Database schema change required",
-	},
-];
-
-/**
- * Default commit rules (fallback when file missing)
- */
-const DEFAULT_COMMIT_RULES: CommitRule[] = [
-	{
-		type: "feat",
-		description: "New feature",
-		scopeRequired: false,
-		breakingChangeMarker: true,
-		format: "feat: description [task-id]",
-		example: "feat: add user authentication [ch-123]",
-	},
-	{
-		type: "fix",
-		description: "Bug fix",
-		scopeRequired: false,
-		breakingChangeMarker: false,
-		format: "fix: description [task-id]",
-		example: "fix: handle null input [ch-456]",
-	},
-	{
-		type: "chore",
-		description: "Maintenance task",
-		scopeRequired: false,
-		breakingChangeMarker: false,
-		format: "chore: description [task-id]",
-		example: "chore: update dependencies [ch-789]",
-	},
-	{
-		type: "refactor",
-		description: "Code refactoring",
-		scopeRequired: false,
-		breakingChangeMarker: false,
-		format: "refactor: description [task-id]",
-		example: "refactor: extract validation logic [ch-012]",
-	},
-	{
-		type: "test",
-		description: "Test changes",
-		scopeRequired: false,
-		breakingChangeMarker: false,
-		format: "test: description [task-id]",
-		example: "test: add unit tests for parser [ch-345]",
-	},
-];
-
-/**
- * Default completion rules (fallback when file missing)
- */
-const DEFAULT_COMPLETION_RULES: CompletionRule[] = [
-	{
-		id: "emit-complete-signal",
-		description: "Emit COMPLETE signal when done",
-		required: true,
-		verificationMethod: "signal",
-		errorMessage: "Task must emit COMPLETE signal",
-	},
-	{
-		id: "tests-pass",
-		description: "All tests must pass",
-		required: true,
-		verificationMethod: "test",
-		errorMessage: "Tests must pass before completion",
-	},
-	{
-		id: "quality-pass",
-		description: "Quality checks must pass",
-		required: true,
-		verificationMethod: "test",
-		errorMessage: "npm run quality must pass",
-	},
-];
+export class RuleFileMissingError extends Error {
+	constructor(
+		public readonly fileName: string,
+		public readonly filePath: string,
+	) {
+		super(
+			`Missing rule file: ${fileName}. Run \`chorus init\` to create default rule files. (Expected: ${filePath})`,
+		);
+		this.name = "RuleFileMissingError";
+	}
+}
 
 /**
  * Service to load shared rules from `.chorus/rules/` directory.
@@ -177,15 +44,16 @@ export class RulesLoader {
 
 	/**
 	 * Load signal type rules from signal-types.md
+	 * @throws {RuleFileMissingError} if file is missing
 	 */
 	loadSignalTypes(): SignalRule[] {
 		const cached = this.cache.get("signals");
 		if (cached) return cached as SignalRule[];
 
-		const filePath = join(this.rulesDir, "signal-types.md");
+		const fileName = "signal-types.md";
+		const filePath = join(this.rulesDir, fileName);
 		if (!existsSync(filePath)) {
-			this.cache.set("signals", DEFAULT_SIGNAL_RULES);
-			return DEFAULT_SIGNAL_RULES;
+			throw new RuleFileMissingError(fileName, filePath);
 		}
 
 		const content = readFileSync(filePath, "utf-8");
@@ -196,15 +64,16 @@ export class RulesLoader {
 
 	/**
 	 * Load learning format rules from learning-format.md
+	 * @throws {RuleFileMissingError} if file is missing
 	 */
 	loadLearningFormat(): LearningRule[] {
 		const cached = this.cache.get("learnings");
 		if (cached) return cached as LearningRule[];
 
-		const filePath = join(this.rulesDir, "learning-format.md");
+		const fileName = "learning-format.md";
+		const filePath = join(this.rulesDir, fileName);
 		if (!existsSync(filePath)) {
-			this.cache.set("learnings", DEFAULT_LEARNING_RULES);
-			return DEFAULT_LEARNING_RULES;
+			throw new RuleFileMissingError(fileName, filePath);
 		}
 
 		const content = readFileSync(filePath, "utf-8");
@@ -215,15 +84,16 @@ export class RulesLoader {
 
 	/**
 	 * Load commit format rules from commit-format.md
+	 * @throws {RuleFileMissingError} if file is missing
 	 */
 	loadCommitFormat(): CommitRule[] {
 		const cached = this.cache.get("commits");
 		if (cached) return cached as CommitRule[];
 
-		const filePath = join(this.rulesDir, "commit-format.md");
+		const fileName = "commit-format.md";
+		const filePath = join(this.rulesDir, fileName);
 		if (!existsSync(filePath)) {
-			this.cache.set("commits", DEFAULT_COMMIT_RULES);
-			return DEFAULT_COMMIT_RULES;
+			throw new RuleFileMissingError(fileName, filePath);
 		}
 
 		const content = readFileSync(filePath, "utf-8");
@@ -234,15 +104,16 @@ export class RulesLoader {
 
 	/**
 	 * Load completion protocol rules from completion-protocol.md
+	 * @throws {RuleFileMissingError} if file is missing
 	 */
 	loadCompletionProtocol(): CompletionRule[] {
 		const cached = this.cache.get("completion");
 		if (cached) return cached as CompletionRule[];
 
-		const filePath = join(this.rulesDir, "completion-protocol.md");
+		const fileName = "completion-protocol.md";
+		const filePath = join(this.rulesDir, fileName);
 		if (!existsSync(filePath)) {
-			this.cache.set("completion", DEFAULT_COMPLETION_RULES);
-			return DEFAULT_COMPLETION_RULES;
+			throw new RuleFileMissingError(fileName, filePath);
 		}
 
 		const content = readFileSync(filePath, "utf-8");
