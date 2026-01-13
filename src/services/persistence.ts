@@ -75,11 +75,3 @@ export function loadSnapshot(snapshotPath: string): Snapshot<unknown> | null {
 	}
 }
 
-/**
- * Delete snapshot file
- */
-export function deleteSnapshot(snapshotPath: string): void {
-	if (fs.existsSync(snapshotPath)) {
-		fs.unlinkSync(snapshotPath);
-	}
-}
