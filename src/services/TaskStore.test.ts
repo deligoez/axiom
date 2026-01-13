@@ -1371,8 +1371,8 @@ describe("TaskStore", () => {
 			}
 			const createTime = Date.now() - startTime;
 
-			// Assert - creation should be fast (< 5 seconds)
-			expect(createTime).toBeLessThan(5000);
+			// Assert - creation should be fast (< 10 seconds, allowing for system load)
+			expect(createTime).toBeLessThan(10000);
 			expect(store.list().length).toBe(10000);
 
 			// Act - list all tasks

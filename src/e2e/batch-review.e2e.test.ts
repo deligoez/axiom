@@ -38,8 +38,10 @@ describe("E2E: Batch Review Flow (R02)", () => {
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 
-		// Act - wait for app to render
+		// Act - wait for app to render tasks
 		await ptyResult.waitForText("Tasks (3)", 10000);
+		// Wait for full render after header appears
+		await new Promise((resolve) => setTimeout(resolve, 500));
 
 		// Assert - all 3 tasks rendered with reviewing status indicator
 		const output = ptyResult.getCleanOutput();
