@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import type React from "react";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useChorusMachine } from "../hooks/useChorusMachine.js";
 
 // Check if we're in an interactive terminal
@@ -65,24 +65,27 @@ export function InterventionPanel({
 	onEditTask,
 	availableTasks = [],
 }: InterventionPanelProps): React.ReactElement | null {
-	const [mode, setModeState] = useState<PanelMode>("main");
-	const [selectedAgentId, setSelectedAgentIdState] = useState<string | null>(
-		null,
-	);
-	// Use refs to always have latest values in useInput callback
-	const modeRef = useRef<PanelMode>(mode);
-	const selectedAgentIdRef = useRef<string | null>(selectedAgentId);
+	// State for rendering + refs for synchronous access in useInput callbacks.
+	// NOTE: This dual-update pattern is intentional here. useInput callbacks need
+	// synchronous access to current values, but useEffect runs AFTER render which
+	// would cause stale ref values during sequential input handling.
+	const [modeState, setModeState] = useState<PanelMode>("main");
+	const [selectedAgentIdState, setSelectedAgentIdState] = useState<
+		string | null
+	>(null);
+	const modeRef = useRef<PanelMode>(modeState);
+	const selectedAgentIdRef = useRef<string | null>(selectedAgentIdState);
 
-	// Update both ref and state together for immediate access
-	const setMode = (newMode: PanelMode) => {
+	// Memoized setters that update ref synchronously and state for re-render
+	const setMode = useCallback((newMode: PanelMode) => {
 		modeRef.current = newMode;
 		setModeState(newMode);
-	};
+	}, []);
 
-	const setSelectedAgentId = (agentId: string | null) => {
+	const setSelectedAgentId = useCallback((agentId: string | null) => {
 		selectedAgentIdRef.current = agentId;
 		setSelectedAgentIdState(agentId);
-	};
+	}, []);
 
 	// Get config for the hook - in real usage this would come from context
 	const chorusMachineConfig = {
@@ -273,7 +276,7 @@ export function InterventionPanel({
 			</Box>
 
 			{/* Mode-specific UI */}
-			{mode === "main" && (
+			{modeState === "main" && (
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold dimColor>
 						Actions:
@@ -315,7 +318,7 @@ export function InterventionPanel({
 				</Box>
 			)}
 
-			{mode === "stop-select" && (
+			{modeState === "stop-select" && (
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="red">
 						Select agent to stop (1-9) or ESC to cancel
@@ -323,7 +326,7 @@ export function InterventionPanel({
 				</Box>
 			)}
 
-			{mode === "redirect-select" && (
+			{modeState === "redirect-select" && (
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="blue">
 						Select agent to redirect (1-9) or ESC to cancel
@@ -331,7 +334,7 @@ export function InterventionPanel({
 				</Box>
 			)}
 
-			{mode === "redirect-task" && (
+			{modeState === "redirect-task" && (
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="blue">
 						Select task to redirect to (1-9) or ESC to cancel
@@ -350,7 +353,7 @@ export function InterventionPanel({
 				</Box>
 			)}
 
-			{mode === "block-select" && (
+			{modeState === "block-select" && (
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="yellow">
 						Select task to block (1-9) or ESC to cancel
@@ -358,7 +361,7 @@ export function InterventionPanel({
 				</Box>
 			)}
 
-			{mode === "edit-select" && (
+			{modeState === "edit-select" && (
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="magenta">
 						Select task to edit (1-9) or ESC to cancel
