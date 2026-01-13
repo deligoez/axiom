@@ -1,4 +1,8 @@
-import { execSync } from "node:child_process";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+
+const execAsync = promisify(exec);
+
 import type { EventEmitter } from "node:events";
 
 const DEFAULT_THRESHOLD = 100 * 1024 * 1024; // 100MB in bytes
@@ -37,7 +41,7 @@ export class DiskSpaceMonitor {
 	 * Check disk space and return available/total/percent info.
 	 */
 	async check(): Promise<DiskSpaceInfo> {
-		return this.getDiskSpace();
+		return await this.getDiskSpace();
 	}
 
 	/**
@@ -120,11 +124,11 @@ export class DiskSpaceMonitor {
 	/**
 	 * Get disk space info using df command.
 	 */
-	private getDiskSpace(): DiskSpaceInfo {
+	private async getDiskSpace(): Promise<DiskSpaceInfo> {
 		try {
 			// Use df to get disk space for current directory
-			const output = execSync("df -k .", { encoding: "utf-8" });
-			const lines = output.trim().split("\n");
+			const { stdout } = await execAsync("df -k .");
+			const lines = stdout.trim().split("\n");
 
 			if (lines.length < 2) {
 				return { available: 0, total: 0, percent: 100 };

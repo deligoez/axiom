@@ -1,4 +1,8 @@
-import { execSync } from "node:child_process";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+
+const execAsync = promisify(exec);
+
 import * as crypto from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -97,10 +101,10 @@ export class LearningStore {
 		const learningsRelPath = path.relative(this.repoPath, this.learningsPath);
 		const metaRelPath = path.relative(this.repoPath, this.metaPath);
 
-		execSync(`git add "${learningsRelPath}" "${metaRelPath}"`, {
+		await execAsync(`git add "${learningsRelPath}" "${metaRelPath}"`, {
 			cwd: this.repoPath,
 		});
-		execSync(`git commit -m "${message}"`, {
+		await execAsync(`git commit -m "${message}"`, {
 			cwd: this.repoPath,
 		});
 	}

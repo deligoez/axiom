@@ -11,19 +11,19 @@ vi.mock("node:fs/promises", () => ({
 	access: vi.fn(),
 }));
 
-// Mock child_process for git commands
+// Mock child_process for git commands using vi.hoisted (hoisted mocks need hoisted variables)
+const { mockExec } = vi.hoisted(() => ({
+	mockExec: vi.fn(),
+}));
+
 vi.mock("node:child_process", () => ({
-	execSync: vi.fn(),
+	exec: mockExec,
 }));
 
 const mockReadFile = vi.mocked(fs.readFile);
 const mockWriteFile = vi.mocked(fs.writeFile);
 const mockMkdir = vi.mocked(fs.mkdir);
 const mockAccess = vi.mocked(fs.access);
-
-import { execSync } from "node:child_process";
-
-const mockExecSync = vi.mocked(execSync);
 
 describe("LearningStore", () => {
 	let store: LearningStore;
@@ -48,6 +48,19 @@ describe("LearningStore", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Configure mockExec to call callback for promisify compatibility
+		mockExec.mockImplementation(
+			(
+				_cmd: string,
+				_opts: unknown,
+				cb?: (
+					err: Error | null,
+					result: { stdout: string; stderr: string },
+				) => void,
+			) => {
+				if (cb) cb(null, { stdout: "", stderr: "" });
+			},
+		);
 		store = new LearningStore(repoPath);
 	});
 
@@ -102,28 +115,26 @@ describe("LearningStore", () => {
 		});
 
 		it('commit() creates commit with "learn: extract from {taskId} ({agent})"', async () => {
-			// Arrange
-			mockExecSync.mockReturnValue(Buffer.from(""));
+			// Arrange - mockExec already returns { stdout: "", stderr: "" }
 
 			// Act
 			await store.commit("ch-abc", "claude");
 
-			// Assert
-			expect(mockExecSync).toHaveBeenCalledWith(
-				expect.stringContaining("learn: extract from ch-abc (claude)"),
-				expect.any(Object),
+			// Assert - exec is called with 3 args: command, options, callback
+			const commitCall = mockExec.mock.calls.find(
+				(call) => typeof call[0] === "string" && call[0].includes("git commit"),
 			);
+			expect(commitCall?.[0]).toContain("learn: extract from ch-abc (claude)");
 		});
 
 		it("commit() includes both learnings.md and learnings-meta.json", async () => {
-			// Arrange
-			mockExecSync.mockReturnValue(Buffer.from(""));
+			// Arrange - mockExec already returns { stdout: "", stderr: "" }
 
 			// Act
 			await store.commit("ch-abc", "claude");
 
-			// Assert
-			const addCall = mockExecSync.mock.calls.find(
+			// Assert - exec is called with 3 args: command, options, callback
+			const addCall = mockExec.mock.calls.find(
 				(call) => typeof call[0] === "string" && call[0].includes("git add"),
 			);
 			expect(addCall?.[0]).toContain("learnings.md");
@@ -486,17 +497,16 @@ describe("LearningStore", () => {
 		});
 
 		it("commit message includes agent type", async () => {
-			// Arrange
-			mockExecSync.mockReturnValue(Buffer.from(""));
+			// Arrange - mockExec already returns { stdout: "", stderr: "" }
 
 			// Act
 			await store.commit("ch-multi", "codex");
 
-			// Assert
-			expect(mockExecSync).toHaveBeenCalledWith(
-				expect.stringContaining("learn: extract from ch-multi (codex)"),
-				expect.any(Object),
+			// Assert - exec is called with 3 args: command, options, callback
+			const commitCall = mockExec.mock.calls.find(
+				(call) => typeof call[0] === "string" && call[0].includes("git commit"),
 			);
+			expect(commitCall?.[0]).toContain("learn: extract from ch-multi (codex)");
 		});
 	});
 

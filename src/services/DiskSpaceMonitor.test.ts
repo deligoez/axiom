@@ -2,14 +2,29 @@ import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DiskSpaceMonitor } from "./DiskSpaceMonitor.js";
 
-// Mock child_process
-const { mockExecSync } = vi.hoisted(() => ({
-	mockExecSync: vi.fn(),
+// Mock child_process - use vi.hoisted since vi.mock is hoisted
+const { mockExec } = vi.hoisted(() => ({
+	mockExec: vi.fn(),
 }));
 
 vi.mock("node:child_process", () => ({
-	execSync: mockExecSync,
+	exec: mockExec,
 }));
+
+// Helper to configure mock to return specific stdout
+function setMockDiskOutput(stdout: string): void {
+	mockExec.mockImplementation(
+		(
+			_cmd: string,
+			cb?: (
+				err: Error | null,
+				result: { stdout: string; stderr: string },
+			) => void,
+		) => {
+			if (cb) cb(null, { stdout, stderr: "" });
+		},
+	);
+}
 
 describe("DiskSpaceMonitor", () => {
 	let monitor: DiskSpaceMonitor;
@@ -19,6 +34,10 @@ describe("DiskSpaceMonitor", () => {
 		vi.clearAllMocks();
 		vi.useFakeTimers();
 		eventEmitter = new EventEmitter();
+		// Default mock implementation
+		setMockDiskOutput(
+			"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 500000 500000    50%\n",
+		);
 		monitor = new DiskSpaceMonitor({ eventEmitter });
 	});
 
@@ -31,7 +50,7 @@ describe("DiskSpaceMonitor", () => {
 			// Arrange
 			// df -k output format: Filesystem 1K-blocks Used Available Use%
 			// We simulate 1GB total, 600MB used, 400MB available
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 600000 400000    60%\n",
 			);
 
@@ -45,7 +64,7 @@ describe("DiskSpaceMonitor", () => {
 
 		it("returns total space and percentage", async () => {
 			// Arrange
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 600000 400000    60%\n",
 			);
 
@@ -65,7 +84,7 @@ describe("DiskSpaceMonitor", () => {
 		it("returns true when below default threshold (100MB)", async () => {
 			// Arrange - 50MB available (below 100MB threshold)
 			// 50MB = 50 * 1024 = 51200 1K-blocks
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 948800 51200    99%\n",
 			);
 
@@ -79,7 +98,7 @@ describe("DiskSpaceMonitor", () => {
 		it("returns false when above threshold", async () => {
 			// Arrange - 500MB available (above 100MB threshold)
 			// 500MB = 500 * 1024 = 512000 1K-blocks
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 488000 512000    49%\n",
 			);
 
@@ -93,7 +112,7 @@ describe("DiskSpaceMonitor", () => {
 		it("accepts custom threshold parameter", async () => {
 			// Arrange - 150MB available
 			// 150MB = 150 * 1024 = 153600 1K-blocks
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 846400 153600    85%\n",
 			);
 
@@ -147,7 +166,7 @@ describe("DiskSpaceMonitor", () => {
 
 			// Low disk space - 50MB available (below 100MB threshold)
 			// 50MB = 50 * 1024 = 51200 1K-blocks
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 948800 51200    99%\n",
 			);
 
@@ -182,7 +201,7 @@ describe("DiskSpaceMonitor", () => {
 	describe("Monitoring", () => {
 		it("startMonitoring() checks disk space at intervals", async () => {
 			// Arrange
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 500000 500000    50%\n",
 			);
 
@@ -193,8 +212,8 @@ describe("DiskSpaceMonitor", () => {
 			await vi.advanceTimersByTimeAsync(3000);
 
 			// Assert - should have checked at least 3 times
-			expect(mockExecSync).toHaveBeenCalled();
-			expect(mockExecSync.mock.calls.length).toBeGreaterThanOrEqual(3);
+			expect(mockExec).toHaveBeenCalled();
+			expect(mockExec.mock.calls.length).toBeGreaterThanOrEqual(3);
 
 			// Cleanup
 			monitor.stopMonitoring();
@@ -202,20 +221,20 @@ describe("DiskSpaceMonitor", () => {
 
 		it("stopMonitoring() stops interval checks", async () => {
 			// Arrange
-			mockExecSync.mockReturnValue(
+			setMockDiskOutput(
 				"Filesystem     1K-blocks      Used Available Use%\n/dev/disk1s1 1000000 500000 500000    50%\n",
 			);
 
 			// Act
 			monitor.startMonitoring(1000);
 			await vi.advanceTimersByTimeAsync(2000);
-			const callCountBeforeStop = mockExecSync.mock.calls.length;
+			const callCountBeforeStop = mockExec.mock.calls.length;
 
 			monitor.stopMonitoring();
 			await vi.advanceTimersByTimeAsync(3000);
 
 			// Assert - no new calls after stop
-			expect(mockExecSync.mock.calls.length).toBe(callCountBeforeStop);
+			expect(mockExec.mock.calls.length).toBe(callCountBeforeStop);
 		});
 	});
 });
