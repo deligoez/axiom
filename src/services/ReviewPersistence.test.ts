@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { PendingReview } from "../machines/reviewRegion.js";
 import { ReviewPersistence } from "./ReviewPersistence.js";
 
@@ -81,7 +81,7 @@ describe("ReviewPersistence", () => {
 			expect(state).toBeNull();
 		});
 
-		it("returns null and logs warning on corrupt state file", async () => {
+		it("returns null on corrupt state file", async () => {
 			// Arrange - write invalid JSON
 			const stateDir = path.join(tempDir, ".chorus");
 			fs.mkdirSync(stateDir, { recursive: true });
@@ -90,17 +90,12 @@ describe("ReviewPersistence", () => {
 				"not valid json",
 				"utf-8",
 			);
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
 			// Act
 			const state = await service.load();
 
-			// Assert
+			// Assert - gracefully returns null without crashing
 			expect(state).toBeNull();
-			expect(consoleSpy).toHaveBeenCalledWith(
-				expect.stringContaining("corrupt"),
-			);
-			consoleSpy.mockRestore();
 		});
 	});
 

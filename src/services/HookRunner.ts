@@ -162,11 +162,9 @@ export class HookRunner {
 
 			// Validate required fields
 			if (!output.result || !VALID_RESULTS.includes(output.result)) {
-				console.error("[HookRunner] Invalid result field in hook output");
-				console.error(
-					`[HookRunner] stdout (first 500 chars): ${trimmed.slice(0, 500)}`,
+				throw new HookOutputError(
+					`Invalid result field. Output: ${trimmed.slice(0, 200)}`,
 				);
-				throw new HookOutputError("Invalid result field");
 			}
 
 			return output;
@@ -174,13 +172,8 @@ export class HookRunner {
 			if (error instanceof HookOutputError) {
 				throw error;
 			}
-			console.error("[HookRunner] Failed to parse hook output as JSON");
-			console.error(
-				`[HookRunner] stdout (first 500 chars): ${trimmed.slice(0, 500)}`,
-			);
-			console.error(`[HookRunner] Parse error: ${(error as Error).message}`);
 			throw new HookOutputError(
-				`Invalid JSON output: ${(error as Error).message}`,
+				`Invalid JSON output: ${(error as Error).message}. Output: ${trimmed.slice(0, 200)}`,
 			);
 		}
 	}

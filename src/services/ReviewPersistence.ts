@@ -67,11 +67,8 @@ export class ReviewPersistence {
 			const content = await fs.readFile(this.statePath, "utf-8");
 			const state = JSON.parse(content) as StateFile;
 			return state.review ?? null;
-		} catch (error) {
-			// Check if it's a parse error (corrupt file)
-			if (error instanceof SyntaxError) {
-				console.warn("ReviewPersistence: corrupt state file, starting fresh");
-			}
+		} catch {
+			// File doesn't exist or is corrupt - start fresh
 			return null;
 		}
 	}
