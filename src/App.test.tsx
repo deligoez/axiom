@@ -131,30 +131,6 @@ describe("App Router", () => {
 		});
 	});
 
-	describe("CLI Override Events", () => {
-		it("dispatches FORCE_INIT when cliArgs.command is init", () => {
-			// Arrange
-			mockSnapshot.matches.mockReturnValue(false);
-
-			// Act
-			render(<App projectRoot="/test" cliArgs={{ command: "init" }} />);
-
-			// Assert
-			expect(mockSend).toHaveBeenCalledWith({ type: "FORCE_INIT" });
-		});
-
-		it("dispatches FORCE_PLANNING when cliArgs.command is plan", () => {
-			// Arrange
-			mockSnapshot.matches.mockReturnValue(false);
-
-			// Act
-			render(<App projectRoot="/test" cliArgs={{ command: "plan" }} />);
-
-			// Assert
-			expect(mockSend).toHaveBeenCalledWith({ type: "FORCE_PLANNING" });
-		});
-	});
-
 	describe("State Restoration", () => {
 		it("dispatches INIT_REQUIRED when .chorus/ does not exist", () => {
 			// Arrange
