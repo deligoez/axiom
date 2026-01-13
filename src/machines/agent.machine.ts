@@ -1,10 +1,19 @@
 import type { AnyActorRef } from "xstate";
 import { assign, setup } from "xstate";
+import {
+	type AgentIdentity,
+	createAgentIdentity,
+	type PersonaName,
+} from "../types/persona.js";
 
 export interface AgentMachineInput {
 	taskId: string;
 	parentRef: AnyActorRef;
 	maxIterations?: number;
+	/** Persona for this agent */
+	persona?: PersonaName;
+	/** Worker number for multi-instance personas (e.g., chip-001) */
+	workerNumber?: number;
 }
 
 export interface AgentMachineContext {
@@ -12,7 +21,7 @@ export interface AgentMachineContext {
 	parentRef: AnyActorRef;
 	iteration: number;
 	maxIterations: number;
-	agentId: string;
+	identity: AgentIdentity;
 	worktree: string;
 	branch: string;
 	error?: Error;
@@ -50,7 +59,7 @@ export const agentMachine = setup({
 		parentRef: input.parentRef,
 		iteration: 0,
 		maxIterations: input.maxIterations ?? 5,
-		agentId: `agent-${input.taskId}`,
+		identity: createAgentIdentity(input.persona ?? "chip", input.workerNumber),
 		worktree: `/worktrees/${input.taskId}`,
 		branch: `feat/${input.taskId}`,
 	}),

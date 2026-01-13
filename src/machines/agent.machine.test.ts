@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AnyActorRef } from "xstate";
 import { createActor } from "xstate";
+import type { AgentIdentity } from "../types/persona.js";
 import { agentMachine } from "./agent.machine.js";
 
 describe("AgentMachine", () => {
@@ -181,5 +182,114 @@ describe("AgentMachine", () => {
 		// Assert
 		expect(actor.getSnapshot().status).toBe("done");
 		actor.stop();
+	});
+
+	describe("identity integration", () => {
+		it("context has identity field with AgentIdentity structure", () => {
+			// Arrange
+			const input = {
+				taskId: "task-1",
+				parentRef: createMockParentRef(),
+				persona: "chip" as const,
+				workerNumber: 1,
+			};
+
+			// Act
+			const actor = createActor(agentMachine, { input });
+			actor.start();
+			const identity = actor.getSnapshot().context.identity;
+
+			// Assert
+			expect(identity).toBeDefined();
+			expect(identity).toHaveProperty("id");
+			expect(identity).toHaveProperty("persona");
+			expect(identity).toHaveProperty("displayName");
+			actor.stop();
+		});
+
+		it("workers get numbered identity format (chip-001)", () => {
+			// Arrange
+			const input = {
+				taskId: "task-1",
+				parentRef: createMockParentRef(),
+				persona: "chip" as const,
+				workerNumber: 1,
+			};
+
+			// Act
+			const actor = createActor(agentMachine, { input });
+			actor.start();
+			const identity: AgentIdentity = actor.getSnapshot().context.identity;
+
+			// Assert
+			expect(identity.id).toBe("chip-001");
+			expect(identity.persona).toBe("chip");
+			expect(identity.instanceNumber).toBe(1);
+			expect(identity.displayName).toBe("Chip-001");
+			actor.stop();
+		});
+
+		it("singleton agents get simple identity (sage)", () => {
+			// Arrange
+			const input = {
+				taskId: "task-1",
+				parentRef: createMockParentRef(),
+				persona: "sage" as const,
+				// No workerNumber for singleton
+			};
+
+			// Act
+			const actor = createActor(agentMachine, { input });
+			actor.start();
+			const identity: AgentIdentity = actor.getSnapshot().context.identity;
+
+			// Assert
+			expect(identity.id).toBe("sage");
+			expect(identity.persona).toBe("sage");
+			expect(identity.instanceNumber).toBeUndefined();
+			expect(identity.displayName).toBe("Sage");
+			actor.stop();
+		});
+
+		it("identity uses input persona", () => {
+			// Arrange - use scout (non-singular) to test persona+workerNumber
+			const input = {
+				taskId: "task-1",
+				parentRef: createMockParentRef(),
+				persona: "scout" as const,
+				workerNumber: 5,
+			};
+
+			// Act
+			const actor = createActor(agentMachine, { input });
+			actor.start();
+			const identity: AgentIdentity = actor.getSnapshot().context.identity;
+
+			// Assert
+			expect(identity.persona).toBe("scout");
+			expect(identity.id).toBe("scout-005");
+			actor.stop();
+		});
+
+		it("identity uses input workerNumber", () => {
+			// Arrange
+			const input = {
+				taskId: "task-1",
+				parentRef: createMockParentRef(),
+				persona: "patch" as const,
+				workerNumber: 42,
+			};
+
+			// Act
+			const actor = createActor(agentMachine, { input });
+			actor.start();
+			const identity: AgentIdentity = actor.getSnapshot().context.identity;
+
+			// Assert
+			expect(identity.instanceNumber).toBe(42);
+			expect(identity.id).toBe("patch-042");
+			expect(identity.displayName).toBe("Patch-042");
+			actor.stop();
+		});
 	});
 });
