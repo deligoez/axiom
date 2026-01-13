@@ -183,20 +183,6 @@ export interface TaskJSONL {
 }
 
 // ─────────────────────────────────────────────────────────
-// Computed Properties (not stored)
-// ─────────────────────────────────────────────────────────
-
-/**
- * Task with computed properties - calculated at query time.
- */
-export interface TaskWithComputed extends Task {
-	isBlocked: boolean; // Has unmet dependencies
-	isReady: boolean; // status=todo AND no unmet deps
-	dependents: string[]; // Tasks that depend on this one
-	blockedBy: string[]; // Unmet dependency IDs
-}
-
-// ─────────────────────────────────────────────────────────
 // Input Types for TaskStore
 // ─────────────────────────────────────────────────────────
 
