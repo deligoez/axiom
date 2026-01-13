@@ -14,6 +14,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:all": "vitest run && vitest run --config vitest.e2e.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
@@ -21,7 +23,7 @@
     "lint:fix": "biome check --fix src",
     "format": "biome format --write src",
     "knip": "knip",
-    "quality": "npm run test:run && npm run typecheck && npm run lint && npm run knip"
+    "quality": "npm run test:all && npm run typecheck && npm run lint && npm run knip"
   },
   "repository": {
     "type": "git",

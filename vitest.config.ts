@@ -5,10 +5,14 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
-    // Exclude integration tests from default run - they call real Claude CLI
-    exclude: ['src/**/*.integration.test.{ts,tsx}', 'node_modules/**'],
+    // Exclude integration tests and e2e tests from default run
+    exclude: [
+      'src/**/*.integration.test.{ts,tsx}',
+      'src/e2e/**',
+      'node_modules/**',
+    ],
     setupFiles: ['./vitest.setup.ts'],
-    // Performance optimizations
+    // Performance optimizations for unit tests
     pool: 'threads', // Faster than 'forks' for most cases
     maxConcurrency: 20, // Allow more concurrent tests
     coverage: {
