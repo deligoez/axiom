@@ -71,11 +71,6 @@ export async function run(args: string[]): Promise<void> {
 						<Text color="yellow">-h, --help</Text>
 						{"      "}Show this help
 					</Text>
-					<Text>
-						{" "}
-						<Text color="yellow">--mode &lt;mode&gt;</Text>
-						{"  "}Execution mode (semi-auto | autopilot)
-					</Text>
 				</Box>
 
 				{/* Examples */}
@@ -85,8 +80,8 @@ export async function run(args: string[]): Promise<void> {
 					<Text> Start interactive session</Text>
 					<Text dimColor> $ chorus init</Text>
 					<Text> Initialize new project</Text>
-					<Text dimColor> $ chorus --mode autopilot</Text>
-					<Text> Start in fully autonomous mode</Text>
+					<Text dimColor> $ chorus plan</Text>
+					<Text> Start planning mode</Text>
 				</Box>
 
 				{/* Footer */}
@@ -109,7 +104,6 @@ export async function run(args: string[]): Promise<void> {
 				projectRoot={projectRoot}
 				cliArgs={{
 					command: parsed.command as "init" | "plan" | undefined,
-					mode: parsed.mode as "semi-auto" | "autopilot" | undefined,
 				}}
 			/>
 		</FullScreenBox>,

@@ -153,39 +153,6 @@ describe("App Router", () => {
 			// Assert
 			expect(mockSend).toHaveBeenCalledWith({ type: "FORCE_PLANNING" });
 		});
-
-		it("dispatches SET_MODE when cliArgs.mode is provided", () => {
-			// Arrange
-			mockSnapshot.matches.mockReturnValue(false);
-
-			// Act
-			render(<App projectRoot="/test" cliArgs={{ mode: "autopilot" }} />);
-
-			// Assert
-			expect(mockSend).toHaveBeenCalledWith({
-				type: "SET_MODE",
-				mode: "autopilot",
-			});
-		});
-
-		it("CLI mode overrides planning-state.json chosenMode", () => {
-			// Arrange
-			mockExistsSync.mockReturnValue(true);
-			mockLoad.mockReturnValue({
-				status: "ready",
-				chosenMode: "autopilot",
-			});
-			mockSnapshot.matches.mockReturnValue(false);
-
-			// Act - CLI says semi-auto
-			render(<App projectRoot="/test" cliArgs={{ mode: "semi-auto" }} />);
-
-			// Assert - CLI wins (SET_MODE is dispatched, not RESTORE_STATE)
-			expect(mockSend).toHaveBeenCalledWith({
-				type: "SET_MODE",
-				mode: "semi-auto",
-			});
-		});
 	});
 
 	describe("State Restoration", () => {

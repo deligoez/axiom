@@ -47,7 +47,6 @@ function mapStatusToUI(status: TaskStatus): UIStatus {
 
 export interface CliArgs {
 	command?: "init" | "plan";
-	mode?: "semi-auto" | "autopilot";
 }
 
 export interface AppProps {
@@ -127,9 +126,6 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 			send({ type: "FORCE_INIT" });
 		} else if (cliArgs?.command === "plan") {
 			send({ type: "FORCE_PLANNING" });
-		} else if (cliArgs?.mode) {
-			// CLI mode flag
-			send({ type: "SET_MODE", mode: cliArgs.mode });
 		} else {
 			// Check if .chorus/ exists
 			const chorusDir = join(projectRoot, ".chorus");
@@ -151,9 +147,7 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 	}
 
 	// Route based on machine state
-	// If --mode was explicitly passed via CLI, skip directly to implementation
-	// (don't wait for state machine update, which happens asynchronously)
-	if (snapshot.matches({ app: "init" }) && !cliArgs?.mode) {
+	if (snapshot.matches({ app: "init" })) {
 		return (
 			<InitMode
 				projectDir={projectRoot}
@@ -164,7 +158,7 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		);
 	}
 
-	if (snapshot.matches({ app: "planning" }) && !cliArgs?.mode) {
+	if (snapshot.matches({ app: "planning" })) {
 		return (
 			<PlanningMode onModeSwitch={(mode) => send({ type: "SET_MODE", mode })} />
 		);
@@ -193,10 +187,10 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		);
 	}
 
-	if (snapshot.matches({ app: "implementation" }) || cliArgs?.mode) {
+	if (snapshot.matches({ app: "implementation" })) {
 		return (
 			<ImplementationMode
-				mode={cliArgs?.mode ?? "semi-auto"}
+				mode="semi-auto"
 				tasks={tasks}
 				agents={[]}
 				maxAgents={4}
@@ -204,7 +198,7 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 				onToggleMode={() =>
 					send({
 						type: "SET_MODE",
-						mode: cliArgs?.mode === "autopilot" ? "semi-auto" : "autopilot",
+						mode: "autopilot",
 					})
 				}
 				onExit={() => process.exit(0)}
