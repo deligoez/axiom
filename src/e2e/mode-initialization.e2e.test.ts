@@ -197,6 +197,7 @@ describe("E2E: Mode Initialization Flow", () => {
 			});
 			// Wait for Implementation mode to render - check for CHORUS header and task
 			await waitForText(result, "CHORUS", 5000);
+			await waitForText(result, "Tasks (1)", 5000); // Wait for tasks to load
 
 			// Assert - should be in implementation mode (shows CHORUS header and task)
 			const output = getOutput(result);
