@@ -7,6 +7,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { RulesScaffold } from "./RulesScaffold.js";
 
 export type ProjectType = "node" | "python" | "go" | "unknown";
 
@@ -352,5 +353,24 @@ export class InitScaffold {
 			const newContent = `${linesToAdd.join("\n")}\n`;
 			appendFileSync(gitignorePath, suffix + newContent);
 		}
+	}
+
+	/**
+	 * Scaffold shared rules files in .chorus/rules/
+	 * Uses RulesScaffold to create signal-types.md, learning-format.md,
+	 * commit-format.md, and completion-protocol.md
+	 */
+	scaffoldRules(): void {
+		const rulesScaffold = new RulesScaffold(this.projectDir);
+		rulesScaffold.scaffoldAll();
+	}
+
+	/**
+	 * Scaffold agent persona files in .chorus/personas/
+	 * TODO: Implement after AP03 (PersonaScaffold)
+	 */
+	scaffoldPersonas(): void {
+		// Placeholder for future PersonaScaffold integration
+		// Will be implemented after AP03 task is complete
 	}
 }

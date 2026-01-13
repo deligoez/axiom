@@ -548,4 +548,57 @@ describe("InitScaffold", () => {
 			expect(existsSync(gitignorePath)).toBe(true);
 		});
 	});
+
+	// MH04: RulesScaffold Integration Tests (4 tests)
+	describe("scaffoldRules()", () => {
+		it("creates .chorus/rules/ directory with all rule files", () => {
+			// Arrange & Act
+			scaffold.scaffoldRules();
+
+			// Assert
+			const rulesDir = join(tempDir, ".chorus", "rules");
+			expect(existsSync(rulesDir)).toBe(true);
+			expect(existsSync(join(rulesDir, "signal-types.md"))).toBe(true);
+			expect(existsSync(join(rulesDir, "learning-format.md"))).toBe(true);
+			expect(existsSync(join(rulesDir, "commit-format.md"))).toBe(true);
+			expect(existsSync(join(rulesDir, "completion-protocol.md"))).toBe(true);
+		});
+
+		it("creates signal-types.md with COMPLETE and BLOCKED signals", () => {
+			// Arrange & Act
+			scaffold.scaffoldRules();
+
+			// Assert
+			const filePath = join(tempDir, ".chorus", "rules", "signal-types.md");
+			const content = readFileSync(filePath, "utf-8");
+			expect(content).toContain("## COMPLETE");
+			expect(content).toContain("## BLOCKED");
+		});
+
+		it("creates learning-format.md with scope definitions", () => {
+			// Arrange & Act
+			scaffold.scaffoldRules();
+
+			// Assert
+			const filePath = join(tempDir, ".chorus", "rules", "learning-format.md");
+			const content = readFileSync(filePath, "utf-8");
+			expect(content).toContain("## local");
+			expect(content).toContain("## cross-cutting");
+		});
+
+		it("does not overwrite existing rule files", () => {
+			// Arrange - create custom rule file
+			const rulesDir = join(tempDir, ".chorus", "rules");
+			mkdirSync(rulesDir, { recursive: true });
+			const customContent = "# Custom Signal Types\n\nMy custom rules.";
+			writeFileSync(join(rulesDir, "signal-types.md"), customContent);
+
+			// Act
+			scaffold.scaffoldRules();
+
+			// Assert - custom content preserved
+			const content = readFileSync(join(rulesDir, "signal-types.md"), "utf-8");
+			expect(content).toBe(customContent);
+		});
+	});
 });
