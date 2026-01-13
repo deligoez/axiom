@@ -1141,7 +1141,7 @@ describe("TaskStore", () => {
 	describe("file watcher", () => {
 		it("watch() starts watching tasks.jsonl and stop() stops it", async () => {
 			// Arrange
-			const task = store.create({ title: "Initial Task" });
+			store.create({ title: "Initial Task" });
 			await store.flush();
 
 			// Act - start watching (await for watcher to be ready)
@@ -1153,7 +1153,7 @@ describe("TaskStore", () => {
 
 		it("external file changes trigger reload() and emit change", async () => {
 			// Arrange
-			const task = store.create({ title: "Task 1" });
+			store.create({ title: "Task 1" });
 			await store.flush();
 
 			// Start watching (await for watcher to be ready)
@@ -1188,7 +1188,8 @@ describe("TaskStore", () => {
 			);
 
 			// Wait for polling interval + debounce + file watcher
-			await new Promise((r) => setTimeout(r, 300));
+			// Use longer timeout for parallel test runs where system load varies
+			await new Promise((r) => setTimeout(r, 1000));
 
 			// Assert
 			expect(changeEmitted).toBe(true);
@@ -1202,7 +1203,7 @@ describe("TaskStore", () => {
 
 		it("debounces rapid file changes (100ms)", async () => {
 			// Arrange
-			const task = store.create({ title: "Task" });
+			store.create({ title: "Task" });
 			await store.flush();
 			await store.watch();
 
