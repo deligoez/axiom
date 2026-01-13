@@ -1,4 +1,15 @@
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	type Mock,
+	vi,
+} from "vitest";
 import { MockAgentSpawner } from "./MockAgentSpawner.js";
 import type { ConflictAnalysis, ResolverConfig } from "./ResolverAgent.js";
 import { ResolverAgent } from "./ResolverAgent.js";
@@ -269,6 +280,108 @@ describe("ResolverAgent", () => {
 
 			// Assert
 			expect(spawner.killCalls).toContain(1000);
+		});
+	});
+
+	// MH03: Resolution Steps File Loading Tests (3 tests)
+	describe("Resolution Steps File Loading", () => {
+		let tempDir: string;
+
+		beforeEach(() => {
+			tempDir = join(
+				tmpdir(),
+				`resolver-agent-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			);
+			mkdirSync(tempDir, { recursive: true });
+		});
+
+		afterEach(() => {
+			try {
+				rmSync(tempDir, { recursive: true, force: true });
+			} catch {
+				// Ignore cleanup errors
+			}
+		});
+
+		it("loads resolution steps from .chorus/agents/patch/rules.md when present", () => {
+			// Arrange
+			const rulesDir = join(tempDir, ".chorus", "agents", "patch");
+			mkdirSync(rulesDir, { recursive: true });
+			const rulesContent = `# Conflict Resolution Steps
+
+1. Read both versions carefully
+2. Identify semantic intent
+3. Create merged solution
+4. Verify compilation
+`;
+			writeFileSync(join(rulesDir, "rules.md"), rulesContent);
+
+			const configWithDir: ResolverConfig = {
+				maxAttempts: 3,
+				qualityCommands: ["npm test"],
+				projectDir: tempDir,
+			};
+			const fileResolver = new ResolverAgent(
+				mockSpawner,
+				configWithDir,
+				mockQualityRunner as unknown as {
+					run: () => Promise<{ success: boolean }>;
+				},
+				mockFileReader as unknown as {
+					read: (path: string) => Promise<string>;
+				},
+			);
+			const conflict = createConflict();
+
+			// Act
+			const prompt = fileResolver.buildPrompt(conflict);
+
+			// Assert
+			expect(prompt).toContain("Read both versions carefully");
+			expect(prompt).toContain("Identify semantic intent");
+			expect(prompt).toContain("Create merged solution");
+			expect(prompt).toContain("Verify compilation");
+		});
+
+		it("uses default steps when rules.md file missing", () => {
+			// Arrange - no rules file
+			const configWithDir: ResolverConfig = {
+				maxAttempts: 3,
+				qualityCommands: ["npm test"],
+				projectDir: tempDir,
+			};
+			const fileResolver = new ResolverAgent(
+				mockSpawner,
+				configWithDir,
+				mockQualityRunner as unknown as {
+					run: () => Promise<{ success: boolean }>;
+				},
+				mockFileReader as unknown as {
+					read: (path: string) => Promise<string>;
+				},
+			);
+			const conflict = createConflict();
+
+			// Act
+			const prompt = fileResolver.buildPrompt(conflict);
+
+			// Assert - should use default steps
+			expect(prompt).toContain("Examine each conflicting file");
+			expect(prompt).toContain("Remove all conflict markers");
+			expect(prompt).toContain("Ensure the code compiles and tests pass");
+		});
+
+		it("uses default steps when projectDir not configured", () => {
+			// Arrange - no projectDir in config
+			const conflict = createConflict();
+
+			// Act
+			const prompt = resolver.buildPrompt(conflict);
+
+			// Assert - should use default steps
+			expect(prompt).toContain("Examine each conflicting file");
+			expect(prompt).toContain("Understand both versions");
+			expect(prompt).toContain("Merge the changes semantically");
 		});
 	});
 });

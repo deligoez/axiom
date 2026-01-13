@@ -1,4 +1,6 @@
 import { EventEmitter } from "node:events";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { AgentSpawner } from "./AgentSpawner.js";
 import type { ConflictType } from "./ConflictClassifier.js";
 
@@ -12,7 +14,19 @@ export interface ConflictAnalysis {
 export interface ResolverConfig {
 	maxAttempts: number;
 	qualityCommands: string[];
+	projectDir?: string;
 }
+
+/**
+ * Default 5-step conflict resolution procedure
+ */
+const DEFAULT_RESOLUTION_STEPS = [
+	"Examine each conflicting file",
+	"Understand both versions of the changes",
+	"Merge the changes semantically",
+	"Remove all conflict markers",
+	"Ensure the code compiles and tests pass",
+];
 
 export interface QualityRunner {
 	run: () => Promise<{ success: boolean }>;
@@ -128,13 +142,62 @@ export class ResolverAgent extends EventEmitter {
 
 		lines.push("");
 		lines.push("## Instructions");
-		lines.push("1. Examine each conflicting file");
-		lines.push("2. Understand both versions of the changes");
-		lines.push("3. Merge the changes semantically");
-		lines.push("4. Remove all conflict markers");
-		lines.push("5. Ensure the code compiles and tests pass");
+
+		// Load resolution steps from file or use defaults
+		const steps = this.loadResolutionSteps();
+		for (let i = 0; i < steps.length; i++) {
+			lines.push(`${i + 1}. ${steps[i]}`);
+		}
 
 		return lines.join("\n");
+	}
+
+	/**
+	 * Load conflict resolution steps from .chorus/agents/patch/rules.md
+	 * Falls back to default steps if file missing
+	 */
+	private loadResolutionSteps(): string[] {
+		if (!this.config.projectDir) {
+			return [...DEFAULT_RESOLUTION_STEPS];
+		}
+
+		const rulesPath = join(
+			this.config.projectDir,
+			".chorus",
+			"agents",
+			"patch",
+			"rules.md",
+		);
+
+		if (!existsSync(rulesPath)) {
+			return [...DEFAULT_RESOLUTION_STEPS];
+		}
+
+		try {
+			const content = readFileSync(rulesPath, "utf-8");
+			const steps = this.parseResolutionSteps(content);
+			return steps.length > 0 ? steps : [...DEFAULT_RESOLUTION_STEPS];
+		} catch {
+			return [...DEFAULT_RESOLUTION_STEPS];
+		}
+	}
+
+	/**
+	 * Parse resolution steps from rules.md content
+	 * Expected format: numbered list (1. Step description)
+	 */
+	private parseResolutionSteps(content: string): string[] {
+		const steps: string[] = [];
+		// Match numbered list items: 1. Step text
+		const stepRegex = /^\d+\.\s+(.+)$/gm;
+		let match = stepRegex.exec(content);
+
+		while (match !== null) {
+			steps.push(match[1].trim());
+			match = stepRegex.exec(content);
+		}
+
+		return steps;
 	}
 
 	async verifyResolution(filePath: string): Promise<boolean> {
