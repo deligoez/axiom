@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { watch as chokidarWatch, type FSWatcher } from "chokidar";
+import type { FileWatcherConfig } from "../types/config.js";
 import type {
 	CreateTaskInput,
 	Task,
@@ -73,11 +74,20 @@ export class TaskStore extends EventEmitter {
 	private watcher: FSWatcher | null = null;
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private readonly DEBOUNCE_MS = 100;
+	private fileWatcherConfig: FileWatcherConfig;
 
-	constructor(projectDir: string) {
+	constructor(
+		projectDir: string,
+		fileWatcherConfig?: Partial<FileWatcherConfig>,
+	) {
 		super();
 		this.projectDir = projectDir;
 		this.selector = new TaskSelector();
+		// Default to native watching (more efficient than polling)
+		this.fileWatcherConfig = {
+			usePolling: fileWatcherConfig?.usePolling ?? false,
+			interval: fileWatcherConfig?.interval ?? 100,
+		};
 	}
 
 	/**
@@ -911,8 +921,8 @@ export class TaskStore extends EventEmitter {
 			this.watcher = chokidarWatch(this.tasksPath, {
 				persistent: true,
 				ignoreInitial: true,
-				usePolling: true,
-				interval: 50,
+				usePolling: this.fileWatcherConfig.usePolling,
+				interval: this.fileWatcherConfig.interval,
 			});
 
 			this.watcher.on("change", () => {

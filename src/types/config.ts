@@ -35,6 +35,11 @@ export interface PlanReviewConfig {
 	requireApproval: string[]; // 'redundant' | 'dependency_change'
 }
 
+export interface FileWatcherConfig {
+	usePolling: boolean;
+	interval: number; // polling interval in ms (only used if usePolling: true)
+}
+
 export interface ChorusConfig {
 	version: string;
 	mode: "semi-auto" | "autopilot";
@@ -78,6 +83,8 @@ export interface ChorusConfig {
 	review: ReviewConfig;
 
 	sprint?: SprintConfig;
+
+	fileWatcher: FileWatcherConfig;
 
 	createdAt?: string;
 	updatedAt?: string;
@@ -141,6 +148,10 @@ export function getDefaultConfig(): ChorusConfig {
 			},
 			pauseOnStuck: true,
 			pauseOnErrors: true,
+		},
+		fileWatcher: {
+			usePolling: false, // Use native fs.watch by default (more efficient)
+			interval: 100, // If polling needed, use 100ms (default chokidar interval)
 		},
 		createdAt: now,
 		updatedAt: now,

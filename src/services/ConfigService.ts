@@ -58,6 +58,10 @@ function validateAndMergeConfig(raw: unknown): ChorusConfig {
 		checkpoints: { ...defaults.checkpoints, ...(config.checkpoints as object) },
 		planReview: { ...defaults.planReview, ...(config.planReview as object) },
 		review: { ...defaults.review, ...(config.review as object) },
+		fileWatcher: {
+			...defaults.fileWatcher,
+			...(config.fileWatcher as object),
+		},
 	} as ChorusConfig;
 }
 
