@@ -92,6 +92,50 @@ npm run quality   # Runs all checks:
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Persona System
+
+Chorus uses a multi-persona architecture where each agent has a distinct personality and role.
+
+### Available Personas
+
+| Persona | Role | Color | Description |
+|---------|------|-------|-------------|
+| **Sage** | analyzer | magenta | Analyzes project structure, suggests configurations |
+| **Chip** | implementer | cyan | Implements features, writes code |
+| **Archie** | architect | yellow | Designs architecture, makes design decisions |
+| **Patch** | fixer | green | Fixes bugs, resolves conflicts |
+| **Scout** | explorer | blue | Explores codebase, gathers information |
+| **Echo** | reviewer | red | Reviews code, provides feedback |
+
+### Persona File Structure
+
+Each persona can have custom configuration in `.chorus/agents/{persona}/`:
+
+```
+.chorus/agents/
+├── sage/
+│   ├── prompt.md      # Custom system prompt
+│   ├── rules.md       # Persona-specific rules
+│   ├── skills/        # Skill files (*.md)
+│   │   └── analysis.md
+│   ├── learnings.md   # Per-agent learnings
+│   ├── metrics.json   # Performance metrics
+│   └── logs/          # Execution logs
+│       └── {taskId}.jsonl
+└── chip/
+    ├── prompt.md
+    ├── rules.md
+    └── skills/
+        └── tdd.md
+```
+
+### Persona Data Services
+
+- **AgentLogService**: Per-agent JSONL execution logs
+- **AgentMetricsService**: Task completion, tokens, success rates
+- **AgentLearningsService**: Per-agent learnings with deduplication
+- **AgentDataIntegration**: Orchestrates all services for lifecycle events
+
 ## Key Decisions
 
 1. **State Management:** XState v5 actor model

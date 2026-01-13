@@ -88,6 +88,41 @@ This file documents agent behaviors for AI coding assistants.
 
 This project uses Chorus for multi-agent orchestration.
 See \`.chorus/\` for configuration.
+
+## Personas
+
+Chorus uses distinct agent personas, each with specialized roles:
+
+| Persona | Role | Description |
+|---------|------|-------------|
+| **Sage** | analyzer | Analyzes project structure, suggests configurations |
+| **Chip** | implementer | Implements features, writes code (TDD-focused) |
+| **Archie** | architect | Designs architecture, makes design decisions |
+| **Patch** | fixer | Fixes bugs, resolves merge conflicts |
+| **Scout** | explorer | Explores codebase, gathers information |
+| **Echo** | reviewer | Reviews code, provides feedback, extracts learnings |
+
+### Persona Configuration
+
+Custom prompts, rules, and skills can be defined in \`.chorus/agents/{persona}/\`:
+
+\`\`\`
+.chorus/agents/
+├── chip/
+│   ├── prompt.md      # Custom system prompt
+│   ├── rules.md       # Agent-specific rules
+│   └── skills/        # Skill files (*.md)
+│       └── tdd.md
+└── patch/
+    └── prompt.md
+\`\`\`
+
+### Agent Data
+
+Each agent accumulates data during execution:
+- **logs/**: Execution logs per task (\`{taskId}.jsonl\`)
+- **metrics.json**: Performance metrics (tasks, tokens, success rate)
+- **learnings.md**: Per-agent learnings with deduplication
 `;
 
 const PLAN_AGENT_TEMPLATE = `# Plan Agent
