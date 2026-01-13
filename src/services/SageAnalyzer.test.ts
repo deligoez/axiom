@@ -85,4 +85,107 @@ describe("SageAnalyzer", () => {
 			expect(structure.entryPoints).toEqual([]);
 		});
 	});
+
+	describe("analyzePackageJson()", () => {
+		it("parses name, scripts, dependencies, devDependencies", () => {
+			// Arrange
+			const packageJson = {
+				name: "test-project",
+				scripts: {
+					test: "vitest run",
+					lint: "biome check",
+				},
+				dependencies: {
+					react: "^18.0.0",
+				},
+				devDependencies: {
+					vitest: "^1.0.0",
+					biome: "^1.0.0",
+				},
+			};
+			fs.writeFileSync(
+				path.join(tempDir, "package.json"),
+				JSON.stringify(packageJson, null, 2),
+			);
+
+			// Act
+			const result = analyzer.analyzePackageJson();
+
+			// Assert
+			expect(result).not.toBeNull();
+			expect(result?.name).toBe("test-project");
+			expect(result?.scripts).toEqual({
+				test: "vitest run",
+				lint: "biome check",
+			});
+			expect(result?.dependencies).toEqual({ react: "^18.0.0" });
+			expect(result?.devDependencies).toEqual({
+				vitest: "^1.0.0",
+				biome: "^1.0.0",
+			});
+		});
+
+		it("returns null if package.json missing", () => {
+			// Arrange - no package.json
+
+			// Act
+			const result = analyzer.analyzePackageJson();
+
+			// Assert
+			expect(result).toBeNull();
+		});
+	});
+
+	describe("analyzeReadme()", () => {
+		it("extracts first 500 chars of README.md", () => {
+			// Arrange
+			const longReadme = `# Test Project\n${"A".repeat(600)}`;
+			fs.writeFileSync(path.join(tempDir, "README.md"), longReadme);
+
+			// Act
+			const result = analyzer.analyzeReadme();
+
+			// Assert
+			expect(result).not.toBeNull();
+			expect(result?.length).toBeLessThanOrEqual(500);
+			expect(result).toContain("# Test Project");
+		});
+
+		it("returns null if README missing", () => {
+			// Arrange - no README
+
+			// Act
+			const result = analyzer.analyzeReadme();
+
+			// Assert
+			expect(result).toBeNull();
+		});
+	});
+
+	describe("analyzeConfigs()", () => {
+		it("detects tsconfig.json, biome.json, .eslintrc presence and extracts strict mode", () => {
+			// Arrange
+			const tsconfig = {
+				compilerOptions: {
+					strict: true,
+					target: "ES2022",
+				},
+			};
+			fs.writeFileSync(
+				path.join(tempDir, "tsconfig.json"),
+				JSON.stringify(tsconfig),
+			);
+			fs.writeFileSync(path.join(tempDir, "biome.json"), "{}");
+			fs.writeFileSync(path.join(tempDir, ".eslintrc"), "{}");
+
+			// Act
+			const result = analyzer.analyzeConfigs();
+
+			// Assert
+			expect(result.configFiles).toContain("tsconfig.json");
+			expect(result.configFiles).toContain("biome.json");
+			expect(result.configFiles).toContain(".eslintrc");
+			expect(result.tsconfigStrict).toBe(true);
+		});
+	});
 });
