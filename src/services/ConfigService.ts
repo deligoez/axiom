@@ -164,7 +164,7 @@ export class ConfigService {
 
 		// Check qualityCommands
 		if (!Array.isArray(c.qualityCommands)) return false;
-		for (const cmd of c.qualityCommands as unknown[]) {
+		for (const cmd of c.qualityCommands) {
 			if (!cmd || typeof cmd !== "object") return false;
 			const qc = cmd as Record<string, unknown>;
 			if (!qc.name || !qc.command) return false;
