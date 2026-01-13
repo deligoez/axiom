@@ -118,8 +118,10 @@ describe("E2E: Label Rules (R05)", () => {
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 
-		// Act - wait for app to render
+		// Act - wait for app to render with tasks
 		await ptyResult.waitForText("Tasks (2)", 10000);
+		// Wait for task IDs to appear (async task rendering)
+		await ptyResult.waitForText("lr1", 5000);
 
 		// Assert - both tasks visible
 		const output = ptyResult.getCleanOutput();
