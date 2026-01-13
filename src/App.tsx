@@ -92,15 +92,18 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 			},
 		});
 
+		// Store handler reference for cleanup
+		const changeHandler = (newTasks: Task[]) => {
+			setTasks(newTasks.map(convertToTaskProviderTask));
+		};
+
 		// Initial load (async)
 		const initializeStore = async () => {
 			await taskStore.load();
 			setTasks(taskStore.list().map(convertToTaskProviderTask));
 
 			// Watch for changes
-			taskStore.on("change", (newTasks: Task[]) => {
-				setTasks(newTasks.map(convertToTaskProviderTask));
-			});
+			taskStore.on("change", changeHandler);
 
 			// Start watching file for external changes
 			await taskStore.watch();
@@ -109,6 +112,8 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		initializeStore();
 
 		return () => {
+			// Remove listener before stopping
+			taskStore.off("change", changeHandler);
 			taskStore.stop();
 		};
 	}, [taskStore]);

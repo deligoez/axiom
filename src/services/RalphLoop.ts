@@ -46,58 +46,78 @@ export class RalphLoop {
 	private idleTimeout: number | undefined;
 	private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
+	// Store handler references for cleanup
+	private agentCompletedHandler: () => void;
+	private taskCompletedHandler: (event: {
+		taskId: string;
+		worktreePath: string;
+		branch?: string;
+	}) => void;
+	private agentNoSignalHandler: (event: {
+		taskId: string;
+		iteration: number;
+	}) => void;
+	private agentBlockedHandler: (event: {
+		taskId: string;
+		agentId: string;
+	}) => void;
+
 	constructor(private deps: RalphLoopDeps) {
 		this.maxIterations = deps.maxIterations ?? 3;
 		this.maxTotalTasks = deps.maxTotalTasks ?? 100;
 		this.idleTimeout = deps.idleTimeout;
 
-		// Listen for agent completions to track task completion
-		this.deps.eventEmitter.on("agentCompleted", () => {
+		// Define handlers as instance methods for cleanup
+		this.agentCompletedHandler = () => {
 			this.tasksCompleted++;
 			// If we're stopping and no agents are left, resolve the stop promise
 			if (this.stopResolve && this.deps.slotManager.getInUse() === 0) {
 				this.stopResolve();
 			}
-		});
+		};
 
-		// Listen for task completion and queue merge
-		this.deps.eventEmitter.on(
-			"taskCompleted",
-			(event: { taskId: string; worktreePath: string; branch?: string }) => {
-				this.deps.mergeService.enqueue({
+		this.taskCompletedHandler = (event: {
+			taskId: string;
+			worktreePath: string;
+			branch?: string;
+		}) => {
+			this.deps.mergeService.enqueue({
+				taskId: event.taskId,
+				worktree: event.worktreePath,
+				branch: event.branch ?? `task/${event.taskId}`,
+				priority: 2,
+			});
+		};
+
+		this.agentNoSignalHandler = (event: {
+			taskId: string;
+			iteration: number;
+		}) => {
+			if (event.iteration >= this.maxIterations) {
+				// Emit timeout event
+				this.deps.eventEmitter.emit("taskTimeout", {
 					taskId: event.taskId,
-					worktree: event.worktreePath,
-					branch: event.branch ?? `task/${event.taskId}`,
-					priority: 2,
+					iterations: event.iteration,
 				});
-			},
-		);
+			} else {
+				// Respawn - re-assign the task
+				void this.deps.orchestrator.assignTask({ taskId: event.taskId });
+			}
+		};
 
-		// Listen for NO_SIGNAL events
-		this.deps.eventEmitter.on(
-			"agentNoSignal",
-			(event: { taskId: string; iteration: number }) => {
-				if (event.iteration >= this.maxIterations) {
-					// Emit timeout event
-					this.deps.eventEmitter.emit("taskTimeout", {
-						taskId: event.taskId,
-						iterations: event.iteration,
-					});
-				} else {
-					// Respawn - re-assign the task
-					void this.deps.orchestrator.assignTask({ taskId: event.taskId });
-				}
-			},
-		);
+		this.agentBlockedHandler = (_event: {
+			taskId: string;
+			agentId: string;
+		}) => {
+			// Release the slot but don't close the task
+			this.deps.slotManager.release();
+		};
 
-		// Listen for BLOCKED events
-		this.deps.eventEmitter.on(
-			"agentBlocked",
-			(_event: { taskId: string; agentId: string }) => {
-				// Release the slot but don't close the task
-				this.deps.slotManager.release();
-			},
-		);
+		// Register handlers
+		this.deps.eventEmitter.on("agentCompleted", this.agentCompletedHandler);
+		this.deps.eventEmitter.on("taskCompleted", this.taskCompletedHandler);
+		this.deps.eventEmitter.on("agentNoSignal", this.agentNoSignalHandler);
+		this.deps.eventEmitter.on("agentBlocked", this.agentBlockedHandler);
 	}
 
 	start(): void {
@@ -132,6 +152,24 @@ export class RalphLoop {
 
 		// Emit stopped event
 		this.deps.eventEmitter.emit("stopped");
+	}
+
+	/**
+	 * Clean up all event listeners.
+	 * Call this before disposing of the RalphLoop instance.
+	 */
+	cleanup(): void {
+		// Remove all event listeners
+		this.deps.eventEmitter.off("agentCompleted", this.agentCompletedHandler);
+		this.deps.eventEmitter.off("taskCompleted", this.taskCompletedHandler);
+		this.deps.eventEmitter.off("agentNoSignal", this.agentNoSignalHandler);
+		this.deps.eventEmitter.off("agentBlocked", this.agentBlockedHandler);
+
+		// Clear idle timer if set
+		if (this.idleTimer) {
+			clearTimeout(this.idleTimer);
+			this.idleTimer = null;
+		}
 	}
 
 	pause(): void {

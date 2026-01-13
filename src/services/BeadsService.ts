@@ -15,9 +15,25 @@ export class BeadsService extends EventEmitter<BeadsServiceEvents> {
 	private watcher: FSWatcher | null = null;
 	private cachedBeads: Bead[] = [];
 
+	// Store handler references for cleanup
+	private changeHandler: () => void;
+	private addHandler: () => void;
+	private errorHandler: (err: unknown) => void;
+
 	constructor(projectDir: string) {
 		super();
 		this.beadsPath = path.join(projectDir, ".beads", "issues.jsonl");
+
+		// Initialize handlers for cleanup
+		this.changeHandler = () => {
+			this.reload();
+		};
+		this.addHandler = () => {
+			this.reload();
+		};
+		this.errorHandler = (err: unknown) => {
+			this.emit("error", err instanceof Error ? err : new Error(String(err)));
+		};
 	}
 
 	getBeadsPath(): string {
@@ -79,21 +95,17 @@ export class BeadsService extends EventEmitter<BeadsServiceEvents> {
 			},
 		});
 
-		this.watcher.on("change", () => {
-			this.reload();
-		});
-
-		this.watcher.on("add", () => {
-			this.reload();
-		});
-
-		this.watcher.on("error", (err: unknown) => {
-			this.emit("error", err instanceof Error ? err : new Error(String(err)));
-		});
+		this.watcher.on("change", this.changeHandler);
+		this.watcher.on("add", this.addHandler);
+		this.watcher.on("error", this.errorHandler);
 	}
 
 	async stop(): Promise<void> {
 		if (this.watcher) {
+			// Explicitly remove handlers before closing
+			this.watcher.off("change", this.changeHandler);
+			this.watcher.off("add", this.addHandler);
+			this.watcher.off("error", this.errorHandler);
 			await this.watcher.close();
 			this.watcher = null;
 		}
