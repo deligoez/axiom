@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
 import {
@@ -35,7 +36,8 @@ describe("E2E: Task Navigation (j/k) PTY", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render with tasks
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -59,7 +61,8 @@ describe("E2E: Task Navigation (j/k) PTY", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - press j to move down
@@ -79,7 +82,8 @@ describe("E2E: Task Navigation (j/k) PTY", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - press j twice to move to third task
@@ -100,7 +104,8 @@ describe("E2E: Task Navigation (j/k) PTY", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Move down first
@@ -123,7 +128,8 @@ describe("E2E: Task Navigation (j/k) PTY", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - press j three times to wrap from third to first

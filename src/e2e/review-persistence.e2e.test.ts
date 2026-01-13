@@ -6,6 +6,7 @@ import type { ReviewState } from "../services/ReviewPersistence.js";
 import { ReviewPersistence } from "../services/ReviewPersistence.js";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -151,7 +152,8 @@ describe("E2E: Review Persistence (R06)", () => {
 		]);
 
 		// Act - start app
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (2)", 10000);
 		// Wait for full render after header appears
 		await new Promise((r) => setTimeout(r, 200));

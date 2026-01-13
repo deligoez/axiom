@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FeedbackStorage } from "../services/FeedbackStorage.js";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -119,7 +120,8 @@ describe("E2E: Redo with Feedback (R03)", () => {
 		]);
 
 		// Start app to verify task shows
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (1)", 10000);
 
 		// Save feedback while app is running (simulates external feedback save)

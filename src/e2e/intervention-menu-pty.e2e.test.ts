@@ -12,6 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
 import {
@@ -43,7 +44,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 	it("opens intervention menu when i is pressed", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-pty1", title: "Test Task" }]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Wait for app to start
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -60,7 +62,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 	it("shows correct menu options", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-pty2", title: "Test Task" }]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Wait for app to start
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -79,7 +82,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 	it("closes intervention menu with Escape", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-pty3", title: "Test Task" }]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Wait for app to start
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -103,7 +107,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 			{ id: "ch-nav2", title: "Second Task" },
 			{ id: "ch-nav3", title: "Third Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Wait for app to start
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -122,7 +127,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 	it("Tab switches focus between panels", async () => {
 		// Arrange
 		projectDir = createTestProject([{ id: "ch-tab1", title: "Test Task" }]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Wait for app to start
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -141,7 +147,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 			{ id: "ch-num1", title: "First Task" },
 			{ id: "ch-num2", title: "Second Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Wait for app to start
 		await ptyResult.waitForText("Tasks (2)", 10000);

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
 import {
@@ -39,7 +40,8 @@ describe("E2E: Persona Display (AP17)", () => {
 		projectDir = createTestProject([
 			{ id: "ch-pers1", title: "Persona Test Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -60,7 +62,8 @@ describe("E2E: Persona Display (AP17)", () => {
 			{ id: "ch-stat1", title: "Stats Test Task", status: "todo" },
 			{ id: "ch-stat2", title: "Stats Test Task 2", status: "done" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (2)", 10000);
@@ -78,7 +81,8 @@ describe("E2E: Persona Display (AP17)", () => {
 		projectDir = createTestProject([
 			{ id: "ch-logp1", title: "Log Panel Test Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (1)", 10000);
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -103,7 +107,8 @@ describe("E2E: Persona Display (AP17)", () => {
 		projectDir = createTestProject([
 			{ id: "ch-ansi1", title: "ANSI Test Task" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -121,7 +126,8 @@ describe("E2E: Persona Display (AP17)", () => {
 		projectDir = createTestProject([
 			{ id: "ch-wrk1", title: "Worker Tile Test" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (1)", 10000);
@@ -144,7 +150,8 @@ describe("E2E: Persona Display (AP17)", () => {
 			{ id: "ch-int2", title: "Integration Task 2", status: "todo" },
 			{ id: "ch-int3", title: "Integration Task 3", status: "todo" },
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (3)", 10000);

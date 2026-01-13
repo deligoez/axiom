@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -36,7 +37,8 @@ describe("E2E: Single Task Review (R01)", () => {
 			createStatusBead("ch-rv2", "Reviewing Task", "review"),
 			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render with tasks
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -57,7 +59,8 @@ describe("E2E: Single Task Review (R01)", () => {
 			createStatusBead("ch-rv2", "Reviewing Task", "review"),
 			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 		// Wait for full render after header appears
 		await new Promise((r) => setTimeout(r, 200));
@@ -79,7 +82,8 @@ describe("E2E: Single Task Review (R01)", () => {
 			createStatusBead("ch-rv2", "Reviewing Task", "review"),
 			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 		// Wait for full render after header appears
 		await new Promise((r) => setTimeout(r, 200));
@@ -106,7 +110,8 @@ describe("E2E: Single Task Review (R01)", () => {
 			createStatusBead("ch-rv2", "Reviewing Task", "review"),
 			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 		// Wait for full render after header appears
 		await new Promise((r) => setTimeout(r, 200));

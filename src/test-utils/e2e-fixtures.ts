@@ -96,3 +96,21 @@ export function createStatusBead(
 ): TestTask {
 	return { id, title, status };
 }
+
+/**
+ * Creates a planning-state.json file that puts the app directly into implementation mode.
+ * Call this after createTestProject() to skip planning phase in E2E tests.
+ *
+ * @param projectDir - Path to the project directory (from createTestProject)
+ */
+export function createImplementationState(projectDir: string): void {
+	const stateFile = join(projectDir, ".chorus", "planning-state.json");
+	const state = {
+		status: "implementation",
+		chosenMode: "semi-auto",
+		planSummary: { userGoal: "Test", estimatedTasks: 1 },
+		tasks: [],
+		reviewIterations: [],
+	};
+	writeFileSync(stateFile, JSON.stringify(state, null, 2));
+}

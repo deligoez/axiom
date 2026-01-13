@@ -27,10 +27,9 @@ describe("E2E: TSX Runtime Compatibility", () => {
 			timeout: 10000,
 		});
 
-		// Assert - check new help format
+		// Assert - check help format
 		expect(output).toContain("Chorus v0.1.0");
 		expect(output).toContain("USAGE");
-		expect(output).toContain("COMMANDS");
 		expect(output).toContain("OPTIONS");
 		expect(output).toContain("EXAMPLES");
 		expect(output).toContain("DOCUMENTATION");
@@ -68,7 +67,7 @@ describe("E2E: TSX Runtime Compatibility", () => {
 
 		// Assert - should show help output
 		expect(output).toContain("USAGE");
-		expect(output).toContain("COMMANDS");
+		expect(output).toContain("OPTIONS");
 	});
 
 	it("tsx src/index.tsx with unknown command shows help", () => {
@@ -80,6 +79,6 @@ describe("E2E: TSX Runtime Compatibility", () => {
 
 		// Assert - should show help output
 		expect(output).toContain("USAGE");
-		expect(output).toContain("COMMANDS");
+		expect(output).toContain("OPTIONS");
 	});
 });

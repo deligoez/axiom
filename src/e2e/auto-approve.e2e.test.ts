@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { canAutoApprove } from "../services/AutoApproveEngine.js";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -138,7 +139,8 @@ describe("E2E: Auto-Approve (R04)", () => {
 			createStatusBead("ch-aa7", "Failed Auto Task", "review"),
 			createStatusBead("ch-aa8", "Open Task", "todo"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (2)", 10000);

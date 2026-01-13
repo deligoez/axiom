@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getReviewMode } from "../services/LabelRulesEngine.js";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -116,7 +117,8 @@ describe("E2E: Label Rules (R05)", () => {
 			createStatusBead("ch-lr1", "Skip Task", "todo"),
 			createStatusBead("ch-lr2", "Per-Task Task", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render with tasks
 		await ptyResult.waitForText("Tasks (2)", 10000);

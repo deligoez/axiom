@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
+	createImplementationState,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -36,7 +37,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 			createStatusBead("ch-br2", "Second Review Task", "review"),
 			createStatusBead("ch-br3", "Third Review Task", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 
 		// Act - wait for app to render tasks
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -59,7 +61,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 			createStatusBead("ch-br2", "Review 2", "review"),
 			createStatusBead("ch-br3", "Review 3", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Assert - footer shows reviewing count
@@ -74,7 +77,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 			createStatusBead("ch-br2", "Second", "review"),
 			createStatusBead("ch-br3", "Third", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - navigate down twice with j
@@ -94,7 +98,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 			createStatusBead("ch-br2", "Review 2", "review"),
 			createStatusBead("ch-br3", "Review 3", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - press R to start batch review
@@ -114,7 +119,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 			createStatusBead("ch-br2", "Task 2", "review"),
 			createStatusBead("ch-br3", "Task 3", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
 
 		// Act - rapid key sequence: navigate, try review, navigate, escape
@@ -136,7 +142,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 			createStatusBead("ch-br1", "Task 1", "review"),
 			createStatusBead("ch-br2", "Task 2", "review"),
 		]);
-		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+		createImplementationState(projectDir);
+		ptyResult = renderAppWithPty([], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (2)", 10000);
 
 		// Act - press R then Escape
