@@ -45,7 +45,7 @@ export function TaskReviewPanel({
 			</Box>
 
 			{/* Signal message */}
-			{result.signal && result.signal.payload && (
+			{result.signal?.payload && (
 				<Box marginBottom={1} flexDirection="column">
 					<Text dimColor>Signal:</Text>
 					<Box marginLeft={1}>

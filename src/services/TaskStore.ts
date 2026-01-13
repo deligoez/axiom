@@ -750,7 +750,7 @@ export class TaskStore extends EventEmitter {
 		// Write each task's audit entries
 		for (const [taskId, entries] of this.auditBuffer) {
 			const auditPath = join(this.auditDir, `${taskId}.jsonl`);
-			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			const content = `${entries.map((e) => JSON.stringify(e)).join("\n")}\n`;
 			appendFileSync(auditPath, content, "utf-8");
 		}
 

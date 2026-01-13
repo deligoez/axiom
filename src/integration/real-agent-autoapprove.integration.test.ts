@@ -14,7 +14,7 @@
  */
 
 import { execSync, spawn } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { PendingReview } from "../machines/reviewRegion.js";

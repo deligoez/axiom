@@ -6,7 +6,7 @@ import { ReviewSummaryPanel } from "./ReviewSummaryPanel.js";
 // Helper to create mock pending review
 const createReview = (
 	taskId: string,
-	title: string,
+	_title: string,
 	qualityPassed: boolean,
 ): PendingReview => ({
 	taskId,

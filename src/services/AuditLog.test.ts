@@ -36,7 +36,7 @@ describe("AuditLog", () => {
 					action: "complete",
 				},
 			];
-			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			const content = `${entries.map((e) => JSON.stringify(e)).join("\n")}\n`;
 			writeFileSync(join(auditDir, `${taskId}.jsonl`), content);
 
 			// Act
@@ -75,7 +75,7 @@ describe("AuditLog", () => {
 					data: { foo: "bar" },
 				},
 			];
-			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			const content = `${entries.map((e) => JSON.stringify(e)).join("\n")}\n`;
 			writeFileSync(join(auditDir, `${taskId}.jsonl`), content);
 
 			// Act
@@ -102,7 +102,7 @@ describe("AuditLog", () => {
 					action: "complete",
 				},
 			];
-			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			const content = `${entries.map((e) => JSON.stringify(e)).join("\n")}\n`;
 			const compressed = gzipSync(content);
 			writeFileSync(join(auditDir, `${taskId}.jsonl.gz`), compressed);
 
@@ -132,7 +132,7 @@ describe("AuditLog", () => {
 					action: "complete",
 				},
 			];
-			const content = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+			const content = `${entries.map((e) => JSON.stringify(e)).join("\n")}\n`;
 			writeFileSync(join(auditDir, `${taskId}.jsonl`), content);
 
 			// Act
