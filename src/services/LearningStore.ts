@@ -109,7 +109,11 @@ export class LearningStore {
 		try {
 			const content = await fs.readFile(this.learningsPath, "utf-8");
 			return this.parseLearnings(content);
-		} catch {
+		} catch (error) {
+			// File not existing is expected for new projects
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				console.warn("Failed to read learnings file:", error);
+			}
 			return [];
 		}
 	}
@@ -203,7 +207,11 @@ export class LearningStore {
 				reviewed: new Set(data.reviewed || []),
 				lastUpdated: data.lastUpdated ? new Date(data.lastUpdated) : new Date(),
 			};
-		} catch {
+		} catch (error) {
+			// File not existing is expected for new projects
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				console.warn("Failed to load learnings metadata:", error);
+			}
 			return {
 				path: this.metaPath,
 				hashes: new Set(),

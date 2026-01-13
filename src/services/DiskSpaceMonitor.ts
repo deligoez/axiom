@@ -146,8 +146,9 @@ export class DiskSpaceMonitor {
 			const percent = Number.parseInt(percentStr, 10);
 
 			return { available, total, percent };
-		} catch {
-			// If df fails, assume disk is full
+		} catch (error) {
+			// If df fails, warn and assume disk is full for safety
+			console.warn("Failed to get disk space info:", error);
 			return { available: 0, total: 0, percent: 100 };
 		}
 	}
