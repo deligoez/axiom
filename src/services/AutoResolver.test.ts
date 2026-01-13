@@ -16,21 +16,21 @@ describe("AutoResolver", () => {
 
 	// F27: resolveSpecialFile() - 4 tests
 	describe("resolveSpecialFile()", () => {
-		it(".beads/issues.jsonl: concatenates both JSONL versions, dedupes by id", async () => {
+		it(".chorus/tasks.jsonl: concatenates both JSONL versions, dedupes by id", async () => {
 			// Arrange
 			const conflictContent = `<<<<<<< HEAD
 {"id": "ch-abc", "title": "Task A"}
 =======
 {"id": "ch-xyz", "title": "Task B"}
 >>>>>>> feature`;
-			mockFiles.setFile(".beads/issues.jsonl", conflictContent);
+			mockFiles.setFile(".chorus/tasks.jsonl", conflictContent);
 
 			// Act
-			await resolver.resolveSpecialFile(".beads/issues.jsonl");
+			await resolver.resolveSpecialFile(".chorus/tasks.jsonl");
 
 			// Assert
 			const writeCall = mockFiles.writeCalls[0];
-			expect(writeCall.path).toBe(".beads/issues.jsonl");
+			expect(writeCall.path).toBe(".chorus/tasks.jsonl");
 			expect(writeCall.content).toContain('{"id": "ch-abc"');
 			expect(writeCall.content).toContain('{"id": "ch-xyz"');
 		});

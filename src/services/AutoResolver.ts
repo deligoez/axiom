@@ -11,7 +11,7 @@ export interface ResolveResult {
 
 // Files that can be auto-resolved
 const SIMPLE_FILES: Record<string, string> = {
-	".beads/issues.jsonl": "beads-merge",
+	".chorus/tasks.jsonl": "tasks-merge",
 	"package-lock.json": "regenerate",
 	"yarn.lock": "regenerate-yarn",
 	"pnpm-lock.yaml": "regenerate-pnpm",
@@ -61,8 +61,8 @@ export class AutoResolver {
 	async resolveSpecialFile(filepath: string): Promise<void> {
 		const strategy = SIMPLE_FILES[filepath];
 
-		if (strategy === "beads-merge") {
-			await this.resolveBeadsMerge(filepath);
+		if (strategy === "tasks-merge") {
+			await this.resolveTasksMerge(filepath);
 		} else if (strategy === "regenerate") {
 			await this.resolveRegenerate(filepath, "npm install");
 		} else if (strategy === "regenerate-yarn") {
@@ -76,7 +76,7 @@ export class AutoResolver {
 		}
 	}
 
-	private async resolveBeadsMerge(filepath: string): Promise<void> {
+	private async resolveTasksMerge(filepath: string): Promise<void> {
 		const content = await this.files.read(filepath);
 		const lines = this.parseConflictBothSides(content);
 
