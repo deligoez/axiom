@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { TaskProviderTask } from "../types/task-provider.js";
 
 interface TaskPanelProps {
@@ -10,7 +10,11 @@ interface TaskPanelProps {
 
 type TaskStatus = TaskProviderTask["status"];
 
-function StatusIndicator({ status }: { status: TaskStatus }) {
+const StatusIndicator = memo(function StatusIndicator({
+	status,
+}: {
+	status: TaskStatus;
+}) {
 	switch (status) {
 		case "open":
 			return <Text color="yellow">→</Text>;
@@ -29,7 +33,7 @@ function StatusIndicator({ status }: { status: TaskStatus }) {
 		default:
 			return <Text color="gray">?</Text>;
 	}
-}
+});
 
 function getShortId(id: string): string {
 	// bd-a1b2c3 → a1b2
@@ -40,7 +44,11 @@ function getShortId(id: string): string {
 	return id.slice(0, 4);
 }
 
-function PriorityBadge({ priority }: { priority: number }) {
+const PriorityBadge = memo(function PriorityBadge({
+	priority,
+}: {
+	priority: number;
+}) {
 	const [visible, setVisible] = useState(true);
 
 	// P0 flashing animation
@@ -68,13 +76,25 @@ function PriorityBadge({ priority }: { priority: number }) {
 	}
 
 	return <Text color={colors[priority] ?? "gray"}>P{priority}</Text>;
-}
+});
 
 export default function TaskPanel({
 	tasks,
 	selectedTaskId,
 	canAssign = false,
 }: TaskPanelProps) {
+	// Calculate counts for footer (memoized to avoid recalculation on re-renders)
+	// Must be before early returns to comply with React hooks rules
+	const { readyCount, blockedCount, reviewingCount } = useMemo(() => {
+		return {
+			readyCount: tasks.filter(
+				(t) => t.status === "open" || t.status === "in_progress",
+			).length,
+			blockedCount: tasks.filter((t) => t.status === "blocked").length,
+			reviewingCount: tasks.filter((t) => t.status === "reviewing").length,
+		};
+	}, [tasks]);
+
 	if (tasks.length === 0) {
 		return (
 			<Box
@@ -88,13 +108,6 @@ export default function TaskPanel({
 			</Box>
 		);
 	}
-
-	// Calculate counts for footer
-	const readyCount = tasks.filter(
-		(t) => t.status === "open" || t.status === "in_progress",
-	).length;
-	const blockedCount = tasks.filter((t) => t.status === "blocked").length;
-	const reviewingCount = tasks.filter((t) => t.status === "reviewing").length;
 
 	return (
 		<Box flexDirection="column" flexGrow={1}>
