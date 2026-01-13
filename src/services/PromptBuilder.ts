@@ -2,6 +2,12 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { Bead } from "../types/bead.js";
 import type { ChorusConfig } from "../types/config.js";
+import type {
+	CommitRule,
+	CompletionRule,
+	LearningRule,
+} from "../types/rules.js";
+import { RulesLoader } from "./RulesLoader.js";
 
 export interface PromptContext {
 	task: Bead;
@@ -12,7 +18,11 @@ export interface PromptContext {
 }
 
 export class PromptBuilder {
+	private rulesLoader: RulesLoader | null = null;
+
 	async build(context: PromptContext): Promise<string> {
+		// Create RulesLoader for this project
+		this.rulesLoader = new RulesLoader(context.projectDir);
 		const sections: string[] = [];
 
 		// Task section
@@ -80,16 +90,53 @@ export class PromptBuilder {
 	}
 
 	buildCommitRulesSection(taskId: string): string {
-		return `## Commit Message Rules
+		const rules = this.rulesLoader?.loadCommitFormat() ?? [];
+
+		if (rules.length === 0) {
+			// Fallback to hardcoded if no rules loaded
+			return `## Commit Message Rules
 **IMPORTANT:** Include task ID in every commit message for rollback support.
 
 Format: \`<type>: <description> [<task-id>]\`
 
 Example: \`feat: implement auth [${taskId}]\``;
+		}
+
+		return this.formatCommitRulesSection(rules, taskId);
+	}
+
+	private formatCommitRulesSection(
+		rules: CommitRule[],
+		taskId: string,
+	): string {
+		const lines = [
+			"## Commit Message Rules",
+			"**IMPORTANT:** Include task ID in every commit message for rollback support.",
+			"",
+			"### Commit Types",
+		];
+
+		for (const rule of rules) {
+			lines.push(`- **${rule.type}**: ${rule.description}`);
+			if (rule.example) {
+				lines.push(
+					`  Example: \`${rule.example.replace("[ch-", `[${taskId.replace("ch-", "[ch-").split("[")[0]}`)}\``,
+				);
+			}
+		}
+
+		lines.push("");
+		lines.push(`Example: \`feat: implement feature [${taskId}]\``);
+
+		return lines.join("\n");
 	}
 
 	buildLearningsFormatSection(): string {
-		return `## Learnings Format
+		const rules = this.rulesLoader?.loadLearningFormat() ?? [];
+
+		if (rules.length === 0) {
+			// Fallback to hardcoded if no rules loaded
+			return `## Learnings Format
 When you discover something useful, add it to your scratchpad's ## Learnings section with a scope prefix:
 
 - **[LOCAL]** - Only affects this task (not shared with other tasks)
@@ -103,22 +150,99 @@ Example:
 - [CROSS-CUTTING] All API endpoints require rate limiting middleware
 - [ARCHITECTURAL] Use dependency injection for service instantiation
 \`\`\``;
+		}
+
+		return this.formatLearningsSection(rules);
+	}
+
+	private formatLearningsSection(rules: LearningRule[]): string {
+		const lines = [
+			"## Learnings Format",
+			"When you discover something useful, add it to your scratchpad's ## Learnings section with a scope prefix:",
+			"",
+		];
+
+		for (const rule of rules) {
+			const scopeUpper = rule.scope.toUpperCase().replace("-", "-");
+			const alerts = [];
+			if (rule.triggersPlanReview) alerts.push("triggers plan review");
+			if (rule.triggersAlert) alerts.push("alert");
+			const alertNote = alerts.length > 0 ? ` (${alerts.join(" + ")})` : "";
+			lines.push(`- **[${scopeUpper}]** - ${rule.description}${alertNote}`);
+		}
+
+		// Add example
+		lines.push("");
+		lines.push("Example:");
+		lines.push("```");
+		lines.push("## Learnings");
+		for (const rule of rules) {
+			const scopeUpper = rule.scope.toUpperCase().replace("-", "-");
+			lines.push(`- [${scopeUpper}] ${rule.example}`);
+		}
+		lines.push("```");
+
+		return lines.join("\n");
 	}
 
 	buildCompletionSection(config: ChorusConfig): string {
+		const rules = this.rulesLoader?.loadCompletionProtocol() ?? [];
 		const hasQualityCommands =
 			config.qualityCommands && config.qualityCommands.length > 0;
 
-		const qualityNote = hasQualityCommands
-			? " AND all required quality commands pass"
-			: "";
+		if (rules.length === 0) {
+			// Fallback to hardcoded if no rules loaded
+			const qualityNote = hasQualityCommands
+				? " AND all required quality commands pass"
+				: "";
 
-		return `## Completion Protocol
+			return `## Completion Protocol
 When ALL criteria are met${qualityNote}:
 1. ${hasQualityCommands ? "Run each quality command and verify it passes\n2. " : ""}Output exactly: <chorus>COMPLETE</chorus>
 
 If blocked by external issue, output: <chorus>BLOCKED: reason</chorus>
 If you need clarification, output: <chorus>NEEDS_HELP: what you need</chorus>`;
+		}
+
+		return this.formatCompletionSection(rules, hasQualityCommands);
+	}
+
+	private formatCompletionSection(
+		rules: CompletionRule[],
+		hasQualityCommands: boolean,
+	): string {
+		const qualityNote = hasQualityCommands
+			? " AND all required quality commands pass"
+			: "";
+
+		const lines = [
+			"## Completion Protocol",
+			`When ALL criteria are met${qualityNote}:`,
+		];
+
+		let step = 1;
+		if (hasQualityCommands) {
+			lines.push(`${step}. Run each quality command and verify it passes`);
+			step++;
+		}
+
+		// Add completion rules
+		for (const rule of rules) {
+			if (rule.required) {
+				lines.push(`${step}. ${rule.description}`);
+				step++;
+			}
+		}
+
+		lines.push("");
+		lines.push(
+			"If blocked by external issue, output: <chorus>BLOCKED: reason</chorus>",
+		);
+		lines.push(
+			"If you need clarification, output: <chorus>NEEDS_HELP: what you need</chorus>",
+		);
+
+		return lines.join("\n");
 	}
 
 	async loadPatterns(projectDir: string): Promise<string> {

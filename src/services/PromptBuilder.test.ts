@@ -335,4 +335,60 @@ describe("PromptBuilder", () => {
 			expect(result).toContain("Use dependency injection");
 		});
 	});
+
+	// MH01: File Loading Tests (4 tests)
+	describe("RulesLoader Integration", () => {
+		it("buildCommitRulesSection loads from RulesLoader (uses fallback defaults)", () => {
+			// Arrange - uses default rules since no file exists
+			// Act
+			const result = builder.buildCommitRulesSection("ch-abc");
+
+			// Assert - contains commit rules content
+			expect(result).toContain("Commit Message Rules");
+			expect(result).toContain("[ch-abc]");
+		});
+
+		it("buildLearningsFormatSection loads from RulesLoader (uses fallback defaults)", () => {
+			// Arrange - uses default rules since no file exists
+			// Act
+			const result = builder.buildLearningsFormatSection();
+
+			// Assert - contains learnings format content
+			expect(result).toContain("Learnings Format");
+			expect(result).toContain("[LOCAL]");
+			expect(result).toContain("[CROSS-CUTTING]");
+			expect(result).toContain("[ARCHITECTURAL]");
+		});
+
+		it("buildCompletionSection loads from RulesLoader (uses fallback defaults)", () => {
+			// Arrange - uses default rules since no file exists
+			// Act
+			const result = builder.buildCompletionSection(mockConfig);
+
+			// Assert - contains completion protocol content
+			expect(result).toContain("Completion Protocol");
+			expect(result).toContain("COMPLETE");
+			expect(result).toContain("BLOCKED");
+		});
+
+		it("build() integrates all rule sections from RulesLoader", async () => {
+			// Arrange
+			mockReadFile.mockRejectedValue({ code: "ENOENT" });
+			const context = {
+				task: mockTask,
+				branch: "agent/claude/ch-abc",
+				taskId: "ch-abc",
+				config: mockConfig,
+				projectDir: "/test/project",
+			};
+
+			// Act
+			const result = await builder.build(context);
+
+			// Assert - all sections present
+			expect(result).toContain("## Commit Message Rules");
+			expect(result).toContain("## Learnings Format");
+			expect(result).toContain("## Completion Protocol");
+		});
+	});
 });
