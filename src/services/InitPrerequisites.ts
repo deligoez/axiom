@@ -16,7 +16,6 @@ export interface PrerequisiteResult {
 	gitRepo: boolean;
 	nodeVersion: boolean;
 	nodeVersionFound: string | null;
-	beadsCLI: boolean;
 	claudeCLI: boolean;
 	missing: MissingPrerequisite[];
 	allPassed: boolean;
@@ -58,14 +57,6 @@ export class InitPrerequisites {
 	}
 
 	/**
-	 * Check if Beads CLI is installed
-	 */
-	async checkBeadsCLI(): Promise<boolean> {
-		const result = await this.processRunner.exec("bd --version");
-		return result.exitCode === 0;
-	}
-
-	/**
 	 * Check if Claude CLI is installed
 	 */
 	async checkClaudeCLI(): Promise<boolean> {
@@ -79,7 +70,6 @@ export class InitPrerequisites {
 	async checkAll(): Promise<PrerequisiteResult> {
 		const gitRepo = this.checkGitRepo();
 		const nodeResult = await this.checkNodeVersion();
-		const beadsCLI = await this.checkBeadsCLI();
 		const claudeCLI = await this.checkClaudeCLI();
 
 		const missing: MissingPrerequisite[] = [];
@@ -98,13 +88,6 @@ export class InitPrerequisites {
 			});
 		}
 
-		if (!beadsCLI) {
-			missing.push({
-				name: "beadsCLI",
-				instruction: "Install Beads: `brew install beads-ai/tap/beads`",
-			});
-		}
-
 		if (!claudeCLI) {
 			missing.push({
 				name: "claudeCLI",
@@ -117,7 +100,6 @@ export class InitPrerequisites {
 			gitRepo,
 			nodeVersion: nodeResult.valid,
 			nodeVersionFound: nodeResult.version,
-			beadsCLI,
 			claudeCLI,
 			missing,
 			allPassed: missing.length === 0,

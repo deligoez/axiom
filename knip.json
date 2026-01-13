@@ -11,6 +11,6 @@
 		"src/test-utils/e2e-helpers.ts"
 	],
 	"ignore": ["**/*.test.ts", "**/*.test.tsx"],
-	"ignoreBinaries": ["bd", "which"],
+	"ignoreBinaries": [],
 	"ignoreExportsUsedInFile": true
 }

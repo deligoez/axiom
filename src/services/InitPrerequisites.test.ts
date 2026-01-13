@@ -99,40 +99,6 @@ describe("InitPrerequisites", () => {
 		});
 	});
 
-	// checkBeadsCLI() - 2 tests
-	describe("checkBeadsCLI", () => {
-		it("returns true if bd --version exits with code 0", async () => {
-			// Arrange
-			vi.mocked(mockProcessRunner.exec).mockResolvedValue({
-				stdout: "bd version 0.46.0\n",
-				stderr: "",
-				exitCode: 0,
-			});
-
-			// Act
-			const result = await service.checkBeadsCLI();
-
-			// Assert
-			expect(result).toBe(true);
-			expect(mockProcessRunner.exec).toHaveBeenCalledWith("bd --version");
-		});
-
-		it("returns false if bd command not found", async () => {
-			// Arrange
-			vi.mocked(mockProcessRunner.exec).mockResolvedValue({
-				stdout: "",
-				stderr: "bd: command not found",
-				exitCode: 127,
-			});
-
-			// Act
-			const result = await service.checkBeadsCLI();
-
-			// Assert
-			expect(result).toBe(false);
-		});
-	});
-
 	// checkClaudeCLI() - 2 tests
 	describe("checkClaudeCLI", () => {
 		it("returns true if claude --version exits with code 0", async () => {
@@ -179,11 +145,6 @@ describe("InitPrerequisites", () => {
 					exitCode: 0,
 				}) // node
 				.mockResolvedValueOnce({
-					stdout: "bd version 0.46.0\n",
-					stderr: "",
-					exitCode: 0,
-				}) // bd
-				.mockResolvedValueOnce({
 					stdout: "claude version 1.0.0\n",
 					stderr: "",
 					exitCode: 0,
@@ -197,7 +158,6 @@ describe("InitPrerequisites", () => {
 				gitRepo: true,
 				nodeVersion: true,
 				nodeVersionFound: "22.1.0",
-				beadsCLI: true,
 				claudeCLI: true,
 				missing: [],
 				allPassed: true,
@@ -215,11 +175,6 @@ describe("InitPrerequisites", () => {
 				}) // node < 20
 				.mockResolvedValueOnce({
 					stdout: "",
-					stderr: "bd: command not found",
-					exitCode: 127,
-				}) // bd missing
-				.mockResolvedValueOnce({
-					stdout: "",
 					stderr: "claude: command not found",
 					exitCode: 127,
 				}); // claude missing
@@ -231,10 +186,9 @@ describe("InitPrerequisites", () => {
 			expect(result.gitRepo).toBe(false);
 			expect(result.nodeVersion).toBe(false);
 			expect(result.nodeVersionFound).toBe("18.0.0");
-			expect(result.beadsCLI).toBe(false);
 			expect(result.claudeCLI).toBe(false);
 			expect(result.allPassed).toBe(false);
-			expect(result.missing).toHaveLength(4);
+			expect(result.missing).toHaveLength(3);
 			expect(result.missing).toEqual([
 				{
 					name: "gitRepo",
@@ -243,10 +197,6 @@ describe("InitPrerequisites", () => {
 				{
 					name: "nodeVersion",
 					instruction: "Install Node.js 20+ from https://nodejs.org",
-				},
-				{
-					name: "beadsCLI",
-					instruction: "Install Beads: `brew install beads-ai/tap/beads`",
 				},
 				{
 					name: "claudeCLI",
