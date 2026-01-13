@@ -41,6 +41,28 @@ export function persistEvent(
 }
 
 /**
+ * Validates that parsed JSON has the required PersistedEvent structure.
+ */
+function isValidEvent(raw: unknown): raw is PersistedEvent {
+	if (typeof raw !== "object" || raw === null) {
+		return false;
+	}
+
+	const event = raw as Record<string, unknown>;
+
+	// PersistedEvent must have timestamp (number) and type (string)
+	if (typeof event.timestamp !== "number") {
+		return false;
+	}
+
+	if (typeof event.type !== "string") {
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Read all events from the log file
  */
 export function readEvents(logPath: string): PersistedEvent[] {
@@ -51,7 +73,24 @@ export function readEvents(logPath: string): PersistedEvent[] {
 	const content = fs.readFileSync(logPath, "utf-8");
 	const lines = content.trim().split("\n").filter(Boolean);
 
-	return lines.map((line) => JSON.parse(line) as PersistedEvent);
+	const events: PersistedEvent[] = [];
+	for (const line of lines) {
+		try {
+			const parsed = JSON.parse(line) as unknown;
+			if (isValidEvent(parsed)) {
+				events.push(parsed);
+			} else {
+				console.warn(
+					"[event-sourcing] Skipping invalid event:",
+					line.slice(0, 100),
+				);
+			}
+		} catch (error) {
+			console.warn("[event-sourcing] Failed to parse event line:", error);
+		}
+	}
+
+	return events;
 }
 
 /**

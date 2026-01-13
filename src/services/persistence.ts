@@ -32,6 +32,24 @@ export function persistSnapshot(
 }
 
 /**
+ * Validates that parsed JSON has the required XState snapshot structure.
+ */
+function isValidSnapshot(raw: unknown): raw is Snapshot<unknown> {
+	if (typeof raw !== "object" || raw === null) {
+		return false;
+	}
+
+	const snapshot = raw as Record<string, unknown>;
+
+	// XState snapshots must have a status field
+	if (typeof snapshot.status !== "string") {
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Load snapshot from disk
  * Returns null if file doesn't exist or is invalid
  */
@@ -42,7 +60,16 @@ export function loadSnapshot(snapshotPath: string): Snapshot<unknown> | null {
 
 	try {
 		const content = fs.readFileSync(snapshotPath, "utf-8");
-		return JSON.parse(content) as Snapshot<unknown>;
+		const parsed = JSON.parse(content) as unknown;
+
+		if (!isValidSnapshot(parsed)) {
+			console.warn(
+				`[persistence] Invalid snapshot structure at ${snapshotPath}`,
+			);
+			return null;
+		}
+
+		return parsed;
 	} catch {
 		return null;
 	}

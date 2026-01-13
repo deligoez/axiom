@@ -2,6 +2,65 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { type ChorusConfig, getDefaultConfig } from "../types/config.js";
 
+/**
+ * Validates that parsed JSON has a valid config structure and merges with defaults.
+ * Returns a complete ChorusConfig, filling in missing fields from defaults.
+ */
+function validateAndMergeConfig(raw: unknown): ChorusConfig {
+	if (typeof raw !== "object" || raw === null) {
+		throw new Error("Invalid config: expected object");
+	}
+
+	const config = raw as Record<string, unknown>;
+	const defaults = getDefaultConfig();
+
+	// Validate version if present
+	if (config.version !== undefined && typeof config.version !== "string") {
+		throw new Error("Invalid config: 'version' must be a string");
+	}
+
+	// Validate mode if present
+	if (
+		config.mode !== undefined &&
+		config.mode !== "semi-auto" &&
+		config.mode !== "autopilot"
+	) {
+		throw new Error(
+			"Invalid config: 'mode' must be 'semi-auto' or 'autopilot'",
+		);
+	}
+
+	// Validate project if present
+	if (
+		config.project !== undefined &&
+		(typeof config.project !== "object" || config.project === null)
+	) {
+		throw new Error("Invalid config: 'project' must be an object");
+	}
+
+	// Validate qualityCommands if present
+	if (
+		config.qualityCommands !== undefined &&
+		!Array.isArray(config.qualityCommands)
+	) {
+		throw new Error("Invalid config: 'qualityCommands' must be an array");
+	}
+
+	// Deep merge with defaults to ensure complete config
+	return {
+		...defaults,
+		...config,
+		project: { ...defaults.project, ...(config.project as object) },
+		agents: { ...defaults.agents, ...(config.agents as object) },
+		completion: { ...defaults.completion, ...(config.completion as object) },
+		merge: { ...defaults.merge, ...(config.merge as object) },
+		tui: { ...defaults.tui, ...(config.tui as object) },
+		checkpoints: { ...defaults.checkpoints, ...(config.checkpoints as object) },
+		planReview: { ...defaults.planReview, ...(config.planReview as object) },
+		review: { ...defaults.review, ...(config.review as object) },
+	} as ChorusConfig;
+}
+
 export class ConfigService {
 	private configPath: string;
 	private config: ChorusConfig | null = null;
@@ -16,22 +75,38 @@ export class ConfigService {
 			return this.config;
 		}
 
-		const raw = JSON.parse(fs.readFileSync(this.configPath, "utf-8"));
+		const raw = JSON.parse(
+			fs.readFileSync(this.configPath, "utf-8"),
+		) as unknown;
+
+		// Validate structure before proceeding
+		if (typeof raw !== "object" || raw === null) {
+			throw new Error("Invalid config file: expected JSON object");
+		}
+
+		const parsed = raw as Record<string, unknown>;
 
 		// Migrate legacy testCommand to qualityCommands
-		if (raw.project?.testCommand && !raw.qualityCommands) {
-			raw.qualityCommands = [
+		if (
+			typeof parsed.project === "object" &&
+			parsed.project !== null &&
+			(parsed.project as Record<string, unknown>).testCommand &&
+			!parsed.qualityCommands
+		) {
+			const project = parsed.project as Record<string, unknown>;
+			parsed.qualityCommands = [
 				{
 					name: "test",
-					command: raw.project.testCommand,
+					command: project.testCommand,
 					required: true,
 					order: 0,
 				},
 			];
-			delete raw.project.testCommand;
+			delete project.testCommand;
 		}
 
-		this.config = raw as ChorusConfig;
+		// Validate and merge with defaults
+		this.config = validateAndMergeConfig(parsed);
 		return this.config;
 	}
 
