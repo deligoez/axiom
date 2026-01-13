@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { BeadsInitError, InitScaffold } from "./InitScaffold.js";
+import { InitScaffold } from "./InitScaffold.js";
 
 describe("InitScaffold", () => {
 	let tempDir: string;
@@ -308,40 +308,6 @@ describe("InitScaffold", () => {
 			// Assert
 			expect(settings.projectType).toBe("unknown");
 			expect(settings.testCommand).toBeUndefined();
-		});
-	});
-
-	describe("initBeads()", () => {
-		it("skips bd init when .beads/ directory already exists", () => {
-			// Arrange
-			mkdirSync(join(tempDir, ".beads"), { recursive: true });
-
-			// Act - should not throw
-			scaffold.initBeads();
-
-			// Assert - directory still exists
-			expect(existsSync(join(tempDir, ".beads"))).toBe(true);
-		});
-
-		it("creates .beads/ directory when bd init succeeds", () => {
-			// Arrange - .beads does not exist
-			expect(existsSync(join(tempDir, ".beads"))).toBe(false);
-
-			// Act
-			scaffold.initBeads();
-
-			// Assert - bd init created the directory
-			expect(existsSync(join(tempDir, ".beads"))).toBe(true);
-		});
-
-		it("BeadsInitError has correct properties", () => {
-			// Arrange
-			const error = new BeadsInitError("test error", 42);
-
-			// Assert
-			expect(error.name).toBe("BeadsInitError");
-			expect(error.message).toBe("test error");
-			expect(error.exitCode).toBe(42);
 		});
 	});
 

@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import {
 	appendFileSync,
 	existsSync,
@@ -107,16 +106,6 @@ You are a planning agent for Chorus multi-agent orchestration.
 `;
 
 const GITIGNORE_ENTRIES = [".worktrees/", ".chorus/state.json", ".agent/"];
-
-export class BeadsInitError extends Error {
-	constructor(
-		message: string,
-		public exitCode: number,
-	) {
-		super(message);
-		this.name = "BeadsInitError";
-	}
-}
 
 export class InitScaffold {
 	constructor(private projectDir: string) {}
@@ -264,28 +253,6 @@ export class InitScaffold {
 		}
 
 		return result;
-	}
-
-	initBeads(): void {
-		const beadsDir = join(this.projectDir, ".beads");
-
-		if (existsSync(beadsDir)) {
-			return; // Skip if already exists
-		}
-
-		try {
-			execSync("bd init", {
-				cwd: this.projectDir,
-				stdio: "pipe",
-				encoding: "utf-8",
-			});
-		} catch (error) {
-			const err = error as { status?: number; message?: string };
-			throw new BeadsInitError(
-				`bd init failed: ${err.message}`,
-				err.status ?? 1,
-			);
-		}
 	}
 
 	createAgentsMd(): void {
