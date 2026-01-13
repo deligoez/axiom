@@ -47,7 +47,7 @@ describe("E2E: Terminal Resize", () => {
 			createStatusBead(
 				"ch-tr2",
 				"Very Long Task Title That Should Be Truncated In The UI",
-				"open",
+				"todo",
 			),
 		]);
 

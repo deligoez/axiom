@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { InitPrerequisites } from "../services/InitPrerequisites.js";
 import { RealProcessRunner } from "../services/ProcessRunner.js";
-import {
-	createGitRepo,
-	createGitRepoWithBeads,
-	type GitTestRepo,
-} from "../test-utils/git-fixtures.js";
+import { createGitRepo, type GitTestRepo } from "../test-utils/git-fixtures.js";
 
 describe("E2E: InitPrerequisites", () => {
 	let repo: GitTestRepo;
@@ -74,25 +70,10 @@ describe("E2E: InitPrerequisites", () => {
 		});
 	});
 
-	describe("checkBeadsCLI()", () => {
-		beforeEach(() => {
-			repo = createGitRepo();
-			prereqs = new InitPrerequisites(repo.path, new RealProcessRunner());
-		});
-
-		it("returns true when bd is installed", async () => {
-			// Act
-			const result = await prereqs.checkBeadsCLI();
-
-			// Assert - assuming bd is installed in test environment
-			expect(result).toBe(true);
-		});
-	});
-
 	describe("checkAll()", () => {
-		it("returns all passed for valid git repo with beads", async () => {
+		it("returns all passed for valid git repo", async () => {
 			// Arrange
-			repo = createGitRepoWithBeads();
+			repo = createGitRepo();
 			prereqs = new InitPrerequisites(repo.path, new RealProcessRunner());
 
 			// Act
@@ -101,7 +82,6 @@ describe("E2E: InitPrerequisites", () => {
 			// Assert
 			expect(result.gitRepo).toBe(true);
 			expect(result.nodeVersion).toBe(true);
-			expect(result.beadsCLI).toBe(true);
 			// claudeCLI might not be installed
 		});
 

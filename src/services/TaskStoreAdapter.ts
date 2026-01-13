@@ -341,7 +341,7 @@ export class TaskStoreAdapter {
 			failed: "closed",
 			stuck: "blocked",
 			later: "deferred",
-			review: "in_progress",
+			review: "reviewing",
 		};
 		return map[status] ?? "open";
 	}

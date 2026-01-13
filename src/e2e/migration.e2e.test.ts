@@ -62,16 +62,22 @@ describe("E2E: Migration Verification", () => {
 
 		const builder = new PromptBuilder();
 		const config = getDefaultConfig();
+		const now = new Date().toISOString();
 		const context = {
 			task: {
 				id: "ch-test",
 				title: "Test Task",
 				description: "Test description",
-				status: "in_progress" as const,
-				priority: 1 as const,
+				status: "doing" as const,
 				type: "task" as const,
-				created: new Date().toISOString(),
-				updated: new Date().toISOString(),
+				tags: [] as string[],
+				dependencies: [] as string[],
+				createdAt: now,
+				updatedAt: now,
+				reviewCount: 0,
+				learningsCount: 0,
+				hasLearnings: false,
+				version: 1,
 			},
 			branch: "agent/claude/ch-test",
 			taskId: "ch-test",
@@ -156,16 +162,22 @@ describe("E2E: Migration Verification", () => {
 
 		const builder = new PromptBuilder();
 		const config = getDefaultConfig();
+		const now = new Date().toISOString();
 		const context = {
 			task: {
 				id: "ch-test",
 				title: "Test Task",
 				description: "Test description",
-				status: "in_progress" as const,
-				priority: 1 as const,
+				status: "doing" as const,
 				type: "task" as const,
-				created: new Date().toISOString(),
-				updated: new Date().toISOString(),
+				tags: [] as string[],
+				dependencies: [] as string[],
+				createdAt: now,
+				updatedAt: now,
+				reviewCount: 0,
+				learningsCount: 0,
+				hasLearnings: false,
+				version: 1,
 			},
 			branch: "agent/claude/ch-test",
 			taskId: "ch-test",

@@ -96,10 +96,3 @@ export function createStatusBead(
 ): TestTask {
 	return { id, title, status };
 }
-
-// Legacy type aliases for backward compatibility with existing tests
-/** @deprecated Use TestTask instead */
-export type TestBead = TestTask;
-
-/** @deprecated Use TaskStatus instead */
-export type BeadStatus = TaskStatus;

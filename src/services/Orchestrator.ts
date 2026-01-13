@@ -66,17 +66,26 @@ export class Orchestrator {
 		// Claim task
 		await this.deps.taskProvider.claimTask(taskId, agentId);
 
-		// Build prompt
+		// Build prompt - convert TaskProviderTask to Task
+		const now = new Date().toISOString();
 		const promptContext: PromptContext = {
 			task: {
 				id: task.id,
 				title: task.title,
 				description: task.description,
-				status: task.status as "open",
-				priority: task.priority as 0 | 1 | 2 | 3 | 4,
+				status: "doing", // Task is being assigned, so status is "doing"
 				type: "task",
-				created: new Date().toISOString(),
-				updated: new Date().toISOString(),
+				tags: task.labels ?? [],
+				dependencies: task.dependencies ?? [],
+				assignee: agentId,
+				model: task.custom?.model,
+				acceptanceCriteria: task.custom?.acceptance_criteria,
+				createdAt: now,
+				updatedAt: now,
+				reviewCount: 0,
+				learningsCount: 0,
+				hasLearnings: false,
+				version: 1,
 			},
 			branch: worktreeInfo.branch,
 			taskId,
