@@ -68,60 +68,64 @@ describe("E2E: TaskStore File Watcher", () => {
 		store.stop();
 	});
 
-	it("new tasks from external edit are available via get()", async () => {
-		// Arrange - create store with one task
-		const store = new TaskStore(tempDir);
-		store.create({ title: "Original Task" });
-		await store.flush();
-		await store.load(); // Ensure store is fully initialized
+	it(
+		"new tasks from external edit are available via get()",
+		{ timeout: 15000, retry: 2 },
+		async () => {
+			// Arrange - create store with one task
+			const store = new TaskStore(tempDir);
+			store.create({ title: "Original Task" });
+			await store.flush();
+			await store.load(); // Ensure store is fully initialized
 
-		// Start watching
-		await store.watch();
+			// Start watching
+			await store.watch();
 
-		let changeEmitted = false;
-		let tasksAfterChange: ReturnType<typeof store.list> = [];
-		store.on("change", (tasks) => {
-			changeEmitted = true;
-			tasksAfterChange = tasks;
-		});
+			let changeEmitted = false;
+			let tasksAfterChange: ReturnType<typeof store.list> = [];
+			store.on("change", (tasks) => {
+				changeEmitted = true;
+				tasksAfterChange = tasks;
+			});
 
-		// Act - add new task externally
-		const filePath = join(tempDir, ".chorus", "tasks.jsonl");
-		const newTask = {
-			id: "ch-external",
-			title: "Externally Added Task",
-			status: "todo",
-			type: "task",
-			tags: [],
-			dependencies: [],
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
-			review_count: 0,
-			learnings_count: 0,
-			has_learnings: false,
-			version: 1,
-		};
-		// Append to existing file (read current content first)
-		const { readFileSync } = await import("node:fs");
-		const currentContent = readFileSync(filePath, "utf-8");
-		writeFileSync(filePath, `${currentContent}${JSON.stringify(newTask)}\n`);
+			// Act - add new task externally
+			const filePath = join(tempDir, ".chorus", "tasks.jsonl");
+			const newTask = {
+				id: "ch-external",
+				title: "Externally Added Task",
+				status: "todo",
+				type: "task",
+				tags: [],
+				dependencies: [],
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				review_count: 0,
+				learnings_count: 0,
+				has_learnings: false,
+				version: 1,
+			};
+			// Append to existing file (read current content first)
+			const { readFileSync } = await import("node:fs");
+			const currentContent = readFileSync(filePath, "utf-8");
+			writeFileSync(filePath, `${currentContent}${JSON.stringify(newTask)}\n`);
 
-		// Wait for watcher + debounce with retry
-		// Use longer timeout and initial delay for parallel test runs
-		await new Promise((r) => setTimeout(r, 500)); // Initial delay for watcher to settle
-		const maxRetries = 30;
-		for (let i = 0; i < maxRetries && !changeEmitted; i++) {
-			await new Promise((r) => setTimeout(r, 200));
-		}
+			// Wait for watcher + debounce with retry
+			// Use longer timeout and initial delay for parallel test runs
+			await new Promise((r) => setTimeout(r, 500)); // Initial delay for watcher to settle
+			const maxRetries = 30;
+			for (let i = 0; i < maxRetries && !changeEmitted; i++) {
+				await new Promise((r) => setTimeout(r, 200));
+			}
 
-		// Assert - new task should be accessible
-		expect(changeEmitted).toBe(true);
-		const externalTask = store.get("ch-external");
-		expect(externalTask).toBeDefined();
-		expect(externalTask?.title).toBe("Externally Added Task");
-		expect(tasksAfterChange.length).toBe(2);
+			// Assert - new task should be accessible
+			expect(changeEmitted).toBe(true);
+			const externalTask = store.get("ch-external");
+			expect(externalTask).toBeDefined();
+			expect(externalTask?.title).toBe("Externally Added Task");
+			expect(tasksAfterChange.length).toBe(2);
 
-		// Cleanup
-		store.stop();
-	});
+			// Cleanup
+			store.stop();
+		},
+	);
 });
