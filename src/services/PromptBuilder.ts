@@ -2,12 +2,23 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { Bead } from "../types/bead.js";
 import type { ChorusConfig } from "../types/config.js";
+import type { AgentIdentity } from "../types/persona.js";
 import type {
 	CommitRule,
 	CompletionRule,
 	LearningRule,
 } from "../types/rules.js";
 import { RulesLoader } from "./RulesLoader.js";
+
+/**
+ * A skill loaded from persona's skills directory.
+ */
+export interface PersonaSkill {
+	/** Skill name (filename without extension) */
+	name: string;
+	/** Skill content (markdown) */
+	content: string;
+}
 
 export interface PromptContext {
 	task: Bead;
@@ -231,5 +242,93 @@ ${patterns}`;
 - Current branch: ${branch}
 - Log discoveries to .agent/scratchpad.md
 - Commit frequently with task ID in message`;
+	}
+
+	/**
+	 * Load persona prompt from .chorus/agents/{persona}/prompt.md
+	 *
+	 * @param identity - Agent identity with persona name
+	 * @param projectDir - Project directory
+	 * @returns Prompt content, or empty string if file doesn't exist
+	 */
+	async buildPersonaPrompt(
+		identity: AgentIdentity,
+		projectDir: string,
+	): Promise<string> {
+		const promptPath = path.join(
+			projectDir,
+			".chorus",
+			"agents",
+			identity.persona,
+			"prompt.md",
+		);
+		try {
+			return await fs.readFile(promptPath, "utf-8");
+		} catch {
+			return "";
+		}
+	}
+
+	/**
+	 * Load persona rules from .chorus/agents/{persona}/rules.md
+	 *
+	 * @param identity - Agent identity with persona name
+	 * @param projectDir - Project directory
+	 * @returns Rules content, or empty string if file doesn't exist
+	 */
+	async appendPersonaRules(
+		identity: AgentIdentity,
+		projectDir: string,
+	): Promise<string> {
+		const rulesPath = path.join(
+			projectDir,
+			".chorus",
+			"agents",
+			identity.persona,
+			"rules.md",
+		);
+		try {
+			return await fs.readFile(rulesPath, "utf-8");
+		} catch {
+			return "";
+		}
+	}
+
+	/**
+	 * Load all skills from .chorus/agents/{persona}/skills/
+	 *
+	 * @param identity - Agent identity with persona name
+	 * @param projectDir - Project directory
+	 * @returns Array of skills, or empty array if directory doesn't exist
+	 */
+	async loadPersonaSkills(
+		identity: AgentIdentity,
+		projectDir: string,
+	): Promise<PersonaSkill[]> {
+		const skillsDir = path.join(
+			projectDir,
+			".chorus",
+			"agents",
+			identity.persona,
+			"skills",
+		);
+
+		try {
+			const entries = await fs.readdir(skillsDir, { withFileTypes: true });
+			const skills: PersonaSkill[] = [];
+
+			for (const entry of entries) {
+				if (entry.isFile() && entry.name.endsWith(".md")) {
+					const skillPath = path.join(skillsDir, entry.name);
+					const content = await fs.readFile(skillPath, "utf-8");
+					const name = entry.name.replace(/\.md$/, "");
+					skills.push({ name, content });
+				}
+			}
+
+			return skills;
+		} catch {
+			return [];
+		}
 	}
 }

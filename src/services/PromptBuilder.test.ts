@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bead } from "../types/bead.js";
 import type { ChorusConfig } from "../types/config.js";
 import { getDefaultConfig } from "../types/config.js";
+import type { AgentIdentity } from "../types/persona.js";
 import { PromptBuilder } from "./PromptBuilder.js";
 
 // Mock fs/promises
 vi.mock("node:fs/promises", () => ({
 	readFile: vi.fn(),
+	readdir: vi.fn(),
 }));
 
 // Mock RulesLoader
@@ -552,6 +554,174 @@ describe("PromptBuilder", () => {
 			expect(result).toContain("## Commit Message Rules");
 			expect(result).toContain("## Learnings Format");
 			expect(result).toContain("## Completion Protocol");
+		});
+	});
+
+	// AP07: Persona Integration Tests (6 tests)
+	describe("Persona Integration", () => {
+		describe("buildPersonaPrompt()", () => {
+			it("loads prompt from .chorus/agents/{persona}/prompt.md", async () => {
+				// Arrange
+				mockReadFile.mockImplementation(async (filePath) => {
+					if (
+						typeof filePath === "string" &&
+						filePath.includes(".chorus/agents/chip/prompt.md")
+					) {
+						return "# Chip Prompt\nYou are Chip.";
+					}
+					throw { code: "ENOENT" };
+				});
+				const identity: AgentIdentity = {
+					id: "chip-001",
+					persona: "chip",
+					displayName: "Chip-001",
+				};
+
+				// Act
+				const result = await builder.buildPersonaPrompt(
+					identity,
+					"/test/project",
+				);
+
+				// Assert
+				expect(result).toBe("# Chip Prompt\nYou are Chip.");
+			});
+
+			it("returns empty string if prompt.md missing", async () => {
+				// Arrange
+				mockReadFile.mockRejectedValue({ code: "ENOENT" });
+				const identity: AgentIdentity = {
+					id: "sage",
+					persona: "sage",
+					displayName: "Sage",
+				};
+
+				// Act
+				const result = await builder.buildPersonaPrompt(
+					identity,
+					"/test/project",
+				);
+
+				// Assert
+				expect(result).toBe("");
+			});
+		});
+
+		describe("appendPersonaRules()", () => {
+			it("loads rules from .chorus/agents/{persona}/rules.md", async () => {
+				// Arrange
+				mockReadFile.mockImplementation(async (filePath) => {
+					if (
+						typeof filePath === "string" &&
+						filePath.includes(".chorus/agents/patch/rules.md")
+					) {
+						return "# Patch Rules\n1. Fix bugs carefully";
+					}
+					throw { code: "ENOENT" };
+				});
+				const identity: AgentIdentity = {
+					id: "patch-001",
+					persona: "patch",
+					displayName: "Patch-001",
+				};
+
+				// Act
+				const result = await builder.appendPersonaRules(
+					identity,
+					"/test/project",
+				);
+
+				// Assert
+				expect(result).toBe("# Patch Rules\n1. Fix bugs carefully");
+			});
+
+			it("returns empty string if rules.md missing", async () => {
+				// Arrange
+				mockReadFile.mockRejectedValue({ code: "ENOENT" });
+				const identity: AgentIdentity = {
+					id: "echo",
+					persona: "echo",
+					displayName: "Echo",
+				};
+
+				// Act
+				const result = await builder.appendPersonaRules(
+					identity,
+					"/test/project",
+				);
+
+				// Assert
+				expect(result).toBe("");
+			});
+		});
+
+		describe("loadPersonaSkills()", () => {
+			it("reads all .md files from .chorus/agents/{persona}/skills/", async () => {
+				// Arrange - mock readdir to return skill files
+				const mockReaddir = vi.mocked(fs.readdir);
+				mockReaddir.mockResolvedValue([
+					{
+						name: "debugging.md",
+						isFile: () => true,
+						isDirectory: () => false,
+					},
+					{ name: "testing.md", isFile: () => true, isDirectory: () => false },
+				] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+				mockReadFile.mockImplementation(async (filePath) => {
+					if (
+						typeof filePath === "string" &&
+						filePath.includes("debugging.md")
+					) {
+						return "# Debugging Skill";
+					}
+					if (typeof filePath === "string" && filePath.includes("testing.md")) {
+						return "# Testing Skill";
+					}
+					throw { code: "ENOENT" };
+				});
+				const identity: AgentIdentity = {
+					id: "scout-001",
+					persona: "scout",
+					displayName: "Scout-001",
+				};
+
+				// Act
+				const result = await builder.loadPersonaSkills(
+					identity,
+					"/test/project",
+				);
+
+				// Assert
+				expect(result).toHaveLength(2);
+				expect(result).toContainEqual({
+					name: "debugging",
+					content: "# Debugging Skill",
+				});
+				expect(result).toContainEqual({
+					name: "testing",
+					content: "# Testing Skill",
+				});
+			});
+
+			it("returns empty array if skills/ directory missing", async () => {
+				// Arrange
+				const mockReaddir = vi.mocked(fs.readdir);
+				mockReaddir.mockRejectedValue({ code: "ENOENT" });
+				const identity: AgentIdentity = {
+					id: "archie",
+					persona: "archie",
+					displayName: "Archie",
+				};
+
+				// Act
+				const result = await builder.loadPersonaSkills(
+					identity,
+					"/test/project",
+				);
+
+				// Assert
+				expect(result).toEqual([]);
+			});
 		});
 	});
 });
