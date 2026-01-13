@@ -1,6 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentType, Learning } from "../types/learning.js";
+import type { AgentLogger, LogInput } from "./AgentLogger.js";
 import { LearningExtractor } from "./LearningExtractor.js";
+import { LearningStore } from "./LearningStore.js";
 
 describe("LearningExtractor", () => {
 	let extractor: LearningExtractor;
@@ -287,6 +292,128 @@ describe("LearningExtractor", () => {
 			expect(result).toContain("ch-abc");
 			expect(result).toContain("claude");
 			expect(result).toContain("performance");
+		});
+	});
+
+	// Echo persona logging tests (AP16)
+	describe("Echo persona logging", () => {
+		let tempDir: string;
+
+		const createMockAgentLogger = (): {
+			logger: AgentLogger;
+			logs: LogInput[];
+		} => {
+			const logs: LogInput[] = [];
+			const logger = {
+				log: vi.fn((input: LogInput) => logs.push(input)),
+			} as unknown as AgentLogger;
+			return { logger, logs };
+		};
+
+		beforeEach(() => {
+			tempDir = join(
+				tmpdir(),
+				`learning-extractor-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			);
+			mkdirSync(tempDir, { recursive: true });
+		});
+
+		afterEach(() => {
+			try {
+				rmSync(tempDir, { recursive: true, force: true });
+			} catch {
+				// Ignore cleanup errors
+			}
+		});
+
+		it("logs with persona: 'echo' and instanceId: 'echo'", () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const echoExtractor = new LearningExtractor({ agentLogger: logger });
+			const content = "- [LOCAL] Test learning";
+
+			// Act
+			echoExtractor.parse(content, testTaskId, testAgentType);
+
+			// Assert
+			expect(logs.length).toBeGreaterThan(0);
+			for (const log of logs) {
+				expect(log.persona).toBe("echo");
+				expect(log.instanceId).toBe("echo");
+			}
+		});
+
+		it("logs '[echo] Found N learnings in agent output'", () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const echoExtractor = new LearningExtractor({ agentLogger: logger });
+			const content = `- [LOCAL] First learning
+- [CROSS-CUTTING] Second learning`;
+
+			// Act
+			echoExtractor.parse(content, testTaskId, testAgentType);
+
+			// Assert
+			const extractionLog = logs.find((l) =>
+				l.message.includes("Found 2 learnings"),
+			);
+			expect(extractionLog).toBeDefined();
+			expect(extractionLog?.message).toContain(
+				"[echo] Found 2 learnings in agent output",
+			);
+		});
+
+		it("loads config from .chorus/agents/echo/config.json when present", () => {
+			// Arrange
+			const configDir = join(tempDir, ".chorus", "agents", "echo");
+			mkdirSync(configDir, { recursive: true });
+			const configContent = { dedupThreshold: 0.9, categories: ["testing"] };
+			writeFileSync(
+				join(configDir, "config.json"),
+				JSON.stringify(configContent),
+			);
+
+			const echoExtractor = new LearningExtractor({ projectDir: tempDir });
+
+			// Act
+			const config = echoExtractor.loadEchoConfig();
+
+			// Assert
+			expect(config).toBeDefined();
+			expect(config?.dedupThreshold).toBe(0.9);
+			expect(config?.categories).toEqual(["testing"]);
+		});
+
+		it("LearningStore logs '[echo] Stored learning to learnings.md (scope: X)'", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const store = new LearningStore(tempDir, { agentLogger: logger });
+			const learning: Learning = {
+				id: "test-id",
+				content: "Test learning content",
+				scope: "cross-cutting",
+				category: "testing",
+				source: {
+					taskId: "ch-test",
+					agentType: "claude",
+					timestamp: new Date(),
+				},
+				suggestPattern: false,
+			};
+
+			// Act
+			await store.append([learning]);
+
+			// Assert
+			const storageLog = logs.find((l) =>
+				l.message.includes("Stored learning"),
+			);
+			expect(storageLog).toBeDefined();
+			expect(storageLog?.message).toContain(
+				"[echo] Stored learning to learnings.md (scope: cross-cutting)",
+			);
+			expect(storageLog?.persona).toBe("echo");
+			expect(storageLog?.instanceId).toBe("echo");
 		});
 	});
 });

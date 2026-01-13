@@ -1,13 +1,74 @@
 import * as crypto from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { AgentType, Learning, LearningScope } from "../types/learning.js";
+import type { AgentLogger } from "./AgentLogger.js";
+
+/**
+ * Echo persona constants for logging.
+ */
+const ECHO_PERSONA = "echo" as const;
+const ECHO_INSTANCE_ID = "echo";
 
 interface ScopeResult {
 	scope: LearningScope;
 	content: string;
 }
 
+export interface LearningExtractorConfig {
+	/** Optional AgentLogger for Echo persona logging */
+	agentLogger?: AgentLogger;
+	/** Project directory for loading persona config */
+	projectDir?: string;
+}
+
 export class LearningExtractor {
 	private scopeRegex = /^\[(LOCAL|CROSS-CUTTING|ARCHITECTURAL)\]\s*/i;
+	private readonly agentLogger?: AgentLogger;
+	private readonly projectDir?: string;
+
+	constructor(config: LearningExtractorConfig = {}) {
+		this.agentLogger = config.agentLogger;
+		this.projectDir = config.projectDir;
+	}
+
+	/**
+	 * Log a message as Echo persona.
+	 */
+	private log(level: "info" | "debug", message: string): void {
+		if (this.agentLogger) {
+			this.agentLogger.log({
+				persona: ECHO_PERSONA,
+				instanceId: ECHO_INSTANCE_ID,
+				level,
+				message,
+			});
+		}
+	}
+
+	/**
+	 * Load Echo's config from .chorus/agents/echo/config.json if it exists.
+	 */
+	loadEchoConfig(): Record<string, unknown> | undefined {
+		if (!this.projectDir) {
+			return undefined;
+		}
+		const configPath = join(
+			this.projectDir,
+			".chorus",
+			"agents",
+			"echo",
+			"config.json",
+		);
+		if (existsSync(configPath)) {
+			try {
+				return JSON.parse(readFileSync(configPath, "utf-8"));
+			} catch {
+				return undefined;
+			}
+		}
+		return undefined;
+	}
 
 	parse(content: string, taskId: string, agentType: AgentType): Learning[] {
 		if (!content || !content.trim()) {
@@ -83,6 +144,14 @@ export class LearningExtractor {
 					agentType,
 					timestamp,
 				),
+			);
+		}
+
+		// Log Echo persona extraction
+		if (learnings.length > 0) {
+			this.log(
+				"info",
+				`[echo] Found ${learnings.length} learnings in agent output`,
 			);
 		}
 

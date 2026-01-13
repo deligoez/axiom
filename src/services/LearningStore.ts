@@ -15,6 +15,13 @@ import type {
 	LearningsMeta,
 	SimilarityResult,
 } from "../types/learning.js";
+import type { AgentLogger } from "./AgentLogger.js";
+
+/**
+ * Echo persona constants for logging.
+ */
+const ECHO_PERSONA = "echo" as const;
+const ECHO_INSTANCE_ID = "echo";
 
 const DEFAULT_DEDUP: DeduplicationConfig = {
 	algorithm: "similarity",
@@ -22,15 +29,36 @@ const DEFAULT_DEDUP: DeduplicationConfig = {
 	action: "skip",
 };
 
+export interface LearningStoreConfig {
+	dedupConfig?: Partial<DeduplicationConfig>;
+	/** Optional AgentLogger for Echo persona logging */
+	agentLogger?: AgentLogger;
+}
+
 export class LearningStore {
 	private repoPath: string;
 	readonly dedupConfig: DeduplicationConfig;
 	readonly learningsPath: string;
 	readonly metaPath: string;
+	private readonly agentLogger?: AgentLogger;
 
-	constructor(repoPath = ".", dedupConfig: Partial<DeduplicationConfig> = {}) {
+	constructor(
+		repoPath = ".",
+		config: Partial<DeduplicationConfig> | LearningStoreConfig = {},
+	) {
 		this.repoPath = repoPath;
-		this.dedupConfig = { ...DEFAULT_DEDUP, ...dedupConfig };
+
+		// Handle both old API (dedupConfig directly) and new API (config object)
+		if ("agentLogger" in config || "dedupConfig" in config) {
+			// New API: LearningStoreConfig
+			const storeConfig = config as LearningStoreConfig;
+			this.dedupConfig = { ...DEFAULT_DEDUP, ...storeConfig.dedupConfig };
+			this.agentLogger = storeConfig.agentLogger;
+		} else {
+			// Old API: Partial<DeduplicationConfig> directly
+			this.dedupConfig = { ...DEFAULT_DEDUP, ...config };
+			this.agentLogger = undefined;
+		}
 		this.learningsPath = path.join(
 			repoPath,
 			".claude",
@@ -43,6 +71,20 @@ export class LearningStore {
 			"rules",
 			"learnings-meta.json",
 		);
+	}
+
+	/**
+	 * Log a message as Echo persona.
+	 */
+	private log(level: "info" | "debug", message: string): void {
+		if (this.agentLogger) {
+			this.agentLogger.log({
+				persona: ECHO_PERSONA,
+				instanceId: ECHO_INSTANCE_ID,
+				level,
+				message,
+			});
+		}
 	}
 
 	async append(learnings: Learning[]): Promise<AppendResult> {
@@ -85,6 +127,11 @@ export class LearningStore {
 			let newContent = existingContent;
 			for (const learning of newLearnings) {
 				newContent += this.formatLearning(learning);
+				// Log Echo persona storage
+				this.log(
+					"info",
+					`[echo] Stored learning to learnings.md (scope: ${learning.scope})`,
+				);
 			}
 			await fs.writeFile(this.learningsPath, newContent, "utf-8");
 		}
