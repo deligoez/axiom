@@ -17,6 +17,7 @@ vi.mock("fs", async () => {
 // Mock chokidar
 const mockWatcher = {
 	on: vi.fn().mockReturnThis(),
+	off: vi.fn().mockReturnThis(),
 	close: vi.fn().mockResolvedValue(undefined),
 };
 
@@ -158,6 +159,7 @@ describe("BeadsService", () => {
 			service.watch();
 			await service.stop();
 
+			expect(mockWatcher.off).toHaveBeenCalledTimes(3);
 			expect(mockWatcher.close).toHaveBeenCalled();
 		});
 	});
