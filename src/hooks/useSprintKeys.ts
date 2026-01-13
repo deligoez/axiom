@@ -1,7 +1,3 @@
-import { useInput } from "ink";
-
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
-
 export interface UseSprintKeysOptions {
 	isSprintRunning: boolean;
 	onOpenPlanningPanel: () => void;
@@ -45,17 +41,4 @@ export function createSprintKeyHandler(
 			return;
 		}
 	};
-}
-
-/**
- * useSprintKeys - Hook for sprint keyboard bindings
- *
- * Provides keyboard shortcuts for sprint planning:
- * - Shift+S - Open sprint planning panel (when no sprint running)
- * - Esc - Cancel planning (close panel)
- */
-export function useSprintKeys(options: UseSprintKeysOptions): void {
-	const handler = createSprintKeyHandler(options);
-
-	useInput(handler, { isActive: getIsTTY() && !options.isDisabled });
 }
