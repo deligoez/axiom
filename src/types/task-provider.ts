@@ -1,5 +1,5 @@
 /**
- * Common task interface used by both BeadsCLI and TaskStoreAdapter.
+ * Common task interface for task providers.
  */
 export interface TaskProviderTask {
 	id: string;
@@ -25,8 +25,7 @@ export interface GetReadyOptions {
 }
 
 /**
- * Common interface for task providers (BeadsCLI, TaskStoreAdapter).
- * Allows gradual migration from BeadsCLI to native TaskStore.
+ * Common interface for task providers.
  */
 export interface TaskProvider {
 	getTask(id: string): Promise<TaskProviderTask | null>;
