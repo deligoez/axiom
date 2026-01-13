@@ -194,7 +194,16 @@ export class Orchestrator {
 			this.deps.config.completion?.taskTimeout ?? DEFAULT_TIMEOUT_MS;
 
 		const timer = setTimeout(() => {
-			void this.handleTimeout(agentId, taskId);
+			this.handleTimeout(agentId, taskId).catch((error) => {
+				console.error(
+					`[Orchestrator] Failed to handle timeout for agent ${agentId}:`,
+					error,
+				);
+				this.deps.eventEmitter?.emit("error", {
+					context: "handleTimeout",
+					error,
+				});
+			});
 		}, timeoutMs);
 
 		this.timeoutTimers.set(agentId, timer);

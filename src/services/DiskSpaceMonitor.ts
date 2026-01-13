@@ -92,11 +92,15 @@ export class DiskSpaceMonitor {
 		this.stopMonitoring();
 
 		// Check immediately
-		void this.checkAndEmit();
+		this.checkAndEmit().catch((error) => {
+			console.warn("[DiskSpaceMonitor] Failed to check disk space:", error);
+		});
 
 		// Then check at intervals
 		this.monitorInterval = setInterval(() => {
-			void this.checkAndEmit();
+			this.checkAndEmit().catch((error) => {
+				console.warn("[DiskSpaceMonitor] Failed to check disk space:", error);
+			});
 		}, intervalMs);
 	}
 

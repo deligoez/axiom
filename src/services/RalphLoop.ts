@@ -101,7 +101,18 @@ export class RalphLoop {
 				});
 			} else {
 				// Respawn - re-assign the task
-				void this.deps.orchestrator.assignTask({ taskId: event.taskId });
+				this.deps.orchestrator
+					.assignTask({ taskId: event.taskId })
+					.catch((error) => {
+						console.error(
+							`[RalphLoop] Failed to reassign task ${event.taskId}:`,
+							error,
+						);
+						this.deps.eventEmitter.emit("error", {
+							context: "assignTask",
+							error,
+						});
+					});
 			}
 		};
 
