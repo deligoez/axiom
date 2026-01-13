@@ -205,4 +205,111 @@ describe("AgentGrid", () => {
 		expect(lastFrame()).toContain("npm test");
 		expect(lastFrame()).toContain("10");
 	});
+
+	// Persona display tests (AP11)
+	describe("persona display", () => {
+		const createPersonaAgent = (
+			id: string,
+			taskId: string,
+			persona: import("../types/persona.js").PersonaName,
+			instanceNumber?: number,
+		) => ({
+			...createAgent(id, taskId),
+			identity: {
+				id: instanceNumber
+					? `${persona}-${instanceNumber.toString().padStart(3, "0")}`
+					: persona,
+				persona,
+				instanceNumber,
+				displayName: instanceNumber
+					? `${persona.charAt(0).toUpperCase() + persona.slice(1)}-${instanceNumber.toString().padStart(3, "0")}`
+					: persona.charAt(0).toUpperCase() + persona.slice(1),
+			},
+		});
+
+		it("shows header row with persona display names when showHeaders=true", () => {
+			// Arrange
+			const agents = [
+				createPersonaAgent("a1", "ch-001", "chip", 1),
+				createPersonaAgent("a2", "ch-002", "chip", 2),
+			];
+
+			// Act
+			const { lastFrame } = render(
+				<AgentGrid
+					agents={agents}
+					maxSlots={4}
+					gridConfig={defaultGridConfig}
+					showHeaders
+				/>,
+			);
+
+			// Assert - header shows display names
+			expect(lastFrame()).toContain("Chip-001");
+			expect(lastFrame()).toContain("Chip-002");
+		});
+
+		it("shows numbered identity for worker personas", () => {
+			// Arrange - chip is a worker persona (singular=false)
+			const agents = [
+				createPersonaAgent("a1", "ch-001", "chip", 1),
+				createPersonaAgent("a2", "ch-002", "chip", 42),
+			];
+
+			// Act
+			const { lastFrame } = render(
+				<AgentGrid
+					agents={agents}
+					maxSlots={4}
+					gridConfig={defaultGridConfig}
+					showHeaders
+				/>,
+			);
+
+			// Assert - numbered with padding
+			expect(lastFrame()).toContain("Chip-001");
+			expect(lastFrame()).toContain("Chip-042");
+		});
+
+		it("column headers use persona primary color (renders without error)", () => {
+			// Arrange - agents with different personas
+			const agents = [
+				createPersonaAgent("a1", "ch-001", "chip", 1),
+				createPersonaAgent("a2", "ch-002", "sage"),
+			];
+
+			// Act
+			const { lastFrame } = render(
+				<AgentGrid
+					agents={agents}
+					maxSlots={4}
+					gridConfig={defaultGridConfig}
+					showHeaders
+				/>,
+			);
+
+			// Assert - both render (color testing limited in ink-testing-library)
+			expect(lastFrame()).toContain("Chip-001");
+			expect(lastFrame()).toContain("Sage");
+		});
+
+		it("shows dimmed placeholder for empty slots in header", () => {
+			// Arrange - 1 agent, 2 slots
+			const agents = [createPersonaAgent("a1", "ch-001", "chip", 1)];
+
+			// Act
+			const { lastFrame } = render(
+				<AgentGrid
+					agents={agents}
+					maxSlots={2}
+					gridConfig={defaultGridConfig}
+					showHeaders
+				/>,
+			);
+
+			// Assert - header has persona name and dimmed placeholder
+			expect(lastFrame()).toContain("Chip-001");
+			expect(lastFrame()).toContain("-"); // dimmed placeholder for empty
+		});
+	});
 });
