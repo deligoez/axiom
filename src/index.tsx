@@ -78,6 +78,17 @@ export async function run(args: string[]): Promise<void> {
 		return;
 	}
 
+	// Check for interactive terminal before starting TUI
+	// Ink requires raw mode which only works in TTY
+	const isTTY = process.stdin?.isTTY || process.stdout?.isTTY;
+	if (!isTTY) {
+		console.error(
+			"Error: Chorus requires an interactive terminal.\n" +
+				"Run 'chorus' directly in a terminal, not in a pipe or script.",
+		);
+		process.exit(1);
+	}
+
 	// Enter alternate screen and position cursor at top-left
 	process.stdout.write(ENTER_ALT_SCREEN + CLEAR_SCREEN + CURSOR_HOME);
 

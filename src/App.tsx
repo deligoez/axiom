@@ -60,9 +60,6 @@ export function App({ projectRoot }: AppProps): React.ReactElement {
 		config: { projectRoot },
 	});
 
-	// Track if initialization has run (ref persists across renders)
-	const hasInitialized = useRef(false);
-
 	// Create TaskStore instance (memoized to avoid recreating on every render)
 	const taskStore = useMemo(() => new TaskStore(projectRoot), [projectRoot]);
 
@@ -112,7 +109,11 @@ export function App({ projectRoot }: AppProps): React.ReactElement {
 		};
 	}, [taskStore]);
 
-	// Handle state restoration on first render (synchronous)
+	// Track if initialization has run (ref persists across renders)
+	const hasInitialized = useRef(false);
+
+	// Initialize state synchronously on first render
+	// This runs during render to work with ink-testing-library which doesn't flush effects
 	if (!hasInitialized.current) {
 		hasInitialized.current = true;
 
