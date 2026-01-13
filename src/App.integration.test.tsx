@@ -9,12 +9,12 @@ import { render } from "ink-testing-library";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Agent } from "./components/AgentGrid.js";
 import { ImplementationMode } from "./modes/ImplementationMode.js";
+import { createMockAgent } from "./test/fixtures/mockOrchestrator.js";
 import {
 	createMixedTasks,
 	createReadyTasks,
 	createTestTask,
-} from "./test/fixtures/mockBeadsCLI.js";
-import { createMockAgent } from "./test/fixtures/mockOrchestrator.js";
+} from "./test/fixtures/taskFixtures.js";
 import type { TaskProviderTask } from "./types/task-provider.js";
 
 // Mock useTerminalSize hook

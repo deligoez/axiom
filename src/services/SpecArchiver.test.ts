@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecArchiver } from "./SpecArchiver.js";
 import { SpecEvolutionTracker } from "./SpecEvolutionTracker.js";
 
-// Mock BeadsCLI
+// Mock TaskProvider interface
 const mockTaskProvider = {
 	getTaskStatus: vi.fn(),
 };
