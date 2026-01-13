@@ -35,6 +35,9 @@ Thumbs.db
 node_modules/
 npm-debug.log*
 
+# Test coverage (generated)
+coverage/
+
 # Logs
 *.log
 logs/
