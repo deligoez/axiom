@@ -1,6 +1,5 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { Bead } from "../types/bead.js";
 import type { ChorusConfig } from "../types/config.js";
 import type { AgentIdentity } from "../types/persona.js";
 import type {
@@ -8,6 +7,7 @@ import type {
 	CompletionRule,
 	LearningRule,
 } from "../types/rules.js";
+import type { Task } from "../types/task.js";
 import { RulesLoader } from "./RulesLoader.js";
 
 /**
@@ -21,7 +21,7 @@ export interface PersonaSkill {
 }
 
 export interface PromptContext {
-	task: Bead;
+	task: Task;
 	branch: string;
 	taskId: string;
 	config: ChorusConfig;
@@ -66,7 +66,7 @@ export class PromptBuilder {
 		return sections.join("\n\n");
 	}
 
-	buildTaskSection(task: Bead): string {
+	buildTaskSection(task: Task): string {
 		const lines = [`# Task: ${task.id}`, "", "## Description", task.title];
 
 		if (task.description) {

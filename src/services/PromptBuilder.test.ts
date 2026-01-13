@@ -1,9 +1,9 @@
 import * as fs from "node:fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Bead } from "../types/bead.js";
 import type { ChorusConfig } from "../types/config.js";
 import { getDefaultConfig } from "../types/config.js";
 import type { AgentIdentity } from "../types/persona.js";
+import type { Task } from "../types/task.js";
 import { PromptBuilder } from "./PromptBuilder.js";
 
 // Mock fs/promises
@@ -97,7 +97,7 @@ const mockReadFile = vi.mocked(fs.readFile);
 describe("PromptBuilder", () => {
 	let builder: PromptBuilder;
 	let mockConfig: ChorusConfig;
-	let mockTask: Bead;
+	let mockTask: Task;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -107,11 +107,16 @@ describe("PromptBuilder", () => {
 			id: "ch-abc",
 			title: "Test task title",
 			description: "## Acceptance Criteria\n- [ ] Test passes",
-			status: "in_progress",
-			priority: 1,
+			status: "doing",
 			type: "task",
-			created: new Date().toISOString(),
-			updated: new Date().toISOString(),
+			tags: [],
+			dependencies: [],
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+			reviewCount: 0,
+			learningsCount: 0,
+			hasLearnings: false,
+			version: 1,
 		};
 	});
 
@@ -185,7 +190,7 @@ describe("PromptBuilder", () => {
 		it("handles task without body (returns prompt with title only)", async () => {
 			// Arrange
 			mockReadFile.mockRejectedValue({ code: "ENOENT" });
-			const taskWithoutBody: Bead = {
+			const taskWithoutBody: Task = {
 				...mockTask,
 				description: undefined,
 			};
