@@ -19,33 +19,17 @@ describe("HelpPanel", () => {
 		expect(lastFrame()).toContain("NAVIGATION");
 		expect(lastFrame()).toContain("Move down");
 		expect(lastFrame()).toContain("Move up");
+		expect(lastFrame()).toContain("Switch panels");
 	});
 
-	it("shows AGENT CONTROL category shortcuts", () => {
-		// Arrange & Act
-		const { lastFrame } = render(<HelpPanel visible={true} />);
-
-		// Assert
-		expect(lastFrame()).toContain("AGENT CONTROL");
-		expect(lastFrame()).toContain("Spawn agent");
-	});
-
-	it("shows MODE CONTROL category shortcuts (including 'm' key)", () => {
+	it("shows MODE CONTROL category shortcuts", () => {
 		// Arrange & Act
 		const { lastFrame } = render(<HelpPanel visible={true} />);
 
 		// Assert
 		expect(lastFrame()).toContain("MODE CONTROL");
 		expect(lastFrame()).toContain("Toggle mode");
-	});
-
-	it("shows TASK MANAGEMENT category shortcuts", () => {
-		// Arrange & Act
-		const { lastFrame } = render(<HelpPanel visible={true} />);
-
-		// Assert
-		expect(lastFrame()).toContain("TASK MANAGEMENT");
-		expect(lastFrame()).toContain("New task");
+		expect(lastFrame()).toContain("Planning mode");
 	});
 
 	it("shows VIEW category shortcuts", () => {
@@ -54,34 +38,18 @@ describe("HelpPanel", () => {
 
 		// Assert
 		expect(lastFrame()).toContain("VIEW");
-		expect(lastFrame()).toContain("Fullscreen");
+		expect(lastFrame()).toContain("View learnings");
 	});
 
-	it("shows RECOVERY category shortcuts", () => {
-		// Arrange & Act
-		const { lastFrame } = render(<HelpPanel visible={true} />);
-
-		// Assert
-		expect(lastFrame()).toContain("RECOVERY");
-		expect(lastFrame()).toContain("Rollback");
-	});
-
-	it("shows PLANNING & LEARNING category shortcuts", () => {
-		// Arrange & Act
-		const { lastFrame } = render(<HelpPanel visible={true} />);
-
-		// Assert
-		expect(lastFrame()).toContain("PLANNING");
-		expect(lastFrame()).toContain("Plan more");
-	});
-
-	it("shows GENERAL category shortcuts (including M for Merge queue view)", () => {
+	it("shows GENERAL category shortcuts", () => {
 		// Arrange & Act
 		const { lastFrame } = render(<HelpPanel visible={true} />);
 
 		// Assert
 		expect(lastFrame()).toContain("GENERAL");
-		expect(lastFrame()).toContain("Merge queue");
+		expect(lastFrame()).toContain("Toggle help");
+		expect(lastFrame()).toContain("Intervention menu");
+		expect(lastFrame()).toContain("Quit");
 	});
 
 	it("categories in two-column layout", () => {
@@ -90,15 +58,9 @@ describe("HelpPanel", () => {
 
 		// Assert - Both column categories appear
 		expect(lastFrame()).toContain("NAVIGATION");
-		expect(lastFrame()).toContain("AGENT CONTROL");
-	});
-
-	it('P key shows "Plan more tasks"', () => {
-		// Arrange & Act
-		const { lastFrame } = render(<HelpPanel visible={true} />);
-
-		// Assert
-		expect(lastFrame()).toContain("Plan more");
+		expect(lastFrame()).toContain("MODE CONTROL");
+		expect(lastFrame()).toContain("VIEW");
+		expect(lastFrame()).toContain("GENERAL");
 	});
 
 	it('m key shows "Toggle mode"', () => {
@@ -107,6 +69,14 @@ describe("HelpPanel", () => {
 
 		// Assert
 		expect(lastFrame()).toContain("Toggle mode");
+	});
+
+	it('p key shows "Planning mode"', () => {
+		// Arrange & Act
+		const { lastFrame } = render(<HelpPanel visible={true} />);
+
+		// Assert
+		expect(lastFrame()).toContain("Planning mode");
 	});
 
 	it("shows close hint", () => {

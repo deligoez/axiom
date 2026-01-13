@@ -242,19 +242,15 @@ describe("E2E: TUI Integration", () => {
 			expect(onHelpToggle).toHaveBeenCalled();
 		});
 
-		it("HelpPanel shows all keyboard shortcuts", () => {
+		it("HelpPanel shows implemented keyboard shortcuts", () => {
 			// Arrange & Act
 			const { lastFrame } = render(<HelpPanel visible={true} />);
 
-			// Assert - Check key categories exist
+			// Assert - Check implemented categories exist (ch-6dg1 removed unimplemented)
 			const output = lastFrame() ?? "";
 			expect(output).toContain("NAVIGATION");
-			expect(output).toContain("AGENT CONTROL");
 			expect(output).toContain("MODE CONTROL");
-			expect(output).toContain("TASK MANAGEMENT");
 			expect(output).toContain("VIEW");
-			expect(output).toContain("RECOVERY");
-			expect(output).toContain("PLANNING & LEARNING");
 			expect(output).toContain("GENERAL");
 		});
 	});

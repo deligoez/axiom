@@ -59,19 +59,15 @@ describe("E2E: Help Panel Toggle (? key)", () => {
 		expect(onToggle).toHaveBeenCalledTimes(1);
 	});
 
-	it("help panel shows all 8 categories", () => {
+	it("help panel shows 4 implemented categories", () => {
 		// Arrange & Act
 		const { lastFrame } = render(<HelpPanel visible={true} />);
 
-		// Assert - Check for all 8 categories from HelpPanel
+		// Assert - Check for implemented categories (ch-6dg1 removed unimplemented)
 		const output = lastFrame() ?? "";
 		expect(output).toContain("NAVIGATION");
-		expect(output).toContain("AGENT CONTROL");
 		expect(output).toContain("MODE CONTROL");
-		expect(output).toContain("TASK MANAGEMENT");
 		expect(output).toContain("VIEW");
-		expect(output).toContain("RECOVERY");
-		expect(output).toContain("PLANNING & LEARNING");
 		expect(output).toContain("GENERAL");
 	});
 
