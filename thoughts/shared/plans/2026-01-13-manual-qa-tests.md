@@ -63,8 +63,6 @@ npx chorus
 # CLI flagları
 npx chorus --version          # Versiyon göster
 npx chorus --help             # Yardım göster
-npx chorus init               # Init mode başlat
-npx chorus plan               # Planning mode başlat
 ```
 
 ---
@@ -98,13 +96,11 @@ npm run quality             # Full pipeline (test + typecheck + lint + knip)
 | # | Komut | Beklenen Sonuç | Durum |
 |---|-------|----------------|-------|
 | 1 | `npx chorus --version` | Versiyon numarası (örn: `0.1.0`) | ☐ |
-| 2 | `npx chorus --help` | Yardım mesajı (USAGE, COMMANDS, OPTIONS, EXAMPLES) | ☐ |
+| 2 | `npx chorus --help` | Yardım mesajı (USAGE, OPTIONS, EXAMPLES) | ☐ |
 | 3 | `npx chorus --unknown` | Yardım mesajı gösterir (hata yerine) | ☐ |
-| 4 | `npx chorus` (git repo yok) | Hata veya Init Mode | ☐ |
+| 4 | `npx chorus anything` | Yardım mesajı gösterir (bilinmeyen komut) | ☐ |
 | 5 | `npx chorus` (.chorus/ yok) | Init Mode başlar | ☐ |
 | 6 | `npx chorus` (.chorus/ + planning-state.json var) | State'e göre mode | ☐ |
-| 7 | `npx chorus init` | Init Mode başlar (force) | ☐ |
-| 8 | `npx chorus plan` | Planning Mode başlar (force) | ☐ |
 
 ### T1.2: Dizin Yapısı Kontrolü
 
@@ -802,7 +798,7 @@ echo "invalid json" > .chorus/config.json
 
 | Kategori | Toplam Test | Geçen | Kalan | Notlar |
 |----------|-------------|-------|-------|--------|
-| Level 1: CLI | 8 | | | |
+| Level 1: CLI | 6 | | | |
 | Level 2: Init | 5 | | | |
 | Level 3: Planning | 3 | | | |
 | Level 4: Implementation | 4 | | | |
@@ -814,7 +810,7 @@ echo "invalid json" > .chorus/config.json
 | Level 10: Recovery | 5 | | | |
 | Level 11: Sprint | 3 | | | |
 | Level 12: Stress | 7 | | | |
-| **TOPLAM** | **85** | | | |
+| **TOPLAM** | **83** | | | |
 
 ### Test Metadata
 

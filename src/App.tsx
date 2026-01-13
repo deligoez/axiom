@@ -45,12 +45,8 @@ function mapStatusToUI(status: TaskStatus): UIStatus {
 	}
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface CliArgs {}
-
 export interface AppProps {
 	projectRoot: string;
-	cliArgs?: CliArgs;
 }
 
 /**
@@ -59,7 +55,7 @@ export interface AppProps {
  * Reads from ChorusMachine state to determine which mode to render.
  * Does NOT manage routing state directly - all transitions happen via machine events.
  */
-export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
+export function App({ projectRoot }: AppProps): React.ReactElement {
 	const { snapshot, send } = useChorusMachine({
 		config: { projectRoot },
 	});
