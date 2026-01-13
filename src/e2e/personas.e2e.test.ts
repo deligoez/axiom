@@ -43,7 +43,7 @@ describe("E2E: Persona Display (AP17)", () => {
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (1)", 10000);
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		// Assert - app renders with task and agent grid showing empty slots
 		const output = ptyResult.getCleanOutput();
@@ -64,7 +64,7 @@ describe("E2E: Persona Display (AP17)", () => {
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (2)", 10000);
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		// Assert - status line shows task stats
 		const output = ptyResult.getCleanOutput();
@@ -125,7 +125,7 @@ describe("E2E: Persona Display (AP17)", () => {
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (1)", 10000);
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		// Assert - task panel renders with short ID
 		const output = ptyResult.getCleanOutput();
@@ -148,7 +148,7 @@ describe("E2E: Persona Display (AP17)", () => {
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (3)", 10000);
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		// Assert - all major UI elements render
 		const output = ptyResult.getCleanOutput();

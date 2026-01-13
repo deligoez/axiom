@@ -8,6 +8,9 @@ export default defineConfig({
     // Exclude integration tests from default run - they call real Claude CLI
     exclude: ['src/**/*.integration.test.{ts,tsx}', 'node_modules/**'],
     setupFiles: ['./vitest.setup.ts'],
+    // Performance optimizations
+    pool: 'threads', // Faster than 'forks' for most cases
+    maxConcurrency: 20, // Allow more concurrent tests
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

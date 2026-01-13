@@ -1,7 +1,15 @@
+import { exec } from "node:child_process";
+import * as fs from "node:fs/promises";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { RealGitService } from "../services/GitService.js";
 import { MergeWorker } from "../services/MergeWorker.js";
-import { RebaseRetry } from "../services/RebaseRetry.js";
+import {
+	type ExecResult,
+	RebaseRetry,
+	type RebaseRetryDeps,
+} from "../services/RebaseRetry.js";
 import {
 	abortMerge,
 	abortRebase,
@@ -14,6 +22,42 @@ import {
 	isInMergeConflict,
 	setupMergeConflict,
 } from "../test-utils/git-fixtures.js";
+
+const execAsync = promisify(exec);
+
+/**
+ * Create RebaseRetryDeps that run commands in a specific directory.
+ * This avoids using process.chdir() which is not supported in thread workers.
+ */
+function createRebaseDeps(cwd: string): RebaseRetryDeps {
+	return {
+		exec: async (cmd: string): Promise<ExecResult> => {
+			try {
+				const { stdout, stderr } = await execAsync(cmd, { cwd });
+				return { exitCode: 0, stdout, stderr };
+			} catch (error) {
+				const err = error as {
+					code?: number;
+					stdout?: string;
+					stderr?: string;
+				};
+				return {
+					exitCode: err.code || 1,
+					stdout: err.stdout || "",
+					stderr: err.stderr || "",
+				};
+			}
+		},
+		fileExists: async (path: string): Promise<boolean> => {
+			try {
+				await fs.access(join(cwd, path));
+				return true;
+			} catch {
+				return false;
+			}
+		},
+	};
+}
 
 describe("E2E: MergeService", () => {
 	let repo: GitTestRepo;
@@ -160,21 +204,15 @@ describe("E2E: MergeService", () => {
 			createCommit(repo.path, "Main update", "main-update.txt");
 			checkoutBranch(repo.path, "feature/rebase-clean");
 
-			const rebase = new RebaseRetry();
-			// Change to repo directory for rebase
-			const originalCwd = process.cwd();
-			process.chdir(repo.path);
+			// Use deps with cwd instead of process.chdir() (not supported in thread workers)
+			const rebase = new RebaseRetry(createRebaseDeps(repo.path));
 
-			try {
-				// Act
-				const result = await rebase.rebase("main");
+			// Act
+			const result = await rebase.rebase("main");
 
-				// Assert
-				expect(result.success).toBe(true);
-				expect(result.rebased).toBe(true);
-			} finally {
-				process.chdir(originalCwd);
-			}
+			// Assert
+			expect(result.success).toBe(true);
+			expect(result.rebased).toBe(true);
 		});
 
 		it("detects rebase conflict", async () => {
@@ -182,9 +220,8 @@ describe("E2E: MergeService", () => {
 			setupMergeConflict(repo.path, "feature/rebase-conflict");
 			checkoutBranch(repo.path, "feature/rebase-conflict");
 
-			const rebase = new RebaseRetry();
-			const originalCwd = process.cwd();
-			process.chdir(repo.path);
+			// Use deps with cwd instead of process.chdir() (not supported in thread workers)
+			const rebase = new RebaseRetry(createRebaseDeps(repo.path));
 
 			try {
 				// Act
@@ -195,7 +232,6 @@ describe("E2E: MergeService", () => {
 				expect(result.hadConflicts).toBe(true);
 			} finally {
 				abortRebase(repo.path);
-				process.chdir(originalCwd);
 			}
 		});
 
@@ -204,20 +240,15 @@ describe("E2E: MergeService", () => {
 			setupMergeConflict(repo.path, "feature/rebase-abort");
 			checkoutBranch(repo.path, "feature/rebase-abort");
 
-			const rebase = new RebaseRetry();
-			const originalCwd = process.cwd();
-			process.chdir(repo.path);
+			// Use deps with cwd instead of process.chdir() (not supported in thread workers)
+			const rebase = new RebaseRetry(createRebaseDeps(repo.path));
 
-			try {
-				// Act
-				const result = await rebase.rebaseAndRetry("main");
+			// Act
+			const result = await rebase.rebaseAndRetry("main");
 
-				// Assert
-				expect(result.ready).toBe(false);
-				expect(result.aborted).toBe(true);
-			} finally {
-				process.chdir(originalCwd);
-			}
+			// Assert
+			expect(result.ready).toBe(false);
+			expect(result.aborted).toBe(true);
 		});
 	});
 

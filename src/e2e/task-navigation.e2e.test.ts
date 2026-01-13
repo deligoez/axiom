@@ -40,7 +40,7 @@ describe("E2E: Task Navigation (j/k) PTY", () => {
 		// Act - wait for app to render with tasks
 		await ptyResult.waitForText("Tasks (3)", 10000);
 		// Give time for selection state to render
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		// Assert - tasks rendered with nav1 short ID
 		const output = ptyResult.getCleanOutput();
