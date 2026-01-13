@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { type Agent, AgentGrid } from "../components/AgentGrid.js";
 import { FooterBar } from "../components/FooterBar.js";
 import { HeaderBar } from "../components/HeaderBar.js";
+import HelpPanel from "../components/HelpPanel.js";
 import { InterventionPanel } from "../components/InterventionPanel.js";
 import TaskPanel from "../components/TaskPanel.js";
 import { TwoColumnLayout } from "../components/TwoColumnLayout.js";
@@ -58,6 +59,7 @@ export function ImplementationMode({
 	const gridConfig = useAgentGrid(width, agents.length, maxAgents);
 	const [showExitConfirm, setShowExitConfirm] = useState(false);
 	const [showIntervention, setShowIntervention] = useState(false);
+	const [showHelp, setShowHelp] = useState(false);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
 	// Memoized callbacks to prevent unnecessary re-renders
@@ -74,7 +76,7 @@ export function ImplementationMode({
 		itemCount: tasks.length,
 		selectedIndex,
 		onSelect: setSelectedIndex,
-		isActive: !showIntervention && !showExitConfirm,
+		isActive: !showIntervention && !showExitConfirm && !showHelp,
 		wrap: true,
 	});
 
@@ -85,7 +87,7 @@ export function ImplementationMode({
 	// Wire up 'i' key to open intervention panel
 	useInterventionKey({
 		onOpen: handleOpenIntervention,
-		isDisabled: showExitConfirm, // Don't open intervention if exit confirm is showing
+		isDisabled: showExitConfirm || showHelp, // Don't open intervention if exit confirm or help is showing
 	});
 
 	// Calculate task stats for footer
@@ -104,6 +106,14 @@ export function ImplementationMode({
 				return;
 			}
 
+			// Handle help panel toggle
+			if (showHelp) {
+				if (input === "?" || key.escape) {
+					setShowHelp(false);
+				}
+				return;
+			}
+
 			// Handle exit confirmation
 			if (showExitConfirm) {
 				if (input === "y" || input === "Y") {
@@ -111,6 +121,12 @@ export function ImplementationMode({
 				} else if (input === "n" || input === "N" || key.escape) {
 					setShowExitConfirm(false);
 				}
+				return;
+			}
+
+			// '?' - Toggle help panel
+			if (input === "?") {
+				setShowHelp(true);
 				return;
 			}
 
@@ -257,8 +273,12 @@ export function ImplementationMode({
 				/>
 			)}
 
+			{/* Help Panel (modal overlay) */}
+			{showHelp && <HelpPanel visible={showHelp} />}
+
 			{/* Main content area */}
 			{!showIntervention &&
+				!showHelp &&
 				(noTasksMessage || (
 					<TwoColumnLayout
 						leftWidth={30}
