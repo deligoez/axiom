@@ -40,6 +40,8 @@ describe("E2E: Single Task Review (R01)", () => {
 
 		// Act - wait for app to render with tasks
 		await ptyResult.waitForText("Tasks (3)", 10000);
+		// Wait for full render after header appears
+		await new Promise((r) => setTimeout(r, 200));
 
 		// Assert - tasks rendered including the reviewing one
 		const output = ptyResult.getCleanOutput();
@@ -57,6 +59,8 @@ describe("E2E: Single Task Review (R01)", () => {
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
+		// Wait for full render after header appears
+		await new Promise((r) => setTimeout(r, 200));
 
 		// Act - press j to move to second task (reviewing)
 		await sendKey(ptyResult, "j", 300);
@@ -77,6 +81,8 @@ describe("E2E: Single Task Review (R01)", () => {
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
+		// Wait for full render after header appears
+		await new Promise((r) => setTimeout(r, 200));
 
 		// Navigate to reviewing task
 		await sendKey(ptyResult, "j", 300);
@@ -102,6 +108,8 @@ describe("E2E: Single Task Review (R01)", () => {
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
+		// Wait for full render after header appears
+		await new Promise((r) => setTimeout(r, 200));
 
 		// Navigate and press R
 		await sendKey(ptyResult, "j", 300);
