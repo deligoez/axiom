@@ -1,7 +1,9 @@
 import { useInput } from "ink";
 import { useRef } from "react";
 
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Note: In node-pty spawned processes, stdin.isTTY may be false even with a PTY.
+// Check both stdin and stdout for TTY support.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 export interface UseNavigationKeysOptions {
 	itemCount: number;

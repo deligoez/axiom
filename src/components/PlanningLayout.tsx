@@ -10,9 +10,10 @@ export interface PlanningLayoutProps {
 
 type FocusArea = "agent" | "input";
 
-// Check if stdin supports raw mode (safe check)
-// Using a getter to allow test mocking
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Check if we're in an interactive terminal.
+// Note: In node-pty spawned processes, stdin.isTTY may be false even with a PTY.
+// Check both stdin and stdout for TTY support.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 /**
  * PlanningLayout provides 80% agent window + 20% chat input layout for planning mode

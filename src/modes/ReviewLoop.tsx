@@ -8,7 +8,9 @@ import type {
 	ValidatorTask,
 } from "../services/TaskValidator.js";
 
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Note: In node-pty spawned processes, stdin.isTTY may be false even with a PTY.
+// Check both stdin and stdout for TTY support.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 // Event types emitted to XState machine
 export type ReviewLoopEvent =

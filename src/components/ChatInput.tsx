@@ -9,9 +9,10 @@ export interface ChatInputProps {
 	history?: string[];
 }
 
-// Check if stdin supports raw mode (safe check)
-// Using a getter to allow test mocking
-const getIsTTY = () => Boolean(process.stdin?.isTTY);
+// Check if we're in an interactive terminal.
+// Note: In node-pty spawned processes, stdin.isTTY may be false even with a PTY.
+// Check both stdin and stdout for TTY support.
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
 
 /**
  * ChatInput component for user text input with send functionality
