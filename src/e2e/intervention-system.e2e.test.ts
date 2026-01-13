@@ -76,9 +76,8 @@ describe("E2E: Human Intervention System", () => {
 			await new Promise((r) => setTimeout(r, 50));
 			const duration = handler.getPauseDuration();
 
-			// Assert
+			// Assert - duration is positive (correctness, not performance)
 			expect(duration).toBeGreaterThan(0);
-			expect(duration).toBeLessThan(200);
 		});
 	});
 

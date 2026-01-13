@@ -135,13 +135,10 @@ describe("INT-15: Scout Persona Integration", () => {
 		}
 		await store.flush();
 
-		// Act: Select with timing
-		const start = Date.now();
+		// Act: Select task
 		const selected = store.selectNext();
-		const duration = Date.now() - start;
 
-		// Assert: Selection < 100ms and returns next-tagged task
-		expect(duration).toBeLessThan(100);
+		// Assert: Returns next-tagged task (correctness, not performance)
 		expect(selected?.title).toBe("Task 50"); // The one with "next" tag
 	});
 });

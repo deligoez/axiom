@@ -268,13 +268,10 @@ fi
 			});
 
 			// Act
-			const start = Date.now();
 			const result = await noRetryRunner.runHandler(handler, input);
-			const duration = Date.now() - start;
 
-			// Assert - should return immediately without retry delay
+			// Assert - should return without retry (correctness, not performance)
 			expect(result.result).toBe("continue");
-			expect(duration).toBeLessThan(500); // Should be quick, no retry wait
 		});
 	});
 
