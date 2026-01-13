@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { FullScreenBox } from "fullscreen-ink";
 import { Box, render, Text } from "ink";
 import { App } from "./App.js";
