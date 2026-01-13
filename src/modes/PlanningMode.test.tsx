@@ -79,7 +79,7 @@ describe("PlanningMode", () => {
 				<PlanningMode
 					onModeSwitch={onModeSwitchMock}
 					initialMessages={[
-						{ role: "assistant", content: "Planning response" },
+						{ id: "msg-1", role: "assistant", content: "Planning response" },
 					]}
 				/>,
 			);
@@ -95,7 +95,9 @@ describe("PlanningMode", () => {
 			const { lastFrame } = render(
 				<PlanningMode
 					onModeSwitch={onModeSwitchMock}
-					initialMessages={[{ role: "user", content: "Build a login system" }]}
+					initialMessages={[
+						{ id: "msg-1", role: "user", content: "Build a login system" },
+					]}
 				/>,
 			);
 
@@ -110,6 +112,7 @@ describe("PlanningMode", () => {
 					onModeSwitch={onModeSwitchMock}
 					initialMessages={[
 						{
+							id: "msg-1",
 							role: "user",
 							content: "Review these tasks:\n1. Task A\n2. Task B",
 						},
@@ -127,7 +130,11 @@ describe("PlanningMode", () => {
 				<PlanningMode
 					onModeSwitch={onModeSwitchMock}
 					initialMessages={[
-						{ role: "user", content: "Parse spec from ./docs/spec.md" },
+						{
+							id: "msg-1",
+							role: "user",
+							content: "Parse spec from ./docs/spec.md",
+						},
 					]}
 				/>,
 			);
@@ -163,8 +170,8 @@ describe("PlanningMode", () => {
 		it("preserves conversation state for mode switch", () => {
 			// Arrange
 			const messages = [
-				{ role: "user" as const, content: "My goal" },
-				{ role: "assistant" as const, content: "Agent response" },
+				{ id: "msg-1", role: "user" as const, content: "My goal" },
+				{ id: "msg-2", role: "assistant" as const, content: "Agent response" },
 			];
 
 			// Act
@@ -185,8 +192,8 @@ describe("PlanningMode", () => {
 		it("shows task list panel when tasks exist", () => {
 			// Arrange
 			const tasks = [
-				{ title: "Task 1", description: "First task" },
-				{ title: "Task 2", description: "Second task" },
+				{ id: "task-1", title: "Task 1", description: "First task" },
+				{ id: "task-2", title: "Task 2", description: "Second task" },
 			];
 
 			// Act

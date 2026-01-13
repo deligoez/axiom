@@ -66,11 +66,15 @@ export function AgentFullscreen({
 				borderBottom={false}
 				paddingX={1}
 			>
-				{visibleLines.map((line, index) => (
-					<Text key={startIndex + index} wrap="truncate">
-						{line}
-					</Text>
-				))}
+				{visibleLines.map((line, relativeIndex) => {
+					// Use absolute line number as stable key (output is append-only)
+					const lineNumber = startIndex + relativeIndex;
+					return (
+						<Text key={`line-${lineNumber}`} wrap="truncate">
+							{line}
+						</Text>
+					);
+				})}
 			</Box>
 
 			{/* Footer */}

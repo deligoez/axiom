@@ -53,8 +53,12 @@ export function ReviewResults({
 					<Text bold color="red">
 						Errors ({errors.length})
 					</Text>
-					{errors.map((error, index) => (
-						<Box key={`error-${index}`} flexDirection="column" marginLeft={1}>
+					{errors.map((error) => (
+						<Box
+							key={`error-${error.rule}-${error.field ?? error.message}`}
+							flexDirection="column"
+							marginLeft={1}
+						>
 							<Box gap={1}>
 								<Text color="red">✗</Text>
 								{taskId && <Text dimColor>[{taskId}]</Text>}
@@ -71,8 +75,12 @@ export function ReviewResults({
 					<Text bold color="yellow">
 						Warnings ({warnings.length})
 					</Text>
-					{warnings.map((warning, index) => (
-						<Box key={`warning-${index}`} marginLeft={1} gap={1}>
+					{warnings.map((warning) => (
+						<Box
+							key={`warning-${warning.rule}-${warning.field ?? warning.message}`}
+							marginLeft={1}
+							gap={1}
+						>
 							<Text color="yellow">⚠</Text>
 							<Text>{warning.message}</Text>
 						</Box>
@@ -86,8 +94,8 @@ export function ReviewResults({
 					<Text bold color="blue">
 						Suggestions
 					</Text>
-					{suggestions.map((suggestion, index) => (
-						<Box key={`suggestion-${index}`} marginLeft={1} gap={1}>
+					{suggestions.map((suggestion) => (
+						<Box key={`suggestion-${suggestion}`} marginLeft={1} gap={1}>
 							<Text color="blue">→</Text>
 							<Text>{suggestion}</Text>
 						</Box>

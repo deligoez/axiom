@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { PlanningLayout } from "../components/PlanningLayout.js";
 
 export interface PlanningMessage {
+	id: string;
 	role: "user" | "assistant" | "system";
 	content: string;
 }
 
 export interface PlanningTask {
+	id: string;
 	title: string;
 	description?: string;
 }
@@ -45,8 +47,9 @@ export function PlanningMode({
 	}, [onLog, messages.length]);
 
 	const handleMessage = (text: string) => {
-		// Add user message
+		// Add user message with unique id
 		const userMessage: PlanningMessage = {
+			id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
 			role: "user",
 			content: text,
 		};
@@ -64,8 +67,8 @@ export function PlanningMode({
 		<PlanningLayout onMessage={handleMessage}>
 			<Box flexDirection="column" gap={1}>
 				{/* Conversation history */}
-				{messages.map((msg, index) => (
-					<Box key={`msg-${index}`} flexDirection="column">
+				{messages.map((msg) => (
+					<Box key={msg.id} flexDirection="column">
 						<Text color={msg.role === "user" ? "cyan" : "green"} bold>
 							{msg.role === "user" ? "You:" : "Agent:"}
 						</Text>
@@ -85,9 +88,9 @@ export function PlanningMode({
 						<Text bold color="yellow">
 							Tasks ({tasks.length})
 						</Text>
-						{tasks.map((task, index) => (
-							<Box key={`task-${index}`} gap={1}>
-								<Text dimColor>{index + 1}.</Text>
+						{tasks.map((task, taskNumber) => (
+							<Box key={task.id} gap={1}>
+								<Text dimColor>{taskNumber + 1}.</Text>
 								<Text>{task.title}</Text>
 							</Box>
 						))}
