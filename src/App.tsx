@@ -9,8 +9,41 @@ import { PlanningMode } from "./modes/PlanningMode.js";
 import { ReviewLoop } from "./modes/ReviewLoop.js";
 import { PlanningState } from "./services/PlanningState.js";
 import { TaskStore } from "./services/TaskStore.js";
-import type { Task } from "./types/task.js";
+import type { Task, TaskStatus } from "./types/task.js";
 import type { TaskProviderTask } from "./types/task-provider.js";
+
+/** UI status format expected by TaskPanel */
+type UIStatus =
+	| "open"
+	| "in_progress"
+	| "closed"
+	| "blocked"
+	| "reviewing"
+	| "failed";
+
+/**
+ * Map TaskStore statuses to UI statuses.
+ * TaskStore uses: todo, doing, done, stuck, review, failed
+ * UI expects: open, in_progress, closed, blocked, reviewing, failed
+ */
+function mapStatusToUI(status: TaskStatus): UIStatus {
+	switch (status) {
+		case "todo":
+			return "open";
+		case "doing":
+			return "in_progress";
+		case "done":
+			return "closed";
+		case "stuck":
+			return "blocked";
+		case "review":
+			return "reviewing";
+		case "failed":
+			return "failed";
+		default:
+			return "open";
+	}
+}
 
 export interface CliArgs {
 	command?: "init" | "plan";
@@ -49,7 +82,7 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 			title: task.title,
 			description: task.description,
 			priority: 1, // TaskStore doesn't have priority, default to P1
-			status: task.status,
+			status: mapStatusToUI(task.status),
 			labels: task.tags,
 			dependencies: task.dependencies,
 			custom: {

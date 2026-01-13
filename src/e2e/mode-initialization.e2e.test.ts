@@ -168,21 +168,25 @@ describe("E2E: Mode Initialization Flow", () => {
 				join(chorusDir, "planning-state.json"),
 				JSON.stringify(planningState, null, 2),
 			);
-			// Create .beads directory with a task
-			const beadsDir = join(projectDir, ".beads");
-			mkdirSync(beadsDir, { recursive: true });
+			// Create task in TaskJSONL format
+			const now = new Date().toISOString();
 			const task = {
 				id: "ch-test1",
 				title: "Test Task",
 				description: "",
-				status: "open",
-				priority: 1,
+				status: "todo",
 				type: "task",
-				created: new Date().toISOString(),
-				updated: new Date().toISOString(),
+				tags: [],
+				dependencies: [],
+				created_at: now,
+				updated_at: now,
+				review_count: 0,
+				learnings_count: 0,
+				has_learnings: false,
+				version: 1,
 			};
 			writeFileSync(
-				join(beadsDir, "issues.jsonl"),
+				join(chorusDir, "tasks.jsonl"),
 				`${JSON.stringify(task)}\n`,
 			);
 

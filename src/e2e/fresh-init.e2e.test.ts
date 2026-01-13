@@ -87,20 +87,26 @@ describe("E2E: Fresh Project Init", () => {
 	}, 20000);
 
 	it("first task appears in panel", async () => {
-		// Arrange - create project with a task already
-		const beadsDir = join(projectDir, ".beads");
-		mkdirSync(beadsDir, { recursive: true });
+		// Arrange - create project with a task in TaskJSONL format
+		const chorusDir = join(projectDir, ".chorus");
+		mkdirSync(chorusDir, { recursive: true });
+		const now = new Date().toISOString();
 		const task = {
 			id: "ch-ft01",
 			title: "Initial Task",
 			description: "",
-			status: "open",
-			priority: 1,
+			status: "todo",
 			type: "task",
-			created: new Date().toISOString(),
-			updated: new Date().toISOString(),
+			tags: [],
+			dependencies: [],
+			created_at: now,
+			updated_at: now,
+			review_count: 0,
+			learnings_count: 0,
+			has_learnings: false,
+			version: 1,
 		};
-		writeFileSync(join(beadsDir, "issues.jsonl"), `${JSON.stringify(task)}\n`);
+		writeFileSync(join(chorusDir, "tasks.jsonl"), `${JSON.stringify(task)}\n`);
 
 		// Act
 		const result = await renderApp([], projectDir);

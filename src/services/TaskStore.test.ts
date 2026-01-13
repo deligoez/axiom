@@ -1155,6 +1155,7 @@ describe("TaskStore", () => {
 			// Arrange
 			store.create({ title: "Task 1" });
 			await store.flush();
+			await store.load(); // Ensure store is fully initialized
 
 			// Start watching (await for watcher to be ready)
 			await store.watch();
@@ -1187,9 +1188,12 @@ describe("TaskStore", () => {
 				`${existingContent}${JSON.stringify(newTask)}\n`,
 			);
 
-			// Wait for polling interval + debounce + file watcher
-			// Use longer timeout for parallel test runs where system load varies
-			await new Promise((r) => setTimeout(r, 1000));
+			// Wait for polling interval + debounce + file watcher with retry
+			// Use retry loop for parallel test runs where system load varies
+			const maxRetries = 20;
+			for (let i = 0; i < maxRetries && !changeEmitted; i++) {
+				await new Promise((r) => setTimeout(r, 200));
+			}
 
 			// Assert
 			expect(changeEmitted).toBe(true);

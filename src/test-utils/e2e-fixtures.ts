@@ -7,17 +7,58 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Bead, BeadPriority, BeadStatus } from "../types/bead.js";
+import type { TaskJSONL, TaskStatus, TaskType } from "../types/task.js";
 
-export interface TestBead extends Partial<Bead> {
+/**
+ * TestBead - Legacy interface for E2E test tasks.
+ * Maps to TaskJSONL format internally.
+ */
+export interface TestBead {
 	id: string;
 	title: string;
+	description?: string;
+	status?: string;
+	priority?: number;
+	type?: string;
+	tags?: string[];
+	dependencies?: string[];
+	assignee?: string;
+	created?: string;
+	updated?: string;
+}
+
+// Legacy type aliases for backward compatibility
+export type BeadStatus =
+	| TaskStatus
+	| "open"
+	| "in_progress"
+	| "closed"
+	| "blocked";
+
+/**
+ * Map legacy Bead status to Task status.
+ */
+function mapStatus(beadStatus?: string): TaskStatus {
+	switch (beadStatus) {
+		case "open":
+			return "todo";
+		case "in_progress":
+			return "doing";
+		case "closed":
+			return "done";
+		case "blocked":
+			return "stuck";
+		case "reviewing":
+			return "review";
+		default:
+			return (beadStatus as TaskStatus) ?? "todo";
+	}
 }
 
 /**
- * Creates a temporary project directory with beads test data.
+ * Creates a temporary project directory with test tasks.
  *
- * @param beads - Array of test beads to create
+ * @param beads - Array of test tasks to create (legacy TestBead format)
  * @returns Path to the temporary directory
  */
 export function createTestProject(beads: TestBead[]): string {
@@ -26,32 +67,36 @@ export function createTestProject(beads: TestBead[]): string {
 		tmpdir(),
 		`chorus-e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 	);
-	const beadsDir = join(tempDir, ".beads");
 	const chorusDir = join(tempDir, ".chorus");
 
-	mkdirSync(beadsDir, { recursive: true });
-	// Create .chorus directory to skip init wizard
+	// Create .chorus directory (TaskStore writes to this)
 	mkdirSync(chorusDir, { recursive: true });
 
-	// Create issues.jsonl with test beads
-	// Field names must match BeadsParser expectations: type, created, updated
+	// Create tasks.jsonl with test tasks in TaskJSONL format
+	const now = new Date().toISOString();
 	const jsonlContent = beads
 		.map((bead) => {
-			const fullBead: Record<string, unknown> = {
+			const task: TaskJSONL = {
 				id: bead.id,
 				title: bead.title,
-				description: bead.description ?? "",
-				status: bead.status ?? "open",
-				priority: bead.priority ?? 2,
-				type: bead.type ?? "task",
-				created: bead.created ?? new Date().toISOString(),
-				updated: bead.updated ?? new Date().toISOString(),
+				description: bead.description,
+				status: mapStatus(bead.status),
+				type: (bead.type as TaskType) ?? "task",
+				tags: bead.tags ?? [],
+				dependencies: bead.dependencies ?? [],
+				assignee: bead.assignee,
+				created_at: bead.created ?? now,
+				updated_at: bead.updated ?? now,
+				review_count: 0,
+				learnings_count: 0,
+				has_learnings: false,
+				version: 1,
 			};
-			return JSON.stringify(fullBead);
+			return JSON.stringify(task);
 		})
 		.join("\n");
 
-	writeFileSync(join(beadsDir, "issues.jsonl"), `${jsonlContent}\n`);
+	writeFileSync(join(chorusDir, "tasks.jsonl"), `${jsonlContent}\n`);
 
 	return tempDir;
 }
@@ -70,23 +115,13 @@ export function cleanupTestProject(projectDir: string): void {
 }
 
 /**
- * Creates a bead with the given status for testing.
+ * Creates a task with the given status for testing.
  */
 export function createStatusBead(
 	id: string,
 	title: string,
-	status: BeadStatus,
+	status: BeadStatus | string,
 ): TestBead {
 	return { id, title, status };
 }
 
-/**
- * Creates a bead with the given priority for testing.
- */
-export function createPriorityBead(
-	id: string,
-	title: string,
-	priority: BeadPriority,
-): TestBead {
-	return { id, title, priority, status: "open" };
-}

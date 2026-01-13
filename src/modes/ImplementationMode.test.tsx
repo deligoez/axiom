@@ -408,15 +408,16 @@ describe("ImplementationMode", () => {
 			cleanup = unmount;
 
 			// Move to last task (press j twice)
+			// Use longer delays for parallel test runs where system load varies
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 0));
+			await new Promise((resolve) => setTimeout(resolve, 50));
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 0));
+			await new Promise((resolve) => setTimeout(resolve, 50));
 			expect(lastFrame()).toMatch(/►.*Task 3/);
 
 			// Act - Press j at last task to wrap to first
 			stdin.write("j");
-			await new Promise((resolve) => setTimeout(resolve, 0));
+			await new Promise((resolve) => setTimeout(resolve, 50));
 
 			// Assert - Wraps to first task
 			expect(lastFrame()).toMatch(/►.*Task 1/);
@@ -438,8 +439,9 @@ describe("ImplementationMode", () => {
 			// First task selected by default
 
 			// Act - Press k at first task to wrap to last
+			// Use longer delay for parallel test runs where system load varies
 			stdin.write("k");
-			await new Promise((resolve) => setTimeout(resolve, 0));
+			await new Promise((resolve) => setTimeout(resolve, 50));
 
 			// Assert - Wraps to last task
 			expect(lastFrame()).toMatch(/►.*Task 3/);

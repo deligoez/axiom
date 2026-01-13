@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	cleanupTestProject,
-	createPriorityBead,
 	createStatusBead,
 	createTestProject,
 } from "../test-utils/e2e-fixtures.js";
@@ -94,23 +93,19 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 		expect(output).toContain("✓");
 	});
 
-	it("shows priority badges (P0-P4)", async () => {
+	it("shows priority badge (default P1)", async () => {
+		// NOTE: TaskStore doesn't support priority (by design).
+		// All tasks get default P1 priority in the UI.
 		// Arrange
-		projectDir = createTestProject([
-			createPriorityBead("ch-p0", "Critical Task", 0),
-			createPriorityBead("ch-p1", "High Task", 1),
-			createPriorityBead("ch-p2", "Medium Task", 2),
-		]);
+		projectDir = createTestProject([{ id: "ch-abc1", title: "Test Task" }]);
 
 		// Act
 		const result = await renderApp([], projectDir);
-		await waitForText(result, "Critical Task", 5000);
+		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert
+		// Assert - all tasks show P1 (hardcoded default)
 		const output = getOutput(result);
-		expect(output).toContain("P0");
 		expect(output).toContain("P1");
-		expect(output).toContain("P2");
 	});
 
 	it("shows ⊗ for blocked tasks", async () => {

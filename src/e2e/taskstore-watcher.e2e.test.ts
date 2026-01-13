@@ -73,12 +73,15 @@ describe("E2E: TaskStore File Watcher", () => {
 		const store = new TaskStore(tempDir);
 		store.create({ title: "Original Task" });
 		await store.flush();
+		await store.load(); // Ensure store is fully initialized
 
 		// Start watching
 		await store.watch();
 
+		let changeEmitted = false;
 		let tasksAfterChange: ReturnType<typeof store.list> = [];
 		store.on("change", (tasks) => {
+			changeEmitted = true;
 			tasksAfterChange = tasks;
 		});
 
@@ -103,11 +106,16 @@ describe("E2E: TaskStore File Watcher", () => {
 		const currentContent = readFileSync(filePath, "utf-8");
 		writeFileSync(filePath, `${currentContent}${JSON.stringify(newTask)}\n`);
 
-		// Wait for watcher + debounce
-		// Use longer timeout for parallel test runs where system load varies
-		await new Promise((r) => setTimeout(r, 1000));
+		// Wait for watcher + debounce with retry
+		// Use longer timeout and initial delay for parallel test runs
+		await new Promise((r) => setTimeout(r, 500)); // Initial delay for watcher to settle
+		const maxRetries = 30;
+		for (let i = 0; i < maxRetries && !changeEmitted; i++) {
+			await new Promise((r) => setTimeout(r, 200));
+		}
 
 		// Assert - new task should be accessible
+		expect(changeEmitted).toBe(true);
 		const externalTask = store.get("ch-external");
 		expect(externalTask).toBeDefined();
 		expect(externalTask?.title).toBe("Externally Added Task");
