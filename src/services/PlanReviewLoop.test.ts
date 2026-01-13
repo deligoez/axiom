@@ -61,11 +61,11 @@ describe("PlanReviewLoop", () => {
 			JSON.stringify({ updates: [], redundant: [], unchanged: ["ch-task1"] }),
 		);
 
-		// Default mock: return some non-closed tasks
+		// Default mock: return some non-done tasks
 		mockTaskLister.listAll.mockResolvedValue([
-			{ id: "ch-task1", status: "open", title: "Task 1" },
-			{ id: "ch-task2", status: "in_progress", title: "Task 2" },
-			{ id: "ch-task3", status: "closed", title: "Task 3" },
+			{ id: "ch-task1", status: "todo", title: "Task 1" },
+			{ id: "ch-task2", status: "doing", title: "Task 2" },
+			{ id: "ch-task3", status: "done", title: "Task 3" },
 		]);
 
 		loop = new PlanReviewLoop({
@@ -109,9 +109,9 @@ describe("PlanReviewLoop", () => {
 			expect(mockPlanAgent.send).toHaveBeenCalled();
 			const prompt = mockPlanAgent.send.mock.calls[0][0];
 			expect(prompt).toContain("Test learning content");
-			expect(prompt).toContain("ch-task1"); // non-closed task
-			expect(prompt).toContain("ch-task2"); // non-closed task
-			expect(prompt).not.toContain("ch-task3"); // closed task excluded
+			expect(prompt).toContain("ch-task1"); // non-done task
+			expect(prompt).toContain("ch-task2"); // non-done task
+			expect(prompt).not.toContain("ch-task3"); // done task excluded
 		});
 
 		it("parses Plan Agent JSON response with updates", async () => {

@@ -1,6 +1,6 @@
-import type { Bead } from "../types/bead.js";
 import type { PlanReviewConfig } from "../types/config.js";
 import type { Learning } from "../types/learning.js";
+import type { Task } from "../types/task.js";
 import type { PlanAgent } from "./PlanAgent.js";
 import type { SessionLogger } from "./SessionLogger.js";
 
@@ -37,7 +37,7 @@ export interface PlanReviewResult {
  * Interface for task listing operations
  */
 export interface TaskLister {
-	listAll(): Promise<Bead[]>;
+	listAll(): Promise<Task[]>;
 }
 
 export interface PlanReviewLoopOptions {
@@ -90,9 +90,7 @@ export class PlanReviewLoop {
 
 			// Get non-closed tasks
 			const allTasks = await this.taskLister.listAll();
-			const nonClosedTasks = allTasks.filter(
-				(task) => task.status !== "closed",
-			);
+			const nonClosedTasks = allTasks.filter((task) => task.status !== "done");
 
 			// Run iterations
 			for (let i = 0; i < config.maxIterations; i++) {
@@ -139,7 +137,7 @@ export class PlanReviewLoop {
 	/**
 	 * Build the review prompt for Plan Agent
 	 */
-	private buildReviewPrompt(learning: Learning, tasks: Bead[]): string {
+	private buildReviewPrompt(learning: Learning, tasks: Task[]): string {
 		const taskList = tasks
 			.map(
 				(t) =>
