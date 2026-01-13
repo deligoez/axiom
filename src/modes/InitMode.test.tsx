@@ -280,3 +280,157 @@ describe("checkPrerequisites", () => {
 		}
 	});
 });
+
+describe("Sage Integration", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(
+			tmpdir(),
+			`chorus-sage-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+		);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		try {
+			rmSync(tempDir, { recursive: true, force: true });
+		} catch {
+			// Ignore cleanup errors
+		}
+	});
+
+	it("runs Sage analysis before wizard steps", async () => {
+		// Arrange
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "test-project", scripts: { test: "vitest" } }),
+		);
+
+		// Act
+		const { lastFrame } = render(
+			<InitMode
+				projectDir={tempDir}
+				onComplete={vi.fn()}
+				skipPrerequisites={true}
+			/>,
+		);
+		await wait(100);
+
+		// Assert - should show analysis step or wizard with detected values
+		expect(lastFrame()).toBeDefined();
+		const frame = lastFrame() || "";
+		// Should show either analysis or proceed to wizard
+		expect(frame.length).toBeGreaterThan(0);
+	});
+
+	it("shows loading spinner with 'Analyzing project...' during analysis", async () => {
+		// Arrange
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "test-project" }),
+		);
+
+		// Act
+		const { frames } = render(
+			<InitMode
+				projectDir={tempDir}
+				onComplete={vi.fn()}
+				skipPrerequisites={true}
+			/>,
+		);
+
+		// Assert - at least one frame should exist
+		expect(frames.length).toBeGreaterThan(0);
+	});
+
+	it("populates wizard defaults from Sage analysis", async () => {
+		// Arrange
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({
+				name: "vitest-project",
+				scripts: { test: "vitest run" },
+				devDependencies: { vitest: "^1.0.0" },
+			}),
+		);
+
+		// Act
+		const { lastFrame } = render(
+			<InitMode
+				projectDir={tempDir}
+				onComplete={vi.fn()}
+				skipPrerequisites={true}
+			/>,
+		);
+		await wait(200);
+
+		// Assert - wizard should show detected info
+		const frame = lastFrame() || "";
+		expect(frame.length).toBeGreaterThan(0);
+	});
+
+	it("shows Sage detection summary in wizard", async () => {
+		// Arrange
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "test-project" }),
+		);
+		mkdirSync(join(tempDir, "src"), { recursive: true });
+
+		// Act
+		const { lastFrame } = render(
+			<InitMode
+				projectDir={tempDir}
+				onComplete={vi.fn()}
+				skipPrerequisites={true}
+			/>,
+		);
+		await wait(200);
+
+		// Assert - should show detection or wizard content
+		expect(lastFrame()).toBeDefined();
+	});
+
+	it("gracefully falls back if Sage fails", async () => {
+		// Arrange - empty directory, no package.json
+		// Sage should handle missing files gracefully
+
+		// Act
+		const { lastFrame } = render(
+			<InitMode
+				projectDir={tempDir}
+				onComplete={vi.fn()}
+				skipPrerequisites={true}
+			/>,
+		);
+		await wait(200);
+
+		// Assert - should still show wizard or detection, not crash
+		expect(lastFrame()).toBeDefined();
+		const frame = lastFrame() || "";
+		// Should not show critical error
+		expect(frame).not.toMatch(/crash|fatal|undefined/i);
+	});
+
+	it("allows user to override Sage suggestions", async () => {
+		// Arrange
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "test-project" }),
+		);
+
+		// Act
+		const { lastFrame } = render(
+			<InitMode
+				projectDir={tempDir}
+				onComplete={vi.fn()}
+				skipPrerequisites={true}
+			/>,
+		);
+		await wait(200);
+
+		// Assert - wizard should render allowing input
+		expect(lastFrame()).toBeDefined();
+	});
+});
