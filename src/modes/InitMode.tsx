@@ -1,9 +1,10 @@
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
+import { AgentIntroduction } from "../components/AgentIntroduction.js";
 import {
 	ConfigWizard,
 	type DetectionResult,
@@ -38,8 +39,43 @@ type InitStep =
 	| "wizard_commands"
 	| "wizard_rules"
 	| "plan_review"
+	| "meet_team_prompt"
+	| "agent_introduction"
 	| "complete"
 	| "error";
+
+/** Check for TTY (real terminal or PTY) */
+const getIsTTY = () => Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
+
+/**
+ * Prompt asking if user wants to meet the team.
+ */
+function MeetTeamPrompt({
+	onYes,
+	onNo,
+}: {
+	onYes: () => void;
+	onNo: () => void;
+}): React.ReactElement {
+	useInput(
+		(input) => {
+			if (input.toLowerCase() === "y") {
+				onYes();
+			} else if (input.toLowerCase() === "n") {
+				onNo();
+			}
+		},
+		{ isActive: getIsTTY() },
+	);
+
+	return (
+		<Box flexDirection="column" padding={1}>
+			<Text bold color="cyan">
+				Would you like to meet your Chorus team? (y/n)
+			</Text>
+		</Box>
+	);
+}
 
 /**
  * Check system prerequisites for Chorus
@@ -218,7 +254,11 @@ export function InitMode({
 	};
 
 	const handlePlanReviewComplete = (_planReview: PlanReviewConfig) => {
-		setStep("complete");
+		if (nonInteractive) {
+			setStep("complete");
+		} else {
+			setStep("meet_team_prompt");
+		}
 	};
 
 	// Render based on current step
@@ -284,6 +324,24 @@ export function InitMode({
 			<PlanReviewConfigStep
 				config={defaultPlanReview}
 				onComplete={handlePlanReviewComplete}
+			/>
+		);
+	}
+
+	if (step === "meet_team_prompt") {
+		return (
+			<MeetTeamPrompt
+				onYes={() => setStep("agent_introduction")}
+				onNo={() => setStep("complete")}
+			/>
+		);
+	}
+
+	if (step === "agent_introduction") {
+		return (
+			<AgentIntroduction
+				projectDir={projectDir}
+				onFinish={() => setStep("complete")}
 			/>
 		);
 	}
