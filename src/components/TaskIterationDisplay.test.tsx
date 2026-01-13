@@ -1,5 +1,6 @@
 import { render } from "ink-testing-library";
 import { describe, expect, it } from "vitest";
+import { stripAnsi } from "../test-utils/pty-helpers.js";
 import { TaskIterationDisplay } from "./TaskIterationDisplay.js";
 
 describe("TaskIterationDisplay", () => {
@@ -49,8 +50,9 @@ describe("TaskIterationDisplay", () => {
 			<TaskIterationDisplay agentType="opencode" iteration={1} />,
 		);
 
-		// Assert - starts with spaces for indentation
-		expect(lastFrame()).toMatch(/^\s+●/);
+		// Assert - starts with spaces for indentation (strip ANSI codes first)
+		const output = stripAnsi(lastFrame() ?? "");
+		expect(output).toMatch(/^\s+●/);
 	});
 
 	it("uses correct styling for different agent types", () => {

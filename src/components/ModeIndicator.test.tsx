@@ -1,5 +1,6 @@
 import { render } from "ink-testing-library";
 import { describe, expect, it } from "vitest";
+import { stripAnsi } from "../test-utils/pty-helpers.js";
 import { ModeIndicator } from "./ModeIndicator.js";
 
 describe("ModeIndicator", () => {
@@ -55,8 +56,9 @@ describe("ModeIndicator", () => {
 		// Arrange & Act
 		const { lastFrame } = render(<ModeIndicator mode="semi-auto" />);
 
-		// Assert - check for single space before dot
-		expect(lastFrame()).toMatch(/semi-auto\s●/);
+		// Assert - check for single space before dot (strip ANSI codes first)
+		const output = stripAnsi(lastFrame() ?? "");
+		expect(output).toMatch(/semi-auto\s●/);
 	});
 
 	it("shows gray dot for unknown mode", () => {

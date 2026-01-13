@@ -14,8 +14,9 @@ import { type IPty, spawn } from "node-pty";
 /**
  * Strip ANSI escape codes from a string.
  * This is essential for text matching in PTY output.
+ * Exported for use in unit tests that need to match text with ANSI codes.
  */
-function stripAnsi(str: string): string {
+export function stripAnsi(str: string): string {
 	// Use String.fromCharCode to avoid biome lint errors about control characters
 	const ESC = String.fromCharCode(0x1b);
 	const BEL = String.fromCharCode(0x07);
