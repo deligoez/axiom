@@ -6,6 +6,9 @@ export interface ParsedArgs {
 	mode?: "semi-auto" | "autopilot";
 }
 
+const KNOWN_FLAGS = ["--version", "-v", "--help", "-h", "--ci", "--mode"];
+const KNOWN_COMMANDS = ["init", "plan"];
+
 export function parseArgs(args: string[]): ParsedArgs {
 	// Parse command (first positional argument)
 	let command: ParsedArgs["command"];
@@ -14,6 +17,24 @@ export function parseArgs(args: string[]): ParsedArgs {
 		command = "init";
 	} else if (positional[0] === "plan") {
 		command = "plan";
+	}
+
+	// Unknown command → show help
+	if (positional[0] && !KNOWN_COMMANDS.includes(positional[0])) {
+		return { version: false, help: true, ci: false };
+	}
+
+	// Check for unknown flags → show help
+	const flags = args.filter((arg) => arg.startsWith("-"));
+	for (const flag of flags) {
+		// Skip mode value (it follows --mode)
+		const modeIndex = args.indexOf("--mode");
+		if (modeIndex !== -1 && args[modeIndex + 1] === flag) {
+			continue;
+		}
+		if (!KNOWN_FLAGS.includes(flag)) {
+			return { version: false, help: true, ci: false };
+		}
 	}
 
 	// Parse --mode flag

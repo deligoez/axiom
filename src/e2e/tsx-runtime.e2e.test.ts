@@ -55,4 +55,28 @@ describe("E2E: TSX Runtime Compatibility", () => {
 		// Assert
 		expect(output).toContain("Usage:");
 	});
+
+	it("tsx src/index.tsx --unknown-flag shows help", () => {
+		// Arrange & Act
+		const output = execSync("npx tsx src/index.tsx --abc", {
+			encoding: "utf-8",
+			timeout: 10000,
+		});
+
+		// Assert - should show help output
+		expect(output).toContain("Usage:");
+		expect(output).toContain("--help");
+	});
+
+	it("tsx src/index.tsx with unknown command shows help", () => {
+		// Arrange & Act
+		const output = execSync("npx tsx src/index.tsx foobar", {
+			encoding: "utf-8",
+			timeout: 10000,
+		});
+
+		// Assert - should show help output
+		expect(output).toContain("Usage:");
+		expect(output).toContain("--help");
+	});
 });

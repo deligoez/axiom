@@ -10,6 +10,19 @@ After a context compaction (session continuation):
 3. **Re-read auto-commit.md** for TDD commit rules
 4. **Continue from the summary** without asking questions
 
+## Language Rule (MANDATORY)
+
+All project artifacts MUST be in **English**:
+
+- **Beads tasks**: Title, description, body - all in English
+- **Code**: Variable names, function names, class names
+- **Comments**: Inline comments, JSDoc, documentation
+- **Commit messages**: Title and body
+- **Test descriptions**: `describe()` and `it()` strings
+- **Error messages**: User-facing and internal errors
+
+This ensures consistency and accessibility across the codebase.
+
 ## Bug Task Rules
 
 When starting work on a bug task that was opened for later investigation:
@@ -70,3 +83,37 @@ When implementing integration tests, discovered:
 - Documented in: `.claude/rules/e2e-testing.md` under "Integration Testing"
 
 **This rule ensures knowledge is preserved across sessions and helps future agents avoid the same pitfalls.**
+
+## QA Mode
+
+When user reports a bug or unexpected behavior during QA testing:
+
+1. **Create Beads task** - `bd create "BUG: <description>" -p 2 -l bug`
+2. **Verify the issue** - Quick check to understand the problem
+3. **Write failing test first** (RED) - TDD approach
+4. **Confirm test fails** - Run the test to verify it catches the bug
+5. **Fix the issue** (GREEN) - Implement the fix
+6. **Run quality checks** - `npm run quality`
+7. **Close the task** - `bd close <id>` if all checks pass
+
+### QA Mode Commands
+
+```bash
+# Create bug task
+bd create "BUG: <description>" -p 2 -l bug --body "..."
+
+# After fix is complete
+bd close <id>
+```
+
+### QA Test Pattern
+
+```typescript
+it("should handle <edge case>", () => {
+  // Arrange - setup the problematic scenario
+
+  // Act - trigger the bug
+
+  // Assert - verify correct behavior
+});
+```
