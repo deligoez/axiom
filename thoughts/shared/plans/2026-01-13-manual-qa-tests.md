@@ -333,12 +333,18 @@ npm run test:integration
 
 | Task ID | Açıklama | Durum |
 |---------|----------|-------|
-| ch-rv9i | AgentGrid component tests | OPEN |
-| ch-ktll | PlanningMode E2E tests | OPEN |
-| ch-dcmq | ReviewLoop E2E tests | OPEN |
-| ch-1ucd | FooterBar tests | OPEN |
-| ch-6cgm | HeaderBar tests | OPEN |
-| ch-y3bn | InterventionPanel tests | OPEN |
+| ch-rv9i | AgentGrid component tests | ✅ CLOSED |
+| ch-ktll | PlanningMode E2E tests | ✅ CLOSED |
+| ch-dcmq | ReviewLoop E2E tests | ✅ CLOSED |
+| ch-1ucd | FooterBar tests | ✅ CLOSED |
+| ch-6cgm | HeaderBar tests | ✅ CLOSED |
+| ch-y3bn | InterventionPanel tests | ✅ CLOSED |
+
+### XState Refactoring
+
+| Task ID | Açıklama | Durum |
+|---------|----------|-------|
+| ch-z1jm | ImplementationMode panel states to XState | ✅ CLOSED |
 
 ---
 
