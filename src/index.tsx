@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { FullScreenBox } from "fullscreen-ink";
 import { Box, render, Text } from "ink";
+// biome-ignore lint/correctness/noUnusedImports: Required for tsx JSX runtime
+import React from "react";
 import { App } from "./App.js";
 import { parseArgs } from "./cli.js";
 
