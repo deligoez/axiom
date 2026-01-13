@@ -1,4 +1,5 @@
 import type { Task, TaskSelectionContext } from "../types/task.js";
+import type { AgentLogger } from "./AgentLogger.js";
 
 /**
  * Scoring weights for task selection algorithm.
@@ -13,6 +14,12 @@ const WEIGHTS = {
 } as const;
 
 /**
+ * Scout persona constants for logging.
+ */
+const SCOUT_PERSONA = "scout" as const;
+const SCOUT_INSTANCE_ID = "scout";
+
+/**
  * TaskSelector - Intelligent task selection algorithm.
  *
  * Scoring system:
@@ -25,6 +32,29 @@ const WEIGHTS = {
  * - FIFO fallback: oldest task wins ties
  */
 export class TaskSelector {
+	private readonly logger?: AgentLogger;
+
+	/**
+	 * Create a TaskSelector with optional logging support.
+	 * @param agentLogger Optional logger for Scout persona logging
+	 */
+	constructor(agentLogger?: AgentLogger) {
+		this.logger = agentLogger;
+	}
+
+	/**
+	 * Log a message as Scout persona.
+	 */
+	private log(level: "info" | "debug", message: string): void {
+		if (this.logger) {
+			this.logger.log({
+				persona: SCOUT_PERSONA,
+				instanceId: SCOUT_INSTANCE_ID,
+				level,
+				message,
+			});
+		}
+	}
 	/**
 	 * Select the best next task to work on.
 	 *
@@ -55,6 +85,9 @@ export class TaskSelector {
 			return true;
 		});
 
+		// Log analysis start
+		this.log("info", `[scout] Analyzing ${readyTasks.length} ready tasks...`);
+
 		if (readyTasks.length === 0) {
 			return undefined;
 		}
@@ -77,7 +110,53 @@ export class TaskSelector {
 			);
 		});
 
-		return scored[0]?.task;
+		const selected = scored[0];
+		if (selected) {
+			// Determine primary reason for selection
+			const reason = this.getPrimaryReason(selected.task, tasks, context);
+			this.log(
+				"info",
+				`[scout] Recommending ${selected.task.id} (score: ${selected.score}, reason: ${reason})`,
+			);
+		}
+
+		return selected?.task;
+	}
+
+	/**
+	 * Get the primary reason why a task was selected.
+	 */
+	private getPrimaryReason(
+		task: Task,
+		allTasks: Task[],
+		context?: TaskSelectionContext,
+	): string {
+		// Check reasons in order of weight
+		if (task.tags.includes("next")) {
+			return "user hint";
+		}
+
+		const dependents = allTasks.filter(
+			(t) => t.status === "todo" && t.dependencies.includes(task.id),
+		);
+		if (dependents.length > 0) {
+			return `unblocks ${dependents.length}`;
+		}
+
+		if (task.dependencies.length === 0) {
+			return "atomic";
+		}
+
+		const milestone = task.tags.find((tag) => tag.startsWith("m"));
+		if (milestone) {
+			return "milestone focus";
+		}
+
+		if (context?.lastCompletedTaskId) {
+			return "series continuation";
+		}
+
+		return "FIFO";
 	}
 
 	/**

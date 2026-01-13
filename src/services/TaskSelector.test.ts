@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Task, TaskSelectionContext } from "../types/task.js";
+import type { AgentLogger, LogInput } from "./AgentLogger.js";
 import { TaskSelector } from "./TaskSelector.js";
 
 /**
@@ -261,6 +262,79 @@ describe("TaskSelector", () => {
 
 			// Assert - ch-2 wins with higher combined score
 			expect(result?.id).toBe("ch-2");
+		});
+	});
+
+	// Scout persona logging tests (AP15)
+	describe("Scout persona logging", () => {
+		const createMockLogger = (): { logger: AgentLogger; logs: LogInput[] } => {
+			const logs: LogInput[] = [];
+			const logger = {
+				log: vi.fn((input: LogInput) => logs.push(input)),
+			} as unknown as AgentLogger;
+			return { logger, logs };
+		};
+
+		it("logs with persona: 'scout' and instanceId: 'scout'", () => {
+			// Arrange
+			const { logger, logs } = createMockLogger();
+			const selector = new TaskSelector(logger);
+			const tasks = [createTask({ id: "ch-1" })];
+
+			// Act
+			selector.selectNextTask(tasks);
+
+			// Assert - all logs have scout persona and instance
+			expect(logs.length).toBeGreaterThan(0);
+			for (const log of logs) {
+				expect(log.persona).toBe("scout");
+				expect(log.instanceId).toBe("scout");
+			}
+		});
+
+		it("logs '[scout] Analyzing N ready tasks...'", () => {
+			// Arrange
+			const { logger, logs } = createMockLogger();
+			const selector = new TaskSelector(logger);
+			const tasks = [
+				createTask({ id: "ch-1" }),
+				createTask({ id: "ch-2" }),
+				createTask({ id: "ch-3" }),
+			];
+
+			// Act
+			selector.selectNextTask(tasks);
+
+			// Assert - analysis log present
+			const analysisLog = logs.find((l) => l.message.includes("Analyzing"));
+			expect(analysisLog).toBeDefined();
+			expect(analysisLog?.message).toContain("[scout] Analyzing 3 ready tasks");
+		});
+
+		it("logs '[scout] Recommending {taskId} (score: N, reason: X)'", () => {
+			// Arrange
+			const { logger, logs } = createMockLogger();
+			const selector = new TaskSelector(logger);
+			const tasks = [createTask({ id: "ch-abc", tags: ["next"] })];
+
+			// Act
+			selector.selectNextTask(tasks);
+
+			// Assert - recommendation log present
+			const recLog = logs.find((l) => l.message.includes("Recommending"));
+			expect(recLog).toBeDefined();
+			expect(recLog?.message).toContain("[scout] Recommending ch-abc");
+			expect(recLog?.message).toContain("score:");
+			expect(recLog?.message).toContain("reason:");
+		});
+
+		it("does not log when no logger provided", () => {
+			// Arrange
+			const selector = new TaskSelector(); // No logger
+			const tasks = [createTask({ id: "ch-1" })];
+
+			// Act & Assert - should not throw
+			expect(() => selector.selectNextTask(tasks)).not.toThrow();
 		});
 	});
 });
