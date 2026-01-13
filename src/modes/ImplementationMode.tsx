@@ -12,6 +12,7 @@ import { useAgentGrid } from "../hooks/useAgentGrid.js";
 import { useInterventionKey } from "../hooks/useInterventionKey.js";
 import { useNavigationKeys } from "../hooks/useNavigationKeys.js";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
+import { panelStateMachine, useMachine } from "../machines/index.js";
 import type { TaskProviderTask } from "../types/task-provider.js";
 
 // Check if we're in an interactive terminal
@@ -57,26 +58,32 @@ export function ImplementationMode({
 }: ImplementationModeProps): React.ReactElement {
 	const { width } = useTerminalSize();
 	const gridConfig = useAgentGrid(width, agents.length, maxAgents);
-	const [showExitConfirm, setShowExitConfirm] = useState(false);
-	const [showIntervention, setShowIntervention] = useState(false);
-	const [showHelp, setShowHelp] = useState(false);
 	const [selectedIndex, setSelectedIndex] = useState(0);
+
+	// Panel state machine (replaces showExitConfirm, showIntervention, showHelp booleans)
+	const [panelState, sendPanelEvent] = useMachine(panelStateMachine);
+
+	// Derive panel visibility from machine state
+	const showIntervention = panelState.matches("intervention");
+	const showHelp = panelState.matches("help");
+	const showExitConfirm = panelState.matches("exitConfirm");
+	const noPanelOpen = panelState.matches("none");
 
 	// Memoized callbacks to prevent unnecessary re-renders
 	const handleOpenIntervention = useCallback(() => {
-		setShowIntervention(true);
-	}, []);
+		sendPanelEvent({ type: "OPEN_INTERVENTION" });
+	}, [sendPanelEvent]);
 
 	const handleCloseIntervention = useCallback(() => {
-		setShowIntervention(false);
-	}, []);
+		sendPanelEvent({ type: "CLOSE_PANEL" });
+	}, [sendPanelEvent]);
 
 	// Wire up task list navigation (j/k keys with wrapping)
 	useNavigationKeys({
 		itemCount: tasks.length,
 		selectedIndex,
 		onSelect: setSelectedIndex,
-		isActive: !showIntervention && !showExitConfirm && !showHelp,
+		isActive: noPanelOpen,
 		wrap: true,
 	});
 
@@ -87,7 +94,7 @@ export function ImplementationMode({
 	// Wire up 'i' key to open intervention panel
 	useInterventionKey({
 		onOpen: handleOpenIntervention,
-		isDisabled: showExitConfirm || showHelp, // Don't open intervention if exit confirm or help is showing
+		isDisabled: !noPanelOpen, // Don't open intervention if another panel is showing
 	});
 
 	// Calculate task stats for footer
@@ -109,7 +116,7 @@ export function ImplementationMode({
 			// Handle help panel toggle
 			if (showHelp) {
 				if (input === "?" || key.escape) {
-					setShowHelp(false);
+					sendPanelEvent({ type: "CLOSE_PANEL" });
 				}
 				return;
 			}
@@ -119,14 +126,14 @@ export function ImplementationMode({
 				if (input === "y" || input === "Y") {
 					onExit?.();
 				} else if (input === "n" || input === "N" || key.escape) {
-					setShowExitConfirm(false);
+					sendPanelEvent({ type: "CLOSE_PANEL" });
 				}
 				return;
 			}
 
 			// '?' - Toggle help panel
 			if (input === "?") {
-				setShowHelp(true);
+				sendPanelEvent({ type: "OPEN_HELP" });
 				return;
 			}
 
@@ -146,7 +153,7 @@ export function ImplementationMode({
 			if (input === "q") {
 				const runningAgents = agents.filter((a) => a.status === "running");
 				if (runningAgents.length > 0) {
-					setShowExitConfirm(true);
+					sendPanelEvent({ type: "OPEN_EXIT_CONFIRM" });
 				} else {
 					onExit?.();
 				}

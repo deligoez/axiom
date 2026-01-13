@@ -8,6 +8,6 @@
 export { useActor, useMachine } from "@xstate/react";
 // Re-export XState utilities for convenience
 export { createActor, createMachine } from "xstate";
-
-// Machine exports will be added here as they are implemented
-// e.g., export { chorusMachine } from './chorusMachine';
+export type { PanelStateEvent } from "./panelState.machine.js";
+// Machine exports
+export { panelStateMachine } from "./panelState.machine.js";
