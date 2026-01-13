@@ -86,15 +86,24 @@ When implementing integration tests, discovered:
 
 ## QA Mode
 
-When user reports a bug or unexpected behavior during QA testing:
+QA testing operates in **discussion mode by default**. Discuss issues, explore options, and get user input before taking action.
+
+### Discussion Mode (Default)
+- Analyze reported issues
+- Explore the codebase to understand the problem
+- Discuss options and alternatives with the user
+- **DO NOT** create tasks automatically
+- **DO NOT** start implementing fixes
+
+### Implementation Mode (On Request)
+Only when user explicitly says **"task aç"** (create task):
 
 1. **Create Beads task** - `bd create "BUG: <description>" -p 2 -l bug`
-2. **Verify the issue** - Quick check to understand the problem
-3. **Write failing test first** (RED) - TDD approach
-4. **Confirm test fails** - Run the test to verify it catches the bug
-5. **Fix the issue** (GREEN) - Implement the fix
-6. **Run quality checks** - `npm run quality`
-7. **Close the task** - `bd close <id>` if all checks pass
+2. **Write failing test first** (RED) - TDD approach
+3. **Confirm test fails** - Run the test to verify it catches the bug
+4. **Fix the issue** (GREEN) - Implement the fix
+5. **Run quality checks** - `npm run quality`
+6. **Close the task** - `bd close <id>` if all checks pass
 
 ### QA Mode Commands
 
