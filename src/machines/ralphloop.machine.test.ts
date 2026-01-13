@@ -3,8 +3,8 @@ import type { AnyActorRef } from "xstate";
 import { createActor } from "xstate";
 import { ralphLoopMachine } from "./ralphloop.machine.js";
 
-// Mock parent ref
-const createMockParentRef = () =>
+// Mock parent ref - only implements send for testing
+const createMockParentRef = (): AnyActorRef =>
 	({
 		send: vi.fn(),
 		id: "parent",

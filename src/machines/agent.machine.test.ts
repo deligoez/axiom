@@ -5,8 +5,8 @@ import type { AgentIdentity } from "../types/persona.js";
 import { agentMachine } from "./agent.machine.js";
 
 describe("AgentMachine", () => {
-	// Helper to create mock parent ref
-	const createMockParentRef = () =>
+	// Helper to create mock parent ref - only implements send for testing
+	const createMockParentRef = (): AnyActorRef =>
 		({ send: () => {} }) as unknown as AnyActorRef;
 
 	it("initializes with input context", () => {

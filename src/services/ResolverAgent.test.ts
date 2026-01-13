@@ -32,10 +32,10 @@ describe("ResolverAgent", () => {
 		resolver = new ResolverAgent(
 			mockSpawner,
 			config,
-			mockQualityRunner as unknown as {
+			mockQualityRunner as {
 				run: () => Promise<{ success: boolean }>;
 			},
-			mockFileReader as unknown as { read: (path: string) => Promise<string> },
+			mockFileReader as { read: (path: string) => Promise<string> },
 		);
 	});
 
@@ -324,10 +324,10 @@ describe("ResolverAgent", () => {
 			const fileResolver = new ResolverAgent(
 				mockSpawner,
 				configWithDir,
-				mockQualityRunner as unknown as {
+				mockQualityRunner as {
 					run: () => Promise<{ success: boolean }>;
 				},
-				mockFileReader as unknown as {
+				mockFileReader as {
 					read: (path: string) => Promise<string>;
 				},
 			);
@@ -353,10 +353,10 @@ describe("ResolverAgent", () => {
 			const fileResolver = new ResolverAgent(
 				mockSpawner,
 				configWithDir,
-				mockQualityRunner as unknown as {
+				mockQualityRunner as {
 					run: () => Promise<{ success: boolean }>;
 				},
-				mockFileReader as unknown as {
+				mockFileReader as {
 					read: (path: string) => Promise<string>;
 				},
 			);

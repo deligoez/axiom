@@ -116,7 +116,7 @@ describe("XState Types", () => {
 
 	describe("AgentMachineInput", () => {
 		it("has taskId and parentRef fields", () => {
-			// Arrange - mock AnyActorRef with minimal interface
+			// Arrange - mock AnyActorRef with minimal interface for testing
 			const mockParentRef = {
 				send: () => {},
 			} as unknown as AgentMachineInput["parentRef"];

@@ -90,7 +90,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue).mockReturnValueOnce(
-				item as unknown as null,
+				item as ReturnType<typeof deps.mergeQueue.dequeue>,
 			);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: true,
@@ -149,7 +149,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: false,
@@ -177,7 +177,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: false,
@@ -205,7 +205,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: false,
@@ -233,7 +233,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: false,
@@ -262,7 +262,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: false,
@@ -297,7 +297,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: true,
@@ -318,7 +318,7 @@ describe("MergeService", () => {
 			// Arrange
 			const item = createMergeItem();
 			vi.mocked(deps.mergeQueue.dequeue)
-				.mockReturnValueOnce(item as unknown as null)
+				.mockReturnValueOnce(item as ReturnType<typeof deps.mergeQueue.dequeue>)
 				.mockReturnValue(null);
 			vi.mocked(deps.mergeWorker.merge).mockResolvedValue({
 				success: false,
