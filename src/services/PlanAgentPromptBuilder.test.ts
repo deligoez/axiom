@@ -225,4 +225,80 @@ describe("PlanAgentPromptBuilder", () => {
 			expect(prompt).toContain("1000"); // Default max description length
 		});
 	});
+
+	// MH02: Core Task Rules File Loading Tests (4 tests)
+	describe("Core Task Rules File Loading", () => {
+		it("loads core task rules from task-rules.md when present", () => {
+			// Arrange
+			const rulesContent = `# Task Validation Rules
+
+## Core Task Rules
+- **atomic**: One clear objective per task
+- **testable**: Must have measurable criteria
+- **scoped**: Limited to one component
+`;
+			writeFileSync(join(tempDir, ".chorus", "task-rules.md"), rulesContent);
+
+			// Act
+			const prompt = builder.build(config);
+
+			// Assert
+			expect(prompt).toContain("atomic");
+			expect(prompt).toContain("One clear objective per task");
+			expect(prompt).toContain("testable");
+			expect(prompt).toContain("scoped");
+		});
+
+		it("uses default core rules when Core Task Rules section missing", () => {
+			// Arrange - task-rules.md without Core Task Rules section
+			const rulesContent = `# Task Validation Rules
+
+## Configuration
+- max_acceptance_criteria: 10
+`;
+			writeFileSync(join(tempDir, ".chorus", "task-rules.md"), rulesContent);
+
+			// Act
+			const prompt = builder.build(config);
+
+			// Assert - should use defaults
+			expect(prompt).toContain("atomic");
+			expect(prompt).toContain("testable");
+			expect(prompt).toContain("right-sized");
+		});
+
+		it("uses default core rules when file missing", () => {
+			// Arrange - no task-rules.md file
+
+			// Act
+			const prompt = builder.build(config);
+
+			// Assert - should use default core rules
+			expect(prompt).toContain("atomic");
+			expect(prompt).toContain("Single responsibility");
+			expect(prompt).toContain("testable");
+			expect(prompt).toContain("Measurable completion criteria");
+		});
+
+		it("allows custom core rules to override defaults", () => {
+			// Arrange - task-rules.md with different rules
+			const rulesContent = `# Task Validation Rules
+
+## Core Task Rules
+- **focused**: Only one feature at a time
+- **verifiable**: Clear pass/fail criteria
+`;
+			writeFileSync(join(tempDir, ".chorus", "task-rules.md"), rulesContent);
+
+			// Act
+			const prompt = builder.build(config);
+
+			// Assert - should have custom rules, not defaults
+			expect(prompt).toContain("focused");
+			expect(prompt).toContain("Only one feature at a time");
+			expect(prompt).toContain("verifiable");
+			// Should not have default "right-sized" since overridden
+			expect(prompt).not.toContain("right-sized");
+		});
+	});
 });

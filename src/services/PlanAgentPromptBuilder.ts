@@ -9,7 +9,25 @@ export interface TaskRulesConfig {
 	requireTestFile?: boolean;
 	enforceNaming?: string;
 	forbiddenWords?: string[];
+	coreTaskRules?: CoreTaskRule[];
 }
+
+export interface CoreTaskRule {
+	name: string;
+	description: string;
+}
+
+const DEFAULT_CORE_RULES: CoreTaskRule[] = [
+	{ name: "atomic", description: "Single responsibility, one clear objective" },
+	{
+		name: "testable",
+		description: "Measurable completion criteria, no vague language",
+	},
+	{
+		name: "right-sized",
+		description: "Completable within context window, appropriate scope",
+	},
+];
 
 const DEFAULT_RULES: TaskRulesConfig = {
 	maxAcceptanceCriteria: 15,
@@ -17,6 +35,7 @@ const DEFAULT_RULES: TaskRulesConfig = {
 	requireTestFile: false,
 	enforceNaming: undefined,
 	forbiddenWords: [],
+	coreTaskRules: DEFAULT_CORE_RULES,
 };
 
 export class PlanAgentPromptBuilder {
@@ -41,17 +60,14 @@ export class PlanAgentPromptBuilder {
 		sections.push("# Plan Agent System Prompt");
 		sections.push("");
 
-		// Core task rules
+		// Core task rules (loaded from file or defaults)
 		sections.push("## Core Task Rules");
 		sections.push("");
 		sections.push("All tasks MUST be:");
-		sections.push("- **atomic**: Single responsibility, one clear objective");
-		sections.push(
-			"- **testable**: Measurable completion criteria, no vague language",
-		);
-		sections.push(
-			"- **right-sized**: Completable within context window, appropriate scope",
-		);
+		const coreRules = rules.coreTaskRules ?? DEFAULT_CORE_RULES;
+		for (const rule of coreRules) {
+			sections.push(`- **${rule.name}**: ${rule.description}`);
+		}
 		sections.push("");
 
 		// Configuration limits
@@ -172,6 +188,38 @@ export class PlanAgentPromptBuilder {
 			rules.forbiddenWords = forbiddenWordsMatch[1]
 				.split(",")
 				.map((w) => w.trim());
+		}
+
+		// Parse core task rules section
+		// Format: ## Core Task Rules followed by - **name**: description
+		const coreRulesSection = content.match(
+			/## Core Task Rules[\s\S]*?(?=##|$)/,
+		);
+		if (coreRulesSection) {
+			const coreRules = this.parseCoreTaskRules(coreRulesSection[0]);
+			if (coreRules.length > 0) {
+				rules.coreTaskRules = coreRules;
+			}
+		}
+
+		return rules;
+	}
+
+	/**
+	 * Parse core task rules from section content
+	 */
+	private parseCoreTaskRules(sectionContent: string): CoreTaskRule[] {
+		const rules: CoreTaskRule[] = [];
+		// Match - **name**: description
+		const ruleRegex = /- \*\*(\w+(?:-\w+)?)\*\*:\s*(.+)/g;
+		let match = ruleRegex.exec(sectionContent);
+
+		while (match !== null) {
+			rules.push({
+				name: match[1],
+				description: match[2].trim(),
+			});
+			match = ruleRegex.exec(sectionContent);
 		}
 
 		return rules;
