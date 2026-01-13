@@ -25,7 +25,7 @@ export interface AnalysisResult {
 
 // Files that can be auto-resolved
 const SIMPLE_FILES = new Set([
-	".beads/issues.jsonl",
+	".chorus/tasks.jsonl",
 	"package-lock.json",
 	"yarn.lock",
 	"pnpm-lock.yaml",

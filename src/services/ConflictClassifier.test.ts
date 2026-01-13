@@ -6,9 +6,9 @@ describe("ConflictClassifier", () => {
 
 	// F26: classifyFile() - 5 tests
 	describe("classifyFile()", () => {
-		it(".beads/issues.jsonl classified as SIMPLE", () => {
+		it(".chorus/tasks.jsonl classified as SIMPLE", () => {
 			// Arrange
-			const file = ".beads/issues.jsonl";
+			const file = ".chorus/tasks.jsonl";
 
 			// Act
 			const result = classifier.classifyFile(file);
