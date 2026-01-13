@@ -69,7 +69,7 @@ async function runClaudeInDir(prompt: string, cwd: string): Promise<string> {
 }
 
 /**
- * Helper to create a task in .beads/issues.jsonl
+ * Helper to create a task in .chorus/tasks.jsonl
  */
 function createTask(
 	repoPath: string,
@@ -77,19 +77,27 @@ function createTask(
 	title: string,
 	description: string,
 ): void {
-	const beadsPath = join(repoPath, ".beads", "issues.jsonl");
+	const tasksPath = join(repoPath, ".chorus", "tasks.jsonl");
+	const now = new Date().toISOString();
 	const task = {
 		id: taskId,
 		title,
 		description,
-		status: "open",
-		priority: "P1",
-		created_at: new Date().toISOString(),
+		status: "todo",
+		type: "task",
+		tags: [],
+		dependencies: [],
+		created_at: now,
+		updated_at: now,
+		review_count: 0,
+		learnings_count: 0,
+		has_learnings: false,
+		version: 1,
 	};
-	const existingContent = existsSync(beadsPath)
-		? readFileSync(beadsPath, "utf-8")
+	const existingContent = existsSync(tasksPath)
+		? readFileSync(tasksPath, "utf-8")
 		: "";
-	writeFileSync(beadsPath, `${existingContent}${JSON.stringify(task)}\n`);
+	writeFileSync(tasksPath, `${existingContent}${JSON.stringify(task)}\n`);
 }
 
 /**
@@ -126,7 +134,7 @@ describe("INT-05: End-to-end task completion workflow", () => {
 	});
 
 	it("completes full workflow from task creation to merge", async () => {
-		// === STEP 1: Create task in .beads/issues.jsonl ===
+		// === STEP 1: Create task in .chorus/tasks.jsonl ===
 		const taskId = "ch-e2e01";
 		const taskTitle = "Create solution file";
 		const taskDescription = "Create solution.txt with content: TASK_SOLVED";
@@ -134,11 +142,11 @@ describe("INT-05: End-to-end task completion workflow", () => {
 		createTask(repo.path, taskId, taskTitle, taskDescription);
 
 		// Verify task was created
-		const beadsContent = readFileSync(
-			join(repo.path, ".beads", "issues.jsonl"),
+		const tasksContent = readFileSync(
+			join(repo.path, ".chorus", "tasks.jsonl"),
 			"utf-8",
 		);
-		expect(beadsContent).toContain(taskId);
+		expect(tasksContent).toContain(taskId);
 
 		// === STEP 2: Agent claims task → worktree created ===
 		const worktree = await worktreeService.create("claude", taskId);
