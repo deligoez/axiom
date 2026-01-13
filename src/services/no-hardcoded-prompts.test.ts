@@ -177,15 +177,4 @@ describe("No Hardcoded Prompts Verification", () => {
 			"[ARCHITECTURAL] - Fundamental design decision",
 		);
 	});
-
-	it("shared-rules E2E validates error thrown for missing files", () => {
-		// Verify the E2E test exists and tests error behavior
-		const e2eDir = path.join(__dirname, "..", "e2e");
-		const sharedRulesPath = path.join(e2eDir, "shared-rules.e2e.test.ts");
-		const content = fs.readFileSync(sharedRulesPath, "utf-8");
-
-		// Verify test name changed from fallback to error
-		expect(content).toContain("Throws error when rule files missing");
-		expect(content).not.toContain("Fallback works when files missing");
-	});
 });

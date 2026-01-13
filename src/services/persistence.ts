@@ -74,4 +74,3 @@ export function loadSnapshot(snapshotPath: string): Snapshot<unknown> | null {
 		return null;
 	}
 }
-
