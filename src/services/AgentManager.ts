@@ -74,7 +74,13 @@ export class AgentManager extends EventEmitter<AgentManagerEvents> {
 
 		if (proc && !proc.killed) {
 			proc.kill("SIGTERM");
-			await proc.catch(() => {}); // Wait for exit
+			// execa rejects when process is killed - expected behavior during cleanup
+			await proc.catch((error: Error) => {
+				// Log at debug level in case we need to troubleshoot
+				if (process.env.DEBUG) {
+					console.debug(`Agent ${id} kill cleanup:`, error.message);
+				}
+			});
 		}
 
 		if (agent) {

@@ -93,8 +93,15 @@ export class ReviewPersistence {
 					"utf-8",
 				);
 			} else {
-				// Delete file if empty
-				await fs.unlink(this.statePath).catch(() => {});
+				// Delete file if empty - file may not exist, that's ok
+				await fs
+					.unlink(this.statePath)
+					.catch((error: NodeJS.ErrnoException) => {
+						// Only log unexpected errors (ignore ENOENT - file doesn't exist)
+						if (error.code !== "ENOENT" && process.env.DEBUG) {
+							console.debug("ReviewPersistence cleanup error:", error.message);
+						}
+					});
 			}
 		} catch {
 			// File doesn't exist, nothing to clear
