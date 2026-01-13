@@ -7,8 +7,9 @@ import { ImplementationMode } from "./modes/ImplementationMode.js";
 import { InitMode } from "./modes/InitMode.js";
 import { PlanningMode } from "./modes/PlanningMode.js";
 import { ReviewLoop } from "./modes/ReviewLoop.js";
-import { BeadsService } from "./services/BeadsService.js";
 import { PlanningState } from "./services/PlanningState.js";
+import { TaskStore } from "./services/TaskStore.js";
+import type { Task } from "./types/task.js";
 import type { TaskProviderTask } from "./types/task-provider.js";
 
 export interface CliArgs {
@@ -35,44 +36,49 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 	// Track if initialization has run (ref persists across renders)
 	const hasInitialized = useRef(false);
 
-	// Create BeadsService instance (memoized to avoid recreating on every render)
-	const beadsService = useMemo(
-		() => new BeadsService(projectRoot),
-		[projectRoot],
-	);
+	// Create TaskStore instance (memoized to avoid recreating on every render)
+	const taskStore = useMemo(() => new TaskStore(projectRoot), [projectRoot]);
 
-	// Load and watch beads (converted to TaskProviderTask format)
+	// Load and watch tasks (converted to TaskProviderTask format)
 	const [tasks, setTasks] = useState<TaskProviderTask[]>([]);
 
 	useEffect(() => {
-		// Helper to convert Bead to TaskProviderTask
-		const convertBeadToTask = (
-			bead: ReturnType<typeof beadsService.getBeads>[number],
-		): TaskProviderTask => ({
-			id: bead.id,
-			title: bead.title,
-			description: bead.description,
-			priority: bead.priority,
-			status: bead.status,
-			labels: [],
-			dependencies: bead.dependencies ?? [],
-			custom: bead.assignee ? { agent: bead.assignee } : undefined,
+		// Helper to convert Task to TaskProviderTask
+		const convertToTaskProviderTask = (task: Task): TaskProviderTask => ({
+			id: task.id,
+			title: task.title,
+			description: task.description,
+			priority: 1, // TaskStore doesn't have priority, default to P1
+			status: task.status,
+			labels: task.tags,
+			dependencies: task.dependencies,
+			custom: {
+				model: task.model,
+				agent: task.assignee,
+				acceptance_criteria: task.acceptanceCriteria,
+			},
 		});
 
-		// Initial load
-		setTasks(beadsService.getBeads().map(convertBeadToTask));
+		// Initial load (async)
+		const initializeStore = async () => {
+			await taskStore.load();
+			setTasks(taskStore.list().map(convertToTaskProviderTask));
 
-		// Watch for changes
-		beadsService.on("change", (newBeads) => {
-			setTasks(newBeads.map(convertBeadToTask));
-		});
+			// Watch for changes
+			taskStore.on("change", (newTasks: Task[]) => {
+				setTasks(newTasks.map(convertToTaskProviderTask));
+			});
 
-		beadsService.watch();
+			// Start watching file for external changes
+			await taskStore.watch();
+		};
+
+		initializeStore();
 
 		return () => {
-			beadsService.stop();
+			taskStore.stop();
 		};
-	}, [beadsService]);
+	}, [taskStore]);
 
 	// Handle CLI overrides and state restoration on first render (synchronous)
 	if (!hasInitialized.current) {
