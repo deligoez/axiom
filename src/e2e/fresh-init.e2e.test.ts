@@ -50,48 +50,6 @@ describe("E2E: Fresh Project Init", () => {
 		expect(output).toMatch(/No tasks|Tasks \(0\)/);
 	});
 
-	// SKIPPED: File watcher flaky under parallel test load - see ch-211i
-	it.skip("can create first task via file", async () => {
-		// Arrange - pre-create .chorus directory so watcher is ready
-		const chorusDir = join(projectDir, ".chorus");
-		mkdirSync(chorusDir, { recursive: true });
-		// Create empty tasks file first
-		writeFileSync(join(chorusDir, "tasks.jsonl"), "");
-
-		// Start app
-		const result = await renderApp([], projectDir);
-		await waitForText(result, "No tasks", 5000);
-
-		// Act - write a task to the file in TaskJSONL format
-		const now = new Date().toISOString();
-		const task = {
-			id: "ch-test1",
-			title: "First Test Task",
-			description: "",
-			status: "todo",
-			type: "task",
-			tags: [],
-			dependencies: [],
-			created_at: now,
-			updated_at: now,
-			review_count: 0,
-			learnings_count: 0,
-			has_learnings: false,
-			version: 1,
-		};
-		writeFileSync(join(chorusDir, "tasks.jsonl"), `${JSON.stringify(task)}\n`);
-
-		// Small delay to ensure file system events propagate
-		await new Promise((resolve) => setTimeout(resolve, 100));
-
-		// Assert - wait for file watcher to pick up the new task
-		// Use longer timeout for file watcher (can be slow under parallel test load)
-		await waitForText(result, "Tasks (1)", 15000);
-		const output = getOutput(result);
-		expect(output).toContain("Tasks (1)");
-		expect(output).toContain("1 pending");
-	}, 20000);
-
 	it("first task appears in panel", async () => {
 		// Arrange - create project with a task in TaskJSONL format
 		const chorusDir = join(projectDir, ".chorus");

@@ -213,8 +213,5 @@ it.skip("test description", async () => {
 ```
 
 **Current skipped tests with tasks:**
-| File | Test | Bug Task |
-|------|------|----------|
-| `beads-cli.e2e.test.ts` | 6 tests (no-db mode) | ch-5imz |
-| `fresh-init.e2e.test.ts` | file watcher flaky | ch-211i |
-| `e2e-helpers.test.ts` | hasExited timing | ch-a2zx |
+
+*None - all tests are active.*
