@@ -32,4 +32,16 @@ describe("CLI", () => {
 
 		expect(result.help).toBe(true);
 	});
+
+	it("shows help for unknown flags", () => {
+		const result = parseArgs(["--unknown"]);
+
+		expect(result.help).toBe(true);
+	});
+
+	it("shows help for positional arguments", () => {
+		const result = parseArgs(["anything"]);
+
+		expect(result.help).toBe(true);
+	});
 });
