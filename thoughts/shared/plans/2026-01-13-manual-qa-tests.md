@@ -237,8 +237,8 @@ chorus  # veya: node dist/index.js
 | ID | Severity | Açıklama | Durum |
 |----|----------|----------|-------|
 | ch-utha | P0 | ConfigWizard keyboard input yok | ✅ CLOSED |
-| ch-g4yd | P2 | Number keys (1-9) implement edilmemiş | OPEN |
-| ch-6dg1 | P2 | HelpPanel unimplemented features gösteriyor | OPEN |
+| ch-g4yd | P2 | Number keys (1-9) implement edilmemiş | ✅ CLOSED (ch-6dg1 ile fix) |
+| ch-6dg1 | P2 | HelpPanel unimplemented features gösteriyor | ✅ CLOSED |
 
 ---
 
