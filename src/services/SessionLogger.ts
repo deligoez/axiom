@@ -1,4 +1,5 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 export interface SessionEvent {
@@ -13,13 +14,17 @@ export interface SessionEventEntry extends SessionEvent {
 
 export class SessionLogger {
 	private readonly logPath: string;
+	private writeQueue: Promise<void> = Promise.resolve();
 
 	constructor(projectDir: string) {
 		this.logPath = join(projectDir, ".chorus", "session-log.jsonl");
 	}
 
 	/**
-	 * Append a session event to the log file
+	 * Append a session event to the log file.
+	 * Uses async I/O to avoid blocking the event loop.
+	 * Fire-and-forget: callers don't need to await.
+	 * Writes are queued to maintain order.
 	 */
 	log(event: SessionEvent): void {
 		const entry: SessionEventEntry = {
@@ -27,13 +32,23 @@ export class SessionLogger {
 			...event,
 		};
 
-		// Ensure directory exists
+		// Chain writes to ensure ordering while remaining non-blocking
+		this.writeQueue = this.writeQueue
+			.then(() => this.writeLog(entry))
+			.catch(() => {
+				// Silently ignore logging failures - don't block the app
+			});
+	}
+
+	/**
+	 * Internal async write method.
+	 */
+	private async writeLog(entry: SessionEventEntry): Promise<void> {
 		const dir = dirname(this.logPath);
 		if (!existsSync(dir)) {
-			mkdirSync(dir, { recursive: true });
+			await mkdir(dir, { recursive: true });
 		}
-
-		appendFileSync(this.logPath, `${JSON.stringify(entry)}\n`);
+		await appendFile(this.logPath, `${JSON.stringify(entry)}\n`);
 	}
 
 	/**

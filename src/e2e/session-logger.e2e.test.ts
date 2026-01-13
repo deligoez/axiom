@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SessionLogger } from "../services/SessionLogger.js";
 
 describe("E2E: SessionLogger Integration", () => {
@@ -27,7 +27,7 @@ describe("E2E: SessionLogger Integration", () => {
 		}
 	});
 
-	it("creates session-log.jsonl if missing", () => {
+	it("creates session-log.jsonl if missing", async () => {
 		// Arrange
 		const logPath = join(tempDir, ".chorus", "session-log.jsonl");
 		expect(existsSync(logPath)).toBe(false);
@@ -39,12 +39,17 @@ describe("E2E: SessionLogger Integration", () => {
 			details: { message: "Test event" },
 		});
 
-		// Assert
-		expect(existsSync(logPath)).toBe(true);
+		// Assert - wait for async write
+		await vi.waitFor(() => {
+			expect(existsSync(logPath)).toBe(true);
+		});
 	});
 
-	it("appends events correctly as one JSON per line", () => {
-		// Arrange & Act
+	it("appends events correctly as one JSON per line", async () => {
+		// Arrange
+		const logPath = join(tempDir, ".chorus", "session-log.jsonl");
+
+		// Act
 		sessionLogger.log({
 			mode: "init",
 			eventType: "session_start",
@@ -56,24 +61,24 @@ describe("E2E: SessionLogger Integration", () => {
 			details: { taskId: "ch-001" },
 		});
 
-		// Assert
-		const logPath = join(tempDir, ".chorus", "session-log.jsonl");
-		const content = readFileSync(logPath, "utf-8");
-		const lines = content.trim().split("\n");
+		// Assert - wait for async writes to complete
+		await vi.waitFor(() => {
+			const content = readFileSync(logPath, "utf-8");
+			const lines = content.trim().split("\n");
+			expect(lines).toHaveLength(2);
 
-		expect(lines).toHaveLength(2);
+			// Verify each line is valid JSON
+			const event1 = JSON.parse(lines[0]);
+			const event2 = JSON.parse(lines[1]);
 
-		// Verify each line is valid JSON
-		const event1 = JSON.parse(lines[0]);
-		const event2 = JSON.parse(lines[1]);
-
-		expect(event1.mode).toBe("init");
-		expect(event1.eventType).toBe("session_start");
-		expect(event2.mode).toBe("planning");
-		expect(event2.eventType).toBe("task_created");
+			expect(event1.mode).toBe("init");
+			expect(event1.eventType).toBe("session_start");
+			expect(event2.mode).toBe("planning");
+			expect(event2.eventType).toBe("task_created");
+		});
 	});
 
-	it("events have correct timestamp format", () => {
+	it("events have correct timestamp format", async () => {
 		// Arrange & Act
 		sessionLogger.log({
 			mode: "test",
@@ -81,13 +86,17 @@ describe("E2E: SessionLogger Integration", () => {
 			details: {},
 		});
 
-		// Assert
-		const events = sessionLogger.getRecentEvents(1);
-		expect(events).toHaveLength(1);
-		expect(events[0].timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+		// Assert - wait for async write
+		await vi.waitFor(() => {
+			const events = sessionLogger.getRecentEvents(1);
+			expect(events).toHaveLength(1);
+			expect(events[0].timestamp).toMatch(
+				/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+			);
+		});
 	});
 
-	it("multiple events append in order", () => {
+	it("multiple events append in order", async () => {
 		// Arrange & Act
 		for (let i = 0; i < 5; i++) {
 			sessionLogger.log({
@@ -97,14 +106,16 @@ describe("E2E: SessionLogger Integration", () => {
 			});
 		}
 
-		// Assert
-		const events = sessionLogger.getRecentEvents(10);
-		expect(events).toHaveLength(5);
-		expect(events[0].eventType).toBe("event_0");
-		expect(events[4].eventType).toBe("event_4");
+		// Assert - wait for all async writes
+		await vi.waitFor(() => {
+			const events = sessionLogger.getRecentEvents(10);
+			expect(events).toHaveLength(5);
+			expect(events[0].eventType).toBe("event_0");
+			expect(events[4].eventType).toBe("event_4");
+		});
 	});
 
-	it("filters events by mode", () => {
+	it("filters events by mode", async () => {
 		// Arrange
 		sessionLogger.log({ mode: "init", eventType: "start", details: {} });
 		sessionLogger.log({
@@ -123,16 +134,16 @@ describe("E2E: SessionLogger Integration", () => {
 			details: {},
 		});
 
-		// Act
-		const planningEvents = sessionLogger.getEventsByMode("planning");
-
-		// Assert
-		expect(planningEvents).toHaveLength(2);
-		expect(planningEvents[0].eventType).toBe("create_task");
-		expect(planningEvents[1].eventType).toBe("update_task");
+		// Assert - wait for async writes then filter
+		await vi.waitFor(() => {
+			const planningEvents = sessionLogger.getEventsByMode("planning");
+			expect(planningEvents).toHaveLength(2);
+			expect(planningEvents[0].eventType).toBe("create_task");
+			expect(planningEvents[1].eventType).toBe("update_task");
+		});
 	});
 
-	it("filters events by type", () => {
+	it("filters events by type", async () => {
 		// Arrange
 		sessionLogger.log({
 			mode: "planning",
@@ -150,12 +161,12 @@ describe("E2E: SessionLogger Integration", () => {
 			details: { id: "2" },
 		});
 
-		// Act
-		const createdEvents = sessionLogger.getEventsByType("task_created");
-
-		// Assert
-		expect(createdEvents).toHaveLength(2);
-		expect(createdEvents[0].details.id).toBe("1");
-		expect(createdEvents[1].details.id).toBe("2");
+		// Assert - wait for async writes then filter
+		await vi.waitFor(() => {
+			const createdEvents = sessionLogger.getEventsByType("task_created");
+			expect(createdEvents).toHaveLength(2);
+			expect(createdEvents[0].details.id).toBe("1");
+			expect(createdEvents[1].details.id).toBe("2");
+		});
 	});
 });

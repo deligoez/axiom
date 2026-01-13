@@ -1,12 +1,6 @@
 import { EventEmitter } from "node:events";
-import {
-	appendFileSync,
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	renameSync,
-	writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { appendFile, mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { watch as chokidarWatch, type FSWatcher } from "chokidar";
 import type { FileWatcherConfig } from "../types/config.js";
@@ -722,7 +716,7 @@ export class TaskStore extends EventEmitter {
 	async flush(): Promise<void> {
 		// Ensure .chorus directory exists
 		if (!existsSync(this.chorusDir)) {
-			mkdirSync(this.chorusDir, { recursive: true });
+			await mkdir(this.chorusDir, { recursive: true });
 		}
 
 		// Build JSONL content
@@ -735,10 +729,10 @@ export class TaskStore extends EventEmitter {
 
 		const content = lines.join("\n") + (lines.length > 0 ? "\n" : "");
 
-		// Atomic write: temp file → rename
-		const tempPath = `${this.tasksPath}.tmp`;
-		writeFileSync(tempPath, content, "utf-8");
-		renameSync(tempPath, this.tasksPath);
+		// Atomic write: temp file → rename (unique suffix for concurrent safety)
+		const tempPath = `${this.tasksPath}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+		await writeFile(tempPath, content, "utf-8");
+		await rename(tempPath, this.tasksPath);
 
 		// Flush audit buffer
 		await this.flushAudit();
@@ -786,15 +780,17 @@ export class TaskStore extends EventEmitter {
 
 		// Ensure audit directory exists
 		if (!existsSync(this.auditDir)) {
-			mkdirSync(this.auditDir, { recursive: true });
+			await mkdir(this.auditDir, { recursive: true });
 		}
 
 		// Write each task's audit entries
+		const writePromises: Promise<void>[] = [];
 		for (const [taskId, entries] of this.auditBuffer) {
 			const auditPath = join(this.auditDir, `${taskId}.jsonl`);
 			const content = `${entries.map((e) => JSON.stringify(e)).join("\n")}\n`;
-			appendFileSync(auditPath, content, "utf-8");
+			writePromises.push(appendFile(auditPath, content, "utf-8"));
 		}
+		await Promise.all(writePromises);
 
 		// Clear buffer
 		this.auditBuffer.clear();

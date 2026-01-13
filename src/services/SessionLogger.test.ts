@@ -1,19 +1,24 @@
 import * as fs from "node:fs";
+import * as fsPromises from "node:fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SessionLogger } from "./SessionLogger.js";
 
-// Mock fs
+// Mock fs for sync operations (existsSync, readFileSync)
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn(),
 	readFileSync: vi.fn(),
-	appendFileSync: vi.fn(),
-	mkdirSync: vi.fn(),
+}));
+
+// Mock fs/promises for async operations (appendFile, mkdir)
+vi.mock("node:fs/promises", () => ({
+	appendFile: vi.fn().mockResolvedValue(undefined),
+	mkdir: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
-const mockAppendFileSync = vi.mocked(fs.appendFileSync);
-const mockMkdirSync = vi.mocked(fs.mkdirSync);
+const mockAppendFile = vi.mocked(fsPromises.appendFile);
+const mockMkdir = vi.mocked(fsPromises.mkdir);
 
 describe("SessionLogger", () => {
 	let logger: SessionLogger;
@@ -24,7 +29,7 @@ describe("SessionLogger", () => {
 	});
 
 	describe("log", () => {
-		it("appends JSON line to session-log.jsonl", () => {
+		it("appends JSON line to session-log.jsonl", async () => {
 			// Arrange
 			mockExistsSync.mockReturnValue(true);
 
@@ -35,8 +40,13 @@ describe("SessionLogger", () => {
 				details: { taskId: "ch-123" },
 			});
 
+			// Wait for async write to complete
+			await vi.waitFor(() => {
+				expect(mockAppendFile).toHaveBeenCalled();
+			});
+
 			// Assert
-			expect(mockAppendFileSync).toHaveBeenCalledWith(
+			expect(mockAppendFile).toHaveBeenCalledWith(
 				"/test/project/.chorus/session-log.jsonl",
 				expect.stringMatching(
 					/"mode":"semi-auto".*"eventType":"task_started".*"taskId":"ch-123"/,
@@ -44,7 +54,7 @@ describe("SessionLogger", () => {
 			);
 		});
 
-		it("includes timestamp, mode, eventType, details fields", () => {
+		it("includes timestamp, mode, eventType, details fields", async () => {
 			// Arrange
 			mockExistsSync.mockReturnValue(true);
 
@@ -55,8 +65,13 @@ describe("SessionLogger", () => {
 				details: { taskId: "ch-456" },
 			});
 
+			// Wait for async write to complete
+			await vi.waitFor(() => {
+				expect(mockAppendFile).toHaveBeenCalled();
+			});
+
 			// Assert
-			const writtenContent = mockAppendFileSync.mock.calls[0][1] as string;
+			const writtenContent = mockAppendFile.mock.calls[0][1] as string;
 			const entry = JSON.parse(writtenContent.trim());
 			expect(entry).toHaveProperty("timestamp");
 			expect(entry).toHaveProperty("mode", "autopilot");
@@ -65,7 +80,7 @@ describe("SessionLogger", () => {
 			expect(entry.details.taskId).toBe("ch-456");
 		});
 
-		it("creates directory if it does not exist", () => {
+		it("creates directory if it does not exist", async () => {
 			// Arrange
 			mockExistsSync.mockReturnValue(false);
 
@@ -76,21 +91,31 @@ describe("SessionLogger", () => {
 				details: {},
 			});
 
+			// Wait for async operations to complete
+			await vi.waitFor(() => {
+				expect(mockMkdir).toHaveBeenCalled();
+			});
+
 			// Assert
-			expect(mockMkdirSync).toHaveBeenCalledWith("/test/project/.chorus", {
+			expect(mockMkdir).toHaveBeenCalledWith("/test/project/.chorus", {
 				recursive: true,
 			});
 		});
 
-		it("uses append-only mode for safe concurrent writes", () => {
+		it("uses async append for non-blocking writes", async () => {
 			// Arrange
 			mockExistsSync.mockReturnValue(true);
 
 			// Act
 			logger.log({ mode: "semi-auto", eventType: "test", details: {} });
 
-			// Assert - appendFileSync is atomic for small writes
-			expect(mockAppendFileSync).toHaveBeenCalledTimes(1);
+			// Wait for async write to complete
+			await vi.waitFor(() => {
+				expect(mockAppendFile).toHaveBeenCalled();
+			});
+
+			// Assert - appendFile (async) is used for non-blocking writes
+			expect(mockAppendFile).toHaveBeenCalledTimes(1);
 		});
 	});
 

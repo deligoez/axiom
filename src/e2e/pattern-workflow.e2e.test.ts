@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PatternSuggestion } from "../components/PatternReviewDialog.js";
 import { LearningCategorizer } from "../services/LearningCategorizer.js";
 import { LearningExtractor } from "../services/LearningExtractor.js";
@@ -205,7 +205,7 @@ describe("E2E: Pattern Extraction & Approval Workflow", () => {
 	});
 
 	describe("Pattern Rejection", () => {
-		it("logs pattern rejection with reason to session log", () => {
+		it("logs pattern rejection with reason to session log", async () => {
 			// Arrange
 			const rejectionReason = "Pattern too vague - needs more specificity";
 			const patternId = "rejected-pattern";
@@ -222,11 +222,13 @@ describe("E2E: Pattern Extraction & Approval Workflow", () => {
 				},
 			});
 
-			// Assert - Check session log contains rejection
-			const events = sessionLogger.getEventsByType("pattern_rejected");
-			expect(events).toHaveLength(1);
-			expect(events[0].details.patternId).toBe(patternId);
-			expect(events[0].details.reason).toBe(rejectionReason);
+			// Assert - Wait for async write then check session log
+			await vi.waitFor(() => {
+				const events = sessionLogger.getEventsByType("pattern_rejected");
+				expect(events).toHaveLength(1);
+				expect(events[0].details.patternId).toBe(patternId);
+				expect(events[0].details.reason).toBe(rejectionReason);
+			});
 		});
 	});
 });
