@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import type React from "react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { type Agent, AgentGrid } from "../components/AgentGrid.js";
 import { FooterBar } from "../components/FooterBar.js";
 import { HeaderBar } from "../components/HeaderBar.js";
@@ -60,6 +60,15 @@ export function ImplementationMode({
 	const [showIntervention, setShowIntervention] = useState(false);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
+	// Memoized callbacks to prevent unnecessary re-renders
+	const handleOpenIntervention = useCallback(() => {
+		setShowIntervention(true);
+	}, []);
+
+	const handleCloseIntervention = useCallback(() => {
+		setShowIntervention(false);
+	}, []);
+
 	// Wire up task list navigation (j/k keys with wrapping)
 	useNavigationKeys({
 		itemCount: tasks.length,
@@ -75,7 +84,7 @@ export function ImplementationMode({
 
 	// Wire up 'i' key to open intervention panel
 	useInterventionKey({
-		onOpen: () => setShowIntervention(true),
+		onOpen: handleOpenIntervention,
 		isDisabled: showExitConfirm, // Don't open intervention if exit confirm is showing
 	});
 
@@ -243,7 +252,7 @@ export function ImplementationMode({
 			{showIntervention && (
 				<InterventionPanel
 					visible={showIntervention}
-					onClose={() => setShowIntervention(false)}
+					onClose={handleCloseIntervention}
 					availableTasks={availableTasks}
 				/>
 			)}
