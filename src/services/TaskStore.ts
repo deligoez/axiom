@@ -8,6 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { watch as chokidarWatch, type FSWatcher } from "chokidar";
 import type {
 	CreateTaskInput,
 	Task,
@@ -69,6 +70,9 @@ export class TaskStore extends EventEmitter {
 	private selector: TaskSelector;
 	private auditBuffer: Map<string, AuditEntry[]> = new Map();
 	private pendingArchives: Set<string> = new Set();
+	private watcher: FSWatcher | null = null;
+	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private readonly DEBOUNCE_MS = 100;
 
 	constructor(projectDir: string) {
 		super();
@@ -887,5 +891,83 @@ export class TaskStore extends EventEmitter {
 			hasLearnings: jsonl.has_learnings,
 			version: jsonl.version ?? 1, // Default to 1 for legacy tasks without version
 		};
+	}
+
+	// ─────────────────────────────────────────────────────────
+	// File Watcher Methods (TS11)
+	// ─────────────────────────────────────────────────────────
+
+	/**
+	 * Start watching the tasks.jsonl file for external changes.
+	 * Reloads on change with 100ms debounce.
+	 * Returns a promise that resolves when the watcher is ready.
+	 */
+	watch(): Promise<void> {
+		if (this.watcher) {
+			return Promise.resolve(); // Already watching
+		}
+
+		return new Promise((resolve) => {
+			this.watcher = chokidarWatch(this.tasksPath, {
+				persistent: true,
+				ignoreInitial: true,
+				usePolling: true,
+				interval: 50,
+			});
+
+			this.watcher.on("change", () => {
+				this.debouncedReload();
+			});
+
+			this.watcher.on("ready", () => {
+				resolve();
+			});
+		});
+	}
+
+	/**
+	 * Stop watching the tasks.jsonl file.
+	 */
+	stop(): void {
+		if (this.debounceTimer) {
+			clearTimeout(this.debounceTimer);
+			this.debounceTimer = null;
+		}
+
+		if (this.watcher) {
+			this.watcher.close();
+			this.watcher = null;
+		}
+	}
+
+	/**
+	 * Reload tasks from file (clears in-memory and re-reads).
+	 * Emits 'change' event after reload.
+	 */
+	async reload(): Promise<void> {
+		// Clear current state
+		this.tasks.clear();
+		this.deletedIds.clear();
+
+		// Re-read from file
+		await this.load();
+
+		// Emit change to notify listeners
+		this.emitChange();
+	}
+
+	/**
+	 * Internal: debounced reload to prevent rapid file change floods.
+	 */
+	private debouncedReload(): void {
+		if (this.debounceTimer) {
+			clearTimeout(this.debounceTimer);
+		}
+
+		this.debounceTimer = setTimeout(() => {
+			this.reload().catch((err) => {
+				this.emit("error", err);
+			});
+		}, this.DEBOUNCE_MS);
 	}
 }

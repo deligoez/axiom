@@ -1137,4 +1137,125 @@ describe("TaskStore", () => {
 			expect(restored?.version).toBe(3);
 		});
 	});
+
+	describe("file watcher", () => {
+		it("watch() starts watching tasks.jsonl and stop() stops it", async () => {
+			// Arrange
+			const task = store.create({ title: "Initial Task" });
+			await store.flush();
+
+			// Act - start watching (await for watcher to be ready)
+			await store.watch();
+
+			// Assert - should be able to stop without error
+			store.stop();
+		});
+
+		it("external file changes trigger reload() and emit change", async () => {
+			// Arrange
+			const task = store.create({ title: "Task 1" });
+			await store.flush();
+
+			// Start watching (await for watcher to be ready)
+			await store.watch();
+			let changeEmitted = false;
+			store.on("change", () => {
+				changeEmitted = true;
+			});
+
+			// Act - simulate external change by writing directly to file
+			const newTask = {
+				id: "ch-ext",
+				title: "External Task",
+				status: "todo",
+				type: "task",
+				tags: [],
+				dependencies: [],
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				review_count: 0,
+				learnings_count: 0,
+				has_learnings: false,
+				version: 1,
+			};
+			const existingContent = readFileSync(
+				join(tempDir, ".chorus", "tasks.jsonl"),
+				"utf-8",
+			);
+			writeFileSync(
+				join(tempDir, ".chorus", "tasks.jsonl"),
+				`${existingContent}${JSON.stringify(newTask)}\n`,
+			);
+
+			// Wait for polling interval + debounce + file watcher
+			await new Promise((r) => setTimeout(r, 300));
+
+			// Assert
+			expect(changeEmitted).toBe(true);
+			const extTask = store.get("ch-ext");
+			expect(extTask).toBeDefined();
+			expect(extTask?.title).toBe("External Task");
+
+			// Cleanup
+			store.stop();
+		});
+
+		it("debounces rapid file changes (100ms)", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			await store.flush();
+			await store.watch();
+
+			let reloadCount = 0;
+			store.on("change", () => {
+				reloadCount++;
+			});
+
+			// Act - make rapid changes
+			const filePath = join(tempDir, ".chorus", "tasks.jsonl");
+			const content = readFileSync(filePath, "utf-8");
+			writeFileSync(filePath, content); // touch 1
+			writeFileSync(filePath, content); // touch 2
+			writeFileSync(filePath, content); // touch 3
+
+			// Wait for debounce
+			await new Promise((r) => setTimeout(r, 200));
+
+			// Assert - should only reload once (debounced)
+			expect(reloadCount).toBeLessThanOrEqual(2); // Allow some variance
+
+			// Cleanup
+			store.stop();
+		});
+
+		it("reload() re-reads file and emits change", async () => {
+			// Arrange
+			const task = store.create({ title: "Original" });
+			await store.flush();
+
+			// Modify in-memory without flushing
+			store.update(task.id, { title: "In-Memory Change" });
+
+			// Write external change directly to file
+			const content = readFileSync(
+				join(tempDir, ".chorus", "tasks.jsonl"),
+				"utf-8",
+			);
+			const modified = content.replace("Original", "External Change");
+			writeFileSync(join(tempDir, ".chorus", "tasks.jsonl"), modified);
+
+			let changeEmitted = false;
+			store.on("change", () => {
+				changeEmitted = true;
+			});
+
+			// Act
+			await store.reload();
+
+			// Assert - should have external data, not in-memory
+			const reloaded = store.get(task.id);
+			expect(reloaded?.title).toBe("External Change");
+			expect(changeEmitted).toBe(true);
+		});
+	});
 });

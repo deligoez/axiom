@@ -30,11 +30,11 @@ describe("E2E: TaskStore Concurrent Modifications", () => {
 		const store2 = new TaskStore(tempDir);
 
 		// Create tasks in store1
-		const task1 = store1.create({ title: "Task from Store 1" });
-		const task2 = store1.create({ title: "Another Task from Store 1" });
+		store1.create({ title: "Task from Store 1" });
+		store1.create({ title: "Another Task from Store 1" });
 
 		// Create tasks in store2 (independent - simulates parallel process)
-		const task3 = store2.create({ title: "Task from Store 2" });
+		store2.create({ title: "Task from Store 2" });
 
 		// Act - flush both stores (simulates concurrent writes)
 		await Promise.all([store1.flush(), store2.flush()]);
