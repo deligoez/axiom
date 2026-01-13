@@ -100,36 +100,47 @@ export function renderAppWithPty(
 	// node-pty expects file and args separately
 	const nodeArgs = [chorusPath, ...effectiveArgs];
 
-	const pty = spawn("node", nodeArgs, {
-		name: "xterm-color",
-		cols,
-		rows,
-		cwd,
-		env: {
-			...process.env,
-			...env,
-			// Disable Node.js warnings for cleaner output
-			NODE_NO_WARNINGS: "1",
-			// Ensure we're not in CI mode for TTY detection
-			CI: "false",
-			// Force color output
-			FORCE_COLOR: "1",
-		},
-	});
+	let pty: ReturnType<typeof spawn>;
+	let spawnError: Error | null = null;
 
-	pty.onData((data) => {
-		output += data;
-	});
+	try {
+		pty = spawn("node", nodeArgs, {
+			name: "xterm-color",
+			cols,
+			rows,
+			cwd,
+			env: {
+				...process.env,
+				...env,
+				// Disable Node.js warnings for cleaner output
+				NODE_NO_WARNINGS: "1",
+				// Ensure we're not in CI mode for TTY detection
+				CI: "false",
+				// Force color output
+				FORCE_COLOR: "1",
+			},
+		});
 
-	pty.onExit(({ exitCode: code }) => {
-		exitCode = code;
-		if (exitResolve) {
-			exitResolve(code);
-		}
-	});
+		pty.onData((data) => {
+			output += data;
+		});
+
+		pty.onExit(({ exitCode: code }) => {
+			exitCode = code;
+			if (exitResolve) {
+				exitResolve(code);
+			}
+		});
+	} catch (error) {
+		// Handle spawn failures (e.g., node binary not found)
+		spawnError = error instanceof Error ? error : new Error(String(error));
+		output = `PTY spawn error: ${spawnError.message}`;
+		exitCode = 1;
+	}
 
 	const result: PtyTestResult = {
 		write(input: string) {
+			if (spawnError) return; // No-op if spawn failed
 			// Delay input to allow app to start up
 			setTimeout(() => {
 				pty.write(input);
@@ -155,6 +166,13 @@ export function renderAppWithPty(
 		},
 
 		async waitForText(text: string, timeout = DEFAULT_TIMEOUT) {
+			// If spawn failed, throw immediately with the error
+			if (spawnError) {
+				throw new Error(
+					`PTY spawn failed: ${spawnError.message}\nCannot wait for text "${text}"`,
+				);
+			}
+
 			const startTime = Date.now();
 
 			while (Date.now() - startTime < timeout) {
@@ -174,10 +192,12 @@ export function renderAppWithPty(
 		},
 
 		kill() {
+			if (spawnError) return; // No-op if spawn failed
 			pty.kill();
 		},
 
-		pty,
+		// biome-ignore lint/style/noNonNullAssertion: pty is undefined only when spawnError is set
+		pty: pty!,
 	};
 
 	return result;
