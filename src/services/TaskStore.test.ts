@@ -1267,4 +1267,122 @@ describe("TaskStore", () => {
 			expect(changeEmitted).toBe(true);
 		});
 	});
+
+	describe("size limit warning", () => {
+		beforeEach(() => {
+			tempDir = mkdtempSync(join(tmpdir(), "taskstore-size-test-"));
+		});
+
+		afterEach(() => {
+			rmSync(tempDir, { recursive: true, force: true });
+		});
+
+		it("emits warning when task count exceeds threshold", () => {
+			// Arrange
+			store = new TaskStore(tempDir, {
+				taskStore: { maxTasks: 10, warnThreshold: 0.8 },
+			});
+			const warnings: unknown[] = [];
+			store.on("warning", (warning) => {
+				warnings.push(warning);
+			});
+
+			// Act - create 8 tasks (80% of 10)
+			for (let i = 0; i < 8; i++) {
+				store.create({ title: `Task ${i}` });
+			}
+
+			// Assert
+			expect(warnings).toHaveLength(1);
+			expect(warnings[0]).toMatchObject({
+				type: "size_limit_approaching",
+				currentSize: 8,
+				maxTasks: 10,
+			});
+		});
+
+		it("does not emit warning below threshold", () => {
+			// Arrange
+			store = new TaskStore(tempDir, {
+				taskStore: { maxTasks: 10, warnThreshold: 0.8 },
+			});
+			const warnings: unknown[] = [];
+			store.on("warning", (warning) => {
+				warnings.push(warning);
+			});
+
+			// Act - create 7 tasks (70% of 10)
+			for (let i = 0; i < 7; i++) {
+				store.create({ title: `Task ${i}` });
+			}
+
+			// Assert
+			expect(warnings).toHaveLength(0);
+		});
+
+		it("only emits warning once", () => {
+			// Arrange
+			store = new TaskStore(tempDir, {
+				taskStore: { maxTasks: 10, warnThreshold: 0.8 },
+			});
+			const warnings: unknown[] = [];
+			store.on("warning", (warning) => {
+				warnings.push(warning);
+			});
+
+			// Act - create 12 tasks (exceeds limit)
+			for (let i = 0; i < 12; i++) {
+				store.create({ title: `Task ${i}` });
+			}
+
+			// Assert - warning emitted only once
+			expect(warnings).toHaveLength(1);
+		});
+
+		it("does not emit warning when maxTasks is 0 (unlimited)", () => {
+			// Arrange
+			store = new TaskStore(tempDir, {
+				taskStore: { maxTasks: 0, warnThreshold: 0.8 },
+			});
+			const warnings: unknown[] = [];
+			store.on("warning", (warning) => {
+				warnings.push(warning);
+			});
+
+			// Act - create many tasks
+			for (let i = 0; i < 100; i++) {
+				store.create({ title: `Task ${i}` });
+			}
+
+			// Assert
+			expect(warnings).toHaveLength(0);
+		});
+
+		it("handles 10k+ tasks efficiently", () => {
+			// Arrange
+			store = new TaskStore(tempDir, {
+				taskStore: { maxTasks: 0, warnThreshold: 0.8 }, // Unlimited
+			});
+
+			// Act - create 10,000 tasks
+			const startTime = Date.now();
+			for (let i = 0; i < 10000; i++) {
+				store.create({ title: `Task ${i}` });
+			}
+			const createTime = Date.now() - startTime;
+
+			// Assert - creation should be fast (< 5 seconds)
+			expect(createTime).toBeLessThan(5000);
+			expect(store.list().length).toBe(10000);
+
+			// Act - list all tasks
+			const listStart = Date.now();
+			const tasks = store.list();
+			const listTime = Date.now() - listStart;
+
+			// Assert - listing should be fast (< 1 second)
+			expect(listTime).toBeLessThan(1000);
+			expect(tasks.length).toBe(10000);
+		});
+	});
 });

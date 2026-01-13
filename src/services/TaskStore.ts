@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { appendFile, mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { watch as chokidarWatch, type FSWatcher } from "chokidar";
-import type { FileWatcherConfig } from "../types/config.js";
+import type { FileWatcherConfig, TaskStoreConfig } from "../types/config.js";
 import type {
 	CreateTaskInput,
 	Task,
@@ -69,18 +69,28 @@ export class TaskStore extends EventEmitter {
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private readonly DEBOUNCE_MS = 100;
 	private fileWatcherConfig: FileWatcherConfig;
+	private taskStoreConfig: TaskStoreConfig;
+	private hasWarnedAboutSize = false;
 
 	constructor(
 		projectDir: string,
-		fileWatcherConfig?: Partial<FileWatcherConfig>,
+		config?: {
+			fileWatcher?: Partial<FileWatcherConfig>;
+			taskStore?: Partial<TaskStoreConfig>;
+		},
 	) {
 		super();
 		this.projectDir = projectDir;
 		this.selector = new TaskSelector();
 		// Default to native watching (more efficient than polling)
 		this.fileWatcherConfig = {
-			usePolling: fileWatcherConfig?.usePolling ?? false,
-			interval: fileWatcherConfig?.interval ?? 100,
+			usePolling: config?.fileWatcher?.usePolling ?? false,
+			interval: config?.fileWatcher?.interval ?? 100,
+		};
+		// Default task store limits
+		this.taskStoreConfig = {
+			maxTasks: config?.taskStore?.maxTasks ?? 50000,
+			warnThreshold: config?.taskStore?.warnThreshold ?? 0.8,
 		};
 	}
 
@@ -117,9 +127,36 @@ export class TaskStore extends EventEmitter {
 		};
 
 		this.tasks.set(id, task);
+
+		// Check if approaching size limit
+		this.checkSizeLimit();
+
 		this.emit("task:created", task);
 		this.emitChange();
 		return task;
+	}
+
+	/**
+	 * Check if task count is approaching configured limit and emit warning.
+	 * Emits 'warning' event once when threshold is exceeded.
+	 */
+	private checkSizeLimit(): void {
+		const { maxTasks, warnThreshold } = this.taskStoreConfig;
+		if (maxTasks <= 0) return; // Unlimited
+
+		const currentSize = this.tasks.size;
+		const warnAt = Math.floor(maxTasks * warnThreshold);
+
+		if (currentSize >= warnAt && !this.hasWarnedAboutSize) {
+			this.hasWarnedAboutSize = true;
+			this.emit("warning", {
+				type: "size_limit_approaching",
+				message: `Task count (${currentSize}) approaching limit (${maxTasks}). Consider archiving old tasks.`,
+				currentSize,
+				maxTasks,
+				threshold: warnThreshold,
+			});
+		}
 	}
 
 	/**

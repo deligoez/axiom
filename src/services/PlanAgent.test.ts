@@ -99,6 +99,7 @@ describe("PlanAgent", () => {
 				labelRules: [],
 			},
 			fileWatcher: { usePolling: false, interval: 100 },
+			taskStore: { maxTasks: 50000, warnThreshold: 0.8 },
 		};
 
 		options = {

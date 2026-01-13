@@ -221,6 +221,7 @@ describe("ConfigService", () => {
 				labelRules: [],
 			},
 			fileWatcher: { usePolling: false, interval: 100 },
+			taskStore: { maxTasks: 50000, warnThreshold: 0.8 },
 		};
 
 		// Act
@@ -276,6 +277,7 @@ describe("ConfigService", () => {
 				labelRules: [],
 			},
 			fileWatcher: { usePolling: false, interval: 100 },
+			taskStore: { maxTasks: 50000, warnThreshold: 0.8 },
 		};
 
 		// Act

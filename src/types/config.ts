@@ -40,6 +40,11 @@ export interface FileWatcherConfig {
 	interval: number; // polling interval in ms (only used if usePolling: true)
 }
 
+export interface TaskStoreConfig {
+	maxTasks: number; // Maximum number of tasks before warning (0 = unlimited)
+	warnThreshold: number; // Emit warning when size > maxTasks * warnThreshold (0.0-1.0)
+}
+
 export interface ChorusConfig {
 	version: string;
 	mode: "semi-auto" | "autopilot";
@@ -85,6 +90,8 @@ export interface ChorusConfig {
 	sprint?: SprintConfig;
 
 	fileWatcher: FileWatcherConfig;
+
+	taskStore: TaskStoreConfig;
 
 	createdAt?: string;
 	updatedAt?: string;
@@ -152,6 +159,10 @@ export function getDefaultConfig(): ChorusConfig {
 		fileWatcher: {
 			usePolling: false, // Use native fs.watch by default (more efficient)
 			interval: 100, // If polling needed, use 100ms (default chokidar interval)
+		},
+		taskStore: {
+			maxTasks: 50000, // Warn when approaching 50k tasks
+			warnThreshold: 0.8, // Warn at 80% capacity (40k tasks)
 		},
 		createdAt: now,
 		updatedAt: now,

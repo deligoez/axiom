@@ -99,6 +99,7 @@ describe("Config types", () => {
 				labelRules: [],
 			},
 			fileWatcher: { usePolling: false, interval: 100 },
+			taskStore: { maxTasks: 50000, warnThreshold: 0.8 },
 		};
 
 		// Assert
@@ -262,6 +263,7 @@ describe("Config types", () => {
 				labelRules: [],
 			},
 			fileWatcher: { usePolling: false, interval: 100 },
+			taskStore: { maxTasks: 50000, warnThreshold: 0.8 },
 			sprint: {
 				target: { type: "taskCount", count: 5 },
 				iterationSettings: {

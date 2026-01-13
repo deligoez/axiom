@@ -93,7 +93,9 @@ describe("INT-17: TaskStore Concurrent Access", () => {
 
 	it("file watcher detects external changes", async () => {
 		// Arrange: Store1 watching, Store2 separate instance
-		const store1 = new TaskStore(tmpDir, { usePolling: true, interval: 50 });
+		const store1 = new TaskStore(tmpDir, {
+			fileWatcher: { usePolling: true, interval: 50 },
+		});
 		store1.create({ title: "Initial Task" });
 		await store1.flush();
 
