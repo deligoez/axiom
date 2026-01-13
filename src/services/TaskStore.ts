@@ -22,6 +22,23 @@ import { archiveAuditLog } from "./AuditLog.js";
 import { TaskSelector } from "./TaskSelector.js";
 
 /**
+ * Error thrown when optimistic locking detects stale data.
+ */
+export class StaleDataError extends Error {
+	readonly expectedVersion: number;
+	readonly currentVersion: number;
+
+	constructor(expectedVersion: number, currentVersion: number) {
+		super(
+			`Stale data: expected version ${expectedVersion}, but current is ${currentVersion}`,
+		);
+		this.name = "StaleDataError";
+		this.expectedVersion = expectedVersion;
+		this.currentVersion = currentVersion;
+	}
+}
+
+/**
  * TaskStore - In-memory task storage with CRUD operations and JSONL persistence.
  * Extends EventEmitter for reactive updates.
  *
@@ -88,6 +105,7 @@ export class TaskStore extends EventEmitter {
 			reviewCount: 0,
 			learningsCount: 0,
 			hasLearnings: false,
+			version: 1,
 		};
 
 		this.tasks.set(id, task);
@@ -109,9 +127,13 @@ export class TaskStore extends EventEmitter {
 
 	/**
 	 * Update a task.
+	 * @param id - Task ID
+	 * @param changes - Fields to update
+	 * @param expectedVersion - Optional version for optimistic locking
 	 * @throws Error if task not found
+	 * @throws StaleDataError if expectedVersion doesn't match current version
 	 */
-	update(id: string, changes: UpdateTaskInput): Task {
+	update(id: string, changes: UpdateTaskInput, expectedVersion?: number): Task {
 		const task = this.tasks.get(id);
 		if (!task || this.deletedIds.has(id)) {
 			const error = new Error(`Task not found: ${id}`);
@@ -119,10 +141,16 @@ export class TaskStore extends EventEmitter {
 			throw error;
 		}
 
+		// Optimistic locking check
+		if (expectedVersion !== undefined && task.version !== expectedVersion) {
+			throw new StaleDataError(expectedVersion, task.version);
+		}
+
 		const updated: Task = {
 			...task,
 			...changes,
 			updatedAt: new Date().toISOString(),
+			version: task.version + 1,
 		};
 
 		this.tasks.set(id, updated);
@@ -806,6 +834,7 @@ export class TaskStore extends EventEmitter {
 			review_result: task.reviewResult,
 			learnings_count: task.learningsCount,
 			has_learnings: task.hasLearnings,
+			version: task.version,
 		};
 	}
 
@@ -856,6 +885,7 @@ export class TaskStore extends EventEmitter {
 			reviewResult: jsonl.review_result as Task["reviewResult"],
 			learningsCount: jsonl.learnings_count,
 			hasLearnings: jsonl.has_learnings,
+			version: jsonl.version ?? 1, // Default to 1 for legacy tasks without version
 		};
 	}
 }

@@ -1073,4 +1073,68 @@ describe("TaskStore", () => {
 			expect(completed.execution!.completedAt! <= after).toBe(true);
 		});
 	});
+
+	describe("optimistic locking", () => {
+		it("should initialize version to 1 on create", () => {
+			// Arrange & Act
+			const task = store.create({ title: "New Task" });
+
+			// Assert
+			expect(task.version).toBe(1);
+		});
+
+		it("should increment version on every update", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			expect(task.version).toBe(1);
+
+			// Act
+			const updated1 = store.update(task.id, { title: "Updated 1" });
+			const updated2 = store.update(task.id, { title: "Updated 2" });
+
+			// Assert
+			expect(updated1.version).toBe(2);
+			expect(updated2.version).toBe(3);
+		});
+
+		it("should throw StaleDataError when expectedVersion does not match", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			store.update(task.id, { title: "Concurrent Update" }); // Now version=2
+
+			// Act & Assert - try to update with stale version 1
+			expect(() => store.update(task.id, { title: "Stale Update" }, 1)).toThrow(
+				"Stale data: expected version 1, but current is 2",
+			);
+		});
+
+		it("should succeed when expectedVersion matches current version", () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			const afterUpdate = store.update(task.id, { title: "Update 1" }); // v2
+
+			// Act - update with correct version
+			const result = store.update(task.id, { title: "Update 2" }, 2);
+
+			// Assert
+			expect(result.title).toBe("Update 2");
+			expect(result.version).toBe(3);
+		});
+
+		it("should persist version in JSONL and restore on load", async () => {
+			// Arrange
+			const task = store.create({ title: "Task" });
+			store.update(task.id, { title: "Update 1" }); // v2
+			store.update(task.id, { title: "Update 2" }); // v3
+			await store.flush();
+
+			// Act - create new store and load from saved file
+			const store2 = new TaskStore(tempDir);
+			await store2.load();
+			const restored = store2.get(task.id);
+
+			// Assert
+			expect(restored?.version).toBe(3);
+		});
+	});
 });

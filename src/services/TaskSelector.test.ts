@@ -18,6 +18,7 @@ function createTask(overrides: Partial<Task> & { id: string }): Task {
 		reviewCount: 0,
 		learningsCount: 0,
 		hasLearnings: false,
+		version: 1,
 		...overrides,
 	};
 }

@@ -125,6 +125,11 @@ export interface Task {
 	// ─────────────────────────────────────────────────────────
 	learningsCount: number;
 	hasLearnings: boolean;
+
+	// ─────────────────────────────────────────────────────────
+	// Optimistic Locking
+	// ─────────────────────────────────────────────────────────
+	version: number; // Incremented on every update, starts at 1
 }
 
 // ─────────────────────────────────────────────────────────
@@ -174,6 +179,7 @@ export interface TaskJSONL {
 	review_result?: string;
 	learnings_count: number;
 	has_learnings: boolean;
+	version: number;
 }
 
 // ─────────────────────────────────────────────────────────
