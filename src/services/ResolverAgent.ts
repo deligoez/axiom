@@ -1,8 +1,15 @@
 import { EventEmitter } from "node:events";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { AgentLogger } from "./AgentLogger.js";
 import type { AgentSpawner } from "./AgentSpawner.js";
 import type { ConflictType } from "./ConflictClassifier.js";
+
+/**
+ * Patch persona constants for logging.
+ */
+const PATCH_PERSONA = "patch" as const;
+const PATCH_INSTANCE_ID = "patch";
 
 export interface ConflictAnalysis {
 	files: string[];
@@ -15,6 +22,8 @@ export interface ResolverConfig {
 	maxAttempts: number;
 	qualityCommands: string[];
 	projectDir?: string;
+	/** Optional AgentLogger for Patch persona logging */
+	agentLogger?: AgentLogger;
 }
 
 /**
@@ -58,9 +67,46 @@ export class ResolverAgent extends EventEmitter {
 		super();
 	}
 
+	/**
+	 * Log a message as Patch persona.
+	 */
+	private log(level: "info" | "debug", message: string): void {
+		if (this.config.agentLogger) {
+			this.config.agentLogger.log({
+				persona: PATCH_PERSONA,
+				instanceId: PATCH_INSTANCE_ID,
+				level,
+				message,
+			});
+		}
+	}
+
+	/**
+	 * Load Patch's prompt from .chorus/agents/patch/prompt.md if it exists.
+	 */
+	private loadPatchPrompt(): string | undefined {
+		if (!this.config.projectDir) {
+			return undefined;
+		}
+		const promptPath = join(
+			this.config.projectDir,
+			".chorus",
+			"agents",
+			"patch",
+			"prompt.md",
+		);
+		if (existsSync(promptPath)) {
+			return readFileSync(promptPath, "utf-8");
+		}
+		return undefined;
+	}
+
 	async resolve(conflict: ConflictAnalysis): Promise<ResolveResult> {
 		this.cancelled = false;
 		let attempts = 0;
+
+		// Log Patch persona start
+		this.log("info", "[patch] Analyzing merge conflict...");
 
 		while (attempts < this.config.maxAttempts) {
 			attempts++;
@@ -108,33 +154,44 @@ export class ResolverAgent extends EventEmitter {
 				if (!qualityResult.success) {
 					// Quality commands failed after resolution
 					this.emit("failed", { reason: "quality_failed", conflict });
+					this.log("info", "[patch] Escalating to human");
 					return { success: false, needsHuman: true };
 				}
 
 				this.emit("resolved", { conflict });
+				this.log("info", "[patch] Conflict resolved");
 				return { success: true, resolved: true };
 			} catch (error) {
 				const err = error as Error;
 				if (attempts >= this.config.maxAttempts) {
 					this.emit("failed", { reason: "max_attempts", error: err.message });
+					this.log("info", "[patch] Escalating to human");
 					return { success: false, needsHuman: true, error: err.message };
 				}
 			}
 		}
 
 		this.emit("failed", { reason: "max_attempts", conflict });
+		this.log("info", "[patch] Escalating to human");
 		return { success: false, needsHuman: true };
 	}
 
 	buildPrompt(conflict: ConflictAnalysis): string {
-		const lines: string[] = [
-			"You are resolving a merge conflict.",
-			"",
-			"## Conflict Analysis",
-			conflict.description,
-			"",
-			"## Conflicting Files",
-		];
+		const lines: string[] = [];
+
+		// Load Patch's custom prompt if available
+		const patchPrompt = this.loadPatchPrompt();
+		if (patchPrompt) {
+			lines.push(patchPrompt);
+			lines.push("");
+		}
+
+		lines.push("You are resolving a merge conflict.");
+		lines.push("");
+		lines.push("## Conflict Analysis");
+		lines.push(conflict.description);
+		lines.push("");
+		lines.push("## Conflicting Files");
 
 		for (const file of conflict.files) {
 			lines.push(`- ${file}`);

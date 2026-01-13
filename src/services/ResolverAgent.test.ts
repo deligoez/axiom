@@ -10,6 +10,7 @@ import {
 	type Mock,
 	vi,
 } from "vitest";
+import type { AgentLogger, LogInput } from "./AgentLogger.js";
 import { MockAgentSpawner } from "./MockAgentSpawner.js";
 import type { ConflictAnalysis, ResolverConfig } from "./ResolverAgent.js";
 import { ResolverAgent } from "./ResolverAgent.js";
@@ -382,6 +383,132 @@ describe("ResolverAgent", () => {
 			expect(prompt).toContain("Examine each conflicting file");
 			expect(prompt).toContain("Understand both versions");
 			expect(prompt).toContain("Merge the changes semantically");
+		});
+	});
+
+	// Patch persona logging tests (AP14)
+	describe("Patch persona logging", () => {
+		const createMockAgentLogger = (): {
+			logger: AgentLogger;
+			logs: LogInput[];
+		} => {
+			const logs: LogInput[] = [];
+			const logger = {
+				log: vi.fn((input: LogInput) => logs.push(input)),
+			} as unknown as AgentLogger;
+			return { logger, logs };
+		};
+
+		it("logs with persona: 'patch' and instanceId: 'patch'", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const patchConfig: ResolverConfig = {
+				maxAttempts: 1,
+				qualityCommands: [],
+				agentLogger: logger,
+			};
+			const patchResolver = new ResolverAgent(
+				mockSpawner,
+				patchConfig,
+				mockQualityRunner as { run: () => Promise<{ success: boolean }> },
+				mockFileReader as { read: (path: string) => Promise<string> },
+			);
+			mockSpawner.setExitCode(1); // Force failure for quick test
+
+			// Act
+			await patchResolver.resolve(createConflict());
+
+			// Assert - all logs have patch persona and instance
+			expect(logs.length).toBeGreaterThan(0);
+			for (const log of logs) {
+				expect(log.persona).toBe("patch");
+				expect(log.instanceId).toBe("patch");
+			}
+		});
+
+		it("logs '[patch] Analyzing merge conflict...' on start", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const patchConfig: ResolverConfig = {
+				maxAttempts: 1,
+				qualityCommands: [],
+				agentLogger: logger,
+			};
+			const patchResolver = new ResolverAgent(
+				mockSpawner,
+				patchConfig,
+				mockQualityRunner as { run: () => Promise<{ success: boolean }> },
+				mockFileReader as { read: (path: string) => Promise<string> },
+			);
+			mockSpawner.setExitCode(1); // Force failure
+
+			// Act
+			await patchResolver.resolve(createConflict());
+
+			// Assert - analysis log present
+			const analysisLog = logs.find((l) =>
+				l.message.includes("Analyzing merge conflict"),
+			);
+			expect(analysisLog).toBeDefined();
+			expect(analysisLog?.message).toContain(
+				"[patch] Analyzing merge conflict",
+			);
+		});
+
+		it("logs '[patch] Conflict resolved' on success", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const patchConfig: ResolverConfig = {
+				maxAttempts: 3,
+				qualityCommands: [],
+				agentLogger: logger,
+			};
+			const patchResolver = new ResolverAgent(
+				mockSpawner,
+				patchConfig,
+				mockQualityRunner as { run: () => Promise<{ success: boolean }> },
+				mockFileReader as { read: (path: string) => Promise<string> },
+			);
+			mockSpawner.setExitCode(0);
+			mockFileReader.read.mockResolvedValue("clean content");
+			mockQualityRunner.run.mockResolvedValue({ success: true });
+
+			// Act
+			await patchResolver.resolve(createConflict());
+
+			// Assert - resolved log present
+			const resolvedLog = logs.find((l) =>
+				l.message.includes("Conflict resolved"),
+			);
+			expect(resolvedLog).toBeDefined();
+			expect(resolvedLog?.message).toContain("[patch] Conflict resolved");
+		});
+
+		it("logs '[patch] Escalating to human' on failure", async () => {
+			// Arrange
+			const { logger, logs } = createMockAgentLogger();
+			const patchConfig: ResolverConfig = {
+				maxAttempts: 1,
+				qualityCommands: [],
+				agentLogger: logger,
+			};
+			const patchResolver = new ResolverAgent(
+				mockSpawner,
+				patchConfig,
+				mockQualityRunner as { run: () => Promise<{ success: boolean }> },
+				mockFileReader as { read: (path: string) => Promise<string> },
+			);
+			mockSpawner.setExitCode(1); // Force failure
+
+			// Act
+			await patchResolver.resolve(createConflict());
+
+			// Assert - escalation log present
+			const escalateLog = logs.find((l) =>
+				l.message.includes("Escalating to human"),
+			);
+			expect(escalateLog).toBeDefined();
+			expect(escalateLog?.message).toContain("[patch] Escalating to human");
 		});
 	});
 });
