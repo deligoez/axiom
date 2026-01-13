@@ -45,9 +45,8 @@ function mapStatusToUI(status: TaskStatus): UIStatus {
 	}
 }
 
-export interface CliArgs {
-	command?: "init" | "plan";
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CliArgs {}
 
 export interface AppProps {
 	projectRoot: string;
@@ -117,31 +116,24 @@ export function App({ projectRoot, cliArgs }: AppProps): React.ReactElement {
 		};
 	}, [taskStore]);
 
-	// Handle CLI overrides and state restoration on first render (synchronous)
+	// Handle state restoration on first render (synchronous)
 	if (!hasInitialized.current) {
 		hasInitialized.current = true;
 
-		// CLI command takes precedence
-		if (cliArgs?.command === "init") {
-			send({ type: "FORCE_INIT" });
-		} else if (cliArgs?.command === "plan") {
-			send({ type: "FORCE_PLANNING" });
+		// Check if .chorus/ exists
+		const chorusDir = join(projectRoot, ".chorus");
+		if (!existsSync(chorusDir)) {
+			send({ type: "INIT_REQUIRED" });
 		} else {
-			// Check if .chorus/ exists
-			const chorusDir = join(projectRoot, ".chorus");
-			if (!existsSync(chorusDir)) {
-				send({ type: "INIT_REQUIRED" });
-			} else {
-				// Try to restore from planning-state.json
-				const planningState = new PlanningState(projectRoot);
-				const savedState = planningState.load();
+			// Try to restore from planning-state.json
+			const planningState = new PlanningState(projectRoot);
+			const savedState = planningState.load();
 
-				if (savedState) {
-					send({ type: "RESTORE_STATE", state: savedState });
-				} else {
-					// Default to planning if no saved state
-					send({ type: "FORCE_PLANNING" });
-				}
+			if (savedState) {
+				send({ type: "RESTORE_STATE", state: savedState });
+			} else {
+				// Default to planning if no saved state
+				send({ type: "FORCE_PLANNING" });
 			}
 		}
 	}

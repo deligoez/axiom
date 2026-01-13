@@ -100,12 +100,7 @@ export async function run(args: string[]): Promise<void> {
 
 	const { waitUntilExit } = render(
 		<FullScreenBox>
-			<App
-				projectRoot={projectRoot}
-				cliArgs={{
-					command: parsed.command as "init" | "plan" | undefined,
-				}}
-			/>
+			<App projectRoot={projectRoot} />
 		</FullScreenBox>,
 	);
 
