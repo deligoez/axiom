@@ -61,11 +61,10 @@ npm run dev
 npx chorus
 
 # CLI flagları
-npx chorus --version
-npx chorus --help
-npx chorus --ci               # Non-interactive mode
-npx chorus --mode semi-auto   # Force implementation mode
-npx chorus --mode autopilot   # Force autopilot mode
+npx chorus --version          # Versiyon göster
+npx chorus --help             # Yardım göster
+npx chorus init               # Init mode başlat
+npx chorus plan               # Planning mode başlat
 ```
 
 ---
@@ -74,12 +73,12 @@ npx chorus --mode autopilot   # Force autopilot mode
 
 Chorus'un otomatik test coverage'ı:
 
-| Test Türü | Dosya Sayısı | Konum |
-|-----------|--------------|-------|
-| **Unit Tests** | 206 | `src/**/*.test.ts` |
-| **E2E Tests** | 81 | `src/e2e/*.e2e.test.ts` |
-| **Integration Tests** | 17 | `src/integration/*.integration.test.ts` |
-| **Toplam** | **304** | - |
+| Test Türü | Dosya Sayısı | Test Sayısı | Konum |
+|-----------|--------------|-------------|-------|
+| **Unit Tests** | 205 | 2285 | `src/**/*.test.ts` |
+| **E2E Tests (PTY)** | 9 | 31 | `src/e2e/*.e2e.test.ts` |
+| **Integration Tests** | 11 | 99 | `src/integration/*.integration.test.ts` |
+| **Toplam** | **225** | **2415** | - |
 
 ### Otomatik Testleri Çalıştırma
 
@@ -99,11 +98,13 @@ npm run quality             # Full pipeline (test + typecheck + lint + knip)
 | # | Komut | Beklenen Sonuç | Durum |
 |---|-------|----------------|-------|
 | 1 | `npx chorus --version` | Versiyon numarası (örn: `0.1.0`) | ☐ |
-| 2 | `npx chorus --help` | Yardım mesajı ve tüm flaglar | ☐ |
-| 3 | `npx chorus` (git repo yok) | Hata: "Not a git repository" veya benzer | ☐ |
-| 4 | `npx chorus` (.chorus/ yok) | Init Mode başlar | ☐ |
-| 5 | `npx chorus` (.chorus/ var) | Implementation Mode başlar | ☐ |
-| 6 | `npx chorus --ci` | Non-interactive mode | ☐ |
+| 2 | `npx chorus --help` | Yardım mesajı (USAGE, COMMANDS, OPTIONS, EXAMPLES) | ☐ |
+| 3 | `npx chorus --unknown` | Yardım mesajı gösterir (hata yerine) | ☐ |
+| 4 | `npx chorus` (git repo yok) | Hata veya Init Mode | ☐ |
+| 5 | `npx chorus` (.chorus/ yok) | Init Mode başlar | ☐ |
+| 6 | `npx chorus` (.chorus/ + planning-state.json var) | State'e göre mode | ☐ |
+| 7 | `npx chorus init` | Init Mode başlar (force) | ☐ |
+| 8 | `npx chorus plan` | Planning Mode başlar (force) | ☐ |
 
 ### T1.2: Dizin Yapısı Kontrolü
 
@@ -801,7 +802,7 @@ echo "invalid json" > .chorus/config.json
 
 | Kategori | Toplam Test | Geçen | Kalan | Notlar |
 |----------|-------------|-------|-------|--------|
-| Level 1: CLI | 6 | | | |
+| Level 1: CLI | 8 | | | |
 | Level 2: Init | 5 | | | |
 | Level 3: Planning | 3 | | | |
 | Level 4: Implementation | 4 | | | |
@@ -813,7 +814,7 @@ echo "invalid json" > .chorus/config.json
 | Level 10: Recovery | 5 | | | |
 | Level 11: Sprint | 3 | | | |
 | Level 12: Stress | 7 | | | |
-| **TOPLAM** | **83** | | | |
+| **TOPLAM** | **85** | | | |
 
 ### Test Metadata
 
@@ -837,10 +838,11 @@ Otomatik testlerin kapsamadığı veya manuel doğrulama gerektiren alanlar:
 
 | E2E Test | Manuel Test | Fark |
 |----------|-------------|------|
-| `app-renders.e2e.test.ts` | T4.1 TUI Layout | Visual validation |
 | `task-navigation.e2e.test.ts` | T5.3 Task Selection | j/k responsiveness |
 | `intervention-menu-pty.e2e.test.ts` | T7.x Intervention | Full flow |
-| `learning-store.e2e.test.ts` | T8.x Learning | Visual confirmation |
+| `personas.e2e.test.ts` | T4.3 AgentGrid | Visual persona display |
+| `batch-review.e2e.test.ts` | T11.2 Review System | Batch review flow |
+| `single-review.e2e.test.ts` | T11.2 Review System | Single review flow |
 
 ### Sadece Manuel Test Gerektiren Alanlar
 

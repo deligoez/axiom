@@ -6,7 +6,7 @@ Guidelines for writing E2E tests for Chorus TUI (Ink-based CLI app).
 
 1. **All `useInput` hooks MUST have TTY check** - Prevents "Raw mode is not supported" error
 2. **Test projects need `.chorus/` directory** - App routes based on this
-3. **Use `--mode semi-auto` flag** - Forces app to implementation mode
+3. **Use `planning-state.json` for mode control** - Create state file to force implementation mode
 4. **Task loading is async** - Use `waitForText()` to wait for content
 
 ## The Raw Mode Problem
@@ -60,26 +60,34 @@ const projectDir = createTestProject([
 ]);
 ```
 
-### renderApp()
+### createImplementationState() (TODO: ch-480z)
 
-Located in `src/test-utils/e2e-helpers.ts`. Renders app with:
-- `--ci` flag for non-interactive mode
-- `--mode semi-auto` flag (added automatically) for implementation mode
+Helper to force implementation mode in E2E tests by creating a planning-state.json file:
 
 ```typescript
-const result = await renderApp([], projectDir);
+// Will be added to src/test-utils/e2e-fixtures.ts
+export function createImplementationState(projectDir: string): void {
+  const stateFile = join(projectDir, ".chorus", "planning-state.json");
+  const state = {
+    status: "implementation",
+    chosenMode: "semi-auto",
+    planSummary: { userGoal: "Test", estimatedTasks: 1 },
+    tasks: [],
+    reviewIterations: []
+  };
+  writeFileSync(stateFile, JSON.stringify(state, null, 2));
+}
 ```
 
 ## App Routing for E2E Tests
 
 App routes based on:
-1. CLI flags (`--mode`, `--ci`)
-2. Directory existence (`.chorus/`)
-3. Saved state in `.chorus/planning-state.json`
+1. Directory existence (`.chorus/`)
+2. Saved state in `.chorus/planning-state.json`
 
 For E2E tests targeting ImplementationMode:
 1. Create `.chorus/` directory (via createTestProject)
-2. Pass `--mode semi-auto` (automatic via renderApp)
+2. Create `planning-state.json` with `status: "implementation"` (via createImplementationState)
 3. App will render ImplementationMode with task panel + agent grid
 
 ## Waiting for Content
@@ -164,9 +172,14 @@ import {
   cleanupPty,
   type PtyTestResult,
 } from "../test-utils/pty-helpers.js";
+import {
+  createTestProject,
+  createImplementationState,
+} from "../test-utils/e2e-fixtures.js";
 
 describe("E2E: Keyboard Interactions (PTY)", () => {
   let ptyResult: PtyTestResult | null = null;
+  let projectDir: string;
 
   afterEach(() => {
     if (ptyResult) cleanupPty(ptyResult);
@@ -175,7 +188,8 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
   it("j/k navigation works", async () => {
     // Arrange
     projectDir = createTestProject([...tasks]);
-    ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
+    createImplementationState(projectDir);  // Force implementation mode
+    ptyResult = renderAppWithPty([], { cwd: projectDir });
 
     // Wait for app to start (uses ANSI stripping internally)
     await ptyResult.waitForText("Tasks (3)", 10000);
@@ -203,14 +217,14 @@ describe("E2E: Keyboard Interactions (PTY)", () => {
 | `cleanupPty(ptyResult)` | Kill PTY process |
 | `Keys.TAB`, `Keys.ESCAPE`, etc. | Key code constants |
 
-### When to Use PTY vs cli-testing-library
+### When to Use PTY vs ink-testing-library
 
 | Test Type | Tool | Reason |
 |-----------|------|--------|
-| Keyboard behavior | PTY (`pty-helpers.ts`) | Requires real TTY for `useInput` |
-| App doesn't crash | cli-testing-library | Faster, broader compatibility |
-| Visual rendering | cli-testing-library | Sufficient for layout tests |
-| Unit keyboard tests | ink-testing-library | Direct stdin.write() works |
+| E2E keyboard behavior | PTY (`pty-helpers.ts`) | Requires real TTY for `useInput` |
+| Unit component tests | ink-testing-library | Direct stdin.write() works, faster |
+| Mode routing tests | ink-testing-library | No TTY needed, mock state machine |
+| Integration tests | child_process.spawn | Test CLI commands like `chorus --help` |
 
 ### Important: ANSI Stripping
 
@@ -316,21 +330,20 @@ projectDir = createTestProject([
 ]);
 ```
 
-### normalizeOutput Helper
+### Normalizing Output
 
-For complex assertions, use `normalizeOutput()` to collapse whitespace:
+For complex assertions, collapse whitespace manually or use a helper:
 
 ```typescript
-import { normalizeOutput, getOutput } from "../test-utils/e2e-helpers.js";
-
-const output = getOutput(result);
-const normalized = normalizeOutput(output);
+// Collapse whitespace for easier matching
+const output = ptyResult.getCleanOutput();
+const normalized = output.replace(/\s+/g, ' ').trim();
 // Now "First Test\nTask" becomes "First Test Task"
 ```
 
 ## Common Patterns
 
-### Testing Keyboard Shortcuts
+### Testing Keyboard Shortcuts (PTY)
 
 ```typescript
 it("pressing key does not crash", async () => {
@@ -338,19 +351,20 @@ it("pressing key does not crash", async () => {
   projectDir = createTestProject([
     createStatusBead("ch-abc1", "Task Name", "open"),
   ]);
-  const result = await renderApp([], projectDir);
-  await waitForText(result, "Tasks (1)", 5000);  // Wait for header, NOT task title
+  createImplementationState(projectDir);
+  ptyResult = renderAppWithPty([], { cwd: projectDir });
+  await ptyResult.waitForText("Tasks (1)", 5000);
 
   // Act
-  await pressKey(result, "b");
+  await sendKey(ptyResult, "b", 200);
 
   // Assert - verify app still renders (use short ID, not title)
-  const output = getOutput(result);
+  const output = ptyResult.getCleanOutput();
   expect(output).toContain("abc1");  // Short ID
 });
 ```
 
-### Testing Task Display
+### Testing Task Display (PTY)
 
 ```typescript
 it("shows tasks with correct statuses", async () => {
@@ -360,13 +374,14 @@ it("shows tasks with correct statuses", async () => {
     createStatusBead("ch-tst2", "Second Task", "in_progress"),
     createStatusBead("ch-tst3", "Third Task", "closed"),
   ]);
+  createImplementationState(projectDir);
 
   // Act
-  const result = await renderApp([], projectDir);
-  await waitForText(result, "Tasks (3)", 5000);  // Wait for header count
+  ptyResult = renderAppWithPty([], { cwd: projectDir });
+  await ptyResult.waitForText("Tasks (3)", 5000);
 
   // Assert - use short IDs and status indicators
-  const output = getOutput(result);
+  const output = ptyResult.getCleanOutput();
   expect(output).toContain("tst1");  // Short ID
   expect(output).toContain("tst2");
   expect(output).toContain("tst3");
@@ -376,7 +391,7 @@ it("shows tasks with correct statuses", async () => {
 });
 ```
 
-### Testing Task Stats
+### Testing Task Stats (PTY)
 
 ```typescript
 it("displays task statistics", async () => {
@@ -386,13 +401,14 @@ it("displays task statistics", async () => {
     createStatusBead("ch-st2", "Running Task", "in_progress"),
     createStatusBead("ch-st3", "Done Task", "closed"),
   ]);
+  createImplementationState(projectDir);
 
   // Act
-  const result = await renderApp([], projectDir);
-  await waitForText(result, "Tasks (3)", 5000);
+  ptyResult = renderAppWithPty([], { cwd: projectDir });
+  await ptyResult.waitForText("Tasks (3)", 5000);
 
   // Assert - stats text is reliable (not affected by wrapping)
-  const output = getOutput(result);
+  const output = ptyResult.getCleanOutput();
   expect(output).toContain("1 done");
   expect(output).toContain("1 running");
   expect(output).toContain("1 pending");
@@ -405,18 +421,18 @@ For mode-specific tests, avoid waiting for mode names which may not render:
 
 ```typescript
 // ❌ WRONG - Mode name may not be visible in TUI
-await waitForText(result, "PLANNING", 5000);
-await waitForText(result, "ImplementationMode", 5000);
+await ptyResult.waitForText("PLANNING", 5000);
+await ptyResult.waitForText("ImplementationMode", 5000);
 
 // ✅ CORRECT - Wait for mode-specific content
-// For INIT mode:
-await waitForText(result, "Checking", 8000);  // Init starts with "Checking project..."
+// For INIT mode (no .chorus/ directory):
+await ptyResult.waitForText("Checking", 8000);  // Init starts with "Checking project..."
 
-// For Implementation mode (with tasks):
-await waitForText(result, "Tasks (", 5000);   // Task panel header
+// For Implementation mode (with planning-state.json):
+await ptyResult.waitForText("Tasks (", 5000);   // Task panel header
 
 // For CLI commands that exit:
-const exitCode = await waitForExit(result, 5000);
+const exitCode = await ptyResult.waitForExit();
 expect(exitCode).toBe(0);
 ```
 
@@ -628,7 +644,6 @@ Current optimized config in `vitest.config.ts`:
 
 ## References
 
-- [cli-testing-library](https://github.com/gmrchk/cli-testing-library) - E2E test framework (no TTY)
 - [ink-testing-library](https://github.com/vadimdemedes/ink-testing-library) - Unit test framework for Ink
 - [Ink useInput docs](https://github.com/vadimdemedes/ink#useinputinputhandler-options) - Input handling
 - [node-pty](https://github.com/microsoft/node-pty) - Pseudo-terminal for TTY testing (used by Ink)
