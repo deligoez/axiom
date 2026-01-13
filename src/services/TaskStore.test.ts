@@ -1111,7 +1111,7 @@ describe("TaskStore", () => {
 		it("should succeed when expectedVersion matches current version", () => {
 			// Arrange
 			const task = store.create({ title: "Task" });
-			const afterUpdate = store.update(task.id, { title: "Update 1" }); // v2
+			store.update(task.id, { title: "Update 1" }); // v2
 
 			// Act - update with correct version
 			const result = store.update(task.id, { title: "Update 2" }, 2);
