@@ -15,7 +15,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { RulesLoader } from "../services/RulesLoader.js";
 import { RulesScaffold } from "../services/RulesScaffold.js";
-import { RulesValidator } from "../services/RulesValidator.js";
+import { validateSignalTypes } from "../services/RulesValidator.js";
 
 describe("E2E: Shared Rules System", () => {
 	let tempDir: string;
@@ -97,7 +97,7 @@ describe("E2E: Shared Rules System", () => {
 			path.join(rulesDir, "signal-types.md"),
 			"utf-8",
 		);
-		const result = RulesValidator.validateSignalTypes(content);
+		const result = validateSignalTypes(content);
 
 		// Assert - validation fails with specific errors
 		expect(result.valid).toBe(false);

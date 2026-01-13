@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { RulesValidator } from "./RulesValidator.js";
+import {
+	validateAllRules,
+	validateCommitFormat,
+	validateCompletionProtocol,
+	validateLearningFormat,
+	validateSignalTypes,
+} from "./RulesValidator.js";
 
 describe("RulesValidator", () => {
 	describe("validateSignalTypes()", () => {
@@ -20,7 +26,7 @@ describe("RulesValidator", () => {
 `;
 
 			// Act
-			const result = RulesValidator.validateSignalTypes(content);
+			const result = validateSignalTypes(content);
 
 			// Assert
 			expect(result.valid).toBe(true);
@@ -36,7 +42,7 @@ describe("RulesValidator", () => {
 `;
 
 			// Act
-			const result = RulesValidator.validateSignalTypes(content);
+			const result = validateSignalTypes(content);
 
 			// Assert
 			expect(result.valid).toBe(false);
@@ -61,7 +67,7 @@ describe("RulesValidator", () => {
 `;
 
 			// Act
-			const result = RulesValidator.validateLearningFormat(content);
+			const result = validateLearningFormat(content);
 
 			// Assert
 			expect(result.valid).toBe(true);
@@ -83,7 +89,7 @@ describe("RulesValidator", () => {
 `;
 
 			// Act
-			const result = RulesValidator.validateCommitFormat(content);
+			const result = validateCommitFormat(content);
 
 			// Assert
 			expect(result.valid).toBe(true);
@@ -104,7 +110,7 @@ describe("RulesValidator", () => {
 `;
 
 			// Act
-			const result = RulesValidator.validateCompletionProtocol(content);
+			const result = validateCompletionProtocol(content);
 
 			// Assert
 			expect(result.valid).toBe(true);
@@ -152,7 +158,7 @@ describe("RulesValidator", () => {
 			};
 
 			// Act
-			const result = RulesValidator.validateAll(files);
+			const result = validateAllRules(files);
 
 			// Assert
 			expect(result.valid).toBe(true);
