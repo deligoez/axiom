@@ -121,6 +121,94 @@ describe("ConfigWizard", () => {
 		});
 	});
 
+	describe("Keyboard Navigation", () => {
+		it("advances to next step when Enter is pressed", async () => {
+			// Arrange
+			const { lastFrame, stdin } = render(
+				<ConfigWizard
+					detection={defaultDetection}
+					initialStep={1}
+					onComplete={vi.fn()}
+				/>,
+			);
+
+			// Act - Press Enter
+			stdin.write("\r");
+
+			// Assert - Should be on step 3/5 (was 2/5) - use vi.waitFor for async state update
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/Step 3\/5/), {
+				timeout: 1000,
+			});
+		});
+
+		it("advances through all steps with multiple Enter presses", async () => {
+			// Arrange
+			const { lastFrame, stdin } = render(
+				<ConfigWizard
+					detection={defaultDetection}
+					initialStep={1}
+					onComplete={vi.fn()}
+				/>,
+			);
+
+			// Act - Press Enter twice with waits
+			stdin.write("\r");
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/Step 3\/5/), {
+				timeout: 1000,
+			});
+			stdin.write("\r");
+
+			// Assert - Should be on step 4/5
+			await vi.waitFor(() => expect(lastFrame()).toMatch(/Step 4\/5/), {
+				timeout: 1000,
+			});
+		});
+
+		it("calls onComplete with config on final step Enter", () => {
+			// Arrange
+			const onComplete = vi.fn();
+			const { stdin } = render(
+				<ConfigWizard
+					detection={defaultDetection}
+					initialStep={3}
+					onComplete={onComplete}
+				/>,
+			);
+
+			// Act - Press Enter on final step (step 4/5)
+			stdin.write("\r");
+
+			// Assert
+			expect(onComplete).toHaveBeenCalledTimes(1);
+			expect(onComplete).toHaveBeenCalledWith(
+				expect.objectContaining({
+					projectType: "node",
+					projectName: "test-project",
+					taskIdPrefix: "ch-",
+				}),
+			);
+		});
+
+		it("does not advance past final step", () => {
+			// Arrange
+			const onComplete = vi.fn();
+			const { lastFrame, stdin } = render(
+				<ConfigWizard
+					detection={defaultDetection}
+					initialStep={3}
+					onComplete={onComplete}
+				/>,
+			);
+
+			// Act - Press Enter on final step
+			stdin.write("\r");
+
+			// Assert - onComplete called, still shows step 4/5
+			expect(onComplete).toHaveBeenCalled();
+			expect(lastFrame()).toMatch(/Step 4\/5/);
+		});
+	});
+
 	describe("Navigation & UX", () => {
 		it("shows Step N/5 header matching init flow", () => {
 			// Arrange & Act

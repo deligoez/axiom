@@ -1,485 +1,362 @@
-# Chorus Manuel QA Test Planı (Incremental)
+# Chorus Manuel QA Test Planı
 
-**Tarih:** 2026-01-13
+**Tarih:** 2026-01-14 (Güncellenmiş)
 **Durum:** AKTIF
-**Dil:** Türkçe (geçici plan)
+**Son Test:** 2026-01-14
 
 ---
 
-## Felsefe: Incremental Testing
+## Test Durumu Özeti
 
-Her adımda **minimum setup** ile **maximum test coverage** hedefleniyor.
-Dallanma noktalarında farklı yollar farklı test gruplarını açar.
-
-```
-[Base] ─────────────────────────────────────────────────────────────►
-   │
-   ├─► [A0: CLI Tests] ✓
-   │
-   └─► [A1: Git Repo] ─────────────────────────────────────────────►
-          │
-          ├─► [B1: Init Mode] ─────────────────────────────────────►
-          │        │
-          │        └─► [C1: Full Wizard] ── Planning ── Implementation
-          │
-          └─► [B2: Bypass Init] ───────────────────────────────────►
-                   │
-                   ├─► [C2: Manual Tasks] ── TaskPanel, Navigation
-                   │
-                   └─► [C3: E2E Fixtures] ── PTY Tests, Agent Grid
-```
+| Kategori | Durum | Notlar |
+|----------|-------|--------|
+| CLI | ✅ ÇALIŞIYOR | --version, --help, flags |
+| Init Mode | ⛔ BLOCKED | ConfigWizard keyboard input yok (ch-utha) |
+| Implementation Mode UI | ✅ ÇALIŞIYOR | Layout, panels, indicators |
+| Task Panel | ✅ ÇALIŞIYOR | Status, priority, stats |
+| Agent Grid | ✅ ÇALIŞIYOR | Empty slots, layout |
+| Navigation (j/k) | ✅ ÇALIŞIYOR | |
+| Help Panel (?) | ✅ ÇALIŞIYOR | |
+| Intervention (i) | ✅ ÇALIŞIYOR | |
+| Quit (q) | ✅ ÇALIŞIYOR | |
+| Number Keys (1-9) | ❌ YOK | Implement edilmemiş (ch-g4yd) |
+| Task Management | ❌ YOK | n/e/b/d keys yok |
+| Agent Control | ❌ YOK | s/x/r/Enter keys yok |
 
 ---
 
-## ADIM 0: Base Setup (Minimum)
+## ADIM 0: CLI Temel Testleri ✅
+
+**Setup:** Build yapılmış olmalı (`npm run build`)
 
 ```bash
-# Sadece alias gerekli
-alias chorus="npx tsx /path/to/chorus/src/index.tsx"
-# veya
-alias chorus="node /path/to/chorus/dist/index.js"
+node dist/index.js --version   # veya: npx tsx src/index.tsx --version
 ```
 
-### Açılan Testler: CLI Temel
+| # | Komut | Beklenen | Durum |
+|---|-------|----------|-------|
+| 0.1 | `chorus --version` | `0.1.0` | ✅ |
+| 0.2 | `chorus -v` | `0.1.0` | ✅ |
+| 0.3 | `chorus --help` | USAGE, OPTIONS, EXAMPLES | ✅ |
+| 0.4 | `chorus -h` | Aynı help | ✅ |
+| 0.5 | `chorus --bilinmeyen` | Help gösterir | ✅ |
+| 0.6 | `chorus garip-komut` | Help gösterir | ✅ |
+| 0.7 | `chorus` (no TTY) | Error mesajı + exit 1 | ✅ |
 
-| # | Komut | Beklenen | ✓ |
-|---|-------|----------|---|
-| 1 | `chorus --version` | `0.1.0` | ☐ |
-| 2 | `chorus -v` | `0.1.0` | ☐ |
-| 3 | `chorus --help` | USAGE, OPTIONS, EXAMPLES | ☐ |
-| 4 | `chorus -h` | Aynı help | ☐ |
-| 5 | `chorus --bilinmeyen` | Help gösterir (crash yok) | ☐ |
-| 6 | `chorus garip-komut` | Help gösterir | ☐ |
-
-**Bu adımda durabilirsin.** CLI temel davranışı test edildi.
+**Sonuç:** 7/7 PASSED
 
 ---
 
-## ADIM 1: Git Repo Oluştur
+## ADIM 1: Init Mode ⛔ BLOCKED
 
-```bash
-mkdir ~/qa-test && cd ~/qa-test
-git init
-git commit --allow-empty -m "init"
-```
+**Blocker:** ch-utha - ConfigWizard keyboard input handler yok
 
-### Açılan Testler: Init Mode Başlangıcı
+### Çalışan Kısımlar
 
-| # | Test | Komut/Senaryo | ✓ |
-|---|------|---------------|---|
-| 7 | Init tetiklenir | `chorus` (.chorus yok) | ☐ |
-| 8 | Prerequisite check | "Checking..." mesajı görünür | ☐ |
-| 9 | Git tespit edilir | ✓ Git başarılı | ☐ |
-| 10 | Node version check | v20+ | ☐ |
+| # | Test | Durum |
+|---|------|-------|
+| 1.1 | Init mode tetiklenir (.chorus yok) | ✅ |
+| 1.2 | Prerequisite check görünür | ✅ |
+| 1.3 | Git tespit edilir | ✅ |
+| 1.4 | Node version check | ✅ |
+| 1.5 | Claude CLI check | ✅ |
+| 1.6 | Step 2 - Project Detection | ✅ |
 
-**Bu adımda durabilirsin.** Init mode başlıyor mu?
+### Kırık Kısımlar
 
----
+| # | Test | Durum | Bug |
+|---|------|-------|-----|
+| 1.7 | Enter ile wizard ilerler | ❌ | ch-utha |
+| 1.8 | Tab ile field navigation | ❌ | ch-utha |
+| 1.9 | Wizard tamamlanır | ❌ | ch-utha |
+| 1.10 | .chorus/ oluşur | ❌ | ch-utha |
 
-## DALLANMA NOKTASI A: Init Wizard mı, Bypass mı?
-
-### YOL A1: Init Wizard'ı Tamamla
-
-Init wizard'dan geçerek **tam akış** test edilir.
-
-```bash
-# chorus çalıştır ve wizard'ı takip et
-chorus
-# → Project type tespiti
-# → Quality commands (test, lint, build)
-# → Plan review config
-# → "Meet the team?" sorusu
-```
-
-#### Açılan Testler: Wizard Adımları
-
-| # | Test | Kontrol | ✓ |
-|---|------|---------|---|
-| 11 | ProjectDetector | Proje tipi otomatik tespit | ☐ |
-| 12 | QualityCommands | Test/lint/build input'ları | ☐ |
-| 13 | PlanReviewConfig | Auto-approve threshold | ☐ |
-| 14 | AgentIntro | "Meet the team?" y/n | ☐ |
-| 15 | Config yazılır | `.chorus/config.json` oluşur | ☐ |
-| 16 | State yazılır | `.chorus/planning-state.json` | ☐ |
-
-**Wizard sonrası Planning Mode'a geçilir** → Yol A1-C1'e devam
+**Bypass Yöntemi:** Manuel `.chorus/` oluştur (ADIM 2'ye geç)
 
 ---
 
-### YOL A2: Init Bypass (Hızlı)
+## ADIM 2: Implementation Mode UI ✅
 
-Manuel olarak `.chorus/` oluştur, wizard'ı atla.
+### Setup (Init Bypass)
 
 ```bash
+mkdir -p /tmp/qa-test && cd /tmp/qa-test
+git init && git commit --allow-empty -m "init"
 mkdir -p .chorus
-cat > .chorus/config.json << 'EOF'
-{
-  "qualityCommands": {
-    "testCommand": "npm test",
-    "lintCommand": "npm run lint"
-  }
-}
-EOF
-```
 
-#### A2-B1: Sadece Config ile
-
-```bash
-# Şimdi chorus çalıştır
-chorus
-```
-
-**Sonuç:** Init atlanır, direkt **Planning Mode** başlar.
-
-#### A2-B2: Implementation Mode'a Direkt Git
-
-```bash
-cat > .chorus/planning-state.json << 'EOF'
-{
-  "status": "implementation",
-  "chosenMode": "semi-auto",
-  "planSummary": { "userGoal": "Test", "estimatedTasks": 1 },
-  "tasks": [],
-  "reviewIterations": []
-}
-EOF
-```
-
-**Sonuç:** Direkt **Implementation Mode** açılır.
-
-#### Açılan Testler: Implementation Layout
-
-| # | Test | Kontrol | ✓ |
-|---|------|---------|---|
-| 17 | TwoColumnLayout | Sol: TaskPanel, Sağ: AgentGrid | ☐ |
-| 18 | Header bar | Mode göstergesi (SEMI-AUTO) | ☐ |
-| 19 | Footer bar | Kısayollar görünür | ☐ |
-| 20 | Help panel | `?` açıp kapatır | ☐ |
-| 21 | Quit | `q` çıkış yapar | ☐ |
-
----
-
-## DALLANMA NOKTASI B: Task Nereden Gelecek?
-
-### YOL B1: Manuel Task Oluştur
-
-```bash
-mkdir -p .chorus
+# Tasks
 cat > .chorus/tasks.jsonl << 'EOF'
-{"id":"ch-test1","title":"İlk Test Task","status":"open","priority":1}
-{"id":"ch-test2","title":"İkinci Task","status":"open","priority":2}
-{"id":"ch-test3","title":"Üçüncü Task","status":"in_progress","priority":1}
-EOF
-```
-
-#### Açılan Testler: TaskPanel + Navigation
-
-| # | Test | Kontrol | ✓ |
-|---|------|---------|---|
-| 22 | Tasks (3) header | Task sayısı doğru | ☐ |
-| 23 | Status göstergeleri | → open, ● in_progress | ☐ |
-| 24 | `j` tuşu | Aşağı hareket | ☐ |
-| 25 | `k` tuşu | Yukarı hareket | ☐ |
-| 26 | `1-9` tuşları | Quick select | ☐ |
-| 27 | Selection highlight | Seçili task belirgin | ☐ |
-| 28 | TaskSummaryStats | "X done, Y running, Z pending" | ☐ |
-
----
-
-### YOL B2: E2E Test Fixture Kullan
-
-Test fixture'larını kullanarak otomatik testlerin yaptığını manuel yap.
-
-```bash
-# e2e-fixtures.ts'deki createTestProject mantığı:
-mkdir -p .chorus
-
-# Implementation state
-cat > .chorus/planning-state.json << 'EOF'
-{
-  "status": "implementation",
-  "chosenMode": "semi-auto",
-  "planSummary": { "userGoal": "QA Test", "estimatedTasks": 5 },
-  "tasks": [],
-  "reviewIterations": []
-}
-EOF
-
-# Çeşitli status'lerde tasklar
-cat > .chorus/tasks.jsonl << 'EOF'
-{"id":"ch-qa1","title":"Open Task","status":"open","priority":1}
-{"id":"ch-qa2","title":"Running Task","status":"in_progress","priority":1}
-{"id":"ch-qa3","title":"Done Task","status":"closed","priority":2}
-{"id":"ch-qa4","title":"Blocked Task","status":"blocked","priority":1}
+{"id":"ch-qa1","title":"Open Task","status":"todo","priority":1}
+{"id":"ch-qa2","title":"Running Task","status":"doing","priority":1}
+{"id":"ch-qa3","title":"Done Task","status":"done","priority":2}
+{"id":"ch-qa4","title":"Blocked Task","status":"stuck","priority":1,"dependencies":["ch-qa1"]}
 {"id":"ch-qa5","title":"Review Task","status":"review","priority":1}
 EOF
+
+# State
+cat > .chorus/planning-state.json << 'EOF'
+{
+  "status": "implementation",
+  "chosenMode": "semi-auto",
+  "planSummary": {"userGoal": "QA Test", "estimatedTasks": 5},
+  "tasks": [],
+  "reviewIterations": []
+}
+EOF
+
+chorus  # veya: node dist/index.js
 ```
 
-#### Açılan Testler: Tüm Status Göstergeleri
+### UI Element Testleri
 
-| # | Status | Gösterge | ✓ |
-|---|--------|----------|---|
-| 29 | open | → | ☐ |
-| 30 | in_progress | ● | ☐ |
-| 31 | closed | ✓ | ☐ |
-| 32 | blocked | ⊗ | ☐ |
-| 33 | review | (özel gösterge) | ☐ |
+| # | Test | Kontrol | Durum |
+|---|------|---------|-------|
+| 2.1 | CHORUS branding | Header'da görünür | ✅ |
+| 2.2 | Mode indicator | "semi-auto ●" | ✅ |
+| 2.3 | Agent count | "0/4" formatı | ✅ |
+| 2.4 | Help hint | "? for help" | ✅ |
+| 2.5 | Task Panel | Sol kolonda | ✅ |
+| 2.6 | Agent Grid | Sağ kolonda | ✅ |
+| 2.7 | Task count | "Tasks (5)" | ✅ |
+| 2.8 | Empty slots | "[empty slot]" x 4 | ✅ |
+| 2.9 | Footer bar | Task stats görünür | ✅ |
+
+### Status Indicator Testleri
+
+| Status | Gösterge | tasks.jsonl field | Durum |
+|--------|----------|-------------------|-------|
+| todo | → | `"status":"todo"` | ✅ |
+| doing | ● | `"status":"doing"` | ✅ |
+| done | ✓ | `"status":"done"` | ✅ |
+| stuck | ⊗ | `"status":"stuck"` | ✅ |
+| review | ⏳ | `"status":"review"` | ✅ |
+
+### Priority Display Testleri
+
+| Priority | Görünüm | Durum |
+|----------|---------|-------|
+| 0 | P0 | ✅ |
+| 1 | P1 | ✅ |
+| 2 | P2 | ✅ |
+| 3 | P3 | ✅ |
+
+### Task Statistics
+
+| # | Test | Durum |
+|---|------|-------|
+| 2.10 | "X done" count | ✅ |
+| 2.11 | "Y running" count | ✅ |
+| 2.12 | "Z pending" count | ✅ |
+| 2.13 | "W blocked" count | ✅ |
+| 2.14 | Dependency count "(N)" | ✅ |
+
+**Sonuç:** ~20 test PASSED
 
 ---
 
-## DALLANMA NOKTASI C: Hangi Mode?
+## ADIM 3: Keyboard Navigation
 
-### YOL C1: Semi-Auto Mode Testleri
+### Çalışan Tuşlar ✅
 
-Semi-auto mode'da kullanıcı kontrol eder.
+| Tuş | Fonksiyon | Test | Durum |
+|-----|-----------|------|-------|
+| `j` | Aşağı hareket | Task seçimi değişir | ✅ |
+| `k` | Yukarı hareket | Task seçimi değişir | ✅ |
+| `?` | Help panel aç | KEYBOARD SHORTCUTS görünür | ✅ |
+| `ESC` | Help/panel kapat | Normal view'a döner | ✅ |
+| `i` | Intervention panel | Menü açılır | ✅ |
+| `q` | Çıkış | Running agent yoksa direkt çıkar | ✅ |
+| `m` | Mode toggle | semi-auto ↔ autopilot | ✅ |
+| `p` | Planning mode | Planning view'a geçer | ✅ |
 
-```bash
-# planning-state.json'da:
-"chosenMode": "semi-auto"
-```
+### Implement Edilmemiş Tuşlar ❌
 
-#### Açılan Testler: Semi-Auto Kontrolleri
-
-| # | Test | Tuş | Kontrol | ✓ |
-|---|------|-----|---------|---|
-| 34 | Mode göstergesi | - | SEMI-AUTO yazısı | ☐ |
-| 35 | Manuel task assign | Enter | Task seçip agent başlat | ☐ |
-| 36 | Agent durur | - | Task bitince bekler | ☐ |
-| 37 | Mode toggle | `m` | Autopilot'a geç | ☐ |
-
----
-
-### YOL C2: Autopilot Mode Testleri
-
-```bash
-# planning-state.json'da:
-"chosenMode": "autopilot"
-```
-
-#### Açılan Testler: Autopilot Davranışı
-
-| # | Test | Kontrol | ✓ |
-|---|------|---------|---|
-| 38 | Mode göstergesi | AUTOPILOT yazısı | ☐ |
-| 39 | Otomatik başlama | Open task varsa agent başlar | ☐ |
-| 40 | Zincirleme | Biten sonraki task'a geçer | ☐ |
-| 41 | Pause | Space ile durdurur | ☐ |
-
----
-
-## DALLANMA NOKTASI D: Agent Testleri
-
-**Not:** Bu testler için **Claude CLI** kurulu olmalı.
-
-```bash
-which claude  # Kurulu mu?
-```
-
-### YOL D1: Agent Spawn (Claude CLI Yok)
-
-Claude CLI yoksa agent spawn edilemez ama UI testleri yapılabilir.
-
-| # | Test | Kontrol | ✓ |
-|---|------|---------|---|
-| 42 | Enter basınca | Hata mesajı (Claude not found) | ☐ |
-| 43 | AgentGrid boş | Empty slots görünür | ☐ |
+| Tuş | Fonksiyon | Bug/Task |
+|-----|-----------|----------|
+| `1-9` | Quick task select | ch-g4yd |
+| `Tab` | Panel switch | Yok |
+| `n` | New task | Yok |
+| `e` | Edit task | Yok |
+| `b` | Block task | Yok |
+| `d` | Mark done | Yok |
+| `s` | Spawn agent | Yok |
+| `x` | Stop agent | Yok |
+| `r` | Redirect agent | Yok |
+| `Enter` | Assign task | Yok |
+| `Space` | Pause/resume | Yok |
+| `a` | Start autopilot | Yok |
+| `f` | Fullscreen agent | Yok |
+| `g` | Grid settings | Yok |
+| `l` | View logs | Yok |
+| `L` | View learnings | Yok |
+| `R` | Rollback menu | Yok |
+| `c` | Create checkpoint | Yok |
+| `u` | Undo | Yok |
+| `P` | Plan more tasks | Yok |
+| `Ctrl+L` | Review learnings | Yok |
+| `M` | Merge queue view | Yok |
 
 ---
 
-### YOL D2: Agent Spawn (Claude CLI Var)
+## ADIM 4: Agent Grid ✅
 
-```bash
-# Task seç ve Enter bas
-```
+### Grid Layout Testleri
 
-#### Açılan Testler: Agent Lifecycle
+| Terminal Width | Columns | Durum |
+|---------------|---------|-------|
+| < 120 | 1 | ✅ |
+| 120-179 | 2 | ✅ |
+| >= 180 | 3 | ✅ |
 
-| # | Test | Kontrol | ✓ |
-|---|------|---------|---|
-| 44 | Worktree oluşur | `.worktrees/claude-ch-xxx` | ☐ |
-| 45 | Branch oluşur | `agent/claude/ch-xxx` | ☐ |
-| 46 | AgentTile görünür | Grid'de tile | ☐ |
-| 47 | Output stream | Real-time output | ☐ |
-| 48 | Progress bar | İlerleme gösterir | ☐ |
+### Grid Element Testleri
 
----
+| # | Test | Durum |
+|---|------|-------|
+| 4.1 | Empty slot gösterimi | ✅ |
+| 4.2 | Slot count (0/4) | ✅ |
+| 4.3 | Multi-column layout | ✅ |
+| 4.4 | Narrow terminal handling | ✅ |
 
-## DALLANMA NOKTASI E: Intervention Testleri
-
-Agent çalışırken intervention testleri.
-
-```bash
-# Agent çalışırken 'i' tuşuna bas
-```
-
-### Açılan Testler: Intervention Panel
-
-| # | Test | Tuş | Kontrol | ✓ |
-|---|------|-----|---------|---|
-| 49 | Panel açılır | `i` | Sarı border panel | ☐ |
-| 50 | Panel kapanır | `Esc` | Normal view | ☐ |
-| 51 | Pause | `p` | (PAUSED) göstergesi | ☐ |
-| 52 | Resume | `p` | Devam eder | ☐ |
-| 53 | Stop agent | `x` + # | Agent durur | ☐ |
-| 54 | Redirect | `r` + # + # | Yeni task'a yönlendir | ☐ |
+**Sonuç:** 12/12 PASSED
 
 ---
 
-## OTOMATIK TESTLERİ MANUEL ÇALIŞTIR
+## ADIM 5: Edge Cases ✅
 
-### E2E Testleri (PTY)
+| # | Senaryo | Durum |
+|---|---------|-------|
+| 5.1 | .chorus/ yok → Init mode | ✅ |
+| 5.2 | Invalid tasks.jsonl → Error + exit | ✅ |
+| 5.3 | Empty tasks.jsonl → Tasks (0) | ✅ |
+| 5.4 | 50 task → Handles | ✅ |
+| 5.5 | Narrow terminal (60 cols) | ✅ |
+| 5.6 | Short terminal (15 rows) | ✅ |
+| 5.7 | Missing planning-state.json → Planning mode | ✅ |
 
-```bash
-# Tüm E2E testleri (forks pool, sequential)
-npm run test:e2e
-
-# Tek bir E2E test dosyası
-npx vitest run src/e2e/task-navigation.e2e.test.ts --config vitest.e2e.config.ts
-
-# Belirli test
-npx vitest run -t "j key moves selection" --config vitest.e2e.config.ts
-```
-
-| E2E Test Dosyası | Ne Test Eder | Manuel Run | ✓ |
-|------------------|--------------|------------|---|
-| `task-navigation.e2e.test.ts` | j/k navigation | ☐ | ☐ |
-| `intervention-menu-pty.e2e.test.ts` | i panel, Tab, 1-9 | ☐ | ☐ |
-| `personas.e2e.test.ts` | AgentGrid, L toggle | ☐ | ☐ |
-| `single-review.e2e.test.ts` | R review mode | ☐ | ☐ |
-| `batch-review.e2e.test.ts` | Toplu review | ☐ | ☐ |
-| `auto-approve.e2e.test.ts` | Auto approve | ☐ | ☐ |
-| `feedback-flow.e2e.test.ts` | Feedback save | ☐ | ☐ |
-| `tsx-runtime.e2e.test.ts` | CLI flags | ☐ | ☐ |
-| `label-rules.e2e.test.ts` | Label filtering | ☐ | ☐ |
+**Sonuç:** 7/7 PASSED
 
 ---
 
-### Integration Testleri (Gerçek Claude API)
+## BUG LİSTESİ
 
-**⚠️ DİKKAT:** Bu testler gerçek Claude API çağrısı yapar!
-
-```bash
-# Tüm integration testleri
-npm run test:integration
-
-# Tek dosya
-npx vitest run src/integration/claude-cli.integration.test.ts --config vitest.integration.config.ts
-```
-
-| Integration Test | Ne Test Eder | Manuel Run | ✓ |
-|------------------|--------------|------------|---|
-| `claude-cli.integration.test.ts` | CLI spawn | ☐ | ☐ |
-| `file-operations.integration.test.ts` | Dosya okuma/yazma | ☐ | ☐ |
-| `signal-parsing.integration.test.ts` | `<chorus>` signals | ☐ | ☐ |
-| `learnings.integration.test.ts` | Learning storage | ☐ | ☐ |
-| `learning-propagation.integration.test.ts` | Learning inject | ☐ | ☐ |
+| ID | Severity | Açıklama | Durum |
+|----|----------|----------|-------|
+| ch-utha | P0 | ConfigWizard keyboard input yok | OPEN |
+| ch-g4yd | P2 | Number keys (1-9) implement edilmemiş | OPEN |
+| ch-6dg1 | P2 | HelpPanel unimplemented features gösteriyor | OPEN |
 
 ---
 
-## HIZLI TEST YOLLARI
+## İMPLEMENT EDİLECEK FEATURE'LAR
 
-### Yol 1: Sadece CLI (2 dakika)
+### Yüksek Öncelik (Core Functionality)
 
-```bash
-chorus --version && chorus --help && chorus --unknown
-```
-**Sonuç:** 6 test tamamlandı
+| Feature | Tuş | Açıklama | Task |
+|---------|-----|----------|------|
+| Quick Select | 1-9 | Task'ı numarayla seç | ch-g4yd |
+| Panel Switch | Tab | Task ↔ Agent focus | Gerekli |
+| Assign Task | Enter | Seçili task'a agent başlat | Gerekli |
+| Spawn Agent | s | Yeni agent spawn et | Gerekli |
+| Stop Agent | x | Agent'ı durdur | Gerekli |
+
+### Orta Öncelik (Task Management)
+
+| Feature | Tuş | Açıklama | Task |
+|---------|-----|----------|------|
+| New Task | n | Yeni task oluştur | Gerekli |
+| Edit Task | e | Task düzenle | Gerekli |
+| Block Task | b | Task'ı bloke et | Gerekli |
+| Mark Done | d | Task'ı tamamla | Gerekli |
+
+### Düşük Öncelik (Advanced)
+
+| Feature | Tuş | Açıklama | Task |
+|---------|-----|----------|------|
+| Redirect Agent | r | Agent'ı başka task'a yönlendir | Gerekli |
+| Pause/Resume | Space | Agent'ları duraklat | Gerekli |
+| View Logs | l | Agent loglarını gör | Gerekli |
+| View Learnings | L | Learnings listesi | Gerekli |
+| Fullscreen | f | Agent fullscreen | Gerekli |
+| Grid Settings | g | Grid ayarları | Gerekli |
+| Merge Queue | M | Merge kuyruğu | Gerekli |
+| Rollback | R | Rollback menüsü | Gerekli |
+| Checkpoint | c | Checkpoint oluştur | Gerekli |
+| Undo | u | Son işlemi geri al | Gerekli |
+| Plan More | P | Yeni task planla | Gerekli |
+| Review Learnings | Ctrl+L | Learning review | Gerekli |
 
 ---
 
-### Yol 2: Implementation Mode UI (5 dakika)
+## HIZLI TEST KOMUTLARI
 
+### CLI Only (1 dakika)
 ```bash
-mkdir ~/qa-test && cd ~/qa-test
+node dist/index.js --version
+node dist/index.js --help
+node dist/index.js --unknown
+```
+
+### Full UI Test (5 dakika)
+```bash
+# Setup
+mkdir -p /tmp/qa-full && cd /tmp/qa-full
 git init && git commit --allow-empty -m "init"
-
 mkdir -p .chorus
-echo '{"status":"implementation","chosenMode":"semi-auto","planSummary":{"userGoal":"Test","estimatedTasks":3},"tasks":[],"reviewIterations":[]}' > .chorus/planning-state.json
-echo '{"id":"ch-t1","title":"Task 1","status":"open","priority":1}
-{"id":"ch-t2","title":"Task 2","status":"in_progress","priority":1}
-{"id":"ch-t3","title":"Task 3","status":"closed","priority":2}' > .chorus/tasks.jsonl
 
-chorus
-# Test: j/k, ?, Tab, 1-9, q
+cat > .chorus/tasks.jsonl << 'EOF'
+{"id":"ch-t1","title":"Todo Task","status":"todo","priority":1}
+{"id":"ch-t2","title":"Doing Task","status":"doing","priority":1}
+{"id":"ch-t3","title":"Done Task","status":"done","priority":2}
+{"id":"ch-t4","title":"Stuck Task","status":"stuck","priority":1}
+{"id":"ch-t5","title":"Review Task","status":"review","priority":1}
+EOF
+
+cat > .chorus/planning-state.json << 'EOF'
+{"status":"implementation","chosenMode":"semi-auto","planSummary":{"userGoal":"Test","estimatedTasks":5},"tasks":[],"reviewIterations":[]}
+EOF
+
+# Test
+node /path/to/chorus/dist/index.js
+# j/k, ?, i, ESC, q test et
 ```
-**Sonuç:** 28 test tamamlandı
 
----
-
-### Yol 3: Full E2E (10 dakika)
-
+### Automated E2E (10 dakika)
 ```bash
 npm run test:e2e
 ```
-**Sonuç:** 130 E2E test (20 dosya)
 
----
-
-### Yol 4: Integration (Claude API gerekli, 5+ dakika)
-
+### Automated Integration (5 dakika, Claude API gerekli)
 ```bash
 npm run test:integration
 ```
-**Sonuç:** 99 integration test
 
 ---
 
-## KEYBOARD SHORTCUTS TAM LİSTE
+## QA TEST TASK'LARI
 
-| Kategori | Tuş | Açıklama | Test# |
-|----------|-----|----------|-------|
-| **NAVIGATION** | `j` / `↓` | Aşağı | 24 |
-| | `k` / `↑` | Yukarı | 25 |
-| | `Tab` | Panel değiştir | - |
-| | `1-9` | Quick select | 26 |
-| **AGENT** | `Enter` | Task ata | 35 |
-| | `s` | Agent spawn | - |
-| | `x` | Agent durdur | 53 |
-| | `r` | Redirect | 54 |
-| **MODE** | `m` | Mode toggle | 37 |
-| | `Space` | Pause/resume | 41 |
-| | `a` | Autopilot başlat | - |
-| **VIEW** | `?` | Help panel | 20 |
-| | `L` | Learnings | - |
-| | `l` | Logs | - |
-| | `f` | Fullscreen | - |
-| | `M` | Merge queue | - |
-| **INTERVENTION** | `i` | Intervention panel | 49 |
-| | `p` | Pause (panel içinde) | 51 |
-| | `Esc` | Kapat | 50 |
-| **SYSTEM** | `q` | Quit | 21 |
-| | `c` | Checkpoint | - |
-| | `R` | Rollback menu | - |
-| | `u` | Undo | - |
+### Mevcut QA Test Task'ları
 
----
-
-## TEST METADATA
-
-```
-Test Tarihi: ____________________
-Test Eden: ____________________
-Chorus Version: 0.1.0
-Platform: macOS / Linux
-Node Version: ____________________
-Claude CLI: ☐ Yok  ☐ Var (version: ______)
-Terminal: ____________________
-```
+| Task ID | Açıklama | Durum |
+|---------|----------|-------|
+| ch-rv9i | AgentGrid component tests | OPEN |
+| ch-ktll | PlanningMode E2E tests | OPEN |
+| ch-dcmq | ReviewLoop E2E tests | OPEN |
+| ch-1ucd | FooterBar tests | OPEN |
+| ch-6cgm | HeaderBar tests | OPEN |
+| ch-y3bn | InterventionPanel tests | OPEN |
 
 ---
 
 ## TEST SONUÇ ÖZETİ
 
-| Adım | Test Sayısı | Geçen | Notlar |
-|------|-------------|-------|--------|
-| A0: CLI | 6 | | |
-| A1: Init | 10 | | |
-| B1: Tasks | 7 | | |
-| B2: Status | 5 | | |
-| C1: Semi-auto | 4 | | |
-| C2: Autopilot | 4 | | |
-| D2: Agent | 5 | | |
-| E: Intervention | 6 | | |
-| E2E (otomatik) | 130 | | |
-| Integration | 99 | | |
-| **TOPLAM** | **~276** | | |
+| ADIM | Toplam | Geçen | Durum |
+|------|--------|-------|-------|
+| 0: CLI | 7 | 7 | ✅ |
+| 1: Init Mode | 10 | 6 | ⛔ BLOCKED |
+| 2: Implementation UI | ~20 | ~20 | ✅ |
+| 3: Keyboard | 8 | 8 | ✅ (çalışanlar) |
+| 4: Agent Grid | 12 | 12 | ✅ |
+| 5: Edge Cases | 7 | 7 | ✅ |
+| **TOPLAM** | ~64 | ~60 | |
+
+**Genel Durum:** Core UI çalışıyor, Init wizard ve keyboard shortcuts (task management, agent control) implement edilmeli.

@@ -1,10 +1,21 @@
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import type React from "react";
 import { useState } from "react";
 import type {
 	ProjectType,
 	QualityCommand,
 } from "../services/ProjectDetector.js";
+
+// Check for TTY (real terminal or PTY)
+// Note: In node-pty spawned processes, stdin.isTTY may be false even with a PTY.
+// Check both stdin and stdout for TTY support.
+// In test environment (ink-testing-library), stdin works without TTY.
+const getIsTTY = () => {
+	// Check for test environment (ink-testing-library sets this)
+	const isTestEnv = process.env.NODE_ENV === "test" || process.env.VITEST;
+	if (isTestEnv) return true;
+	return Boolean(process.stdin?.isTTY || process.stdout?.isTTY);
+};
 
 export interface DetectionResult {
 	projectType: ProjectType;
@@ -48,13 +59,16 @@ function getStepTitle(step: number): string {
 	}
 }
 
+// Total wizard steps: 1=Project Detection, 2=Quality Commands, 3=Validation Rules
+const FINAL_STEP = 3;
+
 export function ConfigWizard({
 	detection,
 	initialStep = 1,
-	onComplete: _onComplete,
+	onComplete,
 }: ConfigWizardProps): React.ReactElement {
-	const [step, _setStep] = useState(initialStep);
-	const [config, _setConfig] = useState<WizardConfig>({
+	const [step, setStep] = useState(initialStep);
+	const [config] = useState<WizardConfig>({
 		projectType: detection.projectType,
 		projectName: detection.projectName,
 		taskIdPrefix: "ch-",
@@ -62,6 +76,23 @@ export function ConfigWizard({
 		maxAcceptanceCriteria: 15,
 		maxDescriptionLength: 1000,
 	});
+
+	// Handle keyboard input
+	useInput(
+		(_input, key) => {
+			// Enter key advances to next step or completes wizard
+			if (key.return) {
+				if (step >= FINAL_STEP) {
+					// Final step - complete wizard
+					onComplete(config);
+				} else {
+					// Advance to next step
+					setStep((prev) => prev + 1);
+				}
+			}
+		},
+		{ isActive: getIsTTY() },
+	);
 
 	const renderStepContent = (): React.ReactElement => {
 		switch (step) {

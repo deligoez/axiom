@@ -126,3 +126,44 @@ it("should handle <edge case>", () => {
   // Assert - verify correct behavior
 });
 ```
+
+### Unimplemented Feature Rule (MANDATORY)
+
+**When encountering an unimplemented feature during QA testing, create a planning task:**
+
+1. **Identify** - Note which feature is missing (e.g., "Number keys 1-9 for quick select")
+2. **Create Planning Task** - Use format: `PLAN: <Feature Name> Implementation`
+3. **Task Body** - Include:
+   - What the feature should do
+   - Where it's referenced (HelpPanel, docs, etc.)
+   - Affected files (likely locations)
+   - Dependencies on other features
+
+```bash
+bd create "PLAN: <Feature Name> Implementation" -p 2 -l <milestone> --body "$(cat <<'EOF'
+## What
+<Brief description of the feature>
+
+## References
+- HelpPanel shows: <key> - <description>
+- QA test found: <where discovered>
+
+## Likely Files
+- src/modes/ImplementationMode.tsx (keyboard handler)
+- src/components/<Component>.tsx
+
+## Dependencies
+- Requires: <other features if any>
+- Blocks: <features that need this>
+
+## Planning Scope
+This task is for PLANNING the implementation:
+- [ ] Identify all code changes needed
+- [ ] Break down into subtasks
+- [ ] Estimate test count
+- [ ] Create implementation tasks
+EOF
+)"
+```
+
+**Why:** This ensures no feature is forgotten and implementation is properly planned before coding.
