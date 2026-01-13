@@ -87,22 +87,13 @@ export function renderAppWithPty(
 
 	const chorusPath = resolve(process.cwd(), "dist/index.js");
 
-	// Add --ci flag unless testing --version or --help
-	const isInfoMode =
-		args.includes("--version") ||
-		args.includes("-v") ||
-		args.includes("--help") ||
-		args.includes("-h");
-
-	const effectiveArgs = isInfoMode ? args : ["--ci", ...args];
-
 	let output = "";
 	let exitCode: number | null = null;
 	let exitResolve: ((code: number) => void) | null = null;
 
 	// Build full argument list for node-pty
 	// node-pty expects file and args separately
-	const nodeArgs = [chorusPath, ...effectiveArgs];
+	const nodeArgs = [chorusPath, ...args];
 
 	let pty: ReturnType<typeof spawn>;
 	let spawnError: Error | null = null;

@@ -76,11 +76,6 @@ export async function run(args: string[]): Promise<void> {
 						<Text color="yellow">--mode &lt;mode&gt;</Text>
 						{"  "}Execution mode (semi-auto | autopilot)
 					</Text>
-					<Text>
-						{" "}
-						<Text color="yellow">--ci</Text>
-						{"            "}Run in CI mode (non-interactive)
-					</Text>
 				</Box>
 
 				{/* Examples */}
@@ -100,21 +95,6 @@ export async function run(args: string[]): Promise<void> {
 					<Text color="blue"> https://github.com/deligoez/chorus</Text>
 				</Box>
 			</Box>,
-		);
-		await waitUntilExit();
-		return;
-	}
-
-	// CI mode: non-interactive render for E2E testing (no TTY required)
-	if (parsed.ci) {
-		const { waitUntilExit } = render(
-			<App
-				projectRoot={projectRoot}
-				cliArgs={{
-					command: parsed.command as "init" | "plan" | undefined,
-					mode: parsed.mode as "semi-auto" | "autopilot" | undefined,
-				}}
-			/>,
 		);
 		await waitUntilExit();
 		return;

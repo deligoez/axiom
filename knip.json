@@ -2,8 +2,7 @@
 	"$schema": "https://unpkg.com/knip@5/schema.json",
 	"entry": [
 		"src/machines/index.ts",
-		"src/hooks/useQuickControlKeys.ts",
-		"src/test-utils/e2e-helpers.ts"
+		"src/hooks/useQuickControlKeys.ts"
 	],
 	"ignore": ["**/*.test.ts", "**/*.test.tsx"],
 	"ignoreBinaries": [],

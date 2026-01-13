@@ -1,12 +1,11 @@
 export interface ParsedArgs {
 	version: boolean;
 	help: boolean;
-	ci: boolean;
 	command?: "init" | "plan";
 	mode?: "semi-auto" | "autopilot";
 }
 
-const KNOWN_FLAGS = ["--version", "-v", "--help", "-h", "--ci", "--mode"];
+const KNOWN_FLAGS = ["--version", "-v", "--help", "-h", "--mode"];
 const KNOWN_COMMANDS = ["init", "plan"];
 
 export function parseArgs(args: string[]): ParsedArgs {
@@ -21,7 +20,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	// Unknown command → show help
 	if (positional[0] && !KNOWN_COMMANDS.includes(positional[0])) {
-		return { version: false, help: true, ci: false };
+		return { version: false, help: true };
 	}
 
 	// Check for unknown flags → show help
@@ -33,7 +32,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 			continue;
 		}
 		if (!KNOWN_FLAGS.includes(flag)) {
-			return { version: false, help: true, ci: false };
+			return { version: false, help: true };
 		}
 	}
 
@@ -50,7 +49,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 	return {
 		version: args.includes("--version") || args.includes("-v"),
 		help: args.includes("--help") || args.includes("-h"),
-		ci: args.includes("--ci"),
 		command,
 		mode,
 	};
