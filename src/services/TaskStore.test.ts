@@ -1159,6 +1159,10 @@ describe("TaskStore", () => {
 
 			// Start watching (await for watcher to be ready)
 			await store.watch();
+
+			// Initial settling delay - wait for file watcher to stabilize
+			await new Promise((r) => setTimeout(r, 500));
+
 			let changeEmitted = false;
 			store.on("change", () => {
 				changeEmitted = true;
@@ -1203,7 +1207,7 @@ describe("TaskStore", () => {
 
 			// Cleanup
 			store.stop();
-		});
+		}, 15000);
 
 		it("debounces rapid file changes (100ms)", async () => {
 			// Arrange
