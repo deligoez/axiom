@@ -10,6 +10,17 @@ import { join } from "node:path";
 import { PERSONAS, type PersonaName } from "../types/persona.js";
 
 /**
+ * Default configuration structure for a persona.
+ */
+interface PersonaDefaultConfig {
+	name: string;
+	displayName: string;
+	role: string;
+	enabled: boolean;
+	settings: Record<string, unknown>;
+}
+
+/**
  * Service that creates the .chorus/agents/ directory structure
  * with default prompt, rules, and skills for each persona.
  */
@@ -141,7 +152,7 @@ Add persona-specific rules here.
 	private generateDefaultConfig(
 		_name: PersonaName,
 		persona: (typeof PERSONAS)[PersonaName],
-	): object {
+	): PersonaDefaultConfig {
 		return {
 			name: persona.name,
 			displayName: persona.displayName,
