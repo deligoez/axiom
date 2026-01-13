@@ -220,6 +220,7 @@ describe("ConfigService", () => {
 				},
 				labelRules: [],
 			},
+			fileWatcher: { usePolling: false, interval: 100 },
 		};
 
 		// Act
@@ -274,6 +275,7 @@ describe("ConfigService", () => {
 				},
 				labelRules: [],
 			},
+			fileWatcher: { usePolling: false, interval: 100 },
 		};
 
 		// Act

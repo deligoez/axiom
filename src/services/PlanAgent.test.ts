@@ -97,6 +97,7 @@ describe("PlanAgent", () => {
 				},
 				labelRules: [],
 			},
+			fileWatcher: { usePolling: false, interval: 100 },
 		};
 
 		options = {

@@ -98,6 +98,7 @@ describe("Config types", () => {
 				},
 				labelRules: [],
 			},
+			fileWatcher: { usePolling: false, interval: 100 },
 		};
 
 		// Assert
@@ -260,6 +261,7 @@ describe("Config types", () => {
 				},
 				labelRules: [],
 			},
+			fileWatcher: { usePolling: false, interval: 100 },
 			sprint: {
 				target: { type: "taskCount", count: 5 },
 				iterationSettings: {
