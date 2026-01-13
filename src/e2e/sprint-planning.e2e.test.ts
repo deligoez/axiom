@@ -25,9 +25,9 @@ describe("E2E: Sprint Planning (E2E-S01)", () => {
 	it("Shift+S opens sprint planning panel", () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-plan1", "Task 1", "open"),
-			createStatusBead("ch-plan2", "Task 2", "open"),
-			createStatusBead("ch-plan3", "Task 3", "open"),
+			createStatusBead("ch-plan1", "Task 1", "todo"),
+			createStatusBead("ch-plan2", "Task 2", "todo"),
+			createStatusBead("ch-plan3", "Task 3", "todo"),
 		]);
 
 		const onOpenPlanningPanel = vi.fn();
@@ -48,9 +48,9 @@ describe("E2E: Sprint Planning (E2E-S01)", () => {
 	it("selects tasks and configures sprint settings", () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-plan4", "Task A", "open"),
-			createStatusBead("ch-plan5", "Task B", "open"),
-			createStatusBead("ch-plan6", "Task C", "open"),
+			createStatusBead("ch-plan4", "Task A", "todo"),
+			createStatusBead("ch-plan5", "Task B", "todo"),
+			createStatusBead("ch-plan6", "Task C", "todo"),
 		]);
 
 		// Simulate sprint config being built with selected tasks
@@ -74,9 +74,9 @@ describe("E2E: Sprint Planning (E2E-S01)", () => {
 	it("starts sprint with Enter and verifies running state", () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-plan7", "Sprint Task 1", "open"),
-			createStatusBead("ch-plan8", "Sprint Task 2", "open"),
-			createStatusBead("ch-plan9", "Sprint Task 3", "open"),
+			createStatusBead("ch-plan7", "Sprint Task 1", "todo"),
+			createStatusBead("ch-plan8", "Sprint Task 2", "todo"),
+			createStatusBead("ch-plan9", "Sprint Task 3", "todo"),
 		]);
 
 		const actor = createActor(sprintRegionMachine);
@@ -104,9 +104,9 @@ describe("E2E: Sprint Planning (E2E-S01)", () => {
 	it("verifies sprint running with correct settings", () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-planA", "Ready Task 1", "open"),
-			createStatusBead("ch-planB", "Ready Task 2", "open"),
-			createStatusBead("ch-planC", "Ready Task 3", "open"),
+			createStatusBead("ch-planA", "Ready Task 1", "todo"),
+			createStatusBead("ch-planB", "Ready Task 2", "todo"),
+			createStatusBead("ch-planC", "Ready Task 3", "todo"),
 		]);
 
 		const actor = createActor(sprintRegionMachine);

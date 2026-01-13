@@ -29,7 +29,7 @@ describe("E2E: Stop Agent (x key)", () => {
 	it("pressing x key does not crash app with in_progress task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-sa1", "Running Task", "in_progress"),
+			createStatusBead("ch-sa1", "Running Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Running Task", 5000);
@@ -45,7 +45,7 @@ describe("E2E: Stop Agent (x key)", () => {
 	it("pressing x key does not crash app with no in_progress tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-sa2", "Open Task", "open"),
+			createStatusBead("ch-sa2", "Open Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Open Task", 5000);
@@ -61,9 +61,9 @@ describe("E2E: Stop Agent (x key)", () => {
 	it("pressing x with multiple tasks maintains state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-sa3", "First Task", "open"),
-			createStatusBead("ch-sa4", "Second Task", "in_progress"),
-			createStatusBead("ch-sa5", "Third Task", "closed"),
+			createStatusBead("ch-sa3", "First Task", "todo"),
+			createStatusBead("ch-sa4", "Second Task", "doing"),
+			createStatusBead("ch-sa5", "Third Task", "done"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "First Task", 5000);

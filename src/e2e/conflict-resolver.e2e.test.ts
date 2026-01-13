@@ -19,7 +19,7 @@ describe("E2E: Merge Conflict Resolver Agent", () => {
 		it("classifies SIMPLE files correctly", () => {
 			// Arrange - simple files
 			const simpleFiles = [
-				".beads/issues.jsonl",
+				".chorus/tasks.jsonl",
 				"package-lock.json",
 				"yarn.lock",
 			];

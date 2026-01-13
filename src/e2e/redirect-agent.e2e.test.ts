@@ -29,8 +29,8 @@ describe("E2E: Redirect Agent (r key)", () => {
 	it("pressing r key does not crash app with in_progress task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-ra1", "Running Task", "in_progress"),
-			createStatusBead("ch-ra2", "Available Task", "open"),
+			createStatusBead("ch-ra1", "Running Task", "doing"),
+			createStatusBead("ch-ra2", "Available Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		// Wait for tasks to load (task count in header)
@@ -50,7 +50,7 @@ describe("E2E: Redirect Agent (r key)", () => {
 	it("pressing r key does not crash app with no running agents", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-ra3", "Open Task", "open"),
+			createStatusBead("ch-ra3", "Open Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		// Wait for tasks to load (task count in header)

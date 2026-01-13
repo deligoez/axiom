@@ -29,7 +29,7 @@ describe("E2E: View Logs (l key)", () => {
 	it("pressing l key does not crash app with in_progress task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-vl1", "Running Task", "in_progress"),
+			createStatusBead("ch-vl1", "Running Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Running Task", 5000);
@@ -45,7 +45,7 @@ describe("E2E: View Logs (l key)", () => {
 	it("pressing l key does not crash app with open task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-vl2", "Open Task", "open"),
+			createStatusBead("ch-vl2", "Open Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Open Task", 5000);
@@ -61,7 +61,7 @@ describe("E2E: View Logs (l key)", () => {
 	it("pressing l multiple times does not cause error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-vl3", "Test Task", "in_progress"),
+			createStatusBead("ch-vl3", "Test Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Test Task", 5000);
@@ -79,7 +79,7 @@ describe("E2E: View Logs (l key)", () => {
 	it("pressing Escape after l key maintains app state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-vl4", "Active Task", "in_progress"),
+			createStatusBead("ch-vl4", "Active Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Active Task", 5000);
@@ -96,9 +96,9 @@ describe("E2E: View Logs (l key)", () => {
 	it("pressing l with multiple tasks maintains state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-vl5", "First Task", "open"),
-			createStatusBead("ch-vl6", "Second Task", "in_progress"),
-			createStatusBead("ch-vl7", "Third Task", "closed"),
+			createStatusBead("ch-vl5", "First Task", "todo"),
+			createStatusBead("ch-vl6", "Second Task", "doing"),
+			createStatusBead("ch-vl7", "Third Task", "done"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "First Task", 5000);

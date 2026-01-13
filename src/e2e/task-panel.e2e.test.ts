@@ -49,7 +49,7 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 	it("shows → for open tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-open1", "Open Task", "open"),
+			createStatusBead("ch-open1", "Open Task", "todo"),
 		]);
 
 		// Act
@@ -64,7 +64,7 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 	it("shows ● for in_progress tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-prog1", "In Progress Task", "in_progress"),
+			createStatusBead("ch-prog1", "In Progress Task", "doing"),
 		]);
 
 		// Act
@@ -81,7 +81,7 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 	it("shows ✓ for closed tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-done1", "Closed Task", "closed"),
+			createStatusBead("ch-done1", "Closed Task", "done"),
 		]);
 
 		// Act
@@ -111,7 +111,7 @@ describe("E2E: TaskPanel Displays Tasks", () => {
 	it("shows ⊗ for blocked tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-blk1", "Blocked Task", "blocked"),
+			createStatusBead("ch-blk1", "Blocked Task", "stuck"),
 		]);
 
 		// Act

@@ -23,8 +23,8 @@ describe("E2E: Sprint Progress (E2E-S02)", () => {
 	it("starts sprint with 2 tasks and tracks completion", () => {
 		// Arrange - create project with 2 tasks
 		projectDir = createTestProject([
-			createStatusBead("ch-prg1", "Task 1", "open"),
-			createStatusBead("ch-prg2", "Task 2", "open"),
+			createStatusBead("ch-prg1", "Task 1", "todo"),
+			createStatusBead("ch-prg2", "Task 2", "todo"),
 		]);
 
 		const actor = createActor(sprintRegionMachine);
@@ -46,8 +46,8 @@ describe("E2E: Sprint Progress (E2E-S02)", () => {
 	it("completes sprint when task count target reached", () => {
 		// Arrange - create project with 2 tasks
 		projectDir = createTestProject([
-			createStatusBead("ch-prg3", "Task A", "open"),
-			createStatusBead("ch-prg4", "Task B", "open"),
+			createStatusBead("ch-prg3", "Task A", "todo"),
+			createStatusBead("ch-prg4", "Task B", "todo"),
 		]);
 
 		const actor = createActor(sprintRegionMachine);
@@ -71,8 +71,8 @@ describe("E2E: Sprint Progress (E2E-S02)", () => {
 	it("tracks tasks in reviewing status (pending review)", () => {
 		// Arrange - create project with tasks in reviewing status
 		projectDir = createTestProject([
-			createStatusBead("ch-prg5", "Reviewed Task 1", "in_progress"),
-			createStatusBead("ch-prg6", "Reviewed Task 2", "in_progress"),
+			createStatusBead("ch-prg5", "Reviewed Task 1", "doing"),
+			createStatusBead("ch-prg6", "Reviewed Task 2", "doing"),
 		]);
 
 		const actor = createActor(sprintRegionMachine);
@@ -98,7 +98,7 @@ describe("E2E: Sprint Progress (E2E-S02)", () => {
 	it("sprint progress bar hidden after completion (isActive false)", () => {
 		// Arrange - create project with task
 		projectDir = createTestProject([
-			createStatusBead("ch-prg7", "Final Task", "open"),
+			createStatusBead("ch-prg7", "Final Task", "todo"),
 		]);
 
 		const actor = createActor(sprintRegionMachine);

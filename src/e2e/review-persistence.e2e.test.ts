@@ -51,8 +51,8 @@ describe("E2E: Review Persistence (R06)", () => {
 	it("ReviewPersistence saves state to .chorus/state.json", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-rp1", "Task 1", "reviewing"),
-			createStatusBead("ch-rp2", "Task 2", "reviewing"),
+			createStatusBead("ch-rp1", "Task 1", "review"),
+			createStatusBead("ch-rp2", "Task 2", "review"),
 		]);
 
 		const persistence = new ReviewPersistence(projectDir);
@@ -78,8 +78,8 @@ describe("E2E: Review Persistence (R06)", () => {
 	it("ReviewPersistence restores state from .chorus/state.json", async () => {
 		// Arrange - save state first
 		projectDir = createTestProject([
-			createStatusBead("ch-rp1", "Task 1", "reviewing"),
-			createStatusBead("ch-rp2", "Task 2", "reviewing"),
+			createStatusBead("ch-rp1", "Task 1", "review"),
+			createStatusBead("ch-rp2", "Task 2", "review"),
 		]);
 
 		const persistence = new ReviewPersistence(projectDir);
@@ -104,7 +104,7 @@ describe("E2E: Review Persistence (R06)", () => {
 	it("ReviewPersistence clears state when reviews completed", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-rp1", "Task 1", "reviewing"),
+			createStatusBead("ch-rp1", "Task 1", "review"),
 		]);
 
 		const persistence = new ReviewPersistence(projectDir);
@@ -121,7 +121,7 @@ describe("E2E: Review Persistence (R06)", () => {
 	it("ReviewPersistence preserves other state sections", async () => {
 		// Arrange - create state file with other data
 		projectDir = createTestProject([
-			createStatusBead("ch-rp1", "Task 1", "reviewing"),
+			createStatusBead("ch-rp1", "Task 1", "review"),
 		]);
 
 		const stateDir = path.join(projectDir, ".chorus");
@@ -146,8 +146,8 @@ describe("E2E: Review Persistence (R06)", () => {
 	it("app renders correctly with reviewing tasks", async () => {
 		// Arrange - create project with reviewing tasks
 		projectDir = createTestProject([
-			createStatusBead("ch-rp1", "Task 1", "reviewing"),
-			createStatusBead("ch-rp2", "Task 2", "reviewing"),
+			createStatusBead("ch-rp1", "Task 1", "review"),
+			createStatusBead("ch-rp2", "Task 2", "review"),
 		]);
 
 		// Act - start app

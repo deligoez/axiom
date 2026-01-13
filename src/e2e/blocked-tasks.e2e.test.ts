@@ -28,7 +28,7 @@ describe("E2E: Blocked Tasks", () => {
 	it("shows blocked indicator for blocked tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-bt1", "Blocked Task", "blocked"),
+			createStatusBead("ch-bt1", "Blocked Task", "stuck"),
 		]);
 
 		// Act
@@ -44,9 +44,9 @@ describe("E2E: Blocked Tasks", () => {
 	it("displays blocked task among other tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-bt2", "Open Task", "open"),
-			createStatusBead("ch-bt3", "Blocked One", "blocked"),
-			createStatusBead("ch-bt4", "Running Task", "in_progress"),
+			createStatusBead("ch-bt2", "Open Task", "todo"),
+			createStatusBead("ch-bt3", "Blocked One", "stuck"),
+			createStatusBead("ch-bt4", "Running Task", "doing"),
 		]);
 
 		// Act
@@ -64,9 +64,9 @@ describe("E2E: Blocked Tasks", () => {
 	it("handles multiple blocked tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-bt5", "First Blocked", "blocked"),
-			createStatusBead("ch-bt6", "Second Blocked", "blocked"),
-			createStatusBead("ch-bt7", "Third Blocked", "blocked"),
+			createStatusBead("ch-bt5", "First Blocked", "stuck"),
+			createStatusBead("ch-bt6", "Second Blocked", "stuck"),
+			createStatusBead("ch-bt7", "Third Blocked", "stuck"),
 		]);
 
 		// Act
@@ -83,8 +83,8 @@ describe("E2E: Blocked Tasks", () => {
 	it("shows resolved and blocked tasks together", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-bt8", "Completed Task", "closed"),
-			createStatusBead("ch-bt9", "Waiting Task", "blocked"),
+			createStatusBead("ch-bt8", "Completed Task", "done"),
+			createStatusBead("ch-bt9", "Waiting Task", "stuck"),
 		]);
 
 		// Act

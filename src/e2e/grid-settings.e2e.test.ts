@@ -29,7 +29,7 @@ describe("E2E: Grid Settings (g key)", () => {
 	it("pressing g key does not crash app with tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-gs1", "Task One", "in_progress"),
+			createStatusBead("ch-gs1", "Task One", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);
@@ -59,7 +59,7 @@ describe("E2E: Grid Settings (g key)", () => {
 	it("pressing g multiple times does not cause error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-gs2", "Test Task", "open"),
+			createStatusBead("ch-gs2", "Test Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);
@@ -77,7 +77,7 @@ describe("E2E: Grid Settings (g key)", () => {
 	it("pressing Escape after g key maintains app state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-gs3", "Active Task", "in_progress"),
+			createStatusBead("ch-gs3", "Active Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);
@@ -94,9 +94,9 @@ describe("E2E: Grid Settings (g key)", () => {
 	it("pressing g with multiple tasks maintains state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-gs4", "First Task", "open"),
-			createStatusBead("ch-gs5", "Second Task", "in_progress"),
-			createStatusBead("ch-gs6", "Third Task", "closed"),
+			createStatusBead("ch-gs4", "First Task", "todo"),
+			createStatusBead("ch-gs5", "Second Task", "doing"),
+			createStatusBead("ch-gs6", "Third Task", "done"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (3)", 5000);

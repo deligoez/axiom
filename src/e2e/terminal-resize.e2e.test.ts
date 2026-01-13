@@ -28,7 +28,7 @@ describe("E2E: Terminal Resize", () => {
 	it("renders UI in default terminal size", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-tr1", "Test Task", "open"),
+			createStatusBead("ch-tr1", "Test Task", "todo"),
 		]);
 
 		// Act
@@ -63,12 +63,12 @@ describe("E2E: Terminal Resize", () => {
 	it("handles many tasks in list", async () => {
 		// Arrange - create more tasks than fit in viewport
 		projectDir = createTestProject([
-			createStatusBead("ch-tr3", "Task 1", "open"),
-			createStatusBead("ch-tr4", "Task 2", "open"),
-			createStatusBead("ch-tr5", "Task 3", "open"),
-			createStatusBead("ch-tr6", "Task 4", "open"),
-			createStatusBead("ch-tr7", "Task 5", "open"),
-			createStatusBead("ch-tr8", "Task 6", "open"),
+			createStatusBead("ch-tr3", "Task 1", "todo"),
+			createStatusBead("ch-tr4", "Task 2", "todo"),
+			createStatusBead("ch-tr5", "Task 3", "todo"),
+			createStatusBead("ch-tr6", "Task 4", "todo"),
+			createStatusBead("ch-tr7", "Task 5", "todo"),
+			createStatusBead("ch-tr8", "Task 6", "todo"),
 		]);
 
 		// Act
@@ -83,7 +83,7 @@ describe("E2E: Terminal Resize", () => {
 	it("displays both panels in layout", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-tr9", "Panel Task", "in_progress"),
+			createStatusBead("ch-tr9", "Panel Task", "doing"),
 		]);
 
 		// Act

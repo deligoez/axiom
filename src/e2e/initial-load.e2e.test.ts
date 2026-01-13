@@ -41,7 +41,7 @@ describe("E2E: Initial Load", () => {
 	it("loads tasks from beads file", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-il1", "Task From File", "open"),
+			createStatusBead("ch-il1", "Task From File", "todo"),
 		]);
 
 		// Act
@@ -70,9 +70,9 @@ describe("E2E: Initial Load", () => {
 	it("displays multiple tasks on load", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-il2", "Task One", "open"),
-			createStatusBead("ch-il3", "Task Two", "in_progress"),
-			createStatusBead("ch-il4", "Task Three", "closed"),
+			createStatusBead("ch-il2", "Task One", "todo"),
+			createStatusBead("ch-il3", "Task Two", "doing"),
+			createStatusBead("ch-il4", "Task Three", "done"),
 		]);
 
 		// Act

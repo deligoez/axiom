@@ -28,13 +28,13 @@ describe("E2E: FooterBar Shows Stats", () => {
 	it("shows task count by status", async () => {
 		// Arrange - create tasks with different statuses
 		projectDir = createTestProject([
-			createStatusBead("ch-done1", "Done Task 1", "closed"),
-			createStatusBead("ch-done2", "Done Task 2", "closed"),
-			createStatusBead("ch-prog1", "Running Task", "in_progress"),
-			createStatusBead("ch-open1", "Pending Task 1", "open"),
-			createStatusBead("ch-open2", "Pending Task 2", "open"),
-			createStatusBead("ch-open3", "Pending Task 3", "open"),
-			createStatusBead("ch-block1", "Blocked Task", "blocked"),
+			createStatusBead("ch-done1", "Done Task 1", "done"),
+			createStatusBead("ch-done2", "Done Task 2", "done"),
+			createStatusBead("ch-prog1", "Running Task", "doing"),
+			createStatusBead("ch-open1", "Pending Task 1", "todo"),
+			createStatusBead("ch-open2", "Pending Task 2", "todo"),
+			createStatusBead("ch-open3", "Pending Task 3", "todo"),
+			createStatusBead("ch-block1", "Blocked Task", "stuck"),
 		]);
 
 		// Act - wait for tasks to load (shown in task panel), then check footer stats

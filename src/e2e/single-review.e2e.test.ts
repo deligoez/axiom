@@ -32,9 +32,9 @@ describe("E2E: Single Task Review (R01)", () => {
 	it("shows tasks with reviewing status correctly", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-rv1", "Open Task", "open"),
-			createStatusBead("ch-rv2", "Reviewing Task", "reviewing"),
-			createStatusBead("ch-rv3", "Another Task", "open"),
+			createStatusBead("ch-rv1", "Open Task", "todo"),
+			createStatusBead("ch-rv2", "Reviewing Task", "review"),
+			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 
@@ -51,9 +51,9 @@ describe("E2E: Single Task Review (R01)", () => {
 	it("navigates to reviewing task with j/k", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-rv1", "Open Task", "open"),
-			createStatusBead("ch-rv2", "Reviewing Task", "reviewing"),
-			createStatusBead("ch-rv3", "Another Task", "open"),
+			createStatusBead("ch-rv1", "Open Task", "todo"),
+			createStatusBead("ch-rv2", "Reviewing Task", "review"),
+			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -71,9 +71,9 @@ describe("E2E: Single Task Review (R01)", () => {
 	it("pressing R on task opens review mode without crashing", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-rv1", "Open Task", "open"),
-			createStatusBead("ch-rv2", "Reviewing Task", "reviewing"),
-			createStatusBead("ch-rv3", "Another Task", "open"),
+			createStatusBead("ch-rv1", "Open Task", "todo"),
+			createStatusBead("ch-rv2", "Reviewing Task", "review"),
+			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -96,9 +96,9 @@ describe("E2E: Single Task Review (R01)", () => {
 	it("Esc key returns from review mode without crashing", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-rv1", "Open Task", "open"),
-			createStatusBead("ch-rv2", "Reviewing Task", "reviewing"),
-			createStatusBead("ch-rv3", "Another Task", "open"),
+			createStatusBead("ch-rv1", "Open Task", "todo"),
+			createStatusBead("ch-rv2", "Reviewing Task", "review"),
+			createStatusBead("ch-rv3", "Another Task", "todo"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);

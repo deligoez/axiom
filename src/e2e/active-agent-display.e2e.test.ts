@@ -28,7 +28,7 @@ describe("E2E: Active Agent Display", () => {
 	it("shows in_progress task in agent grid area", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-aa1", "Active Task", "in_progress"),
+			createStatusBead("ch-aa1", "Active Task", "doing"),
 		]);
 
 		// Act
@@ -45,8 +45,8 @@ describe("E2E: Active Agent Display", () => {
 	it("shows open and in_progress tasks together", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-aa2", "Waiting Task", "open"),
-			createStatusBead("ch-aa3", "Running Task", "in_progress"),
+			createStatusBead("ch-aa2", "Waiting Task", "todo"),
+			createStatusBead("ch-aa3", "Running Task", "doing"),
 		]);
 
 		// Act
@@ -62,8 +62,8 @@ describe("E2E: Active Agent Display", () => {
 	it("shows multiple in_progress tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-aa4", "Agent One", "in_progress"),
-			createStatusBead("ch-aa5", "Agent Two", "in_progress"),
+			createStatusBead("ch-aa4", "Agent One", "doing"),
+			createStatusBead("ch-aa5", "Agent Two", "doing"),
 		]);
 
 		// Act
@@ -80,8 +80,8 @@ describe("E2E: Active Agent Display", () => {
 	it("handles transition from open to in_progress", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-aa6", "Ready Task", "open"),
-			createStatusBead("ch-aa7", "Started Task", "in_progress"),
+			createStatusBead("ch-aa6", "Ready Task", "todo"),
+			createStatusBead("ch-aa7", "Started Task", "doing"),
 		]);
 
 		// Act

@@ -35,7 +35,7 @@ describe("E2E: Redo with Feedback (R03)", () => {
 	it("FeedbackStorage saves feedback to .chorus/feedback/{taskId}.json", async () => {
 		// Arrange - create project with reviewing task
 		projectDir = createTestProject([
-			createStatusBead("ch-fb1", "Task with Feedback", "reviewing"),
+			createStatusBead("ch-fb1", "Task with Feedback", "review"),
 		]);
 
 		const feedbackStorage = new FeedbackStorage(projectDir);
@@ -70,7 +70,7 @@ describe("E2E: Redo with Feedback (R03)", () => {
 	it("FeedbackStorage appends to existing feedback history", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fb2", "Task with History", "reviewing"),
+			createStatusBead("ch-fb2", "Task with History", "review"),
 		]);
 
 		const feedbackStorage = new FeedbackStorage(projectDir);
@@ -100,7 +100,7 @@ describe("E2E: Redo with Feedback (R03)", () => {
 	it("FeedbackStorage returns null for non-existent task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fb3", "Some Task", "open"),
+			createStatusBead("ch-fb3", "Some Task", "todo"),
 		]);
 
 		const feedbackStorage = new FeedbackStorage(projectDir);
@@ -115,7 +115,7 @@ describe("E2E: Redo with Feedback (R03)", () => {
 	it("app shows reviewing task and feedback can be saved externally", async () => {
 		// Arrange - create project with reviewing task
 		projectDir = createTestProject([
-			createStatusBead("ch-fb4", "Reviewing Task", "reviewing"),
+			createStatusBead("ch-fb4", "Reviewing Task", "review"),
 		]);
 
 		// Start app to verify task shows

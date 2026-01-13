@@ -10,58 +10,29 @@ import { join } from "node:path";
 import type { TaskJSONL, TaskStatus, TaskType } from "../types/task.js";
 
 /**
- * TestBead - Legacy interface for E2E test tasks.
- * Maps to TaskJSONL format internally.
+ * TestTask - Simplified Task interface for E2E tests.
+ * Only requires id, title, and status. Other fields get sensible defaults.
  */
-export interface TestBead {
+export interface TestTask {
 	id: string;
 	title: string;
 	description?: string;
-	status?: string;
-	priority?: number;
-	type?: string;
+	status?: TaskStatus;
+	type?: TaskType;
 	tags?: string[];
 	dependencies?: string[];
 	assignee?: string;
-	created?: string;
-	updated?: string;
-}
-
-// Legacy type aliases for backward compatibility
-export type BeadStatus =
-	| TaskStatus
-	| "open"
-	| "in_progress"
-	| "closed"
-	| "blocked";
-
-/**
- * Map legacy Bead status to Task status.
- */
-function mapStatus(beadStatus?: string): TaskStatus {
-	switch (beadStatus) {
-		case "open":
-			return "todo";
-		case "in_progress":
-			return "doing";
-		case "closed":
-			return "done";
-		case "blocked":
-			return "stuck";
-		case "reviewing":
-			return "review";
-		default:
-			return (beadStatus as TaskStatus) ?? "todo";
-	}
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 /**
  * Creates a temporary project directory with test tasks.
  *
- * @param beads - Array of test tasks to create (legacy TestBead format)
+ * @param tasks - Array of test tasks to create
  * @returns Path to the temporary directory
  */
-export function createTestProject(beads: TestBead[]): string {
+export function createTestProject(tasks: TestTask[]): string {
 	// Create temp directory with unique name
 	const tempDir = join(
 		tmpdir(),
@@ -74,25 +45,25 @@ export function createTestProject(beads: TestBead[]): string {
 
 	// Create tasks.jsonl with test tasks in TaskJSONL format
 	const now = new Date().toISOString();
-	const jsonlContent = beads
-		.map((bead) => {
-			const task: TaskJSONL = {
-				id: bead.id,
-				title: bead.title,
-				description: bead.description,
-				status: mapStatus(bead.status),
-				type: (bead.type as TaskType) ?? "task",
-				tags: bead.tags ?? [],
-				dependencies: bead.dependencies ?? [],
-				assignee: bead.assignee,
-				created_at: bead.created ?? now,
-				updated_at: bead.updated ?? now,
+	const jsonlContent = tasks
+		.map((task) => {
+			const jsonlTask: TaskJSONL = {
+				id: task.id,
+				title: task.title,
+				description: task.description,
+				status: task.status ?? "todo",
+				type: task.type ?? "task",
+				tags: task.tags ?? [],
+				dependencies: task.dependencies ?? [],
+				assignee: task.assignee,
+				created_at: task.createdAt ?? now,
+				updated_at: task.updatedAt ?? now,
 				review_count: 0,
 				learnings_count: 0,
 				has_learnings: false,
 				version: 1,
 			};
-			return JSON.stringify(task);
+			return JSON.stringify(jsonlTask);
 		})
 		.join("\n");
 
@@ -116,11 +87,19 @@ export function cleanupTestProject(projectDir: string): void {
 
 /**
  * Creates a task with the given status for testing.
+ * Status should be one of: "todo", "doing", "done", "stuck", "later", "failed", "review"
  */
 export function createStatusBead(
 	id: string,
 	title: string,
-	status: BeadStatus | string,
-): TestBead {
+	status: TaskStatus,
+): TestTask {
 	return { id, title, status };
 }
+
+// Legacy type aliases for backward compatibility with existing tests
+/** @deprecated Use TestTask instead */
+export type TestBead = TestTask;
+
+/** @deprecated Use TaskStatus instead */
+export type BeadStatus = TaskStatus;

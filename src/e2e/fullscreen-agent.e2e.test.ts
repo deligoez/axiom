@@ -29,7 +29,7 @@ describe("E2E: Fullscreen Agent (f key)", () => {
 	it("pressing f key does not crash app with in_progress task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fs1", "Running Task", "in_progress"),
+			createStatusBead("ch-fs1", "Running Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Running Task", 5000);
@@ -45,7 +45,7 @@ describe("E2E: Fullscreen Agent (f key)", () => {
 	it("pressing f key does not crash app with open task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fs2", "Open Task", "open"),
+			createStatusBead("ch-fs2", "Open Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Open Task", 5000);
@@ -61,7 +61,7 @@ describe("E2E: Fullscreen Agent (f key)", () => {
 	it("pressing f multiple times toggles without error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fs3", "Test Task", "in_progress"),
+			createStatusBead("ch-fs3", "Test Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Test Task", 5000);
@@ -79,7 +79,7 @@ describe("E2E: Fullscreen Agent (f key)", () => {
 	it("pressing Escape after f key maintains app state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fs4", "Active Task", "in_progress"),
+			createStatusBead("ch-fs4", "Active Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Active Task", 5000);
@@ -96,9 +96,9 @@ describe("E2E: Fullscreen Agent (f key)", () => {
 	it("pressing f with multiple tasks maintains state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fs5", "First Task", "open"),
-			createStatusBead("ch-fs6", "Second Task", "in_progress"),
-			createStatusBead("ch-fs7", "Third Task", "closed"),
+			createStatusBead("ch-fs5", "First Task", "todo"),
+			createStatusBead("ch-fs6", "Second Task", "doing"),
+			createStatusBead("ch-fs7", "Third Task", "done"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "First Task", 5000);

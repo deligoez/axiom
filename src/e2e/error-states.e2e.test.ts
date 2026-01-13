@@ -44,7 +44,7 @@ describe("E2E: Error States", () => {
 	it("shows blocked task indicator", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-es2", "Blocked Task", "blocked"),
+			createStatusBead("ch-es2", "Blocked Task", "stuck"),
 		]);
 
 		// Act
@@ -60,9 +60,9 @@ describe("E2E: Error States", () => {
 	it("displays failed and non-failed tasks together", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-es3", "Normal Task", "open"),
+			createStatusBead("ch-es3", "Normal Task", "todo"),
 			createStatusBead("ch-es4", "Failed Task", "failed"),
-			createStatusBead("ch-es5", "Done Task", "closed"),
+			createStatusBead("ch-es5", "Done Task", "done"),
 		]);
 
 		// Act
@@ -83,7 +83,7 @@ describe("E2E: Error States", () => {
 		projectDir = createTestProject([
 			createStatusBead("ch-es6", "Failed One", "failed"),
 			createStatusBead("ch-es7", "Failed Two", "failed"),
-			createStatusBead("ch-es8", "Blocked One", "blocked"),
+			createStatusBead("ch-es8", "Blocked One", "stuck"),
 		]);
 
 		// Act

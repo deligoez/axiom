@@ -32,9 +32,9 @@ describe("E2E: Batch Review Flow (R02)", () => {
 	it("creates project with multiple reviewing tasks", async () => {
 		// Arrange - create 3 tasks all in reviewing status
 		projectDir = createTestProject([
-			createStatusBead("ch-br1", "First Review Task", "reviewing"),
-			createStatusBead("ch-br2", "Second Review Task", "reviewing"),
-			createStatusBead("ch-br3", "Third Review Task", "reviewing"),
+			createStatusBead("ch-br1", "First Review Task", "review"),
+			createStatusBead("ch-br2", "Second Review Task", "review"),
+			createStatusBead("ch-br3", "Third Review Task", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 
@@ -53,9 +53,9 @@ describe("E2E: Batch Review Flow (R02)", () => {
 	it("shows reviewing count in footer", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-br1", "Review 1", "reviewing"),
-			createStatusBead("ch-br2", "Review 2", "reviewing"),
-			createStatusBead("ch-br3", "Review 3", "reviewing"),
+			createStatusBead("ch-br1", "Review 1", "review"),
+			createStatusBead("ch-br2", "Review 2", "review"),
+			createStatusBead("ch-br3", "Review 3", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -68,9 +68,9 @@ describe("E2E: Batch Review Flow (R02)", () => {
 	it("navigates through tasks with j/k keys", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-br1", "First", "reviewing"),
-			createStatusBead("ch-br2", "Second", "reviewing"),
-			createStatusBead("ch-br3", "Third", "reviewing"),
+			createStatusBead("ch-br1", "First", "review"),
+			createStatusBead("ch-br2", "Second", "review"),
+			createStatusBead("ch-br3", "Third", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -88,9 +88,9 @@ describe("E2E: Batch Review Flow (R02)", () => {
 	it("pressing R with multiple reviewing tasks does not crash", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-br1", "Review 1", "reviewing"),
-			createStatusBead("ch-br2", "Review 2", "reviewing"),
-			createStatusBead("ch-br3", "Review 3", "reviewing"),
+			createStatusBead("ch-br1", "Review 1", "review"),
+			createStatusBead("ch-br2", "Review 2", "review"),
+			createStatusBead("ch-br3", "Review 3", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -108,9 +108,9 @@ describe("E2E: Batch Review Flow (R02)", () => {
 	it("rapid key sequence does not crash app", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-br1", "Task 1", "reviewing"),
-			createStatusBead("ch-br2", "Task 2", "reviewing"),
-			createStatusBead("ch-br3", "Task 3", "reviewing"),
+			createStatusBead("ch-br1", "Task 1", "review"),
+			createStatusBead("ch-br2", "Task 2", "review"),
+			createStatusBead("ch-br3", "Task 3", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (3)", 10000);
@@ -131,8 +131,8 @@ describe("E2E: Batch Review Flow (R02)", () => {
 	it("Escape returns to normal view after R press", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-br1", "Task 1", "reviewing"),
-			createStatusBead("ch-br2", "Task 2", "reviewing"),
+			createStatusBead("ch-br1", "Task 1", "review"),
+			createStatusBead("ch-br2", "Task 2", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (2)", 10000);

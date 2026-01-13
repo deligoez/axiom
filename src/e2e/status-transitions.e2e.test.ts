@@ -28,7 +28,7 @@ describe("E2E: Status Transitions", () => {
 	it("displays open task status correctly", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-st1", "Open Task", "open"),
+			createStatusBead("ch-st1", "Open Task", "todo"),
 		]);
 
 		// Act
@@ -45,7 +45,7 @@ describe("E2E: Status Transitions", () => {
 	it("displays in_progress task status correctly", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-st2", "Running Task", "in_progress"),
+			createStatusBead("ch-st2", "Running Task", "doing"),
 		]);
 
 		// Act
@@ -62,7 +62,7 @@ describe("E2E: Status Transitions", () => {
 	it("displays closed task status correctly", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-st3", "Completed Task", "closed"),
+			createStatusBead("ch-st3", "Completed Task", "done"),
 		]);
 
 		// Act
@@ -79,10 +79,10 @@ describe("E2E: Status Transitions", () => {
 	it("displays multiple status types simultaneously", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-st4", "Open One", "open"),
-			createStatusBead("ch-st5", "Running One", "in_progress"),
-			createStatusBead("ch-st6", "Done One", "closed"),
-			createStatusBead("ch-st7", "Blocked One", "blocked"),
+			createStatusBead("ch-st4", "Open One", "todo"),
+			createStatusBead("ch-st5", "Running One", "doing"),
+			createStatusBead("ch-st6", "Done One", "done"),
+			createStatusBead("ch-st7", "Blocked One", "stuck"),
 		]);
 
 		// Act

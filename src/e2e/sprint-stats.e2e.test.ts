@@ -52,8 +52,8 @@ describe("E2E: Sprint Stats (E2E-S03)", () => {
 	it("saves sprint stats with 2 tasks (1 success, 1 fail) to .chorus/sprints/", async () => {
 		// Arrange - create project with tasks
 		projectDir = createTestProject([
-			createStatusBead("ch-sp1", "Task 1 - Success", "closed"),
-			createStatusBead("ch-sp2", "Task 2 - Failed", "open"),
+			createStatusBead("ch-sp1", "Task 1 - Success", "done"),
+			createStatusBead("ch-sp2", "Task 2 - Failed", "todo"),
 		]);
 
 		const storage = new SprintStatsStorage(projectDir);
@@ -94,8 +94,8 @@ describe("E2E: Sprint Stats (E2E-S03)", () => {
 	it("sprint stats contain correct counts (completed: 1, failed: 1)", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-sp3", "Success Task", "closed"),
-			createStatusBead("ch-sp4", "Failed Task", "blocked"),
+			createStatusBead("ch-sp3", "Success Task", "done"),
+			createStatusBead("ch-sp4", "Failed Task", "stuck"),
 		]);
 
 		const storage = new SprintStatsStorage(projectDir);
@@ -135,7 +135,7 @@ describe("E2E: Sprint Stats (E2E-S03)", () => {
 	it("per-task stats contain timing and result information", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-sp5", "Timed Task", "closed"),
+			createStatusBead("ch-sp5", "Timed Task", "done"),
 		]);
 
 		const storage = new SprintStatsStorage(projectDir);
@@ -173,7 +173,7 @@ describe("E2E: Sprint Stats (E2E-S03)", () => {
 	it("sprint stats can be listed and retrieved by ID", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-sp6", "List Test Task", "closed"),
+			createStatusBead("ch-sp6", "List Test Task", "done"),
 		]);
 
 		const storage = new SprintStatsStorage(projectDir);

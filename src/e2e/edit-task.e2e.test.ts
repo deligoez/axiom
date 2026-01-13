@@ -29,7 +29,7 @@ describe("E2E: Edit Task (e key)", () => {
 	it("pressing e key does not crash with open task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-et1", "Task to Edit", "open"),
+			createStatusBead("ch-et1", "Task to Edit", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Task to Edit", 5000);
@@ -45,7 +45,7 @@ describe("E2E: Edit Task (e key)", () => {
 	it("pressing e key with in_progress task does not error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-et2", "Running Task", "in_progress"),
+			createStatusBead("ch-et2", "Running Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Running Task", 5000);
@@ -62,9 +62,9 @@ describe("E2E: Edit Task (e key)", () => {
 	it("pressing e with multiple tasks maintains state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-et3", "First Task", "open"),
-			createStatusBead("ch-et4", "Second Task", "in_progress"),
-			createStatusBead("ch-et5", "Third Task", "closed"),
+			createStatusBead("ch-et3", "First Task", "todo"),
+			createStatusBead("ch-et4", "Second Task", "doing"),
+			createStatusBead("ch-et5", "Third Task", "done"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "First Task", 5000);

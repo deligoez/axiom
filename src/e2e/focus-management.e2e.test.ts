@@ -29,7 +29,7 @@ describe("E2E: Focus Management", () => {
 	it("Tab key cycles through panels without error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fm1", "Test Task", "open"),
+			createStatusBead("ch-fm1", "Test Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Test Task", 5000);
@@ -47,8 +47,8 @@ describe("E2E: Focus Management", () => {
 	it("Tab key works with multiple tasks", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fm2", "Task One", "open"),
-			createStatusBead("ch-fm3", "Task Two", "in_progress"),
+			createStatusBead("ch-fm2", "Task One", "todo"),
+			createStatusBead("ch-fm3", "Task Two", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Task One", 5000);
@@ -65,7 +65,7 @@ describe("E2E: Focus Management", () => {
 	it("Tab after opening modal doesn't crash app", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fm4", "Modal Task", "open"),
+			createStatusBead("ch-fm4", "Modal Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Modal Task", 5000);
@@ -83,7 +83,7 @@ describe("E2E: Focus Management", () => {
 	it("focus returns after closing modal", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-fm5", "Focus Task", "open"),
+			createStatusBead("ch-fm5", "Focus Task", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Focus Task", 5000);

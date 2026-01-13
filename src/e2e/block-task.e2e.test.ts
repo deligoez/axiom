@@ -29,7 +29,7 @@ describe("E2E: Block Task (b key)", () => {
 	it("pressing b key does not crash with open task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-bt1", "Task to Block", "open"),
+			createStatusBead("ch-bt1", "Task to Block", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);
@@ -45,7 +45,7 @@ describe("E2E: Block Task (b key)", () => {
 	it("blocked task displays ⊗ indicator", async () => {
 		// Arrange - create already blocked task
 		projectDir = createTestProject([
-			createStatusBead("ch-bt2", "Blocked Task", "blocked"),
+			createStatusBead("ch-bt2", "Blocked Task", "stuck"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);

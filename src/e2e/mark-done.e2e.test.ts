@@ -29,7 +29,7 @@ describe("E2E: Mark Done (d key)", () => {
 	it("pressing d key does not crash with open task", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-md1", "Task to Mark Done", "open"),
+			createStatusBead("ch-md1", "Task to Mark Done", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);
@@ -46,7 +46,7 @@ describe("E2E: Mark Done (d key)", () => {
 	it("pressing d key with in_progress task does not error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-md2", "In Progress Task", "in_progress"),
+			createStatusBead("ch-md2", "In Progress Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (1)", 5000);
@@ -63,9 +63,9 @@ describe("E2E: Mark Done (d key)", () => {
 	it("pressing d with multiple tasks maintains state", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-md3", "First Task", "open"),
-			createStatusBead("ch-md4", "Second Task", "in_progress"),
-			createStatusBead("ch-md5", "Third Task", "closed"),
+			createStatusBead("ch-md3", "First Task", "todo"),
+			createStatusBead("ch-md4", "Second Task", "doing"),
+			createStatusBead("ch-md5", "Third Task", "done"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Tasks (3)", 5000);

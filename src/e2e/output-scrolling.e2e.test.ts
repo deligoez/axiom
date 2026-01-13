@@ -29,7 +29,7 @@ describe("E2E: Output Scrolling", () => {
 	it("app renders with agent output area", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-os1", "Active Task", "in_progress"),
+			createStatusBead("ch-os1", "Active Task", "doing"),
 		]);
 
 		// Act
@@ -45,8 +45,8 @@ describe("E2E: Output Scrolling", () => {
 	it("j/k keys work in main view without error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-os2", "Task One", "open"),
-			createStatusBead("ch-os3", "Task Two", "open"),
+			createStatusBead("ch-os2", "Task One", "todo"),
+			createStatusBead("ch-os3", "Task Two", "todo"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Task One", 5000);
@@ -64,7 +64,7 @@ describe("E2E: Output Scrolling", () => {
 	it("l key opens log view without error", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-os4", "Running Task", "in_progress"),
+			createStatusBead("ch-os4", "Running Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Running Task", 5000);
@@ -80,7 +80,7 @@ describe("E2E: Output Scrolling", () => {
 	it("j/k keys after l key don't crash app", async () => {
 		// Arrange
 		projectDir = createTestProject([
-			createStatusBead("ch-os5", "Active Task", "in_progress"),
+			createStatusBead("ch-os5", "Active Task", "doing"),
 		]);
 		const result = await renderApp([], projectDir);
 		await waitForText(result, "Active Task", 5000);

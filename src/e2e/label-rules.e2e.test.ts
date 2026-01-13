@@ -113,8 +113,8 @@ describe("E2E: Label Rules (R05)", () => {
 	it("app displays tasks correctly regardless of labels", async () => {
 		// Arrange - create tasks (labels would be in metadata, not shown in panel)
 		projectDir = createTestProject([
-			createStatusBead("ch-lr1", "Skip Task", "open"),
-			createStatusBead("ch-lr2", "Per-Task Task", "reviewing"),
+			createStatusBead("ch-lr1", "Skip Task", "todo"),
+			createStatusBead("ch-lr2", "Per-Task Task", "review"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 

@@ -135,8 +135,8 @@ describe("E2E: Auto-Approve (R04)", () => {
 	it("app displays reviewing tasks that would need manual review", async () => {
 		// Arrange - create reviewing task (simulates failed auto-approve)
 		projectDir = createTestProject([
-			createStatusBead("ch-aa7", "Failed Auto Task", "reviewing"),
-			createStatusBead("ch-aa8", "Open Task", "open"),
+			createStatusBead("ch-aa7", "Failed Auto Task", "review"),
+			createStatusBead("ch-aa8", "Open Task", "todo"),
 		]);
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 
