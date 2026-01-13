@@ -188,4 +188,87 @@ describe("SageAnalyzer", () => {
 			expect(result.tsconfigStrict).toBe(true);
 		});
 	});
+
+	describe("detectTestFramework()", () => {
+		it("identifies Vitest from vitest.config or devDeps", () => {
+			// Arrange
+			const packageJson = {
+				devDependencies: { vitest: "^1.0.0" },
+			};
+			fs.writeFileSync(
+				path.join(tempDir, "package.json"),
+				JSON.stringify(packageJson),
+			);
+
+			// Act
+			const result = analyzer.detectTestFramework();
+
+			// Assert
+			expect(result).toBe("vitest");
+		});
+
+		it("identifies Jest from jest.config or devDeps", () => {
+			// Arrange
+			fs.writeFileSync(path.join(tempDir, "jest.config.js"), "");
+
+			// Act
+			const result = analyzer.detectTestFramework();
+
+			// Assert
+			expect(result).toBe("jest");
+		});
+
+		it("identifies Mocha from mocha in devDeps", () => {
+			// Arrange
+			const packageJson = {
+				devDependencies: { mocha: "^10.0.0" },
+			};
+			fs.writeFileSync(
+				path.join(tempDir, "package.json"),
+				JSON.stringify(packageJson),
+			);
+
+			// Act
+			const result = analyzer.detectTestFramework();
+
+			// Assert
+			expect(result).toBe("mocha");
+		});
+
+		it("returns 'unknown' if no framework found", () => {
+			// Arrange - empty project
+
+			// Act
+			const result = analyzer.detectTestFramework();
+
+			// Assert
+			expect(result).toBe("unknown");
+		});
+	});
+
+	describe("suggestQualityCommands()", () => {
+		it("suggests npm scripts based on package.json", () => {
+			// Arrange
+			const packageJson = {
+				scripts: {
+					test: "vitest run",
+					lint: "biome check",
+					typecheck: "tsc --noEmit",
+				},
+			};
+			fs.writeFileSync(
+				path.join(tempDir, "package.json"),
+				JSON.stringify(packageJson),
+			);
+
+			// Act
+			const result = analyzer.suggestQualityCommands();
+
+			// Assert
+			expect(result).toHaveLength(3);
+			expect(result[0]?.command).toBe("npm run test");
+			expect(result[1]?.command).toBe("npm run lint");
+			expect(result[2]?.command).toBe("npm run typecheck");
+		});
+	});
 });

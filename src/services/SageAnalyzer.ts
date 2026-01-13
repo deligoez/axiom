@@ -6,7 +6,30 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ProjectStructure } from "../types/sage.js";
+import type {
+	ProjectStructure,
+	QualityCommandSuggestion,
+} from "../types/sage.js";
+
+/** Test framework type */
+export type TestFramework = "vitest" | "jest" | "mocha" | "unknown";
+
+/** Jest config file patterns */
+const JEST_CONFIG_FILES = [
+	"jest.config.js",
+	"jest.config.ts",
+	"jest.config.mjs",
+	"jest.config.cjs",
+	"jest.config.json",
+];
+
+/** Vitest config file patterns */
+const VITEST_CONFIG_FILES = [
+	"vitest.config.ts",
+	"vitest.config.js",
+	"vitest.config.mts",
+	"vitest.config.mjs",
+];
 
 /** Config files to scan for */
 const CONFIG_FILES = [
@@ -159,5 +182,74 @@ export class SageAnalyzer {
 			configFiles,
 			tsconfigStrict,
 		};
+	}
+
+	/**
+	 * Detect the test framework used in the project.
+	 * Checks config files and devDependencies.
+	 */
+	detectTestFramework(): TestFramework {
+		// Check for Vitest config files
+		for (const configFile of VITEST_CONFIG_FILES) {
+			if (existsSync(join(this.projectDir, configFile))) {
+				return "vitest";
+			}
+		}
+
+		// Check for Jest config files
+		for (const configFile of JEST_CONFIG_FILES) {
+			if (existsSync(join(this.projectDir, configFile))) {
+				return "jest";
+			}
+		}
+
+		// Check package.json devDependencies
+		const pkg = this.analyzePackageJson();
+		if (pkg?.devDependencies) {
+			const deps = pkg.devDependencies;
+			if ("vitest" in deps) return "vitest";
+			if ("jest" in deps) return "jest";
+			if ("mocha" in deps) return "mocha";
+		}
+
+		return "unknown";
+	}
+
+	/**
+	 * Suggest quality commands based on package.json scripts.
+	 */
+	suggestQualityCommands(): QualityCommandSuggestion[] {
+		const suggestions: QualityCommandSuggestion[] = [];
+		const pkg = this.analyzePackageJson();
+
+		if (!pkg?.scripts) {
+			return suggestions;
+		}
+
+		// Quality-related script names to look for
+		const qualityScripts = [
+			"test",
+			"lint",
+			"typecheck",
+			"check",
+			"build",
+			"format",
+		];
+		let order = 1;
+
+		for (const scriptName of qualityScripts) {
+			if (scriptName in pkg.scripts) {
+				suggestions.push({
+					name: scriptName,
+					command: `npm run ${scriptName}`,
+					source: "package.json",
+					confidence: 0.9,
+					required: scriptName === "test" || scriptName === "typecheck",
+					order: order++,
+				});
+			}
+		}
+
+		return suggestions;
 	}
 }
