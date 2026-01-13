@@ -90,14 +90,14 @@ describe("TaskPanel", () => {
 		});
 
 		it("failed status is distinct from blocked", () => {
-			const failedBeads = [createTestTask({ status: "failed" })];
-			const blockedBeads = [createTestTask({ status: "blocked" })];
+			const failedTasks = [createTestTask({ status: "failed" })];
+			const blockedTasks = [createTestTask({ status: "blocked" })];
 
 			const { lastFrame: failedFrame } = render(
-				<TaskPanel tasks={failedBeads} />,
+				<TaskPanel tasks={failedTasks} />,
 			);
 			const { lastFrame: blockedFrame } = render(
-				<TaskPanel tasks={blockedBeads} />,
+				<TaskPanel tasks={blockedTasks} />,
 			);
 
 			// Failed uses ✗, blocked uses ⊗

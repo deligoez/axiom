@@ -126,7 +126,7 @@ describe("AgentRedirector", () => {
 			expect(mockStopAgent).toHaveBeenCalledWith("agent-1");
 		});
 
-		it("validates task is open via beadsCLI.getTask", async () => {
+		it("validates task is open via taskProvider.getTask", async () => {
 			// Arrange
 			const slot = createMockSlot("agent-1", "ch-001");
 			mockGetAgent.mockReturnValue(slot);

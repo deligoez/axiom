@@ -56,23 +56,21 @@ export function createGitRepo(): GitTestRepo {
 }
 
 /**
- * Creates a git repository with .beads directory initialized.
+ * Creates a git repository with .chorus directory and TaskStore initialized.
  *
- * @returns GitTestRepo with beads directory
+ * @returns GitTestRepo with chorus task storage
  */
-export function createGitRepoWithBeads(): GitTestRepo {
+export function createGitRepoWithTasks(): GitTestRepo {
 	const repo = createGitRepo();
 
-	// Create .beads directory with empty issues.jsonl and config.yaml
-	const beadsDir = join(repo.path, ".beads");
-	mkdirSync(beadsDir, { recursive: true });
-	writeFileSync(join(beadsDir, "issues.jsonl"), "");
-	// Enable JSONL-only mode and set prefix to 'ch-' for Chorus
-	writeFileSync(join(beadsDir, "config.yaml"), "no-db: true\nprefix: ch\n");
+	// Create .chorus directory with empty tasks.jsonl
+	const chorusDir = join(repo.path, ".chorus");
+	mkdirSync(chorusDir, { recursive: true });
+	writeFileSync(join(chorusDir, "tasks.jsonl"), "");
 
-	// Commit beads directory
+	// Commit chorus directory
 	execSync("git add .", { cwd: repo.path, stdio: "pipe" });
-	execSync('git commit -m "Add .beads directory"', {
+	execSync('git commit -m "Add .chorus directory with TaskStore"', {
 		cwd: repo.path,
 		stdio: "pipe",
 	});
@@ -81,12 +79,12 @@ export function createGitRepoWithBeads(): GitTestRepo {
 }
 
 /**
- * Creates a git repository with .chorus directory initialized.
+ * Creates a git repository with .chorus directory and templates initialized.
  *
- * @returns GitTestRepo with chorus config directory
+ * @returns GitTestRepo with chorus config directory and templates
  */
 export function createGitRepoWithChorus(): GitTestRepo {
-	const repo = createGitRepoWithBeads();
+	const repo = createGitRepoWithTasks();
 
 	// Create .chorus directory structure
 	const chorusDir = join(repo.path, ".chorus");

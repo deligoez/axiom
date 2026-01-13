@@ -120,18 +120,6 @@ export function checkPrerequisites(): PrerequisiteCheck[] {
 		});
 	}
 
-	// Check Beads CLI
-	try {
-		execSync("bd --version", { stdio: "pipe" });
-		checks.push({ name: "bd", passed: true, message: "Beads CLI found" });
-	} catch {
-		checks.push({
-			name: "bd",
-			passed: false,
-			message: "Beads CLI (bd) not found",
-		});
-	}
-
 	// Check Claude CLI
 	try {
 		execSync("which claude", { stdio: "pipe" });

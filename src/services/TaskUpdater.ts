@@ -38,7 +38,7 @@ export interface TaskUpdaterOptions {
 }
 
 /**
- * Applies Plan Review changes to Beads tasks based on config approval settings.
+ * Applies Plan Review changes to TaskStore tasks based on config approval settings.
  *
  * Handles:
  * - Auto-applying changes based on autoApply level

@@ -38,7 +38,7 @@ describe("E2E: Initial Load", () => {
 		expect(output).toContain("CHORUS");
 	});
 
-	it("loads tasks from beads file", async () => {
+	it("loads tasks from TaskStore file", async () => {
 		// Arrange
 		projectDir = createTestProject([
 			createStatusBead("ch-il1", "Task From File", "todo"),
@@ -49,13 +49,13 @@ describe("E2E: Initial Load", () => {
 		// Wait for tasks to load
 		await waitForText(result, "Tasks (1)", 5000);
 
-		// Assert - task loaded from beads file (check short ID)
+		// Assert - task loaded from tasks.jsonl (check short ID)
 		const output = getOutput(result);
 		expect(output).toContain("il1");
 	});
 
 	it("shows empty state for new projects", async () => {
-		// Arrange - empty beads file
+		// Arrange - empty tasks file
 		projectDir = createTestProject([]);
 
 		// Act

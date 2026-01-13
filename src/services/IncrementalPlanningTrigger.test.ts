@@ -98,7 +98,7 @@ describe("IncrementalPlanningTrigger", () => {
 	});
 
 	describe("getReadyTaskCount", () => {
-		it("should query Beads for ready task count", async () => {
+		it("should query TaskStore for ready task count", async () => {
 			// Arrange
 			vi.mocked(mockTaskProvider.getReadyTasks).mockResolvedValue([
 				createMockTask("ch-1", "Task 1"),

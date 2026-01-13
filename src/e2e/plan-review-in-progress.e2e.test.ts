@@ -23,7 +23,7 @@ describe("E2E: Plan Review with In-Progress Task", () => {
 	let queuePath: string;
 	let tasksInProgress: Set<string>;
 
-	// Mock BeadsCLI
+	// Mock TaskProvider
 	const mockTaskProvider = {
 		updateTask: vi.fn().mockResolvedValue(undefined),
 		labelAdd: vi.fn().mockResolvedValue(undefined),

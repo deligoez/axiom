@@ -151,7 +151,7 @@ describe("TaskUpdater", () => {
 			expect(summary.pending).toHaveLength(1);
 		});
 
-		it("applyUpdate modifies task via BeadsCLI", async () => {
+		it("applyUpdate modifies task via TaskProvider", async () => {
 			// Arrange
 			const update = createUpdate("ch-task1", "description");
 			const result = createMockResult({ totalUpdates: [update] });

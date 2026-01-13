@@ -301,13 +301,12 @@ export class CompletionHandler {
 		_field: string,
 		_value: string,
 	): Promise<void> {
-		// This would call: bd update <taskId> --status=open --custom <field>=<value>
-		// For now, we assume BeadsCLI has this capability or we mock it
-		// Implementation would be: await this.deps.beadsCLI.updateCustomField(taskId, field, value);
+		// This would update the task's custom fields via TaskStore
+		// Implementation would be: await this.deps.taskStore.updateCustomField(taskId, field, value);
 	}
 
 	private async clearCustomFields(_taskId: string): Promise<void> {
-		// Clear all failure-related custom fields
-		// bd update <taskId> --custom failed= --custom timeout= --custom blocked= --custom needsHelp=
+		// Clear all failure-related custom fields via TaskStore
+		// Implementation would be: await this.deps.taskStore.clearCustomFields(taskId, ['failed', 'timeout', 'blocked', 'needsHelp']);
 	}
 }

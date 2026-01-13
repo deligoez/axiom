@@ -5,9 +5,9 @@ Guidelines for writing E2E tests for Chorus TUI (Ink-based CLI app).
 ## Key Principles
 
 1. **All `useInput` hooks MUST have TTY check** - Prevents "Raw mode is not supported" error
-2. **Test projects need both `.beads/` and `.chorus/` directories** - App routes based on these
+2. **Test projects need `.chorus/` directory** - App routes based on this
 3. **Use `--mode semi-auto` flag** - Forces app to implementation mode
-4. **Beads loading is async** - Use `waitForText()` to wait for content
+4. **Task loading is async** - Use `waitForText()` to wait for content
 
 ## The Raw Mode Problem
 
@@ -52,8 +52,7 @@ When adding new components or hooks with `useInput`, ALWAYS include the TTY chec
 ### createTestProject()
 
 Located in `src/test-utils/e2e-fixtures.ts`. Creates temp directory with:
-- `.beads/issues.jsonl` - Test beads/tasks
-- `.chorus/` - Empty directory to skip init wizard
+- `.chorus/tasks.jsonl` - Test tasks in TaskJSONL format
 
 ```typescript
 const projectDir = createTestProject([
@@ -85,7 +84,7 @@ For E2E tests targeting ImplementationMode:
 
 ## Waiting for Content
 
-Beads are loaded asynchronously via useEffect. Use `waitForText()`:
+Tasks are loaded asynchronously via useEffect. Use `waitForText()`:
 
 ```typescript
 // Wait for task to appear (async loading)
@@ -288,7 +287,7 @@ expect(output).toContain("tst1");  // Short ID from "ch-tst1"
 
 | Marker | Example | Use For |
 |--------|---------|---------|
-| **Header count** | `Tasks (3)` | Wait for beads to load |
+| **Header count** | `Tasks (3)` | Wait for tasks to load |
 | **Short ID** | `abc1` (from `ch-abc1`) | Identify specific task |
 | **Status indicator** | `→` `●` `✓` `⊗` | Verify task status |
 | **App title** | `CHORUS` | Verify app rendered |

@@ -83,11 +83,10 @@ describe("InitMode", () => {
 			// Arrange & Act
 			const results = checkPrerequisites();
 
-			// Assert - should check for git, node, bd, claude
+			// Assert - should check for git, node, claude
 			const names = results.map((r) => r.name);
 			expect(names).toContain("git");
 			expect(names).toContain("node");
-			expect(names).toContain("bd");
 			expect(names).toContain("claude");
 		});
 

@@ -27,7 +27,7 @@ export class TaskBlocker {
 	/**
 	 * Block a task manually
 	 * - If agent running on task, stop it via agentStopper.stopAgentByTask()
-	 * - Add "blocked" label via beadsCLI.addLabel(taskId, 'blocked')
+	 * - Add "blocked" label via taskProvider.addLabel()
 	 * - Set task status to "open" if was in_progress
 	 * - Record block reason in task notes
 	 */
@@ -71,7 +71,7 @@ export class TaskBlocker {
 
 	/**
 	 * Unblock a task
-	 * - Remove "blocked" label via beadsCLI.removeLabel(taskId, 'blocked')
+	 * - Remove "blocked" label via taskProvider.removeLabel()
 	 * - Task remains open, now appears in getReadyTasks()
 	 */
 	async unblockTask(taskId: string): Promise<InterventionResult> {

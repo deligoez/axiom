@@ -38,7 +38,23 @@ npm run quality   # Runs all checks:
 
 **TDD Pattern:** `RED → GREEN → npm run quality → COMMIT`
 
-## Beads Commands
+## Beads vs TaskStore (IMPORTANT)
+
+**Critical distinction:**
+- **Beads (bd CLI)**: Used for **Chorus development** - tracking development tasks
+- **TaskStore**: Used by **Chorus runtime** - internal task management
+
+| Context | Tool | Directory | File |
+|---------|------|-----------|------|
+| Development workflow | `bd` CLI | `.beads/` | `issues.jsonl` |
+| Chorus runtime | TaskStore | `.chorus/` | `tasks.jsonl` |
+
+**Rules:**
+1. When writing tests/code for Chorus runtime → use `.chorus/tasks.jsonl` with TaskJSONL format
+2. When tracking development work → use `bd` commands
+3. Never mix these in code - Chorus runtime should NOT reference `.beads/` or BeadsCLI
+
+## Beads Commands (Development Only)
 
 | Command | Purpose |
 |---------|---------|

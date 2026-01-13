@@ -2,7 +2,7 @@
  * Mock TaskProvider for TUI Integration Tests
  *
  * Provides mock task data helpers for testing
- * the full TUI without actual TaskStore or BeadsCLI interactions.
+ * the full TUI without actual TaskStore interactions.
  */
 
 import type { TaskProviderTask } from "../../types/task-provider.js";
