@@ -2,6 +2,9 @@ import { EventEmitter } from "node:events";
 import { execa, type ResultPromise } from "execa";
 import { type Agent, type AgentConfig, createAgent } from "../types/agent.js";
 
+/** Maximum number of output lines to keep per agent to prevent memory exhaustion */
+const MAX_OUTPUT_LINES = 10000;
+
 type AgentManagerEvents = {
 	output: [id: string, line: string];
 	exit: [id: string, code: number | null];
@@ -35,20 +38,24 @@ export class AgentManager extends EventEmitter<AgentManagerEvents> {
 		agent.pid = proc.pid;
 		this.processes.set(agent.id, proc);
 
-		// Stream stdout
+		// Stream stdout (limited to prevent memory exhaustion)
 		proc.stdout?.on("data", (data: Buffer) => {
 			const lines = data.toString().split("\n").filter(Boolean);
 			for (const line of lines) {
-				agent.output.push(line);
+				if (agent.output.length < MAX_OUTPUT_LINES) {
+					agent.output.push(line);
+				}
 				this.emit("output", agent.id, line);
 			}
 		});
 
-		// Stream stderr
+		// Stream stderr (limited to prevent memory exhaustion)
 		proc.stderr?.on("data", (data: Buffer) => {
 			const lines = data.toString().split("\n").filter(Boolean);
 			for (const line of lines) {
-				agent.output.push(line);
+				if (agent.output.length < MAX_OUTPUT_LINES) {
+					agent.output.push(line);
+				}
 				this.emit("output", agent.id, line);
 			}
 		});

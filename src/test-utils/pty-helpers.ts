@@ -29,6 +29,9 @@ function stripAnsi(str: string): string {
 const DEFAULT_TIMEOUT = 15000;
 const STARTUP_DELAY = 2000;
 
+/** Maximum output size (10MB) to prevent memory exhaustion in tests */
+const MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
+
 export interface PtyTestResult {
 	/** Write input to the terminal */
 	write: (input: string) => void;
@@ -122,7 +125,10 @@ export function renderAppWithPty(
 		});
 
 		pty.onData((data) => {
-			output += data;
+			// Limit output size to prevent memory exhaustion
+			if (output.length < MAX_OUTPUT_SIZE) {
+				output += data;
+			}
 		});
 
 		pty.onExit(({ exitCode: code }) => {
