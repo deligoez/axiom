@@ -142,6 +142,8 @@ describe("E2E: Auto-Approve (R04)", () => {
 
 		// Act - wait for app to render
 		await ptyResult.waitForText("Tasks (2)", 10000);
+		// Wait for full render after header appears
+		await new Promise((r) => setTimeout(r, 200));
 
 		// Assert - reviewing task is shown
 		const output = ptyResult.getCleanOutput();

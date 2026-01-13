@@ -532,6 +532,100 @@ async function runClaude(prompt: string, cwd: string): Promise<string> {
 | `ralph-iteration.integration.test.ts` | INT-09: Ralph retry pattern |
 | `parallel-learning.integration.test.ts` | INT-10: Parallel learning |
 
+## Deterministic Test Rules (CRITICAL)
+
+These rules prevent flaky tests. Learned from production issues.
+
+### 1. Never Use Time-Based Assertions
+
+```typescript
+// ❌ WRONG - Flaky based on system load
+expect(duration).toBeLessThan(5000);
+expect(createTime).toBeLessThan(100);
+
+// ✅ CORRECT - Test correctness, not performance
+expect(result.length).toBe(10000);
+expect(firstItem).toBeDefined();
+expect(lastItem).toBeDefined();
+```
+
+Performance can vary 2-10x based on system load. Test behavior, not speed.
+
+### 2. Strip ANSI Codes for Text Matching
+
+Ink components output ANSI escape codes for colors. These break regex matching:
+
+```typescript
+// ❌ WRONG - ANSI codes break regex
+expect(lastFrame()).toMatch(/semi-auto\s●/);
+// Output: "semi-auto \u001b[32m●\u001b[39m" - doesn't match!
+
+// ✅ CORRECT - Strip ANSI codes first
+import { stripAnsi } from "../test-utils/pty-helpers.js";
+
+const output = stripAnsi(lastFrame() ?? "");
+expect(output).toMatch(/semi-auto\s●/);
+```
+
+### 3. No `process.chdir()` in Tests
+
+With `pool: 'threads'` (faster), `process.chdir()` is not supported:
+
+```typescript
+// ❌ WRONG - Fails with "process.chdir() is not supported in workers"
+const originalCwd = process.cwd();
+process.chdir(repo.path);
+try {
+  await service.run();
+} finally {
+  process.chdir(originalCwd);
+}
+
+// ✅ CORRECT - Use dependency injection with cwd
+function createDeps(cwd: string): ServiceDeps {
+  return {
+    exec: async (cmd: string) => {
+      return execAsync(cmd, { cwd });
+    },
+    fileExists: async (path: string) => {
+      return fs.access(join(cwd, path)).then(() => true).catch(() => false);
+    },
+  };
+}
+
+const service = new Service(createDeps(repo.path));
+await service.run();
+```
+
+### 4. Minimal but Sufficient Delays
+
+E2E tests need some delays for async UI updates, but keep them minimal:
+
+```typescript
+// ❌ WRONG - Too long, slows test suite
+await new Promise((r) => setTimeout(r, 500));
+
+// ✅ CORRECT - Minimal delay for UI to stabilize
+await new Promise((r) => setTimeout(r, 200));
+
+// ✅ BEST - Wait for specific content instead of arbitrary delay
+await waitForText(result, "Tasks (3)", 5000);
+```
+
+### 5. Vitest Performance Config
+
+Current optimized config in `vitest.config.ts`:
+
+```typescript
+{
+  pool: 'threads',      // Faster than 'forks'
+  maxConcurrency: 20,   // More parallel tests
+  // isolate: false,    // DON'T use - breaks tests with shared state
+}
+```
+
+**Note:** `isolate: false` breaks tests that use file system or mocks that leak between tests.
+
 ## References
 
 - [cli-testing-library](https://github.com/gmrchk/cli-testing-library) - E2E test framework (no TTY)
@@ -539,3 +633,4 @@ async function runClaude(prompt: string, cwd: string): Promise<string> {
 - [Ink useInput docs](https://github.com/vadimdemedes/ink#useinputinputhandler-options) - Input handling
 - [node-pty](https://github.com/microsoft/node-pty) - Pseudo-terminal for TTY testing (used by Ink)
 - [Ink hooks tests](https://github.com/vadimdemedes/ink/blob/master/test/hooks.tsx) - Example of node-pty usage
+- [Vitest Performance Guide](https://vitest.dev/guide/improving-performance) - Official optimization tips

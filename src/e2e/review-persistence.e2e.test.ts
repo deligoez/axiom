@@ -153,6 +153,8 @@ describe("E2E: Review Persistence (R06)", () => {
 		// Act - start app
 		ptyResult = renderAppWithPty(["--mode", "semi-auto"], { cwd: projectDir });
 		await ptyResult.waitForText("Tasks (2)", 10000);
+		// Wait for full render after header appears
+		await new Promise((r) => setTimeout(r, 200));
 
 		// Assert - reviewing tasks visible
 		const output = ptyResult.getCleanOutput();
