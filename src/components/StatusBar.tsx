@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import React from "react";
 
 interface StatusBarProps {
 	agentCount?: number;

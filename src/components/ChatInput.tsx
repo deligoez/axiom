@@ -1,6 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 
 export interface ChatInputProps {
 	onSend: (message: string) => void;

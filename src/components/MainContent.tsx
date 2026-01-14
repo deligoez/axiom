@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import React from "react";
 import type { Agent, AgentStatus } from "../types/agent.js";
 
 interface MainContentProps {

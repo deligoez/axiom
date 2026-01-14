@@ -54,6 +54,19 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": ["**/*.tsx"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedImports": "off"
+					},
+					"style": {
+						"useImportType": "off"
+					}
+				}
+			}
 		}
 	]
 }

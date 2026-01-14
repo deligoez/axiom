@@ -1,6 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useChorusMachine } from "../hooks/useChorusMachine.js";
 
 // Check if we're in an interactive terminal

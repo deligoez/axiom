@@ -1,6 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { type Agent, AgentGrid } from "../components/AgentGrid.js";
 import { FooterBar } from "../components/FooterBar.js";
 import { HeaderBar } from "../components/HeaderBar.js";

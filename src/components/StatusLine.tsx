@@ -5,7 +5,7 @@
  */
 
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import { PERSONAS, type PersonaName } from "../types/persona.js";
 
 /**

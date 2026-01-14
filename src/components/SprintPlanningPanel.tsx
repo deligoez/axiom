@@ -1,6 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import type { SprintConfig, SprintTarget } from "../types/sprint.js";
 
 // Check if we're in an interactive terminal

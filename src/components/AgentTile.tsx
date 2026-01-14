@@ -1,5 +1,5 @@
 import { Box } from "ink";
-import type React from "react";
+import React from "react";
 import { AgentTileHeader } from "./AgentTileHeader.js";
 import { AgentTileOutput } from "./AgentTileOutput.js";
 import { AgentTileProgress } from "./AgentTileProgress.js";

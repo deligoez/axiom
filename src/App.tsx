@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-// biome-ignore lint/style/useImportType: React must be in scope for tsx JSX runtime (not a type import)
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useChorusMachine } from "./hooks/useChorusMachine.js";
 import { ImplementationMode } from "./modes/ImplementationMode.js";

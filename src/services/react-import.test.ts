@@ -1,34 +1,61 @@
 /**
- * Test to ensure tsx entry point files have proper React runtime imports.
+ * Test to ensure all tsx files have proper React runtime imports.
  *
  * When using JSX with tsx runner in development, React must be available at runtime
- * in entry point files (index.tsx, App.tsx).
+ * in ALL .tsx files that use JSX.
  *
- * Biome's organizeImports can convert `import React` to `import type React`
- * which breaks JSX at runtime for tsx.
+ * tsx doesn't respect tsconfig.json "jsx": "react-jsx" setting and uses classic
+ * JSX transform that requires React in scope.
  *
- * Solution: Use biome-ignore comment to prevent type conversion.
+ * Solution: biome.json override disables noUnusedImports and useImportType for tsx files.
  *
  * This test prevents regression of: "React is not defined" error
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-/** Entry point files that need runtime React import */
-const ENTRY_FILES = ["src/index.tsx", "src/App.tsx"];
+/**
+ * Recursively find all tsx files (excluding test files)
+ */
+function findTsxFiles(dir: string): string[] {
+	const files: string[] = [];
+	const entries = readdirSync(dir);
+
+	for (const entry of entries) {
+		const fullPath = join(dir, entry);
+		const stat = statSync(fullPath);
+
+		if (stat.isDirectory() && entry !== "node_modules" && entry !== "dist") {
+			files.push(...findTsxFiles(fullPath));
+		} else if (
+			entry.endsWith(".tsx") &&
+			!entry.endsWith(".test.tsx") &&
+			!entry.endsWith(".e2e.test.tsx")
+		) {
+			files.push(fullPath);
+		}
+	}
+
+	return files;
+}
+
+/**
+ * Check if file uses JSX (has return with JSX)
+ */
+function usesJsx(content: string): boolean {
+	return /return\s*\(/.test(content) || /return\s*</.test(content);
+}
 
 /**
  * Check if file has React runtime import (not type-only).
- * Accepts both default import and namespace import patterns.
  */
 function hasRuntimeReactImport(content: string): boolean {
 	// Valid patterns:
 	// import React from "react"
 	// import React, { useState } from "react"
 	// import * as React from "react"
-	// // biome-ignore ... import React from "react" (with biome-ignore)
 
 	// Invalid patterns (type-only):
 	// import type React from "react"
@@ -39,21 +66,29 @@ function hasRuntimeReactImport(content: string): boolean {
 }
 
 describe("React Import Validation (tsx runner)", () => {
-	it.each(ENTRY_FILES)("%s should have runtime React import", (file) => {
+	it("all tsx files with JSX should have runtime React import", () => {
 		// Arrange
-		const fullPath = join(process.cwd(), file);
-		const content = readFileSync(fullPath, "utf-8");
+		const srcDir = join(process.cwd(), "src");
+		const tsxFiles = findTsxFiles(srcDir);
 
-		// Act & Assert - Check for runtime React import
+		// Act & Assert
+		const missingReact: string[] = [];
+
+		for (const file of tsxFiles) {
+			const content = readFileSync(file, "utf-8");
+			if (usesJsx(content) && !hasRuntimeReactImport(content)) {
+				const relativePath = file.replace(process.cwd() + "/", "");
+				missingReact.push(relativePath);
+			}
+		}
+
 		expect(
-			hasRuntimeReactImport(content),
-			`${file} must have runtime React import (not type-only). Add biome-ignore comment if needed.`,
-		).toBe(true);
+			missingReact,
+			`These files use JSX but are missing React runtime import:\n${missingReact.join("\n")}`,
+		).toHaveLength(0);
 	});
 
 	it("helper: hasRuntimeReactImport detects valid patterns", () => {
-		// Arrange & Act & Assert
-
 		// Valid runtime imports
 		expect(hasRuntimeReactImport('import React from "react"')).toBe(true);
 		expect(

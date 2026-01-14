@@ -2,8 +2,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { AgentIntroduction } from "../components/AgentIntroduction.js";
 import {
 	ConfigWizard,

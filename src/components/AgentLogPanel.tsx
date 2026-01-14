@@ -5,8 +5,7 @@
  */
 
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import type { LogEntry } from "../services/AgentLogger.js";
 import { getPersonaColor } from "../theme/persona-colors.js";
 

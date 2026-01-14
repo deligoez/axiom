@@ -1,5 +1,5 @@
 import { Text } from "ink";
-import type React from "react";
+import React from "react";
 
 export interface AgentTileHeaderProps {
 	agentType: "claude" | "codex" | "opencode";

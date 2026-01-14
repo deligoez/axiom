@@ -1,6 +1,5 @@
 import { Box, Text } from "ink";
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import type { PlanReviewConfig } from "../../types/config.js";
 
 export interface PlanReviewConfigStepProps {

@@ -1,6 +1,5 @@
 import { Box } from "ink";
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import React, { type ReactNode, useEffect, useState } from "react";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
 import { FooterBar } from "./FooterBar.js";
 import StatusBar from "./StatusBar.js";

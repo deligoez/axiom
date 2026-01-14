@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { memo, useEffect, useMemo, useState } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import type { TaskProviderTask } from "../types/task-provider.js";
 
 interface TaskPanelProps {

@@ -6,7 +6,7 @@
  */
 
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import { getPersonaColor } from "../theme/persona-colors.js";
 import {
 	type AgentIdentity,

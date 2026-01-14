@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
+import React from "react";
 import type { Learning } from "../types/learning.js";
 
 const getIsTTY = () => Boolean(process.stdin?.isTTY);

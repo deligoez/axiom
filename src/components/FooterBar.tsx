@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import { MergeQueueIndicator } from "./MergeQueueIndicator.js";
 import { TaskSummaryStats } from "./TaskSummaryStats.js";
 

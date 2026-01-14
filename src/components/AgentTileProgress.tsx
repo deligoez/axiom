@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import { DurationDisplay } from "./DurationDisplay.js";
 import { ProgressBar } from "./ProgressBar.js";
 

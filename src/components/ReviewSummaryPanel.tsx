@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
+import React from "react";
 import type { PendingReview } from "../machines/reviewRegion.js";
 
 // TTY check for useInput

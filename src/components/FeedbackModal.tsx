@@ -1,6 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 
 // TTY check for useInput
 const getIsTTY = () => Boolean(process.stdin?.isTTY);

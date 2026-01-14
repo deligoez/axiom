@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from "ink";
-import type React from "react";
+import React from "react";
 
 // Check if stdin supports raw mode (safe check)
 // Using a getter to allow test mocking

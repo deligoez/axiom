@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
 import type { Agent } from "../types/agent.js";
 
