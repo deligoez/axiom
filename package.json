@@ -8,7 +8,7 @@
     "chorus": "dist/index.js"
   },
   "scripts": {
-    "dev": "tsx watch src/bootstrap.ts",
+    "dev": "tsx watch src/index.tsx",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest",

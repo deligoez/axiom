@@ -2,14 +2,12 @@
  * Test to ensure tsx entry point files have proper React runtime imports.
  *
  * When using JSX with tsx runner in development, React must be available at runtime
- * in entry point files (index.tsx, App.tsx). Other files are bundled/transpiled
- * with the correct JSX transform.
+ * in entry point files (index.tsx, App.tsx).
  *
  * Biome's organizeImports can convert `import React` to `import type React`
  * which breaks JSX at runtime for tsx.
  *
- * Solution: Use namespace import `import * as React from "react"` which
- * Biome won't convert to type-only.
+ * Solution: Use biome-ignore comment to prevent type conversion.
  *
  * This test prevents regression of: "React is not defined" error
  */
@@ -18,11 +16,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-/**
- * Bootstrap file that makes React globally available for tsx runtime.
- * This is the primary protection against "React is not defined" errors.
- */
-const BOOTSTRAP_FILE = "src/bootstrap.ts";
+/** Entry point files that need runtime React import */
+const ENTRY_FILES = ["src/index.tsx", "src/App.tsx"];
 
 /**
  * Check if file has React runtime import (not type-only).
@@ -44,21 +39,15 @@ function hasRuntimeReactImport(content: string): boolean {
 }
 
 describe("React Import Validation (tsx runner)", () => {
-	it("bootstrap.ts should have React import and make it globally available", () => {
+	it.each(ENTRY_FILES)("%s should have runtime React import", (file) => {
 		// Arrange
-		const fullPath = join(process.cwd(), BOOTSTRAP_FILE);
+		const fullPath = join(process.cwd(), file);
 		const content = readFileSync(fullPath, "utf-8");
 
 		// Act & Assert - Check for runtime React import
 		expect(
 			hasRuntimeReactImport(content),
-			`${BOOTSTRAP_FILE} must have runtime React import (not type-only)`,
-		).toBe(true);
-
-		// Also verify it sets React globally
-		expect(
-			content.includes("globalThis"),
-			`${BOOTSTRAP_FILE} must set React on globalThis for tsx runtime`,
+			`${file} must have runtime React import (not type-only). Add biome-ignore comment if needed.`,
 		).toBe(true);
 	});
 
