@@ -10,16 +10,17 @@
 
 1. [End-to-End Lifecycle](#1-end-to-end-chorus-lifecycle)
 2. [App Routing & Mode Detection](#2-app-routing--mode-detection)
-3. [Planning Dialogue Flow](#3-planning-dialogue-flow)
-4. [Task Lifecycle](#4-task-lifecycle)
-5. [Agent Spawn & Execution](#5-agent-spawn--execution-flow)
-6. [Ralph Loop (Autopilot)](#6-ralph-loop-autopilot)
-7. [Merge Service](#7-merge-service-flow)
-8. [Memory & Learning System](#8-memory--learning-system)
-9. [Review System](#9-review-system-flow)
-10. [Intervention & Rollback](#10-intervention--rollback)
-11. [Agent Persona Interactions](#11-agent-persona-interactions)
-12. [Event Flow Summary](#12-event-flow-summary)
+3. [Init Mode Flow](#3-init-mode-flow)
+4. [Planning Dialogue Flow](#4-planning-dialogue-flow)
+5. [Task Lifecycle](#5-task-lifecycle)
+6. [Agent Spawn & Execution](#6-agent-spawn--execution-flow)
+7. [Ralph Loop (Autopilot)](#7-ralph-loop-autopilot)
+8. [Merge Service](#8-merge-service-flow)
+9. [Memory & Learning System](#9-memory--learning-system)
+10. [Review System](#10-review-system-flow)
+11. [Intervention & Rollback](#11-intervention--rollback)
+12. [Agent Persona Interactions](#12-agent-persona-interactions)
+13. [Event Flow Summary](#13-event-flow-summary)
 
 ---
 
@@ -141,7 +142,141 @@
 
 ---
 
-## 3. Planning Dialogue Flow
+## 3. Init Mode Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    INIT MODE FLOW                                            │
+│                          (First-time project setup with 🔍 Ace)                               │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  App starts (no .chorus/)
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│  Full screen with Header + Footer       │
+│  (Task panel & Agent grid EMPTY)        │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │     80% Modal (centered)        │    │
+│  │                                 │    │
+│  │     Init content renders here   │    │
+│  │                                 │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 STEP 1: WELCOME SCREEN                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  "Welcome to Chorus"                                                                         │
+│  - Brief introduction                                                                        │
+│  - What we'll do: Analyze → Configure → Setup                                               │
+│                                                                                              │
+│  [M] Meet the Team - See all 9 personas                                                      │
+│  [Enter] Start initialization with Ace                                                       │
+│                                                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                   │
+         ┌────────┴────────┐
+         │                 │
+    [M] pressed      [Enter] pressed
+         │                 │
+         ▼                 │
+┌────────────────────┐     │
+│ STEP 2a: MEET TEAM │     │
+│ (Optional)         │     │
+├────────────────────┤     │
+│                    │     │
+│ Show 9 personas:   │     │
+│ 🔍 Ace (1/9)       │     │
+│ ⚙️ Ed  (2/9)       │     │
+│ 📊 Pat (3/9)       │     │
+│ 🔧 Finn (4/9)      │     │
+│ 🎯 Sam (5/9)       │     │
+│ 💡 Lou (6/9)       │     │
+│ 😎 Dan (7/9)       │     │
+│ 👁️ Will (8/9)      │     │
+│ 📈 Carl (9/9)      │     │
+│                    │     │
+│ [←/→] Navigate     │     │
+│ [Enter] Continue   │     │
+│                    │     │
+└────────┬───────────┘     │
+         │                 │
+         └────────┬────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                            STEP 3: ACE INIT PROCESS (Conversational)                         │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  🔍 ACE - Project Analyzer                                                                   │
+│                                                                                              │
+│  Analyzing your project...                                                                   │
+│                                                                                              │
+│  ✓ Detected: Node.js + TypeScript                                                            │
+│  ✓ Found: Vitest with 47 test files                                                          │
+│  ✓ Found: Biome for linting                                                                  │
+│  ✓ Found: package.json scripts                                                               │
+│                                                                                              │
+│  Based on my analysis, I recommend:                                                          │
+│  ┌─ Quality Commands ─────────────────┐                                                      │
+│  │ test:      npm run test:run        │                                                      │
+│  │ typecheck: npm run typecheck       │                                                      │
+│  │ lint:      npm run lint            │                                                      │
+│  └────────────────────────────────────┘                                                      │
+│                                                                                              │
+│  Would you like to customize these, or proceed?                                              │
+│                                                                                              │
+│  > [User can chat with Ace to customize]                                                     │
+│                                                                                              │
+│  [Enter] Accept & Continue   [Type] Customize                                                │
+│                                                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                   │
+                   │ [Enter] pressed
+                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                            STEP 4: COMPLETE (Auto-Scaffold)                                  │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ✓ Setup Complete!                                                                           │
+│                                                                                              │
+│  Created .chorus/ directory:                                                                 │
+│  ├── config.json              Configuration                                                  │
+│  ├── task-rules.md            Validation rules                                               │
+│  ├── tasks.jsonl              Task database (empty)                                          │
+│  ├── rules/                   Shared agent rules (4 files)                                   │
+│  ├── agents/                  Agent personas (9 agents)                                      │
+│  │   ├── ace/, ed/, pat/, finn/, sam/, lou/, dan/, will/, carl/                              │
+│  └── templates/               Scratchpad template                                            │
+│                                                                                              │
+│  Next: 📊 Planner Pat will help you create tasks.                                            │
+│                                                                                              │
+│  [Enter] Start Planning   [q] Exit                                                           │
+│                                                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                   │
+                   │ No confirmation needed - scaffold created automatically
+                   ▼
+            ┌─────────────┐
+            │  PLANNING   │
+            │    MODE     │
+            └─────────────┘
+```
+
+**Key Points:**
+- Init Mode renders as 80% modal in main layout (header/footer visible)
+- Conversational flow with Ace (not form-based wizard)
+- "Meet the Team" is optional (press M)
+- No confirmation dialog for scaffolding - created automatically on accept
+- All 9 agents get same symmetric directory structure
+
+---
+
+## 4. Planning Dialogue Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -249,7 +384,7 @@ PHASE DETAILS:
 
 ---
 
-## 4. Task Lifecycle
+## 5. Task Lifecycle
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -303,23 +438,12 @@ PHASE DETAILS:
 └──────────────────────────────────────────┘
 
 
-STATUS INDICATORS IN TUI:
-
-  Symbol │ Status      │ Color        │ Description
-  ───────┼─────────────┼──────────────┼────────────────────────────
-    →    │ todo        │ White        │ Ready to work
-    ●    │ doing       │ Blue (pulse) │ Agent working
-    ✓    │ done        │ Green        │ Completed
-    ⊗    │ stuck       │ Yellow       │ Has blockers
-    ✗    │ failed      │ Red          │ Agent error
-    ⏱    │ timeout     │ Orange       │ Max iterations reached
-    ○    │ later       │ Gray         │ Deferred
-    ◐    │ review      │ Cyan         │ Awaiting human review
+STATUS INDICATORS: See [10-tui-visualization.md](./10-tui-visualization.md#status-indicators) for complete status icons and colors.
 ```
 
 ---
 
-## 5. Agent Spawn & Execution Flow
+## 6. Agent Spawn & Execution Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -413,7 +537,7 @@ STATUS INDICATORS IN TUI:
 
 ---
 
-## 6. Ralph Loop (Autopilot)
+## 7. Ralph Loop (Autopilot)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -512,7 +636,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
   ┌──────────────────────────────────────────────────────────────────────────┐
   │                                                                          │
-  │   ⚙️ ED-001          ⚙️ ED-002          ⚙️ ED-003          [empty slot]   │
+  │   ⚙️ ed-001          ⚙️ ed-002          ⚙️ ed-003          [empty slot]   │
   │   ch-004            ch-006            ch-009                            │
   │   iter 7/50         iter 3/50         iter 1/50                         │
   │   ▓▓▓▓▓░░░░░        ▓▓░░░░░░░░        ░░░░░░░░░░                        │
@@ -529,7 +653,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
 ---
 
-## 7. Merge Service Flow
+## 8. Merge Service Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -599,17 +723,7 @@ PARALLEL AGENTS (maxAgents > 1):
 │                                                         │                                   │
 └─────────────────────────────────────────────────────────┴───────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│ CONFLICT CLASSIFICATION                                                                      │
-├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
-│   Level      │ Files │ Type            │ Resolution                                         │
-│   ───────────┼───────┼─────────────────┼────────────────────────────────────                │
-│   SIMPLE     │ 1     │ Text, whitespace│ Auto-resolve (git rerere, rebase --ours)          │
-│   MEDIUM     │ 1-3   │ Code changes    │ 🔧 Finn tries semantic merge                       │
-│   COMPLEX    │ 3+    │ Semantic, arch  │ Human review required                              │
-│                                                                                              │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
+**CONFLICT CLASSIFICATION:** See [06-merge-service.md](./06-merge-service.md#conflict-classification) for SIMPLE/MEDIUM/COMPLEX levels and resolution strategies.
 
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
 │ 🔧 FINN'S RESOLUTION FLOW                                                                    │
@@ -647,7 +761,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
 ---
 
-## 8. Memory & Learning System
+## 9. Memory & Learning System
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -762,7 +876,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
 ---
 
-## 9. Review System Flow
+## 10. Review System Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -852,7 +966,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
 ---
 
-## 10. Intervention & Rollback
+## 11. Intervention & Rollback
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -965,7 +1079,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
 ---
 
-## 11. Agent Persona Interactions
+## 12. Agent Persona Interactions
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1075,7 +1189,7 @@ PARALLEL AGENTS (maxAgents > 1):
 
 ---
 
-## 12. Event Flow Summary
+## 13. Event Flow Summary
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐

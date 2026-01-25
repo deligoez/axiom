@@ -639,6 +639,102 @@ on: {
 
 ---
 
+## Complete Configuration Reference
+
+This is the authoritative schema for `.chorus/config.json`. Individual modules may show relevant excerpts.
+
+```json
+{
+  // Operating mode (default, can be overridden by planning-state.json or TUI)
+  "mode": "semi-auto",  // "semi-auto" | "autopilot"
+
+  // Agent configuration
+  "agents": {
+    "maxParallel": 3,           // Max concurrent agents (slots)
+    "timeoutMinutes": 30,       // Per-task timeout
+    "defaultModel": "sonnet"    // Default model for agents
+  },
+
+  // Task completion settings (Ralph Loop)
+  "completion": {
+    "signal": "<chorus>COMPLETE</chorus>",  // Completion signal format
+    "maxIterations": 50,                    // Max iterations per task
+    "stuckThreshold": 5                     // Iterations without commit = stuck warning
+  },
+
+  // Quality commands (must all pass before task is complete)
+  "qualityCommands": [
+    "npm test",
+    "npm run typecheck",
+    "npm run lint"
+  ],
+
+  // Planning phase settings
+  "planning": {
+    "incrementalEnabled": true,     // Enable just-in-time planning
+    "readyThreshold": 3,            // Trigger planning when ready < threshold
+    "maxBatchSize": 10,             // Max tasks per planning cycle
+    "horizonBoundary": "milestone"  // "milestone" | "feature" | "uncertainty"
+  },
+
+  // Review system settings
+  "review": {
+    "defaultMode": "batch",         // "per-task" | "batch" | "auto-approve" | "skip"
+    "autoApprove": {
+      "enabled": true,
+      "maxIterations": 3            // Auto-approve if iterations ≤ 3
+    },
+    "labelRules": {
+      "security": { "mode": "per-task", "autoApprove": false },
+      "docs": { "mode": "skip" },
+      "trivial": { "mode": "auto-approve" }
+    }
+  },
+
+  // Merge service settings
+  "merge": {
+    "autoMerge": true,              // Automatically queue completed tasks
+    "conflictRetries": 3,           // Max retries before escalating to human
+    "cleanupOnSuccess": true        // Remove worktree after successful merge
+  },
+
+  // Checkpoint settings
+  "checkpoints": {
+    "periodic": 5,                  // Create checkpoint every N completed tasks
+    "beforeAutopilot": true,        // Always checkpoint before autopilot starts
+    "beforeMerge": false            // Checkpoint before each merge (verbose)
+  },
+
+  // TUI settings
+  "tui": {
+    "agentGrid": "auto",            // "auto" | "1x1" | "2x2" | "3x2" etc.
+    "theme": "default",             // Color theme
+    "showProgress": true,           // Show iteration progress bars
+    "showTimestamps": true,         // Show timestamps in logs
+    "toastDuration": 5000           // Toast notification duration (ms)
+  }
+}
+```
+
+### Configuration Precedence
+
+| Source | Description | Precedence |
+|--------|-------------|------------|
+| CLI flags | `--mode autopilot` | 1 (highest) |
+| `planning-state.json` | User's choice after planning | 2 |
+| `state/snapshot.json` | Runtime state (XState) | 3 |
+| `config.json` | Project defaults | 4 (lowest) |
+
+### Environment Variables
+
+| Variable | Config Override | Description |
+|----------|-----------------|-------------|
+| `CHORUS_MODE` | `mode` | Operating mode |
+| `CHORUS_MAX_AGENTS` | `agents.maxParallel` | Max parallel agents |
+| `CHORUS_MODEL` | `agents.defaultModel` | Default AI model |
+
+---
+
 ## References
 
 - [XState v5 Documentation](https://stately.ai/docs/xstate-v5)

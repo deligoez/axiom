@@ -102,7 +102,7 @@ When iteration safeguards trigger, show warnings:
 │ ────────────────────────────────────────────────────────── │
 │                                                              │
 │ Task:      ch-004 Register endpoint                         │
-│ Agent:     ⚙️ ED-001                                          │
+│ Agent:     ⚙️ ed-001                                          │
 │ Duration:  15m 23s                                          │
 │ Iterations: 8                                                │
 │                                                              │
@@ -125,7 +125,7 @@ When iteration safeguards trigger, show warnings:
 │ ────────────────────────────────────────────────────────── │
 │                                                              │
 │ Task:      ch-010 Error handling middleware                 │
-│ Agent:     ⚙️ ED-003                                          │
+│ Agent:     ⚙️ ed-003                                          │
 │ Duration:  30m 00s (max reached)                            │
 │ Iterations: 50/50                                            │
 │                                                              │
@@ -147,7 +147,7 @@ When iteration safeguards trigger, show warnings:
 │ ────────────────────────────────────────────────────────── │
 │                                                              │
 │ Task:      ch-012 Database migration                        │
-│ Agent:     ⚙️ ED-002                                          │
+│ Agent:     ⚙️ ed-002                                          │
 │ Iteration: 5                                                 │
 │                                                              │
 │ Block Reason:                                                │
@@ -243,7 +243,7 @@ When iteration safeguards trigger, show warnings:
 
 ## Signal Protocol
 
-> **See:** [05-agent-personas.md](./05-agent-personas.md#signal-types-signal-typesmd) for the complete signal protocol definition.
+> **See:** [05-agent-personas.md](./05-agent-personas.md#signal-types) for the complete signal protocol definition.
 
 Signals are detected using regex:
 
@@ -261,7 +261,7 @@ Completion requires BOTH signal AND required quality commands passing:
 ┌──────────────────┬─────────────────┬─────────────────────────────────┐
 │ Signal           │ Quality Commands│ Result                          │
 ├──────────────────┼─────────────────┼─────────────────────────────────┤
-│ COMPLETE         │ All Pass        │ ✓ Task CLOSED, queue merge      │
+│ COMPLETE         │ All Pass        │ ✓ Task done, queue merge        │
 │ COMPLETE         │ Any Fail        │ Continue iterations             │
 │ BLOCKED          │ (any)           │ Task → BLOCKED, agent stops     │
 │ NEEDS_HELP       │ (any)           │ Alert user, agent pauses        │

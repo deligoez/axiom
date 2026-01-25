@@ -457,6 +457,95 @@ const reviewRegion = {
 
 ---
 
+## XState Sprint Region
+
+```typescript
+const sprintRegion = {
+  id: 'sprint',
+  initial: 'idle',
+
+  context: {
+    target: null as SprintTarget | null,
+    settings: null as SprintSettings | null,
+    startedAt: null as number | null,
+    stats: {
+      totalTasks: 0,
+      completedTasks: 0,
+      failedTasks: 0,
+      reviewingTasks: 0,
+    },
+    checkpointTag: null as string | null,
+  },
+
+  states: {
+    idle: {
+      on: {
+        OPEN_SPRINT_PANEL: 'configuring',
+      },
+    },
+    configuring: {
+      // User is in Sprint Planning Panel (Shift+S)
+      on: {
+        START_SPRINT: {
+          target: 'running',
+          actions: ['createCheckpoint', 'initializeSprintStats', 'applySprintSettings'],
+          guard: 'hasValidTarget',
+        },
+        CANCEL: 'idle',
+      },
+    },
+    running: {
+      // Sprint is active - orchestrator uses sprint settings
+      entry: ['notifySprintStarted'],
+      on: {
+        TASK_COMPLETED: { actions: 'updateSprintStats' },
+        TASK_FAILED: { actions: 'updateSprintStats' },
+        TARGET_REACHED: 'completing',
+        PAUSE_SPRINT: 'paused',
+        CANCEL_SPRINT: {
+          target: 'idle',
+          actions: ['saveSprintStats', 'notifySprintCancelled'],
+        },
+      },
+      always: {
+        target: 'completing',
+        guard: 'isTargetReached',
+      },
+    },
+    paused: {
+      on: {
+        RESUME_SPRINT: 'running',
+        CANCEL_SPRINT: {
+          target: 'idle',
+          actions: ['saveSprintStats', 'notifySprintCancelled'],
+        },
+      },
+    },
+    completing: {
+      // Sprint target reached, finalizing
+      entry: ['saveSprintStats', 'notifySprintCompleted'],
+      always: 'idle',
+    },
+  },
+};
+
+// Sprint types
+interface SprintTarget {
+  type: 'count' | 'duration' | 'until' | 'no_ready';
+  value: number | string;  // count, hours, or HH:MM time
+}
+
+interface SprintSettings {
+  maxIterations: number;
+  taskTimeout: number;
+  pauseOnStuck: boolean;
+  pauseOnErrors: boolean;
+  createCheckpoint: boolean;
+}
+```
+
+---
+
 ## Sprint Planning (M13b)
 
 ### Sprint Concept
