@@ -17,7 +17,7 @@ Oh-My-OpenCode (OMO) and Chorus are both multi-agent orchestration systems, but 
 | **UI** | Native to OpenCode | Ink (React for CLI) |
 | **Test Framework** | Bun native | Vitest |
 | **Package Manager** | Bun exclusively | npm/pnpm |
-| **Agent Model** | 10+ specialized agents | 6 personas (Sage, Chip, Archie, Patch, Scout, Echo) |
+| **Agent Model** | 10+ specialized agents | 9 personas (Ace, Ed, Pat, Finn, Sam, Lou, Dan, Will, Carl) |
 | **Task Tracking** | Boulder state + markdown checkboxes | TaskStore (JSONL) + Beads (dev) |
 | **Parallel Execution** | Background manager + delegate_task | XState spawned actors |
 | **Recovery** | Session recovery hooks | Snapshot + event sourcing |
@@ -182,12 +182,12 @@ interface TaskCategory {
 }
 
 const TASK_CATEGORIES: TaskCategory[] = [
-  { name: "implementation", persona: "chip", keywords: ["build", "create", "add", "implement"] },
-  { name: "bugfix", persona: "patch", keywords: ["fix", "bug", "error", "crash"] },
-  { name: "architecture", persona: "archie", keywords: ["design", "architect", "refactor"] },
-  { name: "exploration", persona: "scout", keywords: ["find", "search", "where", "how"] },
-  { name: "review", persona: "echo", keywords: ["review", "check", "validate"] },
-  { name: "analysis", persona: "sage", keywords: ["analyze", "suggest", "config"] },
+  { name: "implementation", persona: "ed", keywords: ["build", "create", "add", "implement"] },
+  { name: "bugfix", persona: "finn", keywords: ["fix", "bug", "error", "crash"] },
+  { name: "architecture", persona: "pat", keywords: ["design", "architect", "refactor"] },
+  { name: "exploration", persona: "sam", keywords: ["find", "search", "where", "how"] },
+  { name: "review", persona: "lou", keywords: ["review", "check", "validate"] },
+  { name: "analysis", persona: "ace", keywords: ["analyze", "suggest", "config"] },
 ];
 
 function autoAssignPersona(task: Task): PersonaType {
@@ -197,7 +197,7 @@ function autoAssignPersona(task: Task): PersonaType {
       return category.persona;
     }
   }
-  return "chip"; // Default to implementer
+  return "ed"; // Default to Engineer Ed
 }
 ```
 

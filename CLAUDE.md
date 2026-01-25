@@ -114,14 +114,17 @@ Chorus uses a multi-persona architecture where each agent has a distinct persona
 
 ### Available Personas
 
-| Persona | Role | Color | Description |
-|---------|------|-------|-------------|
-| **Sage** | analyzer | magenta | Analyzes project structure, suggests configurations |
-| **Chip** | implementer | cyan | Implements features, writes code |
-| **Archie** | architect | yellow | Designs architecture, makes design decisions |
-| **Patch** | fixer | green | Fixes bugs, resolves conflicts |
-| **Scout** | explorer | blue | Explores codebase, gathers information |
-| **Echo** | reviewer | red | Reviews code, provides feedback |
+| Persona | Emoji | Role | Color | Description |
+|---------|-------|------|-------|-------------|
+| **Analyzer Ace** | 🔍 | analyzer | Indigo | Analyzes project structure, suggests configurations |
+| **Engineer Ed** | ⚙️ | worker | Blue | Implements features, writes code |
+| **Planner Pat** | 📊 | planner | Purple | Decomposes features into atomic tasks |
+| **Fixer Finn** | 🔧 | resolver | Orange | Fixes bugs, resolves merge conflicts |
+| **Spotter Sam** | 🎯 | selector | Green | Selects next best task to work on |
+| **Logger Lou** | 💡 | extractor | Teal | Extracts learnings from agent logs |
+| **Director Dan** | 😎 | orchestrator | Gold | Coordinates all agents, manages workflow |
+| **Watcher Will** | 👁️ | monitor | Amber | Monitors agent health, detects stuck agents |
+| **Counter Carl** | 📈 | statistician | Slate | Collects metrics, tracks usage |
 
 ### Persona File Structure
 
@@ -129,7 +132,7 @@ Each persona can have custom configuration in `.chorus/agents/{persona}/`:
 
 ```
 .chorus/agents/
-├── sage/
+├── ace/
 │   ├── prompt.md      # Custom system prompt
 │   ├── rules.md       # Persona-specific rules
 │   ├── skills/        # Skill files (*.md)
@@ -138,7 +141,7 @@ Each persona can have custom configuration in `.chorus/agents/{persona}/`:
 │   ├── metrics.json   # Performance metrics
 │   └── logs/          # Execution logs
 │       └── {taskId}.jsonl
-└── chip/
+└── ed/
     ├── prompt.md
     ├── rules.md
     └── skills/
