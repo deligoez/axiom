@@ -1,12 +1,14 @@
-# Autopilot Mode (Ralph Loop)
+# Autopilot Mode (Completion Drive)
 
-Autopilot implements the "Ralph Wiggum" pattern for autonomous Green idea execution.
+Autopilot implements the **Completion Drive** pattern for autonomous Green idea execution.
+
+> **Historical Note:** The Completion Drive was originally called "Ralph Loop" during early development, inspired by the Ralph Wiggum pattern of persistent single-minded focus.
 
 ---
 
-## Ralph Loop Concept
+## Completion Drive Concept
 
-Named after the Ralph Wiggum pattern, the loop continuously:
+The Completion Drive continuously:
 1. Pick a ready Green idea
 2. Execute until complete
 3. Repeat until no ready Greens
@@ -17,7 +19,7 @@ Named after the Ralph Wiggum pattern, the loop continuously:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      RALPH LOOP                              │
+│                   COMPLETION DRIVE                           │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Start Autopilot                                             │
@@ -322,7 +324,7 @@ Default threshold: 3 consecutive errors.
 
 ## State Machine Integration
 
-The Ralph loop is implemented in the orchestration service as a state machine:
+The Completion Drive is implemented in the orchestration service as a state machine:
 
 ```
 orchestration:
@@ -331,7 +333,7 @@ orchestration:
 │       START_SEMI_AUTO → waiting_user
 │
 ├── running
-│   invoke: ralphLoop goroutine
+│   invoke: completionDrive goroutine
 │   on: PAUSE → paused
 │       AGENT_COMPLETED → handleCompletion
 │       AGENT_BLOCKED → handleBlocked
@@ -354,7 +356,7 @@ orchestration:
 When multiple agents work simultaneously in autopilot:
 
 ```go
-func (o *Orchestrator) RunRalphLoop(ctx context.Context) error {
+func (o *Orchestrator) RunCompletionDrive(ctx context.Context) error {
     for {
         select {
         case <-ctx.Done():

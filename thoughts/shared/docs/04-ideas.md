@@ -136,7 +136,7 @@ YellowMetadata
 ```
 GreenExecution
 ├── startedAt, completedAt, durationMs
-├── iterations: number      // Ralph loop iterations
+├── iterations: number      // Completion Drive iterations
 ├── retryCount: number      // Restart count
 ├── worktree: string        // .worktrees/ed-001-idea-xxx
 ├── branch: string          // agent/ed-001/idea-xxx

@@ -108,7 +108,7 @@ project       Black → Green      execute Greens
 ```
 Phase 1        Phase 2        Phase 3        Phase 4        Phase 5
 UNDERSTAND  →  ANALYZE   →   PROPOSE   →  DECOMPOSE  →   VALIDATE
-(Q&A)         (Explore)     (Approval)    (Generate)     (Ralph Loop)
+(Q&A)         (Explore)     (Approval)    (Generate)   (Completion Drive)
 ```
 
 Retrospective runs automatically after each Blue feature completes.
@@ -229,7 +229,7 @@ Native IdeaStore with:
 | [04-ideas.md](./04-ideas.md) | Idea management (Color System) |
 | [05-agents.md](./05-agents.md) | Agent personas, Prompt Construction, Shared Rules |
 | [06-merging.md](./06-merging.md) | Merge service |
-| [07-autopilot.md](./07-autopilot.md) | Ralph Loop (Green execution) |
+| [07-autopilot.md](./07-autopilot.md) | Completion Drive (Green execution) |
 | [08-learnings.md](./08-learnings.md) | Discovery System (Yellow ideas) |
 | [09-intervention.md](./09-intervention.md) | Intervention and rollback |
 | [10-interface.md](./10-interface.md) | Web UI components |

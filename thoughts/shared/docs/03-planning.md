@@ -265,17 +265,17 @@ Note: Yellow creation is neither transition nor split - it's a **byproduct** of 
 
 Planning is not just idea generation—it's a structured dialogue between the user and Planner Pat. The process follows 5 distinct phases.
 
-### Why Not Just "Ralph Loop" for Planning?
+### Why Not Completion Drive for Planning?
 
-| Aspect | Implementation (Ralph fits) | Planning (Dialogue fits) |
-|--------|----------------------------|--------------------------|
+| Aspect | Implementation (Completion Drive fits) | Planning (Dialogue fits) |
+|--------|----------------------------------------|--------------------------|
 | **Nature** | Mechanical iteration | Conversational exchange |
 | **Completion** | Objective (tests pass) | Subjective (user satisfied) |
 | **Feedback** | Binary (pass/fail) | Nuanced (modify, clarify) |
 | **Iteration** | Same action, retry | Different questions each time |
 | **User role** | Observer | Active participant |
 
-Ralph Loop is used **only in Phase 5 (VALIDATE)** where mechanical iteration makes sense.
+The Completion Drive is used **only in Phase 5 (VALIDATE)** where mechanical iteration makes sense.
 
 ### The 5 Phases
 
@@ -285,7 +285,7 @@ Ralph Loop is used **only in Phase 5 (VALIDATE)** where mechanical iteration mak
 │                                                                              │
 │   Phase 1        Phase 2        Phase 3        Phase 4        Phase 5       │
 │  UNDERSTAND  →   ANALYZE   →   PROPOSE   →  DECOMPOSE  →   VALIDATE        │
-│  (Q&A)          (Explore)     (Approval)    (Generate)     (Ralph Loop)    │
+│  (Q&A)          (Explore)     (Approval)    (Generate)  (Completion Drive) │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -296,7 +296,7 @@ Ralph Loop is used **only in Phase 5 (VALIDATE)** where mechanical iteration mak
 | **2. ANALYZE** | Explore codebase context | Pat works autonomously | Context gathered |
 | **3. PROPOSE** | Present high-level approach | Approval loop | User approves architecture |
 | **4. DECOMPOSE** | Generate atomic ideas | One-shot generation | Ideas created |
-| **5. VALIDATE** | Check ideas against rules | Ralph Loop iteration | All ideas pass |
+| **5. VALIDATE** | Check ideas against rules | Completion Drive iteration | All ideas pass |
 
 ---
 
@@ -405,9 +405,9 @@ Pat generates atomic ideas from the approved architecture. This is one-shot gene
 
 ---
 
-## Phase 5: VALIDATE (Ralph Loop)
+## Phase 5: VALIDATE (Completion Drive)
 
-The ONLY phase where Ralph Loop pattern applies. Mechanical iteration until all ideas pass validation.
+The ONLY phase where the Completion Drive pattern applies. Mechanical iteration until all ideas pass validation.
 
 ### Validation Issue Types
 
@@ -838,5 +838,5 @@ Stored in `.swarm/planning-state.json`:
 | `analyze` | Phase 2: Codebase exploration |
 | `propose` | Phase 3: Architecture approval |
 | `decompose` | Phase 4: Idea generation |
-| `validate` | Phase 5: Ralph Loop validation |
+| `validate` | Phase 5: Completion Drive validation |
 | `ready` | All ideas valid, ready for implementation |
