@@ -47,3 +47,7 @@ dist/
 
 # Perles config (personal)
 .perles/
+
+# TLDR tool cache (runtime state)
+.tldr/
+.tldrignore
