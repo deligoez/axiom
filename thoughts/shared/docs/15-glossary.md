@@ -37,6 +37,34 @@ Swarm's unique terminology and concepts. This document defines the language of S
 
 ---
 
+## Workflow Phases
+
+Three distinct phases that Swarm progresses through:
+
+| Phase | Persona | Purpose | Entry Condition |
+|-------|---------|---------|-----------------|
+| **Init** | Ace | First-time setup, configuration | No `.swarm/` directory |
+| **Planning** | Pat | Decompose need into ideas | No ready Green ideas |
+| **Implementation** | Ed (N parallel) | Execute Green ideas | Has ready Green ideas |
+
+### Mode Routing
+
+**Definition:** The decision logic that determines which workflow phase to enter.
+
+```
+swarm command → Check .swarm/ exists?
+                     │
+              No ────┴──── Yes
+              ↓            ↓
+           INIT      Check has ideas?
+                          │
+                   No ────┴──── Yes
+                   ↓            ↓
+               PLANNING    IMPLEMENTATION
+```
+
+---
+
 ## The Color System
 
 Swarm's signature classification system for ideas based on clarity and readiness level.
@@ -99,6 +127,66 @@ Blue "Login flow" → Green "Clerk setup"
 
 ---
 
+## Core Infrastructure
+
+### IdeaStore
+
+**Definition:** The native storage service for all ideas across all 8 colors.
+
+**Not a task tracker:** Unlike traditional task management, IdeaStore handles:
+- Color transitions (Gray → Blue → Green)
+- Lineage tracking (parent-child relationships)
+- Yellow idea lifecycle (active → outdated → archived)
+- Event emission for UI updates
+- JSONL persistence (`.swarm/ideas.jsonl`)
+
+**Why native, not external?** Single source of truth with real-time events and color-aware queries.
+
+---
+
+### Quality Commands
+
+**Definition:** Shell commands that must pass for a Green idea to be considered complete.
+
+```json
+{
+  "qualityCommands": [
+    "npm run test:run",
+    "npm run typecheck",
+    "npm run lint"
+  ]
+}
+```
+
+**Completion rule:** COMPLETE signal + ALL quality commands passing = idea done.
+
+---
+
+### Agent Slot
+
+**Definition:** An available execution slot for parallel agents.
+
+**Configuration:** `agents.maxParallel` (default: 3)
+
+**Behavior:**
+- Semi-Auto: User manually fills slots
+- Autopilot: System auto-fills available slots with ready Green ideas
+
+---
+
+### Safe Boundary
+
+**Definition:** The point between iterations where an agent can safely pause without losing work.
+
+**When reached:**
+- Current iteration response received
+- Any commits completed
+- State persisted
+
+**Used for:** Graceful pause, mode switching, emergency stop.
+
+---
+
 ## The Persona System
 
 Swarm uses named agents with alliterative names and distinct personalities. Unlike generic "Agent 1, Agent 2", each persona has a clear role and character.
@@ -135,9 +223,11 @@ Swarm uses named agents with alliterative names and distinct personalities. Unli
 
 ## Execution Patterns
 
-### Completion Drive (formerly Ralph Loop)
+### Completion Drive
 
 **Definition:** The autopilot execution pattern where an agent continuously works until complete, with automatic retry and iteration tracking.
+
+**Historical note:** Originally called "Ralph Loop" during early development. Renamed to better reflect its goal-oriented nature.
 
 **Why "drive":** Like a motor that keeps pushing toward the goal - relentless, goal-oriented execution.
 
@@ -148,7 +238,22 @@ Swarm uses named agents with alliterative names and distinct personalities. Unli
 - Tracks iteration count
 - Continues to next idea automatically
 
-**Not a loop but a pattern:** Despite the name, Ralph Loop is more of a "run until done" strategy with built-in recovery.
+**The pattern:**
+```
+Pick Green → Execute → Signal?
+                         │
+              COMPLETE ──┼── BLOCKED/NEEDS_HUMAN
+                  ↓      │           ↓
+            Quality OK?  │      Handle, pick next
+                  │      │
+            Yes ──┴── No │
+             ↓        ↓  │
+          Done    Retry  │
+             │           │
+             └───────────┴──→ Pick next Green
+```
+
+---
 
 ### Iteration
 
@@ -156,11 +261,15 @@ Swarm uses named agents with alliterative names and distinct personalities. Unli
 
 **Completion:** Requires BOTH the COMPLETE signal AND all quality commands passing.
 
+---
+
 ### Stuck Detection
 
 **Definition:** When an agent runs N iterations without producing a commit.
 
 **Not an error:** Agent might be thinking. Swarm warns but continues, allowing human intervention.
+
+**Threshold:** Configurable via `completion.stuckThreshold` (default: 5).
 
 ---
 
@@ -170,7 +279,12 @@ Swarm uses named agents with alliterative names and distinct personalities. Unli
 
 **Definition:** User selects Green ideas, agent completes one then stops.
 
-**Alias candidates:** "Supervised Mode" (industry term), "Step Mode"
+**Use cases:**
+- Learning a new codebase
+- Critical changes requiring verification
+- Step-by-step debugging
+
+---
 
 ### Autopilot Mode
 
@@ -180,6 +294,7 @@ Swarm uses named agents with alliterative names and distinct personalities. Unli
 - Checkpoint before starting
 - Pause on NEEDS_HUMAN signal
 - Human can intervene anytime
+- Error threshold pauses after N consecutive failures
 
 ---
 
@@ -230,11 +345,15 @@ Swarm's explicit agent-to-orchestrator communication system.
 - Injected into prompts automatically
 - Archived when parent completes
 
+---
+
 ### Discovery Log
 
 **Definition:** A query view on global Yellow ideas - not a separate file.
 
 **Single source of truth:** All learnings live in `ideas.jsonl`, views are generated.
+
+---
 
 ### Learning Injection
 
@@ -247,6 +366,39 @@ Local Yellow → Only source agent
 
 ---
 
+### Learning Promotion
+
+**Definition:** Converting a local Yellow idea to global scope.
+
+**When to promote:** A local learning proves useful beyond its original context.
+
+**Mechanism:** Update `metadata.scope` from `local` to `global` - same idea ID, broader reach.
+
+---
+
+### Learning Resurrection
+
+**Definition:** Bringing an archived Yellow idea back to active status.
+
+**Use case:** A learning discovered in one Green is still relevant for future work.
+
+**When allowed:** Only archived Yellow ideas can be resurrected.
+
+---
+
+### Cross-Agent Propagation
+
+**Definition:** How global Yellow ideas spread to all active agents.
+
+**Flow:**
+1. Lou creates global Yellow
+2. Emits `idea:yellow_created` event
+3. Active agents notified via state machine
+4. Next prompt includes new learning
+5. No agent restart required
+
+---
+
 ## Merge System
 
 ### Conflict Classification
@@ -256,6 +408,8 @@ Local Yellow → Only source agent
 | **SIMPLE** | Auto-resolve | System |
 | **MEDIUM** | AI-assisted | Fixer Finn |
 | **COMPLEX** | Human escalation | User |
+
+---
 
 ### Merge Queue
 
@@ -288,6 +442,51 @@ Two distinct systems that work together:
 
 ---
 
+## Intervention System
+
+### Intervention Panel
+
+**Definition:** The Web UI component for controlling agents and managing state during execution.
+
+**Actions available:**
+- Pause/Resume all agents
+- Stop specific agent
+- Redirect agent to different idea
+- Create checkpoint
+- Rollback to checkpoint
+
+---
+
+### Emergency Stop
+
+**Definition:** The graceful shutdown triggered by `Ctrl+C`.
+
+**Sequence:**
+1. Stop accepting new ideas
+2. Signal agents to pause
+3. Wait for safe boundaries (5s timeout)
+4. Persist state snapshot
+5. Exit cleanly
+
+**Second `Ctrl+C`:** Forces immediate exit without graceful shutdown.
+
+---
+
+### The Audit Trail
+
+**Definition:** The recovery context injected into prompts when a crashed idea is retried.
+
+**Contains:**
+- Previous attempt count
+- Files modified before crash
+- Test status at crash point
+- Last commit hash
+- Iteration number at crash
+
+**Purpose:** Help agent continue from where previous attempt left off.
+
+---
+
 ## State Management
 
 ### Snapshot + Event Sourcing
@@ -299,6 +498,8 @@ Primary: Load snapshot (fast)
 Fallback: Replay events (reliable)
 ```
 
+---
+
 ### Checkpoint
 
 **Definition:** A named save point for rollback.
@@ -309,17 +510,38 @@ Fallback: Replay events (reliable)
 
 ---
 
+## Hooks System
+
+**Definition:** User-defined shell scripts that run at key lifecycle events.
+
+### Available Hooks
+
+| Hook | Trigger | Use Case |
+|------|---------|----------|
+| `pre-start` | Agent claims idea | Setup, notifications |
+| `post-complete` | Idea done/failed | Slack notify, logging |
+| `pre-merge` | Before merge attempt | Run E2E tests |
+| `post-merge` | After successful merge | Deploy, notify |
+| `on-conflict` | Merge conflict detected | Alert, custom resolution |
+| `on-learning` | Learning extracted | External storage |
+| `on-pause` | Session paused | Cleanup |
+| `on-error` | Error occurred | Alerting |
+
+**Location:** `.swarm/hooks/`
+
+---
+
 ## Planning Phases
 
-The 5-phase dialogue model:
+The 5-phase dialogue model (The Planning Dialogue):
 
-| Phase | Name | Purpose |
-|-------|------|---------|
-| 1 | **UNDERSTAND** | Q&A to clarify goal |
-| 2 | **ANALYZE** | Explore codebase context |
-| 3 | **PROPOSE** | Present architecture for approval |
-| 4 | **DECOMPOSE** | Generate atomic ideas |
-| 5 | **VALIDATE** | Ralph Loop until all pass |
+| Phase | Name | Purpose | Metaphor |
+|-------|------|---------|----------|
+| 1 | **UNDERSTAND** | Q&A to clarify goal | Interview |
+| 2 | **ANALYZE** | Explore codebase context | Investigation |
+| 3 | **PROPOSE** | Present architecture for approval | Pitch |
+| 4 | **DECOMPOSE** | Generate atomic ideas | Blueprint |
+| 5 | **VALIDATE** | Verify ideas meet INVEST criteria | Quality Check |
 
 ---
 
@@ -429,6 +651,23 @@ Black → Gray → Blue → Green → Done
 
 ---
 
+### The Init Conversation
+
+**Definition:** The guided setup experience with Analyzer Ace for first-time projects.
+
+**Flow:**
+```
+Welcome Screen → Meet the Team (optional) → Ace Analysis → Auto-Scaffold
+```
+
+**What Ace does:**
+- Detects project type and structure
+- Suggests quality commands
+- Creates `.swarm/` directory
+- Transitions to Planning Mode
+
+---
+
 ### The Planning Dialogue
 
 **Definition:** The 5-phase conversation between Pat and the user.
@@ -508,15 +747,37 @@ A feature that spans all layers (DB, API, UI) for one capability.
 ✓ Vertical: "View single post" (schema + API + UI)
 ```
 
+### Status Symbols
+
+| Symbol | Status | Description |
+|--------|--------|-------------|
+| `→` | pending | Ready to work |
+| `●` | active | Currently processing |
+| `⊗` | blocked | Has blockers |
+| `✓` | done | Completed |
+| `✗` | failed | Error occurred |
+| `⏱` | timeout | Timed out |
+| `◐` | review | Awaiting review |
+
 ---
 
-## Documentation Index Addition
-
-This glossary is document 15 in the Swarm documentation series:
+## Documentation Index
 
 | # | Document | Purpose |
 |---|----------|---------|
 | 00 | Overview | System introduction |
-| ... | ... | ... |
+| 01 | Configuration | Config system |
+| 02 | Modes | Mode routing, Init, Operating modes |
+| 03 | Planning | Planning Dialogue, Spec Lifecycle |
+| 04 | Ideas | Color System, IdeaStore |
+| 05 | Agents | Personas, Prompt Construction |
+| 06 | Merging | Merge Service |
+| 07 | Autopilot | Completion Drive |
+| 08 | Learnings | Discovery System (Yellow ideas) |
+| 09 | Intervention | Intervention, Rollback, Hooks |
+| 10 | Interface | Web UI components |
+| 11 | Review | Review and Retrospective |
+| 12 | Reference | Quick reference |
+| 13 | Prompts | Default persona prompts |
 | 14 | Errors | Error handling |
 | **15** | **Glossary** | **Terminology reference** |
