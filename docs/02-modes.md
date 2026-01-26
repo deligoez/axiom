@@ -375,6 +375,65 @@ See [03-planning.md](./03-planning.md#incremental-planning-in-autopilot-mode) fo
 
 ---
 
+## Non-Interactive Mode
+
+For CI/CD pipelines and automated scripts where no human is available.
+
+### Activation
+
+```bash
+# CLI flag
+axiom --non-interactive --mode autopilot
+
+# Environment variable
+AXIOM_NON_INTERACTIVE=true axiom
+```
+
+### Auto-Detection
+
+AXIOM automatically enables non-interactive mode when CI environment detected:
+
+| Variable | CI System |
+|----------|-----------|
+| `CI=true` | Generic CI |
+| `GITHUB_ACTIONS` | GitHub Actions |
+| `GITLAB_CI` | GitLab CI |
+| `JENKINS_HOME` | Jenkins |
+| `CIRCLECI` | CircleCI |
+
+### Behavior Changes
+
+| Scenario | Interactive | Non-Interactive |
+|----------|-------------|-----------------|
+| Config corrupt | Prompt user for recovery | Use backup → defaults |
+| Planning crash | Prompt Resume/StartOver/Keep | Auto-resume if >50% done |
+| Human escalation | Wait for user input | Defer case, continue |
+| PENDING signal | Pause, wait for user | Mark pending, continue |
+| Low disk space | Prompt cleanup options | Auto-cleanup |
+| Plan approval | Wait for user approval | Auto-approve if configured |
+
+### Configuration
+
+```json
+{
+  "nonInteractive": {
+    "autoApprove": true,
+    "escalationStrategy": "defer",
+    "maxDeferredTasks": 10
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `autoApprove` | false | Auto-approve plans without user review |
+| `escalationStrategy` | defer | Action on human escalation (defer/skip/fail) |
+| `maxDeferredTasks` | 10 | Fail if too many Tasks deferred |
+
+See [13-reference.md](./13-reference.md#non-interactive-mode) for CLI details.
+
+---
+
 ## Mode Switching
 
 Mode can be toggled via Web UI. Confirmation dialogs prevent accidental switches.
