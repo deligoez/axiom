@@ -70,6 +70,34 @@ See [04-cases.md](./04-cases.md#type-specific-metadata) for full `DiscoveryMetad
 
 Key fields: `scope` (local/global), `sourceTaskId`, `sourceAgentId`, `impact`, `validated`, `appliedTo`, `supersededBy`.
 
+### Discovery ID Format
+
+Discovery case IDs follow the format: `disc-{NNN}`
+
+| Component | Description |
+|-----------|-------------|
+| `disc` | Type prefix (Discovery) |
+| `-` | Separator |
+| `NNN` | Zero-padded 3-digit counter (001-999) |
+
+**Examples:** `disc-001`, `disc-030`, `disc-142`
+
+**Counter mechanism:**
+- Counter stored in `.axiom/metrics/counters.json` under `"discovery"` key
+- Increments monotonically on each new Discovery case
+- Never resets (survives AXIOM restarts)
+- Cleo manages counter as part of Discovery creation
+
+```json
+{
+  "ava": 5,
+  "echo": 47,
+  "discovery": 142
+}
+```
+
+When counter exceeds 999, format extends: `disc-1000`, `disc-1001`, etc.
+
 ### Impact Classification
 
 | Level | Description | Example |
