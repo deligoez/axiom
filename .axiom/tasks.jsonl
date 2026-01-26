@@ -1,0 +1,5 @@
+{"id":"task-001","title":"Setup project structure","status":"done"}
+{"id":"task-002","title":"Add web server","status":"done"}
+{"id":"task-003","title":"Implement task list","status":"done"}
+{"id":"task-004","title":"Add persistence","status":"active"}
+{"id":"task-005","title":"Implement planning","status":"pending"}
