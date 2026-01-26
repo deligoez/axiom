@@ -608,7 +608,105 @@ Built-in themes:
 - `light` - Light theme for bright environments
 - `high-contrast` - Accessibility-focused
 
-Custom themes can be added via `.axiom/themes/`.
+### Theme Configuration
+
+Set theme in config:
+
+```json
+{
+  "ui": {
+    "theme": "default"
+  }
+}
+```
+
+### Custom Themes
+
+Add custom themes to `.axiom/themes/{name}.json`:
+
+```json
+{
+  "name": "custom-dark",
+  "extends": "default",
+  "colors": {
+    "background": "#1a1a2e",
+    "surface": "#16213e",
+    "primary": "#0f3460",
+    "accent": "#e94560",
+    "text": "#ffffff",
+    "textMuted": "#a0a0a0",
+    "success": "#4ade80",
+    "warning": "#fbbf24",
+    "error": "#f87171",
+    "info": "#60a5fa"
+  },
+  "caseColors": {
+    "directive": "#1f2937",
+    "draft": "#374151",
+    "research": "#f97316",
+    "pending": "#a855f7",
+    "deferred": "#ef4444",
+    "operation": "#3b82f6",
+    "task": "#22c55e",
+    "discovery": "#eab308"
+  },
+  "statusColors": {
+    "pending": "#6b7280",
+    "active": "#3b82f6",
+    "blocked": "#ef4444",
+    "done": "#22c55e",
+    "failed": "#dc2626",
+    "timeout": "#f59e0b",
+    "review": "#8b5cf6"
+  },
+  "fonts": {
+    "family": "Inter, system-ui, sans-serif",
+    "mono": "JetBrains Mono, monospace",
+    "sizeBase": "14px",
+    "sizeSmall": "12px",
+    "sizeLarge": "16px"
+  },
+  "spacing": {
+    "unit": "4px",
+    "panelGap": "16px",
+    "cardPadding": "12px"
+  },
+  "borders": {
+    "radius": "8px",
+    "width": "1px",
+    "color": "#374151"
+  }
+}
+```
+
+### Theme Schema
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | string | Theme identifier |
+| `extends` | string | Base theme to inherit from |
+| `colors` | object | Core UI colors |
+| `caseColors` | object | Colors for case types |
+| `statusColors` | object | Colors for case statuses |
+| `fonts` | object | Typography settings |
+| `spacing` | object | Layout spacing |
+| `borders` | object | Border styles |
+
+### Theme Inheritance
+
+Themes can extend built-in or custom themes:
+
+```json
+{
+  "name": "my-light",
+  "extends": "light",
+  "colors": {
+    "accent": "#6366f1"
+  }
+}
+```
+
+Only overridden properties are applied; others inherit from base theme.
 
 ---
 
