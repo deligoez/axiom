@@ -121,6 +121,8 @@ When `allowDirtyWorkdir` is `false` and uncommitted changes exist, AXIOM will re
 
 Commands that must all pass before Task completion. Supports simple array or detailed configuration.
 
+**Warning:** If verification is empty (`[]`) or undefined, Tasks auto-pass on COMPLETE signal without validation. A warning is logged. See [07-execution.md](./07-execution.md#empty-verification-array) for details.
+
 #### Simple Format (Array)
 
 ```json

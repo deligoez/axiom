@@ -377,6 +377,7 @@ func validateSignal(raw string) (*Signal, error) {
 | `VERIFICATION_TIMEOUT` | Command exceeded timeout | Retry iteration | After maxIterations |
 | `VERIFICATION_FAILED` | Command returned non-zero | Retry iteration | After maxIterations |
 | `VERIFICATION_SKIPPED` | Optional command failed/timeout | Continue (warning only) | Never |
+| `VERIFICATION_EMPTY` | No verification commands configured | Auto-pass (warning) | Never |
 
 #### VERIFICATION_TIMEOUT
 

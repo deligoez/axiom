@@ -217,6 +217,62 @@ If verification fails, agent continues iterating to fix issues.
 | Per-command `timeout` | Inherits default | Override for slow commands |
 | `required` | true | If false, timeout/failure doesn't block |
 
+### Empty Verification Array
+
+When `config.verification` is empty (`[]`) or not defined:
+
+```
+Agent emits COMPLETE signal
+     │
+     ▼
+No verification commands configured
+     │
+     ▼
+Task auto-passes (immediate completion)
+     │
+     ▼
+Warning logged: "VERIFICATION_EMPTY"
+```
+
+**Behavior:**
+- COMPLETE signal → Task marked done (no verification)
+- Warning logged for audit
+- Web UI shows "No verification configured" indicator
+
+**Warning:**
+```
+Warning: No verification commands configured
+
+Tasks will complete on COMPLETE signal without validation.
+Consider adding verification commands to ensure code quality.
+
+Suggestion: Add to config.json:
+  "verification": ["npm test", "npm run typecheck"]
+```
+
+**Config validation:**
+| Config State | Behavior | Init Warning |
+|--------------|----------|--------------|
+| `verification: []` | Auto-pass | Yes |
+| `verification: undefined` | Auto-pass | Yes (during init) |
+| `verification: [...]` | Normal | No |
+
+**Use cases for empty verification:**
+- Prototyping/spike Tasks
+- Documentation-only changes
+- Config-only changes
+
+**Recommended minimum:**
+```json
+{
+  "verification": [
+    { "command": "npm test", "required": true }
+  ]
+}
+```
+
+At least one required verification command is recommended for production use.
+
 ### Timeout Handling
 
 ```go
