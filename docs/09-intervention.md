@@ -83,6 +83,82 @@ User can create named checkpoints via Web UI dialog.
 }
 ```
 
+### Checkpoint Retention Policy
+
+Checkpoints are automatically cleaned up based on configured limits:
+
+**Config Options:**
+```json
+{
+  "checkpoints": {
+    "periodic": 5,
+    "beforeAutopilot": true,
+    "maxCount": 50,
+    "maxAgeDays": 30,
+    "protectNamed": true
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `maxCount` | 50 | Maximum number of checkpoints to keep |
+| `maxAgeDays` | 30 | Delete checkpoints older than N days |
+| `protectNamed` | true | Keep user-named checkpoints regardless of age |
+
+**Automatic Cleanup:**
+
+```
+On new checkpoint creation:
+     │
+     ▼
+Count checkpoints
+     │
+     ├── count > maxCount ──► Delete oldest (non-protected)
+     │
+     └── Check ages
+              │
+              └── age > maxAgeDays ──► Delete (non-protected)
+```
+
+**Protection Rules:**
+| Checkpoint Type | Protected? |
+|-----------------|------------|
+| Auto (periodic) | No |
+| Auto (before-autopilot) | No |
+| User-named | Yes (if `protectNamed: true`) |
+| Last 3 checkpoints | Always |
+
+**Manual Cleanup:**
+
+Web UI provides checkpoint management:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Checkpoint Manager                             │
+│                                                                  │
+│  Checkpoints (47/50):                     Space: 234MB           │
+│                                                                  │
+│  ✓ before-auth-refactor (named)           12MB    [Rollback]     │
+│  □ after-task-042                          8MB    [Delete]       │
+│  □ after-task-041                          8MB    [Delete]       │
+│  ...                                                             │
+│                                                                  │
+│  [Delete Selected]  [Delete All > 7 days]  [Compact]             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**CLI Cleanup:**
+```bash
+# Delete checkpoints older than 7 days
+axiom checkpoints cleanup --older-than 7d
+
+# Keep only last 10 checkpoints
+axiom checkpoints cleanup --keep 10
+
+# Delete specific checkpoint
+axiom checkpoints delete before-autopilot-2026-01-13
+```
+
 ---
 
 ## Rollback

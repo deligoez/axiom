@@ -59,7 +59,10 @@ All AXIOM configuration is stored in `.axiom/config.json`.
 
   "checkpoints": {
     "periodic": 5,
-    "beforeAutopilot": true
+    "beforeAutopilot": true,
+    "maxCount": 50,
+    "maxAgeDays": 30,
+    "protectNamed": true
   },
 
   "ui": {
@@ -266,6 +269,11 @@ Cases with `security` tag always require per-task review.
 |--------|---------|-------------|
 | `periodic` | 5 | Checkpoint every N completed Tasks |
 | `beforeAutopilot` | true | Checkpoint before autopilot starts |
+| `maxCount` | 50 | Maximum checkpoints to retain |
+| `maxAgeDays` | 30 | Delete checkpoints older than N days |
+| `protectNamed` | true | Keep user-named checkpoints regardless of age |
+
+See [09-intervention.md](./09-intervention.md#checkpoint-retention-policy) for retention policy details.
 
 ### UI (Web Interface)
 
