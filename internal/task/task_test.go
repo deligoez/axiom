@@ -2,6 +2,16 @@ package task
 
 import "testing"
 
+func TestGetTasks_ReturnsNonEmpty(t *testing.T) {
+	// Act
+	tasks := GetTasks()
+
+	// Assert
+	if len(tasks) < 3 {
+		t.Errorf("got %d tasks, want at least 3", len(tasks))
+	}
+}
+
 func TestTask_Creation(t *testing.T) {
 	// Arrange & Act
 	task := Task{
