@@ -75,6 +75,8 @@ Summary of key concepts and configurations.
 | Monitor Max | 👁️ | Health monitoring |
 | Auditor Ash | 📈 | Metrics |
 
+See [05-agents.md](./05-agents.md#agent-personas) for detailed persona documentation.
+
 ---
 
 ## Signal Protocol

@@ -125,6 +125,8 @@ AXIOM's signature classification system for cases based on clarity and readiness
 - Visually distinct in the Web UI
 - Semantically meaningful (type conveys both category AND readiness)
 
+See [13-reference.md](./13-reference.md#case-type-system) for the complete type and status reference tables.
+
 ---
 
 ## Case State Changes
@@ -268,6 +270,8 @@ AXIOM uses named agents with alliterative names and distinct personalities. Unli
 | **Monitor Max** | 👁️ | Health monitoring | Always (background) |
 | **Auditor Ash** | 📈 | Metrics and ID assignment | Always (event-driven) |
 
+See [05-agents.md](./05-agents.md#agent-personas) for detailed persona documentation including persona responsibilities and agent lifecycle.
+
 ### The Support Trio
 
 **Cleo, Max, and Ash** form a unique support layer that no other multi-agent system has:
@@ -393,6 +397,8 @@ AXIOM's explicit agent-to-orchestrator communication system.
 - Carry semantic meaning
 - Support rich payloads
 
+See [13-reference.md](./13-reference.md#signal-protocol) for the complete signal table.
+
 ---
 
 ## Discovery System
@@ -501,6 +507,8 @@ Two distinct systems that work together:
 | `batch` | Collect and review later |
 | `auto-approve` | Auto-approve if criteria met |
 | `skip` | No review |
+
+See [11-review.md](./11-review.md#review-modes) for review mode decision tree and configuration.
 
 ---
 
