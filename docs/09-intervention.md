@@ -240,6 +240,21 @@ Please review the workspace state and continue from where the previous attempt l
 
 ---
 
+## Config Recovery
+
+If `config.json` is corrupted at startup:
+
+1. AXIOM attempts to load `config.json.backup`
+2. If backup exists and is valid, uses it (logs `CONFIG_BACKUP_RESTORED`)
+3. If no valid backup, offers recovery options:
+   - Restore from backup
+   - Reset to defaults
+   - Quit and fix manually
+
+See [01-configuration.md](./01-configuration.md#config-validation-and-recovery) for details.
+
+---
+
 ## Emergency Stop
 
 `Ctrl+C` triggers graceful shutdown:

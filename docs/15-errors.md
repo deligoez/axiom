@@ -601,6 +601,127 @@ func recoverState() (*State, error) {
 
 ---
 
+## Config Errors
+
+Errors related to `.axiom/config.json` loading and validation.
+
+### Error Codes
+
+| Code | Message | Cause | Severity |
+|------|---------|-------|----------|
+| `CONFIG_INVALID_JSON` | Invalid JSON syntax | Parse error | Critical |
+| `CONFIG_SCHEMA_ERROR` | Schema validation failed | Invalid field value | Warning |
+| `CONFIG_NOT_FOUND` | Config file not found | Missing file | Info |
+| `CONFIG_BACKUP_RESTORED` | Restored from backup | Primary corrupted | Info |
+
+### CONFIG_INVALID_JSON
+
+**Severity:** Critical
+**Recoverable:** Yes (user choice)
+
+```
+Error: Config file contains invalid JSON
+
+File: .axiom/config.json
+Line: 15, Column: 3
+Error: Unexpected token '}', expected property name
+
+Options:
+  [r] Restore from backup (config.json.backup)
+  [d] Reset to defaults
+  [q] Quit and fix manually
+```
+
+**Detection:**
+```go
+func loadConfig(path string) (*Config, error) {
+    data, err := os.ReadFile(path)
+    if err != nil {
+        if os.IsNotExist(err) {
+            return defaultConfig(), nil // CONFIG_NOT_FOUND (info)
+        }
+        return nil, err
+    }
+
+    var config Config
+    if err := json.Unmarshal(data, &config); err != nil {
+        var syntaxErr *json.SyntaxError
+        if errors.As(err, &syntaxErr) {
+            return nil, &ConfigError{
+                Code:    "CONFIG_INVALID_JSON",
+                Message: fmt.Sprintf("Invalid JSON at offset %d", syntaxErr.Offset),
+                Line:    findLine(data, syntaxErr.Offset),
+            }
+        }
+        return nil, err
+    }
+
+    // Backup on successful load
+    backupPath := path + ".backup"
+    os.WriteFile(backupPath, data, 0644)
+
+    return &config, nil
+}
+```
+
+**Recovery flow:**
+```go
+func loadConfigWithRecovery(path string, interactive bool) (*Config, error) {
+    config, err := loadConfig(path)
+    if err == nil {
+        return config, nil
+    }
+
+    var configErr *ConfigError
+    if !errors.As(err, &configErr) {
+        return nil, err
+    }
+
+    // Try backup
+    backupPath := path + ".backup"
+    if backupConfig, backupErr := loadConfig(backupPath); backupErr == nil {
+        log.Warn("CONFIG_BACKUP_RESTORED", "from", backupPath)
+        return backupConfig, nil
+    }
+
+    // Interactive recovery
+    if interactive {
+        choice := promptRecovery(configErr)
+        switch choice {
+        case "restore":
+            return loadConfig(backupPath)
+        case "defaults":
+            return defaultConfig(), nil
+        case "quit":
+            os.Exit(1)
+        }
+    }
+
+    // Non-interactive: use defaults
+    log.Warn("CONFIG_INVALID_JSON", "using_defaults", true)
+    return defaultConfig(), nil
+}
+```
+
+### CONFIG_SCHEMA_ERROR
+
+**Severity:** Warning
+**Recoverable:** Yes (auto-corrected)
+
+```
+Warning: Config has invalid values
+
+.axiom/config.json:
+  - agents.maxParallel: -1 (invalid, using default: 3)
+  - mode: "turbo" (unknown, using default: "semi-auto")
+
+Continuing with corrected values.
+```
+
+Schema errors are non-fatal. Invalid fields use defaults.
+
+---
+
 ## User Errors
 
 ### Configuration Errors

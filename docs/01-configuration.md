@@ -319,3 +319,86 @@ Cases can override defaults via properties or tags:
   "tags": ["review:per-task", "security"]
 }
 ```
+
+---
+
+## Config Validation and Recovery
+
+### Validation at Startup
+
+AXIOM validates `config.json` at startup:
+
+```
+Load config.json
+     │
+     ▼
+┌─────────────┐     ┌─────────────────────────────┐
+│ Valid JSON? │──No─►│ Error: CONFIG_INVALID_JSON  │
+└─────┬───────┘     └─────────────────────────────┘
+      │Yes
+      ▼
+┌─────────────┐     ┌─────────────────────────────┐
+│ Schema OK?  │──No─►│ Warning: CONFIG_SCHEMA_ERROR│
+└─────┬───────┘     │ (uses defaults for bad keys)│
+      │Yes          └─────────────────────────────┘
+      ▼
+┌─────────────┐
+│ Config      │
+│ loaded      │
+└─────────────┘
+```
+
+### Automatic Backup
+
+Every time config is successfully loaded, AXIOM creates a backup:
+
+```
+.axiom/
+├── config.json           # Active config
+└── config.json.backup    # Last known good
+```
+
+### Recovery Options
+
+When `config.json` is corrupted:
+
+| Error | Recovery |
+|-------|----------|
+| Invalid JSON | Offer: restore from backup, reset to defaults, or manual fix |
+| Missing file | Use defaults, create new config.json |
+| Schema errors | Load valid keys, use defaults for invalid |
+
+### Interactive Recovery (Init)
+
+```
+Error: Config file is corrupted
+
+.axiom/config.json contains invalid JSON:
+  Unexpected token '}' at line 15
+
+Options:
+  [r] Restore from backup (config.json.backup from 2 hours ago)
+  [d] Reset to defaults (will lose custom settings)
+  [q] Quit and fix manually
+
+Choice:
+```
+
+### Non-Interactive Recovery
+
+With `--non-interactive` flag or in CI:
+
+1. Try `config.json.backup`
+2. If backup fails, use defaults
+3. Log warning, continue
+
+### Error Codes
+
+| Code | Cause | Severity |
+|------|-------|----------|
+| `CONFIG_INVALID_JSON` | Syntax error in JSON | Critical |
+| `CONFIG_SCHEMA_ERROR` | Invalid field value | Warning |
+| `CONFIG_NOT_FOUND` | Missing config.json | Info (uses defaults) |
+| `CONFIG_BACKUP_RESTORED` | Restored from backup | Info |
+
+See [15-errors.md](./15-errors.md#config-errors) for detailed error handling.
