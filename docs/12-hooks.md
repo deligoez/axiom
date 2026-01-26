@@ -191,22 +191,50 @@ If not configured, AXIOM looks for scripts in `.axiom/hooks/` with default names
 ### Timeout
 
 Hooks have a default timeout of 30 seconds. If a hook doesn't complete within this time, AXIOM:
-1. Logs a warning
-2. Kills the hook process
-3. Continues normal operation
+1. Logs a warning with hook name and configured timeout
+2. Sends SIGTERM to the hook process
+3. Waits 5 seconds for graceful shutdown
+4. Sends SIGKILL if process still running
+5. Continues normal operation
 
-Configure timeout per hook:
+**Global timeout configuration:**
 
 ```json
 {
   "hooks": {
+    "defaultTimeout": 30,
+    "gracePeriod": 5
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `defaultTimeout` | 30 | Timeout in seconds for all hooks |
+| `gracePeriod` | 5 | Time between SIGTERM and SIGKILL |
+
+**Per-hook timeout (overrides global):**
+
+```json
+{
+  "hooks": {
+    "defaultTimeout": 30,
     "pre-merge": {
       "script": "scripts/run-e2e.sh",
       "timeout": 300
+    },
+    "post-complete": {
+      "script": "scripts/notify.sh",
+      "timeout": 10
     }
   }
 }
 ```
+
+**Timeout inheritance:**
+1. Per-hook timeout if specified
+2. Global `defaultTimeout` if configured
+3. System default (30 seconds)
 
 ### Exit Codes
 
