@@ -761,6 +761,122 @@ Axel plans up to the next **horizon** - a logical stopping point:
 | `Shift+P` | Force Plan | Force planning even if enough ready Tasks exist |
 | `Ctrl+L` | Discovery Review | Review discoveries and their impact |
 
+### Incremental Planning in Autopilot Mode
+
+When autopilot is running and ready Task count drops below threshold, AXIOM must decide how to handle planning.
+
+#### Autopilot Planning Behaviors
+
+```json
+{
+  "planning": {
+    "autopilotBehavior": "pause"
+  }
+}
+```
+
+| Behavior | Description | Use Case |
+|----------|-------------|----------|
+| `pause` | Pause autopilot, notify user, wait for planning | Default, safest |
+| `background` | Continue agents, Axel plans in parallel | Experienced users |
+| `skip` | Continue until queue empty, then stop | Short sprints |
+
+#### Pause Behavior (Default)
+
+```
+Autopilot running (3 agents active)
+     │
+     ▼
+Ready count < threshold
+     │
+     ▼
+┌─────────────────────────────┐
+│ AUTOPILOT PAUSED            │
+│                             │
+│ Ready Tasks: 2 (< 3)        │
+│ Running: 3 agents           │
+│                             │
+│ Waiting for planning input  │
+│ [P] Start planning          │
+│ [C] Continue (skip planning)│
+│ [S] Stop autopilot          │
+└─────────────────────────────┘
+     │
+     ▼
+Running agents continue until their Tasks complete
+New agents NOT spawned until planning done
+```
+
+**If user is AFK:**
+- Notification sent via configured hook (`on-pause`)
+- Agents finish current Tasks, then wait
+- State persisted, can resume later
+- Optional: timeout after N minutes → auto-stop
+
+#### Background Behavior
+
+```
+Autopilot running (3 agents active)
+     │
+     ▼
+Ready count < threshold
+     │
+     ▼
+Axel starts planning (background)
+     │
+     ├── Agents continue executing
+     │
+     └── If planning needs user input:
+         └── Pause autopilot (fall back to pause behavior)
+```
+
+**Requirements for background planning:**
+- No Phase 1 (UNDERSTAND) questions pending
+- Approved proposal exists from last cycle
+- Incremental planning only (not full re-plan)
+
+#### Skip Behavior
+
+```
+Autopilot running
+     │
+     ▼
+Ready count < threshold
+     │
+     ▼
+Continue executing remaining Tasks
+     │
+     ▼
+All Tasks complete → Autopilot stops
+     │
+     ▼
+User notified: "Sprint complete. Run planning for more work."
+```
+
+#### AFK Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Pause + AFK | Wait indefinitely, persist state |
+| Background + needs input | Fall back to pause |
+| Skip + AFK | Complete sprint, stop |
+
+**AFK notification config:**
+```json
+{
+  "planning": {
+    "autopilotBehavior": "pause",
+    "afkTimeout": 30,
+    "afkAction": "stop"
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `afkTimeout` | 30 | Minutes before AFK timeout |
+| `afkAction` | `stop` | Action on AFK: `stop`, `continue`, `notify` |
+
 ---
 
 ## Spec Lifecycle

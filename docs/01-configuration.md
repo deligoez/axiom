@@ -32,7 +32,10 @@ All AXIOM configuration is stored in `.axiom/config.json`.
     "incrementalEnabled": true,
     "readyThreshold": 3,
     "maxBatchSize": 10,
-    "horizonBoundary": "milestone"
+    "horizonBoundary": "milestone",
+    "autopilotBehavior": "pause",
+    "afkTimeout": 30,
+    "afkAction": "stop"
   },
 
   "review": {
@@ -205,8 +208,15 @@ All commands use default timeout (300 seconds).
 | `readyThreshold` | 3 | Trigger planning when ready < threshold |
 | `maxBatchSize` | 10 | Max Tasks per planning cycle |
 | `horizonBoundary` | milestone | Planning stop point |
+| `autopilotBehavior` | pause | Behavior when planning triggers in autopilot |
+| `afkTimeout` | 30 | Minutes before AFK timeout |
+| `afkAction` | stop | Action on AFK timeout |
 
 Horizon boundaries: `milestone`, `feature`, `uncertainty`
+
+Autopilot behaviors: `pause` (default, safest), `background` (parallel planning), `skip` (finish sprint)
+
+AFK actions: `stop`, `continue`, `notify`
 
 ### Review
 

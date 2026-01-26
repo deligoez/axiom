@@ -359,6 +359,18 @@ Fully autonomous execution until all ready Tasks complete.
 - High confidence changes with good test coverage
 - Post-planning execution
 
+### Incremental Planning in Autopilot
+
+When ready Task count drops below threshold during autopilot, behavior depends on `planning.autopilotBehavior`:
+
+| Behavior | Effect |
+|----------|--------|
+| `pause` | Pause autopilot, wait for user to run planning |
+| `background` | Axel plans in parallel while agents work |
+| `skip` | Finish remaining Tasks, stop when empty |
+
+See [03-planning.md](./03-planning.md#incremental-planning-in-autopilot-mode) for details.
+
 ---
 
 ## Mode Switching
