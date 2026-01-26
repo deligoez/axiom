@@ -188,6 +188,8 @@ Note: `discoveries.md` files are **views** generated from Discovery cases in `ca
 | `AXIOM_NON_INTERACTIVE` | Non-interactive mode (true/false) |
 | `AXIOM_TIMEOUT` | agents.timeoutMinutes |
 
+**Naming convention:** Environment variables use `AXIOM_` prefix with descriptive names. Config fields use nested JSON paths. The mapping above shows equivalences.
+
 ---
 
 ## Workflow Phases

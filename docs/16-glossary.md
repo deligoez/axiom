@@ -198,6 +198,46 @@ Operation "Login flow" → Task "Clerk setup"
 
 ---
 
+### Agent vs Persona (Terminology)
+
+**Persona:** The role or type (Executor Echo, Analyst Ava). Describes capabilities and behavior.
+
+**Agent:** A running instance of a persona (echo-001, ava-002). Has unique ID and state.
+
+**Agent ID:** The unique identifier combining persona name and counter (echo-001).
+
+**Usage guide:**
+| Context | Use | Example |
+|---------|-----|---------|
+| Describing capabilities | Persona | "Echo implements Tasks" |
+| Referring to running instance | Agent | "Agent echo-001 is working on task-042" |
+| Multiple instances | Agents | "Three Echo agents running in parallel" |
+| Configuration | Persona | "Configure Echo's prompt" |
+
+---
+
+### Workspace vs Worktree (Terminology)
+
+**Workspace:** AXIOM's concept - the isolated environment where an agent works. User-facing term.
+
+**Git Worktree:** The underlying implementation - Git's built-in feature for multiple working directories sharing one repository.
+
+**Usage guide:**
+| Context | Use | Example |
+|---------|-----|---------|
+| User documentation | Workspace | "Each agent has its own workspace" |
+| Technical/implementation | Git worktree | "Implemented using git worktree" |
+| Directory path | Workspace | ".workspaces/echo-001-task-042/" |
+| Error messages | Both | "Workspace creation failed (git worktree error)" |
+
+**Why git worktree?**
+- Shares .git directory (disk efficient)
+- Instant branch creation (no clone delay)
+- Shared object database (fast operations)
+- Clean isolation (no merge conflicts during parallel work)
+
+---
+
 ### Checkpoint
 
 **Definition:** The point between iterations where an agent can safely pause without losing work.
