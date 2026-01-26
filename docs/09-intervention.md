@@ -326,6 +326,94 @@ For each line:
 Replay valid events only
 ```
 
+### Event Replay Algorithm
+
+When falling back to event replay (snapshot unavailable or invalid):
+
+```
+replayEvents(eventsFile):
+  // Step 1: Load and parse events
+  rawLines = readFile(eventsFile).split('\n')
+  events = []
+  corrupted = []
+
+  for i, line in enumerate(rawLines):
+    try:
+      event = JSON.parse(line)
+      if validateEventSchema(event):
+        events.push({ index: i, event: event })
+      else:
+        corrupted.push({ index: i, reason: 'invalid_schema' })
+    catch:
+      corrupted.push({ index: i, reason: 'invalid_json' })
+
+  // Step 2: Sort by timestamp (handle clock skew)
+  events.sort((a, b) => a.event.timestamp - b.event.timestamp)
+
+  // Step 3: Initialize fresh state machine
+  actor = createActor(rootMachine)
+  actor.start()
+  replayed = 0
+  failed = 0
+
+  // Step 4: Replay each event sequentially
+  for { event } in events:
+    try:
+      // Validate event is applicable to current state
+      if actor.can(event):
+        actor.send(event)
+        replayed++
+      else:
+        // Event not valid for current state - log and skip
+        log({ level: 'warn', msg: 'skipped_event', event: event })
+        failed++
+    catch error:
+      log({ level: 'error', msg: 'replay_failed', event: event, error: error })
+      failed++
+
+  // Step 5: Verify final state
+  snapshot = actor.getSnapshot()
+  if snapshot.status != 'active':
+    throw Error('Replay resulted in invalid state')
+
+  // Step 6: Report recovery status
+  return {
+    success: true,
+    replayed: replayed,
+    skipped: failed,
+    corrupted: corrupted.length,
+    finalState: snapshot.value
+  }
+```
+
+**Event Schema Validation:**
+
+| Field | Required | Validation |
+|-------|----------|------------|
+| `type` | Yes | Non-empty string, known event type |
+| `timestamp` | Yes | Valid ISO 8601 or Unix timestamp |
+| `payload` | Depends | Required for events with data |
+| `source` | No | Agent ID if agent-originated |
+
+**Replay Safeguards:**
+
+| Safeguard | Purpose |
+|-----------|---------|
+| Schema validation | Reject malformed events |
+| Timestamp sorting | Handle out-of-order writes |
+| State applicability check | Skip events invalid for current state |
+| Error isolation | Continue replay after single event failure |
+| Final state verification | Ensure machine is in valid state |
+
+**Partial Replay Scenarios:**
+
+| Scenario | Behavior |
+|----------|----------|
+| All events valid | Full state recovery |
+| Some events corrupted | Skip corrupted, replay valid prefix |
+| Event fails `can()` check | Log warning, continue with next event |
+| Final state invalid | Throw error, prompt for manual intervention |
+
 ### Corrupted Event Log Recovery
 
 When `events.jsonl` is corrupted (e.g., truncated during crash):
