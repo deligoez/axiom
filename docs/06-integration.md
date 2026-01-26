@@ -69,6 +69,40 @@ classifyConflict(conflict):
   return MEDIUM
 ```
 
+### Auto-Resolution Failure
+
+When SIMPLE auto-resolution fails (produces invalid code that fails verification):
+
+```
+autoResolve(conflict):
+  resolution = applyAutoResolveStrategy(conflict)
+
+  // Verify resolution compiles/passes basic checks
+  if not verifyResolution(resolution):
+    // Escalate to MEDIUM - let Rex handle it
+    reclassifyConflict(conflict, MEDIUM)
+    log({
+      event: 'auto_resolve_failed',
+      conflict: conflict.id,
+      reason: 'verification_failed',
+      escalatedTo: 'MEDIUM'
+    })
+    return { success: false, escalated: true }
+
+  return { success: true, resolution: resolution }
+```
+
+**Failure scenarios:**
+
+| Scenario | Detection | Action |
+|----------|-----------|--------|
+| Syntax error after merge | Compilation fails | Escalate to MEDIUM |
+| Test regression | Verification command fails | Escalate to MEDIUM |
+| Conflicting imports | Import resolver fails | Escalate to MEDIUM |
+| Binary file conflict | Cannot auto-merge | Escalate to COMPLEX |
+
+**Note:** Auto-resolution never silently produces broken code. If verification fails, the conflict is escalated rather than merged.
+
 ---
 
 ## Merge Configuration
