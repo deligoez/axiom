@@ -17,34 +17,28 @@ RED → GREEN → QUALITY CHECKS → COMMIT → REFACTOR (if needed) → repeat
 Run these commands in order after tests are GREEN:
 
 ```bash
-# 0. Auto-fix lint issues first
-npm run lint:fix
+# 1. Tests
+go test ./...
 
-# 1. Tests (already green at this point)
-npm run test:run
+# 2. Lint (golangci-lint)
+golangci-lint run
 
-# 2. TypeScript type check
-npm run typecheck
-
-# 3. Lint (Biome)
-npm run lint
-
-# 4. Dead code detection (Knip)
-npm run knip
+# 3. Build (ensure it compiles)
+go build ./...
 ```
 
-**All five must pass before committing.**
+**All three must pass before committing.**
 
-Quick combined check (after lint:fix):
+Quick combined check:
 ```bash
-npm run lint:fix && npm run quality
+go test ./... && golangci-lint run && go build ./...
 ```
 
 ## Rules
 
 1. **One test at a time**: Write one test, run RED, implement GREEN, repeat. Don't write all tests upfront.
 2. **Atomic tests**: Each test should test ONE thing (single assertion focus). Multiple tests per file is fine.
-3. **Quality checks on GREEN**: After tests pass, run typecheck + lint before commit
+3. **Quality checks on GREEN**: After tests pass, run lint before commit
 4. **NEVER ask permission**: Don't ask "shall I commit?" or "Shall I proceed?" - JUST DO IT
 5. **Conventional commits**: Use `feat:`, `fix:`, `test:`, `refactor:` prefixes
 6. **Atomic commits**: Each commit = one logical unit of work
@@ -70,7 +64,7 @@ For ALL commits (TDD or otherwise):
 - Test count: X passing tests
 ```
 
-**Task ID is required** when working on a Beads task. Format: `[ch-xxxx]`
+**Task ID is required** when working on a Beads task. Format: `[ax-xxxx]`
 
 **CRITICAL: No AI traces in commits**
 - Do NOT add `Co-Authored-By: Claude` or similar AI attribution
@@ -81,19 +75,19 @@ For ALL commits (TDD or otherwise):
 
 ```bash
 # After adding new feature with tests
-feat: add CLI argument parsing [ch-nrr]
+feat: add CLI argument parsing [ax-001]
 
 - Parse --version and --help flags
 - 5 passing tests
 
 # After fixing a bug with test
-fix: handle empty input in parser [ch-mpl]
+fix: handle empty input in parser [ax-002]
 
 - Return default values for empty args
 - 6 passing tests
 
 # After refactoring (tests still green)
-refactor: extract validation logic [ch-wk8]
+refactor: extract validation logic [ax-003]
 
 - Move validation to separate function
 - 6 passing tests (unchanged)
@@ -101,7 +95,7 @@ refactor: extract validation logic [ch-wk8]
 # Chore without task (rare)
 chore: update gitignore
 
-- Add .perles/ to ignored files
+- Add Go build artifacts to ignored files
 ```
 
 ## Why This Matters

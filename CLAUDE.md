@@ -1,220 +1,108 @@
-# Chorus
+# AXIOM
 
-Multi-agent TUI orchestrator using Ink (React for CLI) with XState v5 actor model.
+Multi-agent AI coding orchestrator written in Go.
 
-## Task Workflow
+## Overview
+
+AXIOM orchestrates multiple Claude Code agents to work on software projects. It manages:
+- Task breakdown and assignment
+- Agent workspace isolation (git worktrees)
+- Code integration and conflict resolution
+- Learning extraction and propagation
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        AXIOM                                 │
+├─────────────────────────────────────────────────────────────┤
+│  Web UI (htmx)  │  State Machine  │  Agent Orchestration    │
+├─────────────────────────────────────────────────────────────┤
+│  CaseStore      │  WorkspaceManager  │  IntegrationService  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Documentation
+
+Full documentation is in `/docs`:
+
+| Document | Purpose |
+|----------|---------|
+| [00-overview.md](./docs/00-overview.md) | System introduction |
+| [01-configuration.md](./docs/01-configuration.md) | Config system |
+| [02-modes.md](./docs/02-modes.md) | Operating modes |
+| [03-planning.md](./docs/03-planning.md) | Planning system |
+| [04-cases.md](./docs/04-cases.md) | Case management |
+| [05-agents.md](./docs/05-agents.md) | Agent personas |
+| [06-integration.md](./docs/06-integration.md) | Code integration |
+| [07-execution.md](./docs/07-execution.md) | Execution loop |
+| [08-discovery.md](./docs/08-discovery.md) | Learning system |
+| [09-intervention.md](./docs/09-intervention.md) | Human intervention |
+| [10-interface.md](./docs/10-interface.md) | Web UI |
+| [11-review.md](./docs/11-review.md) | Review system |
+| [12-hooks.md](./docs/12-hooks.md) | Lifecycle hooks |
+| [16-glossary.md](./docs/16-glossary.md) | Terminology |
+
+## Development
+
+### Prerequisites
+
+- Go 1.22+
+- Claude Code CLI (`claude`)
+
+### Build
 
 ```bash
-# 1. Pick a task
-bd ready -n 0
-bd show <id>  # View details + check "Blocks" section
+go build -o axiom ./cmd/axiom
+```
 
-# 2. Start working
+### Test
+
+```bash
+go test ./...
+```
+
+### Run
+
+```bash
+./axiom
+```
+
+## Task Tracking
+
+We use Beads for task management:
+
+```bash
+bd ready -n 0          # List available tasks
 bd update <id> --status=in_progress
-
-# 3. Work (TDD: RED → GREEN → quality → commit)
-#    Commit format: "feat: description [ch-xxxx]"
-
-# 4. Complete
-bd close <id>  # Unblocks dependents
-bd sync        # Sync with git (optional)
+bd close <id>          # Complete task
 ```
 
-**Task Selection Rules (in order):**
-1. **Priority first:** P0 > P1 > P2
-2. **Fastest completion:** Among same priority, pick the one that completes fastest
-3. **Independent over chain-starter:** If task A starts a chain of dependent tasks but task B can be completed independently, prefer B first (quick win)
-4. **Check test count:** Lower test count often = faster completion
+## Key Concepts
 
-## Quality Pipeline
+| Term | Description |
+|------|-------------|
+| **Case** | Unit of work (Directive, Task, Discovery, etc.) |
+| **CaseStore** | JSONL-based case storage |
+| **Workspace** | Git worktree for agent isolation |
+| **Persona** | Agent personality (Echo, Axel, Cleo, etc.) |
+| **Signal** | Agent output format (`<axiom>TYPE:payload</axiom>`) |
 
-```bash
-npm run quality   # Runs all checks:
-# 1. npm run test:run   - Vitest
-# 2. npm run typecheck  - TypeScript strict
-# 3. npm run lint       - Biome
-# 4. npm run knip       - Dead code detection
-```
-
-**TDD Pattern:** `RED → GREEN → npm run quality → COMMIT`
-
-## Beads vs TaskStore (IMPORTANT)
-
-**Critical distinction:**
-- **Beads (bd CLI)**: Used for **Chorus development** - tracking development tasks
-- **TaskStore**: Used by **Chorus runtime** - internal task management
-
-| Context | Tool | Directory | File |
-|---------|------|-----------|------|
-| Development workflow | `bd` CLI | `.beads/` | `issues.jsonl` |
-| Chorus runtime | TaskStore | `.chorus/` | `tasks.jsonl` |
-
-**Rules:**
-1. When writing tests/code for Chorus runtime → use `.chorus/tasks.jsonl` with TaskJSONL format
-2. When tracking development work → use `bd` commands
-3. Never mix these in code - Chorus runtime should NOT reference `.beads/` or BeadsCLI
-
-## Beads Commands (Development Only)
-
-| Command | Purpose |
-|---------|---------|
-| `bd ready -n 0` | List available tasks |
-| `bd update <id> --status=in_progress` | Start task |
-| `bd close <id>` | Complete task (unblocks dependents) |
-| `bd sync` | Sync with git |
-| `bd list -l <label> -n 0` | List by milestone |
-| `bd blocked` | See blocked tasks |
-| `bd show <id>` | Task details |
-
-## Milestones
-
-| Label | Milestone |
-|-------|-----------|
-| **m-1-xstate** | XState Foundation (BLOCKS ALL) |
-| m0-planning | Planning Phase |
-| m1-infrastructure | Config, State, Worktree |
-| m2-agent-prep | Prompt, Signal, Linking |
-| m3-task-mgmt | Test, Completion, Claim |
-| m4-orchestration | Orchestrator, Semi-Auto |
-| m5-merge | Merge Service |
-| m6-parallelism | Slot Manager |
-| m7-autopilot | Ralph Loop |
-| m8-memory | Learning/Memory |
-| m9-intervention | Human Intervention |
-| m10-rollback | Rollback & Recovery |
-| m11-hooks | Hooks System |
-| m12-tui | TUI Visualization |
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `thoughts/shared/plans/2026-01-09-chorus-workflow.md` | Master Plan (v5.1 - includes XState & Review) |
-| `.claude/rules/beads-task-tracking.md` | Task tracking rules |
-| `.claude/rules/auto-commit.md` | TDD commit rules |
-
-> **Note:** Master plans in `thoughts/shared/plans/` are large files. Don't read at conversation start. When stuck or need architectural decisions, search first (`grep`) before reading full files to save context.
-
-## Architecture (XState v5)
+## Project Structure
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   CHORUS ROOT MACHINE                    │
-│                     type: 'parallel'                     │
-├─────────────────────────────────────────────────────────┤
-│  orchestration │ mergeQueue │ monitoring │    TUI       │
-├─────────────────────────────────────────────────────────┤
-│              SPAWNED CHILD ACTORS: AgentMachine × n     │
-└─────────────────────────────────────────────────────────┘
+axiom/
+├── cmd/axiom/         # Main entry point
+├── internal/          # Private packages
+│   ├── case/          # CaseStore
+│   ├── workspace/     # Git worktree management
+│   ├── agent/         # Agent spawning
+│   ├── integration/   # Merge service
+│   └── ui/            # Web UI (htmx)
+├── docs/              # Documentation
+└── .axiom/            # Runtime state (gitignored)
 ```
 
-## Persona System
+## Archive
 
-Chorus uses a multi-persona architecture where each agent has a distinct personality and role.
-
-### Available Personas
-
-| Persona | Emoji | Role | Color | Description |
-|---------|-------|------|-------|-------------|
-| **Analyzer Ace** | 🔍 | analyzer | Indigo | Analyzes project structure, suggests configurations |
-| **Engineer Ed** | ⚙️ | worker | Blue | Implements features, writes code |
-| **Planner Pat** | 📊 | planner | Purple | Decomposes features into atomic tasks |
-| **Fixer Finn** | 🔧 | resolver | Orange | Fixes bugs, resolves merge conflicts |
-| **Spotter Sam** | 🎯 | selector | Green | Selects next best task to work on |
-| **Logger Lou** | 💡 | extractor | Teal | Extracts learnings from agent logs |
-| **Director Dan** | 😎 | orchestrator | Gold | Coordinates all agents, manages workflow |
-| **Watcher Will** | 👁️ | monitor | Amber | Monitors agent health, detects stuck agents |
-| **Counter Carl** | 📈 | statistician | Slate | Collects metrics, tracks usage |
-
-### Persona File Structure
-
-Each persona can have custom configuration in `.chorus/agents/{persona}/`:
-
-```
-.chorus/agents/
-├── ace/
-│   ├── prompt.md      # Custom system prompt
-│   ├── rules.md       # Persona-specific rules
-│   ├── skills/        # Skill files (*.md)
-│   │   └── analysis.md
-│   ├── learnings.md   # Per-agent learnings
-│   ├── metrics.json   # Performance metrics
-│   └── logs/          # Execution logs
-│       └── {taskId}.jsonl
-└── ed/
-    ├── prompt.md
-    ├── rules.md
-    └── skills/
-        └── tdd.md
-```
-
-### Persona Data Services
-
-- **AgentLogService**: Per-agent JSONL execution logs
-- **AgentMetricsService**: Task completion, tokens, success rates
-- **AgentLearningsService**: Per-agent learnings with deduplication
-- **AgentDataIntegration**: Orchestrates all services for lifecycle events
-
-## Key Decisions
-
-1. **State Management:** XState v5 actor model
-2. **Crash Recovery:** Snapshot + event sourcing fallback
-3. **Agent Model:** Spawned child actors
-4. **Test Pattern:** AAA (Arrange-Act-Assert) mandatory
-5. **MVP Scope:** Claude-only
-
-## Learnings
-
-Document important task-applicable findings here (only truly universal insights):
-
-- **XState sendTo vs direct send:** `sendTo` action requires full XState actor ref with `_send` method. For mocked parents in tests, use direct `context.parentRef.send()` in actions instead.
-- **Type-only imports in tests:** Vitest may pass even if type files don't exist because `import type` is erased at runtime. Always run `npm run typecheck` to catch missing types.
-
-## Testing Patterns
-
-**AAA Pattern (mandatory):**
-```typescript
-it('should transition from idle to preparing on START', () => {
-  // Arrange
-  const actor = createActor(machine).start();
-
-  // Act
-  actor.send({ type: 'START' });
-
-  // Assert
-  expect(actor.getSnapshot().value).toBe('preparing');
-});
-```
-
-**XState Testing Patterns:**
-
-| Test Type | Arrange | Act | Assert |
-|-----------|---------|-----|--------|
-| State Transition | `createActor(machine).start()` | `actor.send({ type: 'EVENT' })` | `getSnapshot().value` |
-| Context Update | `createActor(machine, { input })` | `actor.send({ type: 'EVENT', data })` | `getSnapshot().context` |
-| Guard Behavior | Set context that fails guard | `actor.send({ type: 'EVENT' })` | State unchanged |
-| Final State | Navigate to final state | Check status | `getSnapshot().status === 'done'` |
-
-## Skipped Test Policy
-
-**When you skip a test with `it.skip()`, you MUST create a bug task immediately:**
-
-```bash
-bd create "BUG: <brief description of why test is skipped>" -p 3 -l <milestone> --body "..."
-```
-
-**Bug task must include:**
-- Which test(s) are skipped and file:line locations
-- Root cause explanation
-- Possible solutions
-- Acceptance criteria: "Remove `.skip` from test method"
-
-**Reference the task in the skip comment:**
-```typescript
-// SKIPPED: <reason> - see ch-xxxx
-it.skip("test description", async () => {
-```
-
-**Current skipped tests with tasks:**
-
-*None - all tests are active.*
+Previous TypeScript/Ink implementation is in `archive-v2/`.

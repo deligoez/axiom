@@ -1,23 +1,33 @@
-# Chorus .gitignore
+# AXIOM .gitignore
 
-# Worktrees (agent isolation)
-.worktrees/
+# Go binaries and build artifacts
+/bin/
+/axiom
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Workspaces (agent isolation via git worktrees)
+.workspaces/
 
 # Beads cache (rebuild from JSONL)
 .beads/beads.db
+
+# AXIOM runtime state
+.axiom/state/
+.axiom/checkpoints/
+.axiom/feedback/
 
 # Environment files (secrets)
 .env
 .env.local
 .env.*.local
-
-# Agent scratchpads (per-session, volatile)
-# Note: learnings.md IS tracked (shared knowledge)
-.agent/scratchpad.md
-.agent/*/scratchpad.md
-
-# Usage logs (optional tracking)
-.agent/usage.log
 
 # OS files
 .DS_Store
@@ -27,13 +37,12 @@ Thumbs.db
 *.swp
 *.swo
 *~
-.idea/
 .vscode/
 *.sublime-*
 
-# Node (if using npm packages)
-node_modules/
-npm-debug.log*
+# Claude Code (keep rules, ignore cache)
+.claude/
+!.claude/rules/
 
 # Test coverage (generated)
 coverage/
@@ -41,13 +50,9 @@ coverage/
 # Logs
 *.log
 logs/
-.claude/
-!.claude/rules/
-dist/
-
-# Perles config (personal)
-.perles/
 
 # TLDR tool cache (runtime state)
 .tldr/
-.tldrignore
+
+# IDE (optional - uncomment if you want to track)
+# .idea/

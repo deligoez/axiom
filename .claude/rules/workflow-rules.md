@@ -1,6 +1,6 @@
 # Workflow Rules
 
-Additional workflow rules for working on Chorus.
+Additional workflow rules for working on AXIOM.
 
 ## Context Compaction Rules
 
@@ -15,10 +15,10 @@ After a context compaction (session continuation):
 All project artifacts MUST be in **English**:
 
 - **Beads tasks**: Title, description, body - all in English
-- **Code**: Variable names, function names, class names
-- **Comments**: Inline comments, JSDoc, documentation
+- **Code**: Variable names, function names, struct names
+- **Comments**: Inline comments, GoDoc, documentation
 - **Commit messages**: Title and body
-- **Test descriptions**: `describe()` and `it()` strings
+- **Test descriptions**: Test function names and t.Run() strings
 - **Error messages**: User-facing and internal errors
 
 This ensures consistency and accessibility across the codebase.
@@ -46,10 +46,10 @@ Task selection rules:
 
 ### What Counts as a Key Discovery
 
-- Unexpected behavior (e.g., "CLI requires stdin not args")
+- Unexpected behavior (e.g., "exec.Command requires absolute path")
 - Workarounds for bugs or limitations
 - Correct format/syntax when docs are unclear or wrong
-- Environment-specific quirks (e.g., "stdin.isTTY is false in node-pty")
+- Environment-specific quirks
 - Performance implications discovered during implementation
 - Integration patterns that weren't obvious
 
@@ -57,11 +57,10 @@ Task selection rules:
 
 | Discovery Type | Document In |
 |---------------|-------------|
-| Testing patterns | `.claude/rules/e2e-testing.md` |
 | Task workflow | `.claude/rules/beads-task-tracking.md` |
 | Commit/TDD patterns | `.claude/rules/auto-commit.md` |
 | General workflow | `.claude/rules/workflow-rules.md` |
-| Project-wide | `CLAUDE.md` (Learnings section) |
+| Project-wide | `CLAUDE.md` |
 
 ### Documentation Format
 
@@ -74,13 +73,6 @@ Task selection rules:
 
 ```code example if helpful```
 ```
-
-### Example
-
-When implementing integration tests, discovered:
-- Claude CLI `--print` hangs when prompt is passed as argument
-- Solution: Send prompt via stdin instead
-- Documented in: `.claude/rules/e2e-testing.md` under "Integration Testing"
 
 **This rule ensures knowledge is preserved across sessions and helps future agents avoid the same pitfalls.**
 
@@ -102,40 +94,32 @@ Only when user explicitly says **"task aç"** (create task):
 2. **Write failing test first** (RED) - TDD approach
 3. **Confirm test fails** - Run the test to verify it catches the bug
 4. **Fix the issue** (GREEN) - Implement the fix
-5. **Run quality checks** - `npm run quality`
+5. **Run quality checks** - `go test ./... && golangci-lint run`
 6. **Close the task** - `bd close <id>` if all checks pass
 
-### QA Mode Commands
+### QA Test Pattern (Go)
 
-```bash
-# Create bug task
-bd create "BUG: <description>" -p 2 -l bug --body "..."
+```go
+func TestSomething(t *testing.T) {
+    t.Run("should handle edge case", func(t *testing.T) {
+        // Arrange - setup the problematic scenario
 
-# After fix is complete
-bd close <id>
-```
+        // Act - trigger the bug
 
-### QA Test Pattern
-
-```typescript
-it("should handle <edge case>", () => {
-  // Arrange - setup the problematic scenario
-
-  // Act - trigger the bug
-
-  // Assert - verify correct behavior
-});
+        // Assert - verify correct behavior
+    })
+}
 ```
 
 ### Unimplemented Feature Rule (MANDATORY)
 
 **When encountering an unimplemented feature during QA testing, create a planning task:**
 
-1. **Identify** - Note which feature is missing (e.g., "Number keys 1-9 for quick select")
+1. **Identify** - Note which feature is missing
 2. **Create Planning Task** - Use format: `PLAN: <Feature Name> Implementation`
 3. **Task Body** - Include:
    - What the feature should do
-   - Where it's referenced (HelpPanel, docs, etc.)
+   - Where it's referenced (docs, etc.)
    - Affected files (likely locations)
    - Dependencies on other features
 
@@ -145,12 +129,12 @@ bd create "PLAN: <Feature Name> Implementation" -p 2 -l <milestone> --body "$(ca
 <Brief description of the feature>
 
 ## References
-- HelpPanel shows: <key> - <description>
+- Docs reference: <where documented>
 - QA test found: <where discovered>
 
 ## Likely Files
-- src/modes/ImplementationMode.tsx (keyboard handler)
-- src/components/<Component>.tsx
+- internal/package/file.go
+- internal/package/file_test.go
 
 ## Dependencies
 - Requires: <other features if any>
