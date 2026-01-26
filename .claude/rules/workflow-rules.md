@@ -2,6 +2,75 @@
 
 Additional workflow rules for working on AXIOM.
 
+---
+
+## AXIOM-Style Development (Dogfooding)
+
+We build AXIOM using AXIOM's own methodology - manually playing the roles until the system exists.
+
+### Case Hierarchy
+
+```
+⬛ Directive (Black)  = docs/ folder (the spec/PRD)
+        │
+        ▼
+⬜ Draft (Grey)       = Milestone planning tasks (PLAN: m1-core, etc.)
+        │
+        ▼
+🟦 Operation (Blue)   = Feature groups (F01: CaseStore, etc.)
+        │
+        ▼
+🟩 Task (Green)       = TDD implementation units
+```
+
+### Workflow
+
+1. **Directive exists** - `docs/` folder is our PRD
+2. **Extract Draft** - Create `PLAN: <milestone>` task, think through it
+3. **Draft → Operations** - Break down into feature tasks (F01, F02, ...)
+4. **Operations → Tasks** - If needed, break further into smaller units
+5. **Implement** - TDD: RED → GREEN → REFACTOR → COMMIT
+6. **Close and continue** - Close task, pick next
+
+### Beads Labels for Case Types
+
+| Case Type | Beads Label | Example |
+|-----------|-------------|---------|
+| Draft | `plan` | `PLAN: m1-core Implementation` |
+| Operation | `m1-core`, `m2-workspace`, etc. | `F01: CaseStore` |
+| Task | Same as parent Operation | `F01.1: Store.Create method` |
+
+### Manual Axel Role
+
+Before starting a new milestone:
+
+1. **Read relevant docs** - Understand what's needed
+2. **Create Draft task** - `bd create "PLAN: <milestone>" -p 1 -l plan`
+3. **Think through** - Dependencies, order, test strategy
+4. **Extract Operations** - Create feature tasks with acceptance criteria
+5. **Close Draft** - Mark planning complete
+
+### Rule: Everything Through Beads
+
+**ALL work MUST be tracked via Beads tasks:**
+
+- No implementation without a task
+- No commits without a task reference `[ax-xxx]`
+- Planning work = `PLAN:` prefixed tasks
+- Bug fixes = `BUG:` prefixed tasks
+- Chores = `CHORE:` prefixed tasks
+
+```bash
+# Before ANY work
+bd ready -n 0              # Check available tasks
+bd update ax-xxx --status=in_progress  # Claim task
+
+# After completing
+bd close ax-xxx            # Close task
+```
+
+---
+
 ## Context Compaction Rules
 
 After a context compaction (session continuation):
