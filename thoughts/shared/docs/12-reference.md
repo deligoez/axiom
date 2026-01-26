@@ -4,36 +4,36 @@ Summary of key concepts and configurations.
 
 ---
 
-## Color System
+## Case Type System
 
-### Discovery Ideas (produce more ideas)
+### Discovery Cases (produce more cases)
 
-| Color | Symbol | Name | Description |
-|-------|--------|------|-------------|
-| ⬛ | `■` | Black | Raw need (JTBD/PRD) |
-| ⬜ | `□` | Gray | Plan draft |
-| 🟧 | `◆` | Orange | Research needed |
-| 🟪 | `◇` | Purple | Decision pending |
-| 🟥 | `▣` | Red | Deferred |
+| Type | Symbol | Name | Description |
+|------|--------|------|-------------|
+| Directive | `■` | ⬛ | Raw need (JTBD/PRD) |
+| Draft | `□` | ⬜ | Plan draft |
+| Research | `◆` | 🟧 | Research needed |
+| Pending | `◇` | 🟪 | Decision pending |
+| Deferred | `▣` | 🟥 | Deferred |
 
-### Implementation Ideas (produce code)
+### Implementation Cases (produce code)
 
-| Color | Symbol | Name | Description |
-|-------|--------|------|-------------|
-| 🟦 | `▢` | Blue | Feature (vertical slice) |
-| 🟩 | `▤` | Green | Atomic idea |
+| Type | Symbol | Name | Description |
+|------|--------|------|-------------|
+| Operation | `▢` | 🟦 | Feature (vertical slice) |
+| Task | `▤` | 🟩 | Atomic case |
 
-**White** = Green with `status: done` (completed). White is a status, not a color.
+**Done** = Task with `status: done` (completed). Done is a status, not a type.
 
-### Knowledge Ideas (capture learnings)
+### Knowledge Cases (capture learnings)
 
-| Color | Symbol | Name | Description |
-|-------|--------|------|-------------|
-| 🟡 | `●` | Yellow | Learning/Discovery |
+| Type | Symbol | Name | Description |
+|------|--------|------|-------------|
+| Discovery | `●` | 🟡 | Learning/Discovery |
 
 ---
 
-## Idea Statuses
+## Case Statuses
 
 ### Universal Statuses
 
@@ -44,7 +44,7 @@ Summary of key concepts and configurations.
 | `done` | `✓` | Completed |
 | `blocked` | `⊗` | Blocked |
 
-### Green-Specific
+### Task-Specific
 
 | Status | Symbol | Description |
 |--------|--------|-------------|
@@ -52,13 +52,13 @@ Summary of key concepts and configurations.
 | `timeout` | `⏱` | Timed out |
 | `review` | `◐` | Awaiting review |
 
-### Yellow-Specific
+### Discovery-Specific
 
 | Status | Symbol | Description |
 |--------|--------|-------------|
 | `active` | `●` | Valid, injected into prompts |
 | `outdated` | `⚠` | Needs verification |
-| `archived` | `◌` | Parent Green done |
+| `archived` | `◌` | Parent Task done |
 
 ---
 
@@ -66,33 +66,33 @@ Summary of key concepts and configurations.
 
 | Persona | Emoji | Role |
 |---------|-------|------|
-| Analyzer Ace | 🔍 | Project analysis |
-| Planner Pat | 📊 | Swarm spiral + Retrospective |
-| Engineer Ed | ⚙️ | Implementation |
-| Fixer Finn | 🔧 | Conflict resolution |
-| Logger Lou | 💡 | Learning extraction |
-| Director Dan | 😎 | Orchestration |
-| Watcher Will | 👁️ | Health monitoring |
-| Counter Carl | 📈 | Metrics |
+| Analyst Ava | 🔍 | Project analysis |
+| Architect Axel | 📊 | Planning spiral + Debrief |
+| Executor Echo | ⚙️ | Implementation |
+| Resolver Rex | 🔧 | Conflict resolution |
+| Curator Cleo | 💡 | Discovery extraction |
+| Director Dex | 😎 | Orchestration |
+| Monitor Max | 👁️ | Health monitoring |
+| Auditor Ash | 📈 | Metrics |
 
 ---
 
 ## Signal Protocol
 
 ```
-<swarm>SIGNAL</swarm>
-<swarm>SIGNAL:payload</swarm>
+<axiom>SIGNAL</axiom>
+<axiom>SIGNAL:payload</axiom>
 ```
 
 | Signal | Payload | Purpose |
 |--------|---------|---------|
-| `COMPLETE` | none | Idea done |
+| `COMPLETE` | none | Task done |
 | `BLOCKED` | reason | Cannot proceed |
-| `NEEDS_HUMAN` | reason | Human intervention required |
+| `PENDING` | reason | Human intervention required |
 | `PROGRESS` | 0-100 | Progress update |
-| `RESOLVED` | none | Merge conflict resolved (Finn) |
-| `LEARNING_LOCAL` | content | Creates Yellow idea (scope: local) |
-| `LEARNING_GLOBAL` | content | Creates Yellow idea (scope: global) |
+| `RESOLVED` | none | Merge conflict resolved (Rex) |
+| `DISCOVERY_LOCAL` | content | Creates Discovery case (scope: local) |
+| `DISCOVERY_GLOBAL` | content | Creates Discovery case (scope: global) |
 
 ---
 
@@ -103,7 +103,7 @@ Summary of key concepts and configurations.
   "mode": "semi-auto",
   "agents": { "maxParallel": 3, "timeoutMinutes": 30 },
   "completion": { "maxIterations": 50, "stuckThreshold": 5 },
-  "qualityCommands": ["npm test", "npm run typecheck"],
+  "verification": ["npm test", "npm run typecheck"],
   "review": { "defaultMode": "batch" },
   "merge": { "autoMerge": true, "conflictRetries": 3 }
 }
@@ -114,18 +114,18 @@ Summary of key concepts and configurations.
 ## Directory Structure
 
 ```
-.swarm/
+.axiom/
 ├── config.json              # Configuration
-├── ideas.jsonl              # Ideas (all colors incl. Yellow)
+├── cases.jsonl              # Cases (all types incl. Discovery)
 ├── planning-state.json      # State
-├── learnings.md             # View: global Yellow ideas
+├── discoveries.md           # View: global Discovery cases
 ├── state/
 │   ├── snapshot.json        # State machine snapshot
 │   └── events.jsonl         # Event log
 ├── agents/{persona}/
 │   ├── prompt.md
 │   ├── rules.md
-│   ├── learnings.md         # View: local Yellow ideas
+│   ├── discoveries.md       # View: local Discovery cases
 │   └── logs/
 ├── checkpoints/             # Saved states
 ├── feedback/                # Review feedback
@@ -135,7 +135,7 @@ Summary of key concepts and configurations.
 └── metrics/                 # Statistics
 ```
 
-Note: `learnings.md` files are **views** generated from Yellow ideas in `ideas.jsonl`, not primary storage.
+Note: `discoveries.md` files are **views** generated from Discovery cases in `cases.jsonl`, not primary storage.
 
 ---
 
@@ -144,26 +144,26 @@ Note: `learnings.md` files are **views** generated from Yellow ideas in `ideas.j
 | Level | Resolution |
 |-------|------------|
 | SIMPLE | Auto-resolve |
-| MEDIUM | Fixer Finn |
+| MEDIUM | Resolver Rex |
 | COMPLEX | Human escalation |
 
 ---
 
 ## Operating Modes
 
-| Mode | Idea Selection | After Complete |
+| Mode | Task Selection | After Complete |
 |------|----------------|----------------|
 | Semi-Auto | User picks | Agent stops |
 | Autopilot | Automatic | Pick next |
 
 ---
 
-## Review vs Retrospective
+## Review vs Debrief
 
 | System | Trigger | Actor | Purpose |
 |--------|---------|-------|---------|
-| Review | Green done | Human | Approve/reject |
-| Retrospective | Blue done | Pat | Learn, update plan |
+| Review | Task done | Human | Approve/reject |
+| Debrief | Operation done | Axel | Learn, update plan |
 
 ---
 
@@ -182,24 +182,24 @@ Note: `learnings.md` files are **views** generated from Yellow ideas in `ideas.j
 
 | Variable | Override |
 |----------|----------|
-| `SWARM_MODE` | mode |
-| `SWARM_MAX_AGENTS` | agents.maxParallel |
-| `SWARM_MODEL` | agents.defaultModel |
+| `AXIOM_MODE` | mode |
+| `AXIOM_MAX_AGENTS` | agents.maxParallel |
+| `AXIOM_MODEL` | agents.defaultModel |
 
 ---
 
 ## Workflow Phases
 
 ```
-Init → Planning → Implementation
-  │        │            │
-  ▼        ▼            ▼
- Ace      Pat          Ed
-         (spiral)    (Green ideas)
+Briefing → Planning → Implementation
+  │          │            │
+  ▼          ▼            ▼
+ Ava       Axel         Echo
+         (spiral)      (Tasks)
             │
             ▼
-      Retrospective
-      (after Blue)
+        Debrief
+      (after Operation)
 ```
 
 ---
@@ -207,9 +207,9 @@ Init → Planning → Implementation
 ## Server Architecture
 
 ```
-Swarm Server
+AXIOM Server
 ├── Orchestrator Service
-├── MergeQueue Service
+├── Integration Queue Service
 ├── Monitor Service
 ├── Web UI (htmx + SSE)
 └── Agent Manager
@@ -225,36 +225,36 @@ Swarm Server
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `CONFIG_COMPLETE` | config | Configuration loaded |
-| `PLAN_APPROVED` | ideas | Plan approved, ideas created |
+| `PLAN_APPROVED` | cases | Plan approved, cases created |
 | `TRIGGER_PLANNING` | - | Start incremental planning |
-| `SPAWN_AGENT` | ideaId | Request agent spawn |
+| `SPAWN_AGENT` | taskId | Request agent spawn |
 | `STOP_AGENT` | agentId | Stop running agent |
-| `AGENT_COMPLETED` | agentId, result | Agent finished idea |
+| `AGENT_COMPLETED` | agentId, result | Agent finished Task |
 | `AGENT_FAILED` | agentId, error | Agent error |
 | `AGENT_BLOCKED` | agentId, reason | Agent blocked |
 | `PAUSE` | - | Pause orchestration |
 | `RESUME` | - | Resume orchestration |
 | `SET_MODE` | mode | Switch semi-auto/autopilot |
 
-### Merge Queue Events
+### Integration Queue Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `ENQUEUE_MERGE` | ideaId, branch | Queue for merge |
-| `MERGE_COMPLETED` | ideaId | Successfully merged |
-| `MERGE_CONFLICT` | ideaId, level | Conflict detected |
+| `ENQUEUE_MERGE` | taskId, branch | Queue for merge |
+| `MERGE_COMPLETED` | taskId | Successfully merged |
+| `MERGE_CONFLICT` | taskId, level | Conflict detected |
 
 ### Agent Lifecycle Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `START` | - | Begin execution |
-| `READY` | - | Worktree prepared |
+| `READY` | - | Workspace prepared |
 | `ITERATION_DONE` | signal? | Iteration complete |
-| `ALL_PASS` | - | Quality checks passed |
+| `ALL_PASS` | - | Verification checks passed |
 | `RETRY` | - | Retry iteration |
 | `BLOCKED` | reason | Cannot proceed |
-| `COMPLETE` | - | Idea done |
+| `COMPLETE` | - | Task done |
 | `FAIL` | error | Error occurred |
 | `TIMEOUT` | - | Timed out |
 | `STOP` | - | Force stop |
@@ -264,21 +264,21 @@ Swarm Server
 ## CLI Usage
 
 ```bash
-# Start Swarm server (opens browser automatically)
-swarm
+# Start AXIOM server (opens browser automatically)
+axiom
 
 # Options
-swarm --port 8080      # Custom port
-swarm --no-open        # Don't open browser
-swarm --version        # Show version
-swarm --help           # Show help
+axiom --port 8080      # Custom port
+axiom --no-open        # Don't open browser
+axiom --version        # Show version
+axiom --help           # Show help
 ```
 
 The CLI is minimal - just start the server. All interaction happens via Web UI.
 
 ---
 
-## Quality Commands
+## Verification Commands
 
 | Project | Commands |
 |---------|----------|
@@ -292,10 +292,10 @@ The CLI is minimal - just start the server. All interaction happens via Web UI.
 
 | Target | Description |
 |--------|-------------|
-| `count` | Run N Greens |
+| `count` | Run N Tasks |
 | `duration` | Run for N hours |
 | `until_time` | Run until time |
-| `no_ready` | Run until no ready Greens |
+| `no_ready` | Run until no ready Tasks |
 
 ---
 
@@ -303,7 +303,7 @@ The CLI is minimal - just start the server. All interaction happens via Web UI.
 
 1. Load State machine snapshot
 2. If invalid, replay events
-3. Reset orphaned Greens to pending
+3. Reset orphaned Tasks to pending
 4. Resume operation
 
 ---
@@ -311,32 +311,32 @@ The CLI is minimal - just start the server. All interaction happens via Web UI.
 ## Refinement Chain
 
 ```
-⬛ Black (Raw Need/PRD)
+Directive (Raw Need/PRD)
      │
-     └── SPLIT → ⬜ Gray (Plan Drafts)
+     └── SPLIT → Draft (Plan Drafts)
                       │
          ┌───────────┼───────────┐
          │           │           │
          ▼           ▼           ▼
-    🟧 Orange   🟪 Purple    🟦 Blue
-    (Research)  (Decision)  (Feature)
+    Research     Pending     Operation
+                              (Feature)
          │           │           │
          └─────┬─────┘           │
                │                 │
-               └────► ⬜ Gray ───┘
+               └────► Draft ────┘
                          │
-                         └── SPLIT → 🟦 Blue (Features)
+                         └── SPLIT → Operation (Features)
                                           │
-                                          └── SPLIT → 🟩 Green (Ideas)
+                                          └── SPLIT → Task (Atomic)
                                                            │
                                                     ┌──────┴──────┐
                                                     │             │
                                                     ▼             ▼
-                                            status: done    🟡 Yellow
-                                            (White)        (Learning)
+                                            status: done    Discovery
+                                             (Done)        (Learning)
 ```
 
-Yellow ideas are **byproducts** of Green execution, not refinement steps.
+Discovery cases are **byproducts** of Task execution, not refinement steps.
 
 ---
 
@@ -344,7 +344,7 @@ Yellow ideas are **byproducts** of Green execution, not refinement steps.
 
 | Change Type | When | Example |
 |-------------|------|---------|
-| Transition | Idea refines but stays one thing | Gray → Orange → Blue |
-| Split | Idea breaks into multiple things | Blue → [Green, Green, Green] |
+| Transition | Case refines but stays one thing | Draft → Research → Operation |
+| Split | Case breaks into multiple things | Operation → [Task, Task, Task] |
 
-Note: Yellow creation is neither transition nor split - it's a **byproduct** of Green execution via learning signals.
+Note: Discovery creation is neither transition nor split - it's a **byproduct** of Task execution via discovery signals.

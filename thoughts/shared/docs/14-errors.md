@@ -9,7 +9,7 @@ Comprehensive error handling, recovery strategies, and escalation paths.
 | Category | Source | Severity Range |
 |----------|--------|----------------|
 | Agent Errors | Claude CLI, output parsing | Low - Critical |
-| Git Errors | Worktree, merge operations | Medium - Critical |
+| Git Errors | Workspace, merge operations | Medium - Critical |
 | System Errors | Disk, memory, network | Medium - Critical |
 | State Errors | Persistence, recovery | Low - High |
 | User Errors | Invalid input, config | Low - Medium |
@@ -23,9 +23,9 @@ Comprehensive error handling, recovery strategies, and escalation paths.
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
 | `claude not found` | CLI not installed | Abort, show install instructions | User action required |
-| `spawn ENOENT` | Invalid path | Check worktree path, retry | After 3 retries |
+| `spawn ENOENT` | Invalid path | Check workspace path, retry | After 3 retries |
 | `spawn EACCES` | Permission denied | Check file permissions | User action required |
-| `timeout` | Process hung | Kill process, retry idea | After 2 retries |
+| `timeout` | Process hung | Kill process, retry Task | After 2 retries |
 
 **Recovery Code:**
 ```go
@@ -43,7 +43,7 @@ func spawnAgent(ctx context.Context, config AgentConfig) error {
         log.Warn("Spawn failed, retrying", "attempt", attempt, "error", err)
         time.Sleep(time.Second * time.Duration(attempt+1))
     }
-    return &RetryExhaustedError{config.IdeaID}
+    return &RetryExhaustedError{config.TaskID}
 }
 ```
 
@@ -62,36 +62,36 @@ func spawnAgent(ctx context.Context, config AgentConfig) error {
 |-------|-------|----------|------------|
 | `stuck_iterations` | No progress | Send nudge prompt | After stuckThreshold |
 | `infinite_loop` | Same output repeated | Force stop, human review | Immediately |
-| `invalid_commits` | Broken git state | Reset worktree | After 2 occurrences |
-| `quality_failures` | Tests/lint failing | Retry with feedback | After maxIterations |
+| `invalid_commits` | Broken git state | Reset workspace | After 2 occurrences |
+| `verification_failures` | Tests/lint failing | Retry with feedback | After maxIterations |
 
 ---
 
 ## Git Errors
 
-### Worktree Errors
+### Workspace Errors
 
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
-| `worktree exists` | Orphaned worktree | Remove and recreate | Never |
+| `workspace exists` | Orphaned workspace | Remove and recreate | Never |
 | `branch exists` | Previous run | Delete branch, retry | After 1 retry |
 | `lock file exists` | Concurrent access | Wait and retry | After 5 retries |
 | `not a git repo` | Invalid project | Abort session | User action required |
 
 **Recovery Code:**
 ```go
-func createWorktree(ideaID, agentID string) (string, error) {
-    path := filepath.Join(".worktrees", fmt.Sprintf("%s-%s", agentID, ideaID))
+func createWorkspace(taskID, agentID string) (string, error) {
+    path := filepath.Join(".workspaces", fmt.Sprintf("%s-%s", agentID, taskID))
 
     // Clean up if exists
     if exists(path) {
-        if err := removeWorktree(path); err != nil {
+        if err := removeWorkspace(path); err != nil {
             return "", fmt.Errorf("cleanup failed: %w", err)
         }
     }
 
-    // Create fresh worktree
-    branch := fmt.Sprintf("agent/%s/%s", agentID, ideaID)
+    // Create fresh workspace
+    branch := fmt.Sprintf("agent/%s/%s", agentID, taskID)
     return path, exec.Command("git", "worktree", "add", "-b", branch, path).Run()
 }
 ```
@@ -100,7 +100,7 @@ func createWorktree(ideaID, agentID string) (string, error) {
 
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
-| `merge conflict` | Overlapping changes | Classify → Auto/Finn/Human | Based on level |
+| `merge conflict` | Overlapping changes | Classify → Auto/Rex/Human | Based on level |
 | `nothing to merge` | Already merged | Skip, mark done | Never |
 | `not mergeable` | Diverged history | Rebase attempt | Human review |
 | `protected branch` | Main branch rules | Human push | Immediately |
@@ -132,21 +132,21 @@ func classifyConflict(conflict Conflict) ConflictLevel {
 
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
-| `ENOSPC` | Disk full | Cleanup old worktrees | If still full |
+| `ENOSPC` | Disk full | Cleanup old workspaces | If still full |
 | `EROFS` | Read-only filesystem | Abort | User action required |
 | `EIO` | I/O error | Retry once | If persists |
 
 **Disk Monitoring:**
 ```go
 func checkDiskSpace() error {
-    usage := getDiskUsage(".worktrees")
+    usage := getDiskUsage(".workspaces")
 
     if usage > 0.95 {
         return &CriticalError{"Disk >95% full, stopping agents"}
     }
 
     if usage > 0.90 {
-        cleanupOldWorktrees()
+        cleanupOldWorkspaces()
         return &WarningError{"Disk >90% full, cleaned up"}
     }
 
@@ -179,7 +179,7 @@ func checkDiskSpace() error {
 |-------|-------|----------|------------|
 | `snapshot corrupt` | Crash during write | Use event log | Automatic |
 | `events corrupt` | Parse error | Start fresh, warn | User decision |
-| `ideas.jsonl corrupt` | Invalid JSON | Recover valid lines | Log lost entries |
+| `cases.jsonl corrupt` | Invalid JSON | Recover valid lines | Log lost entries |
 
 **Recovery Strategy:**
 ```go
@@ -206,8 +206,8 @@ func recoverState() (*State, error) {
 
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
-| `orphaned idea` | Agent crashed | Reset to pending | Automatic |
-| `orphaned worktree` | Cleanup failed | Remove worktree | Automatic |
+| `orphaned task` | Agent crashed | Reset to pending | Automatic |
+| `orphaned workspace` | Cleanup failed | Remove workspace | Automatic |
 | `counter mismatch` | Concurrent access | Use file lock | Never |
 
 ---
@@ -235,10 +235,10 @@ func validateConfig(config *Config) []ValidationError {
         })
     }
 
-    for i, cmd := range config.QualityCommands {
+    for i, cmd := range config.Verification {
         if !commandExists(cmd) {
             errors = append(errors, ValidationError{
-                Field:   fmt.Sprintf("qualityCommands[%d]", i),
+                Field:   fmt.Sprintf("verification[%d]", i),
                 Message: fmt.Sprintf("Command not found: %s", cmd),
             })
         }
@@ -252,8 +252,8 @@ func validateConfig(config *Config) []ValidationError {
 
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
-| `invalid idea format` | Bad idea structure | Reject with explanation | Never |
-| `circular dependency` | Ideas depend on each other | Reject, show cycle | Never |
+| `invalid case format` | Bad case structure | Reject with explanation | Never |
+| `circular dependency` | Cases depend on each other | Reject, show cycle | Never |
 | `duplicate id` | ID collision | Generate new ID | Never |
 
 ---
@@ -266,18 +266,18 @@ All errors follow a consistent format for Web UI display:
 {
   "error": {
     "code": "AGENT_SPAWN_FAILED",
-    "message": "Failed to spawn agent ed-003",
+    "message": "Failed to spawn agent echo-003",
     "details": "Process exited with code 1",
     "severity": "high",
     "recoverable": true,
     "suggestions": [
       "Check if Claude CLI is installed",
-      "Verify worktree path exists",
+      "Verify workspace path exists",
       "Try restarting the server"
     ],
     "context": {
-      "agentId": "ed-003",
-      "ideaId": "idea-042",
+      "agentId": "echo-003",
+      "taskId": "task-042",
       "attempt": 2
     }
   }
@@ -303,19 +303,19 @@ Custom handling via hooks:
 
 ```bash
 #!/bin/bash
-# .swarm/hooks/on-error.sh
+# .axiom/hooks/on-error.sh
 
 # Environment variables:
-# SWARM_ERROR_CODE    - Error code
-# SWARM_ERROR_MESSAGE - Human-readable message
-# SWARM_ERROR_AGENT   - Agent ID (if applicable)
-# SWARM_ERROR_IDEA    - Idea ID (if applicable)
-# SWARM_ERROR_SEVERITY - low|medium|high|critical
+# AXIOM_ERROR_CODE    - Error code
+# AXIOM_ERROR_MESSAGE - Human-readable message
+# AXIOM_ERROR_AGENT   - Agent ID (if applicable)
+# AXIOM_ERROR_TASK    - Task ID (if applicable)
+# AXIOM_ERROR_SEVERITY - low|medium|high|critical
 
-case "$SWARM_ERROR_CODE" in
+case "$AXIOM_ERROR_CODE" in
   "AGENT_STUCK")
     # Custom notification
-    slack-notify "#dev" "Agent $SWARM_ERROR_AGENT stuck on $SWARM_ERROR_IDEA"
+    slack-notify "#dev" "Agent $AXIOM_ERROR_AGENT stuck on $AXIOM_ERROR_TASK"
     ;;
   "DISK_FULL")
     # Emergency cleanup
@@ -328,11 +328,11 @@ esac
 
 ## Logging
 
-All errors are logged to `.swarm/logs/errors.jsonl`:
+All errors are logged to `.axiom/logs/errors.jsonl`:
 
 ```json
-{"ts":"2026-01-25T10:00:00Z","code":"AGENT_SPAWN_FAILED","severity":"high","agent":"ed-003","idea":"idea-042","stack":"..."}
-{"ts":"2026-01-25T10:01:00Z","code":"MERGE_CONFLICT","severity":"medium","idea":"idea-042","level":"MEDIUM"}
+{"ts":"2026-01-25T10:00:00Z","code":"AGENT_SPAWN_FAILED","severity":"high","agent":"echo-003","task":"task-042","stack":"..."}
+{"ts":"2026-01-25T10:01:00Z","code":"MERGE_CONFLICT","severity":"medium","task":"task-042","level":"MEDIUM"}
 ```
 
 Use for debugging and trend analysis.

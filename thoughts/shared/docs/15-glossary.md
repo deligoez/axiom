@@ -1,6 +1,6 @@
-# Swarm Glossary
+# AXIOM Glossary
 
-Swarm's unique terminology and concepts. This document defines the language of Swarm and highlights what makes it different from other multi-agent systems.
+AXIOM's unique terminology and concepts. This document defines the language of AXIOM and highlights what makes it different from other multi-agent systems.
 
 ---
 
@@ -8,24 +8,24 @@ Swarm's unique terminology and concepts. This document defines the language of S
 
 ### Emergent Planning
 
-**Definition:** A planning methodology where some todo items produce other todo items, rather than assuming all work is known upfront.
+**Definition:** A planning methodology where some cases produce other cases, rather than assuming all work is known upfront.
 
-**Why it's different:** Traditional task management assumes a fixed list. Swarm embraces uncertainty - you're never blocked because there's always a next action, even if that action is "figure out what to do next."
+**Why it's different:** Traditional task management assumes a fixed list. AXIOM embraces uncertainty - you're never blocked because there's always a next action, even if that action is "figure out what to do next."
 
 **Contrast:**
 | Traditional | Emergent |
 |-------------|----------|
-| All tasks known upfront | Tasks discovered during work |
-| Plan once, execute | Plan evolves with learnings |
-| Blocked = stuck | Blocked = create exploration task |
+| All tasks known upfront | Cases discovered during work |
+| Plan once, execute | Plan evolves with discoveries |
+| Blocked = stuck | Blocked = create exploration case |
 
 ---
 
-### Swarm Planning Spiral
+### Planning Spiral
 
-**Definition:** The iterative refinement cycle where Pat clarifies Gray ideas, never returning to the same state twice.
+**Definition:** The iterative refinement cycle where Architect Axel clarifies Draft cases, never returning to the same state twice.
 
-**Why "spiral" not "loop":** A loop implies returning to the starting point. In Swarm, each pass produces more refined ideas - you're always moving forward, just circling back to earlier concepts with new knowledge.
+**Why "spiral" not "loop":** A loop implies returning to the starting point. In AXIOM, each pass produces more refined cases - you're always moving forward, just circling back to earlier concepts with new knowledge.
 
 ```
         Pass 1: "Auth system"
@@ -39,24 +39,24 @@ Swarm's unique terminology and concepts. This document defines the language of S
 
 ## Workflow Phases
 
-Three distinct phases that Swarm progresses through:
+Three distinct phases that AXIOM progresses through:
 
 | Phase | Persona | Purpose | Entry Condition |
 |-------|---------|---------|-----------------|
-| **Init** | Ace | First-time setup, configuration | No `.swarm/` directory |
-| **Planning** | Pat | Decompose need into ideas | No ready Green ideas |
-| **Implementation** | Ed (N parallel) | Execute Green ideas | Has ready Green ideas |
+| **Init** | Analyst Ava | First-time setup, configuration | No `.axiom/` directory |
+| **Planning** | Architect Axel | Decompose need into cases | No ready Tasks |
+| **Implementation** | Executor Echo (N parallel) | Execute Tasks | Has ready Tasks |
 
 ### Mode Routing
 
 **Definition:** The decision logic that determines which workflow phase to enter.
 
 ```
-swarm command → Check .swarm/ exists?
+axiom command → Check .axiom/ exists?
                      │
               No ────┴──── Yes
               ↓            ↓
-           INIT      Check has ideas?
+           INIT      Check has cases?
                           │
                    No ────┴──── Yes
                    ↓            ↓
@@ -65,92 +65,92 @@ swarm command → Check .swarm/ exists?
 
 ---
 
-## The Color System
+## The Case System
 
-Swarm's signature classification system for ideas based on clarity and readiness level.
+AXIOM's signature classification system for cases based on clarity and readiness level.
 
-### Discovery Colors (produce more ideas)
+### Discovery Types (produce more cases)
 
-| Color | Name | Meaning |
+| Color | Type | Meaning |
 |-------|------|---------|
-| ⬛ **Black** | Raw Need | The PRD in JTBD format - the single source of truth |
-| ⬜ **Gray** | Plan Draft | Undetailed, needs refinement |
-| 🟧 **Orange** | Research Spike | Requires investigation before proceeding |
-| 🟪 **Purple** | Decision Blocker | Waiting for human decision |
+| ⬛ **Black** | Directive | The PRD in JTBD format - the single source of truth |
+| ⬜ **Gray** | Draft | Undetailed, needs refinement |
+| 🟧 **Orange** | Research | Requires investigation before proceeding |
+| 🟪 **Purple** | Pending | Waiting for human decision |
 | 🟥 **Red** | Deferred | Out of current scope, preserved for later |
 
-### Implementation Colors (produce code)
+### Implementation Types (produce code)
 
-| Color | Name | Meaning |
+| Color | Type | Meaning |
 |-------|------|---------|
-| 🟦 **Blue** | Vertical Slice | A complete feature spanning all layers |
-| 🟩 **Green** | Atomic Idea | The smallest implementable unit |
+| 🟦 **Blue** | Operation | A complete feature spanning all layers |
+| 🟩 **Green** | Task | The smallest implementable unit |
 
-### Knowledge Color (captures learnings)
+### Knowledge Type (captures discoveries)
 
-| Color | Name | Meaning |
+| Color | Type | Meaning |
 |-------|------|---------|
-| 🟡 **Yellow** | Learning | Discovery captured during implementation |
+| 🟡 **Yellow** | Discovery | Learning captured during implementation |
 
-### White (Status, not Color)
+### Completed (Status, not Type)
 
-**White** = Green with `status: done`. It represents completion, not a separate category.
+**Completed** = Task with `status: done`. It represents completion, not a separate category.
 
-**Why colors instead of tags?** Colors are:
-- Mutually exclusive (an idea can only be one color)
+**Why types instead of tags?** Types are:
+- Mutually exclusive (a case can only be one type)
 - Visually distinct in the Web UI
-- Semantically meaningful (color conveys both type AND readiness)
+- Semantically meaningful (type conveys both category AND readiness)
 
 ---
 
-## Idea State Changes
+## Case State Changes
 
 ### Transition
 
-**Definition:** An idea changes color but remains conceptually the same thing.
+**Definition:** A case changes type but remains conceptually the same thing.
 
 ```
-Gray "Auth system" → Orange "Research auth options" → Blue "Clerk integration"
+Draft "Auth system" → Research "Research auth options" → Operation "Clerk integration"
 ```
 
 ### Split
 
-**Definition:** An idea breaks into multiple distinct child ideas.
+**Definition:** A case breaks into multiple distinct child cases.
 
 ```
-Blue "Login flow" → Green "Clerk setup"
-                  → Green "Login UI"
-                  → Green "Session handling"
+Operation "Login flow" → Task "Clerk setup"
+                       → Task "Login UI"
+                       → Task "Session handling"
 ```
 
-**Yellow Exception:** Yellow creation is neither transition nor split - it's a **byproduct** of Green execution via learning signals.
+**Discovery Exception:** Discovery creation is neither transition nor split - it's a **byproduct** of Task execution via discovery signals.
 
 ---
 
 ## Core Infrastructure
 
-### IdeaStore
+### CaseStore
 
-**Definition:** The native storage service for all ideas across all 8 colors.
+**Definition:** The native storage service for all cases across all 8 types.
 
-**Not a task tracker:** Unlike traditional task management, IdeaStore handles:
-- Color transitions (Gray → Blue → Green)
+**Not a task tracker:** Unlike traditional task management, CaseStore handles:
+- Type transitions (Draft → Operation → Task)
 - Lineage tracking (parent-child relationships)
-- Yellow idea lifecycle (active → outdated → archived)
+- Discovery case lifecycle (active → outdated → archived)
 - Event emission for UI updates
-- JSONL persistence (`.swarm/ideas.jsonl`)
+- JSONL persistence (`.axiom/cases.jsonl`)
 
-**Why native, not external?** Single source of truth with real-time events and color-aware queries.
+**Why native, not external?** Single source of truth with real-time events and type-aware queries.
 
 ---
 
-### Quality Commands
+### Verification
 
-**Definition:** Shell commands that must pass for a Green idea to be considered complete.
+**Definition:** Shell commands that must pass for a Task to be considered complete.
 
 ```json
 {
-  "qualityCommands": [
+  "verification": [
     "npm run test:run",
     "npm run typecheck",
     "npm run lint"
@@ -158,7 +158,7 @@ Blue "Login flow" → Green "Clerk setup"
 }
 ```
 
-**Completion rule:** COMPLETE signal + ALL quality commands passing = idea done.
+**Completion rule:** COMPLETE signal + ALL verification commands passing = case done.
 
 ---
 
@@ -170,11 +170,11 @@ Blue "Login flow" → Green "Clerk setup"
 
 **Behavior:**
 - Semi-Auto: User manually fills slots
-- Autopilot: System auto-fills available slots with ready Green ideas
+- Autopilot: System auto-fills available slots with ready Tasks
 
 ---
 
-### Safe Boundary
+### Checkpoint
 
 **Definition:** The point between iterations where an agent can safely pause without losing work.
 
@@ -189,32 +189,32 @@ Blue "Login flow" → Green "Clerk setup"
 
 ## The Persona System
 
-Swarm uses named agents with alliterative names and distinct personalities. Unlike generic "Agent 1, Agent 2", each persona has a clear role and character.
+AXIOM uses named agents with alliterative names and distinct personalities. Unlike generic "Agent 1, Agent 2", each persona has a clear role and character.
 
 ### The Eight Personas
 
 | Persona | Emoji | Role | When Active |
 |---------|-------|------|-------------|
-| **Analyzer Ace** | 🔍 | Project analysis | Init mode |
-| **Planner Pat** | 📊 | Planning spiral + Retrospective | Planning, after Blue completion |
-| **Engineer Ed** | ⚙️ | Implementation | Green execution (N parallel) |
-| **Fixer Finn** | 🔧 | Merge conflict resolution | On conflict |
-| **Logger Lou** | 💡 | Learning extraction | After completion |
-| **Director Dan** | 😎 | Orchestration | Always |
-| **Watcher Will** | 👁️ | Health monitoring | Always (background) |
-| **Counter Carl** | 📈 | Metrics and ID assignment | Always (event-driven) |
+| **Analyst Ava** | 🔍 | Project analysis | Init mode |
+| **Architect Axel** | 📊 | Planning spiral + Debrief | Planning, after Operation completion |
+| **Executor Echo** | ⚙️ | Implementation | Task execution (N parallel) |
+| **Resolver Rex** | 🔧 | Merge conflict resolution | On conflict |
+| **Curator Cleo** | 💡 | Discovery extraction | After completion |
+| **Director Dex** | 😎 | Orchestration | Always |
+| **Monitor Max** | 👁️ | Health monitoring | Always (background) |
+| **Auditor Ash** | 📈 | Metrics and ID assignment | Always (event-driven) |
 
 ### The Support Trio
 
-**Lou, Will, and Carl** form a unique support layer that no other multi-agent system has:
-- **Lou** captures institutional knowledge automatically
-- **Will** monitors system health proactively
-- **Carl** provides observability and accountability
+**Cleo, Max, and Ash** form a unique support layer that no other multi-agent system has:
+- **Cleo** captures institutional knowledge automatically
+- **Max** monitors system health proactively
+- **Ash** provides observability and accountability
 
 **Contrast with competitors:**
 | System | Learning | Health | Metrics |
 |--------|----------|--------|---------|
-| Swarm | Lou (dedicated) | Will (dedicated) | Carl (dedicated) |
+| AXIOM | Cleo (dedicated) | Max (dedicated) | Ash (dedicated) |
 | MetaGPT | None | None | Basic |
 | CrewAI | None | None | Basic |
 | Devin | Per-session | Timeout-based | Dashboard |
@@ -223,34 +223,32 @@ Swarm uses named agents with alliterative names and distinct personalities. Unli
 
 ## Execution Patterns
 
-### Completion Drive
+### Execution Loop
 
 **Definition:** The autopilot execution pattern where an agent continuously works until complete, with automatic retry and iteration tracking.
 
-**Historical note:** Originally called "Ralph Loop" during early development. Renamed to better reflect its goal-oriented nature.
-
-**Why "drive":** Like a motor that keeps pushing toward the goal - relentless, goal-oriented execution.
+**Why "loop":** The agent loops through pick-execute-verify until no Tasks remain or intervention occurs.
 
 **Characteristics:**
-- Picks ready Green idea
+- Picks ready Task
 - Executes until COMPLETE signal
 - Retries with feedback on failure
 - Tracks iteration count
-- Continues to next idea automatically
+- Continues to next case automatically
 
 **The pattern:**
 ```
-Pick Green → Execute → Signal?
+Pick Task → Execute → Signal?
                          │
-              COMPLETE ──┼── BLOCKED/NEEDS_HUMAN
+              COMPLETE ──┼── BLOCKED/PENDING
                   ↓      │           ↓
-            Quality OK?  │      Handle, pick next
+            Verify OK?   │      Handle, pick next
                   │      │
             Yes ──┴── No │
              ↓        ↓  │
           Done    Retry  │
              │           │
-             └───────────┴──→ Pick next Green
+             └───────────┴──→ Pick next Task
 ```
 
 ---
@@ -259,7 +257,7 @@ Pick Green → Execute → Signal?
 
 **Definition:** A single round-trip of agent work. One prompt, one response, one potential commit.
 
-**Completion:** Requires BOTH the COMPLETE signal AND all quality commands passing.
+**Completion:** Requires BOTH the COMPLETE signal AND all verification commands passing.
 
 ---
 
@@ -267,7 +265,7 @@ Pick Green → Execute → Signal?
 
 **Definition:** When an agent runs N iterations without producing a commit.
 
-**Not an error:** Agent might be thinking. Swarm warns but continues, allowing human intervention.
+**Not an error:** Agent might be thinking. AXIOM warns but continues, allowing human intervention.
 
 **Threshold:** Configurable via `completion.stuckThreshold` (default: 5).
 
@@ -277,7 +275,7 @@ Pick Green → Execute → Signal?
 
 ### Semi-Auto Mode
 
-**Definition:** User selects Green ideas, agent completes one then stops.
+**Definition:** User selects Tasks, agent completes one then stops.
 
 **Use cases:**
 - Learning a new codebase
@@ -288,11 +286,11 @@ Pick Green → Execute → Signal?
 
 ### Autopilot Mode
 
-**Definition:** Fully autonomous execution until no ready Green ideas remain.
+**Definition:** Fully autonomous execution until no ready Tasks remain.
 
 **Safety features:**
 - Checkpoint before starting
-- Pause on NEEDS_HUMAN signal
+- Pause on PENDING signal
 - Human can intervene anytime
 - Error threshold pauses after N consecutive failures
 
@@ -300,30 +298,30 @@ Pick Green → Execute → Signal?
 
 ## Signal Protocol
 
-Swarm's explicit agent-to-orchestrator communication system.
+AXIOM's explicit agent-to-orchestrator communication system.
 
 ### Signal Format
 
 ```
-<swarm>SIGNAL:payload</swarm>
+<axiom>SIGNAL:payload</axiom>
 ```
 
 ### Core Signals
 
 | Signal | Purpose | Example |
 |--------|---------|---------|
-| `COMPLETE` | Idea finished | `<swarm>COMPLETE</swarm>` |
-| `BLOCKED` | Cannot proceed | `<swarm>BLOCKED:Missing API key</swarm>` |
-| `NEEDS_HUMAN` | Human decision required | `<swarm>NEEDS_HUMAN:Which auth provider?</swarm>` |
-| `PROGRESS` | Status update | `<swarm>PROGRESS:75</swarm>` |
-| `RESOLVED` | Conflict resolved (Finn) | `<swarm>RESOLVED</swarm>` |
+| `COMPLETE` | Case finished | `<axiom>COMPLETE</axiom>` |
+| `BLOCKED` | Cannot proceed | `<axiom>BLOCKED:Missing API key</axiom>` |
+| `PENDING` | Human decision required | `<axiom>PENDING:Which auth provider?</axiom>` |
+| `PROGRESS` | Status update | `<axiom>PROGRESS:75</axiom>` |
+| `RESOLVED` | Conflict resolved (Rex) | `<axiom>RESOLVED</axiom>` |
 
-### Learning Signals
+### Discovery Signals
 
 | Signal | Scope | Injected Into |
 |--------|-------|---------------|
-| `LEARNING_LOCAL` | Agent-specific | Same agent's future prompts |
-| `LEARNING_GLOBAL` | Project-wide | All agents' prompts |
+| `DISCOVERY_LOCAL` | Agent-specific | Same agent's future prompts |
+| `DISCOVERY_GLOBAL` | Project-wide | All agents' prompts |
 
 **Why explicit signals?** Unlike implicit completion detection (exit code, lack of errors), signals are:
 - Unambiguous
@@ -333,14 +331,14 @@ Swarm's explicit agent-to-orchestrator communication system.
 
 ---
 
-## Learning System
+## Discovery System
 
-### Yellow Ideas
+### Discovery Cases
 
-**Definition:** First-class citizens in the IdeaStore that capture discoveries during implementation.
+**Definition:** First-class citizens in the CaseStore that capture learnings during implementation.
 
-**Not just notes:** Yellow ideas are:
-- Linked to parent Green (lineage)
+**Not just notes:** Discovery cases are:
+- Linked to parent Task (lineage)
 - Classified by impact (low/medium/high/critical)
 - Injected into prompts automatically
 - Archived when parent completes
@@ -349,87 +347,87 @@ Swarm's explicit agent-to-orchestrator communication system.
 
 ### Discovery Log
 
-**Definition:** A query view on global Yellow ideas - not a separate file.
+**Definition:** A query view on global Discovery cases - not a separate file.
 
-**Single source of truth:** All learnings live in `ideas.jsonl`, views are generated.
+**Single source of truth:** All discoveries live in `cases.jsonl`, views are generated.
 
 ---
 
-### Learning Injection
+### Discovery Injection
 
-**Definition:** Active Yellow ideas are automatically included in agent prompts based on scope.
+**Definition:** Active Discovery cases are automatically included in agent prompts based on scope.
 
 ```
-Global Yellow → All agents
-Local Yellow → Only source agent
+Global Discovery → All agents
+Local Discovery → Only source agent
 ```
 
 ---
 
-### Learning Promotion
+### Discovery Promotion
 
-**Definition:** Converting a local Yellow idea to global scope.
+**Definition:** Converting a local Discovery case to global scope.
 
-**When to promote:** A local learning proves useful beyond its original context.
+**When to promote:** A local discovery proves useful beyond its original context.
 
-**Mechanism:** Update `metadata.scope` from `local` to `global` - same idea ID, broader reach.
+**Mechanism:** Update `metadata.scope` from `local` to `global` - same case ID, broader reach.
 
 ---
 
-### Learning Resurrection
+### Discovery Resurrection
 
-**Definition:** Bringing an archived Yellow idea back to active status.
+**Definition:** Bringing an archived Discovery case back to active status.
 
-**Use case:** A learning discovered in one Green is still relevant for future work.
+**Use case:** A discovery from one Task is still relevant for future work.
 
-**When allowed:** Only archived Yellow ideas can be resurrected.
+**When allowed:** Only archived Discovery cases can be resurrected.
 
 ---
 
 ### Cross-Agent Propagation
 
-**Definition:** How global Yellow ideas spread to all active agents.
+**Definition:** How global Discovery cases spread to all active agents.
 
 **Flow:**
-1. Lou creates global Yellow
-2. Emits `idea:yellow_created` event
+1. Cleo creates global Discovery
+2. Emits `case:discovery_created` event
 3. Active agents notified via state machine
-4. Next prompt includes new learning
+4. Next prompt includes new discovery
 5. No agent restart required
 
 ---
 
-## Merge System
+## Integration System
 
 ### Conflict Classification
 
 | Level | Resolution | Handler |
 |-------|------------|---------|
 | **SIMPLE** | Auto-resolve | System |
-| **MEDIUM** | AI-assisted | Fixer Finn |
+| **MEDIUM** | AI-assisted | Resolver Rex |
 | **COMPLEX** | Human escalation | User |
 
 ---
 
-### Merge Queue
+### Integration Queue
 
-**Definition:** FIFO queue of completed ideas waiting for branch integration.
+**Definition:** FIFO queue of completed cases waiting for branch integration.
 
 **Features:**
 - Dependency-aware ordering
 - Automatic retry
-- Worktree cleanup on success
+- Workspace cleanup on success
 
 ---
 
-## Review vs Retrospective
+## Review vs Debrief
 
 Two distinct systems that work together:
 
 | System | Trigger | Actor | Purpose |
 |--------|---------|-------|---------|
-| **Review** | Green completion | Human | Quality check |
-| **Retrospective** | Blue completion | Pat | Learn and update plan |
+| **Review** | Task completion | Human | Quality check |
+| **Debrief** | Operation completion | Axel | Learn and update plan |
 
 ### Review Modes
 
@@ -451,7 +449,7 @@ Two distinct systems that work together:
 **Actions available:**
 - Pause/Resume all agents
 - Stop specific agent
-- Redirect agent to different idea
+- Redirect agent to different case
 - Create checkpoint
 - Rollback to checkpoint
 
@@ -462,9 +460,9 @@ Two distinct systems that work together:
 **Definition:** The graceful shutdown triggered by `Ctrl+C`.
 
 **Sequence:**
-1. Stop accepting new ideas
+1. Stop accepting new cases
 2. Signal agents to pause
-3. Wait for safe boundaries (5s timeout)
+3. Wait for checkpoints (5s timeout)
 4. Persist state snapshot
 5. Exit cleanly
 
@@ -474,7 +472,7 @@ Two distinct systems that work together:
 
 ### The Audit Trail
 
-**Definition:** The recovery context injected into prompts when a crashed idea is retried.
+**Definition:** The recovery context injected into prompts when a crashed case is retried.
 
 **Contains:**
 - Previous attempt count
@@ -500,12 +498,12 @@ Fallback: Replay events (reliable)
 
 ---
 
-### Checkpoint
+### Named Checkpoint
 
 **Definition:** A named save point for rollback.
 
 **Automatic triggers:**
-- Periodic (every N completed ideas)
+- Periodic (every N completed cases)
 - Before autopilot
 
 ---
@@ -518,106 +516,104 @@ Fallback: Replay events (reliable)
 
 | Hook | Trigger | Use Case |
 |------|---------|----------|
-| `pre-start` | Agent claims idea | Setup, notifications |
-| `post-complete` | Idea done/failed | Slack notify, logging |
+| `pre-start` | Agent claims case | Setup, notifications |
+| `post-complete` | Case done/failed | Slack notify, logging |
 | `pre-merge` | Before merge attempt | Run E2E tests |
 | `post-merge` | After successful merge | Deploy, notify |
 | `on-conflict` | Merge conflict detected | Alert, custom resolution |
-| `on-learning` | Learning extracted | External storage |
+| `on-discovery` | Discovery extracted | External storage |
 | `on-pause` | Session paused | Cleanup |
 | `on-error` | Error occurred | Alerting |
 
-**Location:** `.swarm/hooks/`
+**Location:** `.axiom/hooks/`
 
 ---
 
 ## Planning Phases
 
-The 5-phase dialogue model (The Planning Dialogue):
+The 5-phase dialogue model (The Briefing):
 
 | Phase | Name | Purpose | Metaphor |
 |-------|------|---------|----------|
 | 1 | **UNDERSTAND** | Q&A to clarify goal | Interview |
 | 2 | **ANALYZE** | Explore codebase context | Investigation |
 | 3 | **PROPOSE** | Present architecture for approval | Pitch |
-| 4 | **DECOMPOSE** | Generate atomic ideas | Blueprint |
-| 5 | **VALIDATE** | Verify ideas meet INVEST criteria | Quality Check |
+| 4 | **DECOMPOSE** | Generate atomic cases | Blueprint |
+| 5 | **VALIDATE** | Verify cases meet INVEST criteria | Quality Check |
 
 ---
 
 ## Unique Differentiators
 
-### What Swarm Does That Others Don't
+### What AXIOM Does That Others Don't
 
-| Feature | Swarm | Industry |
+| Feature | AXIOM | Industry |
 |---------|-------|----------|
 | **Named personas** | 8 with personalities | Generic "Agent N" |
-| **Explicit signals** | `<swarm>SIGNAL</swarm>` | Implicit detection |
-| **Learning extraction** | Dedicated Lou agent | None or manual |
-| **Health monitoring** | Dedicated Will agent | Timeout-based |
-| **Merge specialist** | Dedicated Finn agent | Manual or PR-based |
-| **Color system** | 8 semantic colors | Tags or statuses |
-| **Emergent planning** | Ideas produce ideas | Fixed task lists |
+| **Explicit signals** | `<axiom>SIGNAL</axiom>` | Implicit detection |
+| **Discovery extraction** | Dedicated Cleo agent | None or manual |
+| **Health monitoring** | Dedicated Max agent | Timeout-based |
+| **Merge specialist** | Dedicated Rex agent | Manual or PR-based |
+| **Case system** | 8 semantic types | Tags or statuses |
+| **Emergent planning** | Cases produce cases | Fixed task lists |
 
 ### Industry-Aligned Terms
 
-| Concept | Swarm Term | Industry Term |
+| Concept | AXIOM Term | Industry Term |
 |---------|------------|---------------|
-| Isolated execution | Worktree | Worktree/VM/Sandbox |
-| Unit of work | Green idea | Task |
+| Isolated execution | Workspace | Worktree/VM/Sandbox |
+| Unit of work | Task | Task |
 | Save point | Checkpoint | Checkpoint/Snapshot |
 | Full autonomy | Autopilot | Autonomous |
-| Quality checks | Quality Commands | CI/Validation |
+| Quality checks | Verification | CI/Validation |
 
 ---
 
 ## Branded Concepts
 
-### The Idea Spectrum
+### The Case Spectrum
 
-**Definition:** Swarm's color-based idea classification system as a whole.
+**Definition:** AXIOM's type-based case classification system as a whole.
 
 **Components:**
-- 8 distinct colors with semantic meaning
+- 8 distinct types with semantic meaning
 - Visual representation in Web UI
 - State machine for transitions
 
-**Why "spectrum":** Ideas exist across a spectrum from abstract (Black) to concrete (Green), each color representing a different state of clarity and readiness.
+**Why "spectrum":** Cases exist across a spectrum from abstract (Directive) to concrete (Task), each type representing a different state of clarity and readiness.
 
 ---
 
-### The Color Cascade
+### The Type Cascade
 
-**Definition:** The natural flow of ideas from abstract (Black) to concrete (Green).
+**Definition:** The natural flow of cases from abstract (Directive) to concrete (Task).
 
 ```
 ⬛ → ⬜ → 🟦 → 🟩 → ✓
-Black → Gray → Blue → Green → Done
+Directive → Draft → Operation → Task → Done
 ```
 
 **Branches:**
-- 🟧 Orange (research detour)
-- 🟪 Purple (decision gate)
-- 🟥 Red (scope exit)
-- 🟡 Yellow (learning capture)
+- 🟧 Research (investigation detour)
+- 🟪 Pending (decision gate)
+- 🟥 Deferred (scope exit)
+- 🟡 Discovery (knowledge capture)
 
 ---
 
-### The Hive (Discovery System)
+### The Knowledge Base (Discovery System)
 
-**Definition:** The collective intelligence formed by all Yellow ideas - project-wide learnings that accumulate over time.
+**Definition:** The collective intelligence formed by all Discovery cases - project-wide learnings that accumulate over time.
 
 **Two perspectives:**
-- **The Hive** (conceptual): The living, growing collective knowledge
-- **Discovery Log** (technical): The query view on global Yellow ideas (`learnings.md`)
+- **The Knowledge Base** (conceptual): The living, growing collective knowledge
+- **Discovery Log** (technical): The query view on global Discovery cases (`discoveries.md`)
 
 **Characteristics:**
-- Grows with each completed Green
+- Grows with each completed Task
 - Injected into all agent prompts
 - Survives across sessions
 - Self-maintaining (outdated detection)
-
-**Why "hive":** Like a beehive's collective knowledge, Swarm's learning system is greater than the sum of individual discoveries.
 
 ---
 
@@ -628,49 +624,49 @@ Black → Gray → Blue → Green → Done
 **Pulse types:**
 - **Heartbeat:** PROGRESS signals (agent is alive)
 - **Completion:** COMPLETE signal (work done)
-- **Alert:** BLOCKED, NEEDS_HUMAN (attention needed)
-- **Discovery:** LEARNING_* (knowledge captured)
+- **Alert:** BLOCKED, PENDING (attention needed)
+- **Discovery:** DISCOVERY_* (knowledge captured)
 
 ---
 
-### Worktree Colony
+### Workspace Colony
 
-**Definition:** The collection of git worktrees where parallel agents operate.
+**Definition:** The collection of git workspaces where parallel agents operate.
 
 ```
-.worktrees/
-├── ed-001-idea-042/   ← Agent ed-001's workspace
-├── ed-002-idea-043/   ← Agent ed-002's workspace
-└── finn-001-merge/    ← Finn's merge workspace
+.workspaces/
+├── echo-001-case-042/   ← Agent echo-001's workspace
+├── echo-002-case-043/   ← Agent echo-002's workspace
+└── rex-001-merge/       ← Rex's merge workspace
 ```
 
 **Colony rules:**
-- One worktree per active agent
+- One workspace per active agent
 - Isolation guarantees no conflicts during work
 - Cleanup after successful merge
 
 ---
 
-### The Init Conversation
+### The Briefing
 
-**Definition:** The guided setup experience with Analyzer Ace for first-time projects.
+**Definition:** The guided setup experience with Analyst Ava for first-time projects.
 
 **Flow:**
 ```
-Welcome Screen → Meet the Team (optional) → Ace Analysis → Auto-Scaffold
+Welcome Screen → Meet the Team (optional) → Ava Analysis → Auto-Scaffold
 ```
 
-**What Ace does:**
+**What Ava does:**
 - Detects project type and structure
-- Suggests quality commands
-- Creates `.swarm/` directory
+- Suggests verification commands
+- Creates `.axiom/` directory
 - Transitions to Planning Mode
 
 ---
 
 ### The Planning Dialogue
 
-**Definition:** The 5-phase conversation between Pat and the user.
+**Definition:** The 5-phase conversation between Architect Axel and the user.
 
 | Phase | Metaphor |
 |-------|----------|
@@ -688,9 +684,9 @@ Welcome Screen → Meet the Team (optional) → Ace Analysis → Auto-Scaffold
 
 **The Vertical Principle:**
 ```
-One Blue = One user-facing capability
-         = Schema + API + UI
-         = Testable in isolation
+One Operation = One user-facing capability
+             = Schema + API + UI
+             = Testable in isolation
 ```
 
 **Anti-pattern (Horizontal):**
@@ -700,36 +696,36 @@ One Blue = One user-facing capability
 
 ---
 
-### Idea Lineage
+### Case Lineage
 
-**Definition:** The parent-child relationship between ideas.
+**Definition:** The parent-child relationship between cases.
 
 ```
-Black (PRD)
-└── Gray (Plan section)
-    └── Blue (Feature)
-        ├── Green (Task 1)
-        │   └── Yellow (Learning)
-        ├── Green (Task 2)
-        └── Green (Task 3)
+Directive (PRD)
+└── Draft (Plan section)
+    └── Operation (Feature)
+        ├── Task (Unit 1)
+        │   └── Discovery (Learning)
+        ├── Task (Unit 2)
+        └── Task (Unit 3)
 ```
 
 **Lineage enables:**
-- Traceability (why does this Green exist?)
-- Retrospective (what did we learn from this Blue?)
+- Traceability (why does this Task exist?)
+- Debrief (what did we learn from this Operation?)
 - Impact analysis (what depends on this?)
 
 ---
 
 ## Quick Reference
 
-### JTBD Format (Black Ideas)
+### JTBD Format (Directive)
 
 ```
 "When [situation], I want [motivation], so that [outcome]."
 ```
 
-### INVEST Criteria (Green Ideas)
+### INVEST Criteria (Task)
 
 - **I**ndependent: Can be done without waiting
 - **N**egotiable: Details flexible
@@ -738,7 +734,7 @@ Black (PRD)
 - **S**mall: One session
 - **T**estable: Has acceptance criteria
 
-### Vertical Slice (Blue Ideas)
+### Vertical Slice (Operation)
 
 A feature that spans all layers (DB, API, UI) for one capability.
 
@@ -769,14 +765,14 @@ A feature that spans all layers (DB, API, UI) for one capability.
 | 01 | Configuration | Config system |
 | 02 | Modes | Mode routing, Init, Operating modes |
 | 03 | Planning | Planning Dialogue, Spec Lifecycle |
-| 04 | Ideas | Color System, IdeaStore |
+| 04 | Ideas | Case System, CaseStore |
 | 05 | Agents | Personas, Prompt Construction |
-| 06 | Merging | Merge Service |
-| 07 | Autopilot | Completion Drive |
-| 08 | Learnings | Discovery System (Yellow ideas) |
+| 06 | Merging | Integration Service |
+| 07 | Autopilot | Execution Loop |
+| 08 | Learnings | Discovery System |
 | 09 | Intervention | Intervention, Rollback, Hooks |
 | 10 | Interface | Web UI components |
-| 11 | Review | Review and Retrospective |
+| 11 | Review | Review and Debrief |
 | 12 | Reference | Quick reference |
 | 13 | Prompts | Default persona prompts |
 | 14 | Errors | Error handling |
