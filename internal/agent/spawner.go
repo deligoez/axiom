@@ -6,12 +6,13 @@ import (
 	"os/exec"
 )
 
-// Spawn starts a Claude CLI agent with the given prompt file.
+// Spawn starts a Claude CLI agent with the given prompt file and initial message.
 // It runs claude in non-interactive mode and returns the agent's output.
 //
 // The prompt file content is passed via --system-prompt flag.
+// The message is the initial user message that triggers the agent.
 // Returns the agent's stdout output or an error.
-func Spawn(promptPath string) (string, error) {
+func Spawn(promptPath, message string) (string, error) {
 	// 1. Read prompt file
 	content, err := os.ReadFile(promptPath)
 	if err != nil {
@@ -29,6 +30,7 @@ func Spawn(promptPath string) (string, error) {
 		"--print",
 		"--dangerously-skip-permissions",
 		"--system-prompt", string(content),
+		message,
 	)
 
 	output, err := cmd.Output()

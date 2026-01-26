@@ -28,7 +28,7 @@ func main() {
 
 		// Spawn Ava for project initialization
 		fmt.Println("Starting Ava for project setup...")
-		output, err := agent.Spawn(".axiom/agents/ava/prompt.md")
+		output, err := agent.Spawn(".axiom/agents/ava/prompt.md", "Analyze this project and configure AXIOM.")
 		if err != nil {
 			log.Fatalf("ava error: %v", err)
 		}

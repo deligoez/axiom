@@ -7,7 +7,7 @@ import (
 )
 
 func TestSpawn_PromptNotFound(t *testing.T) {
-	_, err := Spawn("/nonexistent/prompt.md")
+	_, err := Spawn("/nonexistent/prompt.md", "Start")
 	if err == nil {
 		t.Error("expected error for missing prompt")
 	}
@@ -38,7 +38,7 @@ func TestSpawn_ClaudeNotInPath(t *testing.T) {
 	}
 	defer func() { _ = os.Setenv("PATH", oldPath) }()
 
-	_, err = Spawn(tmpFile.Name())
+	_, err = Spawn(tmpFile.Name(), "Start")
 	if err == nil {
 		t.Error("expected error when claude not in PATH")
 	}
@@ -66,7 +66,7 @@ func TestSpawn_ReadsPromptFile(t *testing.T) {
 	// This test verifies the prompt is read correctly
 	// It will fail at the LookPath stage if claude isn't installed,
 	// but that's expected - we're testing the prompt reading part
-	_, err = Spawn(tmpFile.Name())
+	_, err = Spawn(tmpFile.Name(), "Start")
 
 	// If error is about prompt reading, that's a failure
 	// If error is about claude not found, prompt was read successfully
@@ -97,7 +97,7 @@ func TestSpawn_ErrorMessageIncludesInstallHint(t *testing.T) {
 	}
 	defer func() { _ = os.Setenv("PATH", oldPath) }()
 
-	_, err = Spawn(tmpFile.Name())
+	_, err = Spawn(tmpFile.Name(), "Start")
 	if err == nil {
 		t.Fatal("expected error")
 	}
