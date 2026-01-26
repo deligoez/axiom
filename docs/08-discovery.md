@@ -300,6 +300,58 @@ These files are **regenerated views**, not primary storage:
 
 Each entry includes Discovery case ID for traceability.
 
+### View Generation Algorithm
+
+Views are regenerated from CaseStore on specific triggers:
+
+**Triggers:**
+- Discovery case created
+- Discovery case updated (scope change, status change)
+- Discovery case archived
+- Manual refresh request
+
+**Generation pseudocode:**
+
+```
+regenerateViews():
+  // Global view: .axiom/discoveries.md
+  globalDiscoveries = caseStore.query({
+    type: 'discovery',
+    'metadata.scope': 'global',
+    status: ['active', 'outdated']
+  })
+
+  groupedByCategory = groupBy(globalDiscoveries, classifyCategory)
+  sortedByCreatedAt = sortEach(groupedByCategory, 'createdAt', 'asc')
+
+  writeMarkdown('.axiom/discoveries.md', formatGlobalView(sortedByCreatedAt))
+
+  // Agent views: .axiom/agents/{persona}/discoveries.md
+  for persona in getActivePersonas():
+    agentDiscoveries = caseStore.query({
+      type: 'discovery',
+      'metadata.scope': 'local',
+      'metadata.sourceAgentId': startsWithPersona(persona),
+      status: 'active'
+    })
+
+    sortedByCreatedAt = sort(agentDiscoveries, 'createdAt', 'asc')
+    writeMarkdown(
+      '.axiom/agents/{persona}/discoveries.md',
+      formatAgentView(sortedByCreatedAt)
+    )
+
+classifyCategory(discovery):
+  // Heuristic categorization based on content keywords
+  if mentions(['api', 'route', 'endpoint']): return 'API'
+  if mentions(['test', 'vitest', 'jest']): return 'Testing'
+  if mentions(['schema', 'database', 'migration']): return 'Database'
+  if mentions(['component', 'ui', 'css']): return 'Frontend'
+  return 'Architecture'  // default category
+```
+
+**Atomic write:** Views are written atomically (write to temp file, then rename) to prevent partial reads.
+
 ---
 
 ## Discovery Injection
