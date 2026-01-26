@@ -83,6 +83,66 @@ User can create named checkpoints via Web UI dialog.
 }
 ```
 
+### Checkpoint Restore Algorithm
+
+Restoring from a checkpoint rolls back AXIOM state to a previous point:
+
+```
+restoreCheckpoint(checkpointId):
+  checkpoint = loadCheckpoint(checkpointId)
+
+  // Step 1: Stop all running agents gracefully
+  for agent in runningAgents:
+    agent.send('STOP')
+    waitForCheckpoint(agent, timeout: 30s)
+
+  // Step 2: Validate checkpoint integrity
+  if not validateCheckpoint(checkpoint):
+    return { success: false, error: 'CHECKPOINT_CORRUPTED' }
+
+  // Step 3: Reset git to checkpoint commit
+  git.checkout(checkpoint.gitCommit)
+
+  // Step 4: Restore CaseStore state
+  for caseId, status in checkpoint.caseStates:
+    caseStore.update(caseId, { status: status })
+
+  // Step 5: Reset interrupted Tasks to pending
+  for case in caseStore.byStatus('active'):
+    if case.type == 'task':
+      caseStore.update(case.id, { status: 'pending' })
+      clearTaskExecution(case.id)
+
+  // Step 6: Clean orphaned workspaces
+  for workspace in listWorkspaces():
+    if workspace.taskId not in checkpoint.caseStates:
+      removeWorkspace(workspace)
+
+  // Step 7: Restore State machine
+  stateMachine.loadSnapshot(checkpoint.stateSnapshot)
+
+  // Step 8: Emit restoration event
+  emit('checkpoint:restored', { checkpointId, timestamp: now() })
+
+  return { success: true }
+```
+
+**Restoration safeguards:**
+
+| Check | Action on Failure |
+|-------|-------------------|
+| Checkpoint file missing | Error: CHECKPOINT_NOT_FOUND |
+| Checkpoint corrupted | Error: CHECKPOINT_CORRUPTED |
+| Git commit missing | Error: GIT_COMMIT_MISSING |
+| Agent won't stop | Force kill after timeout |
+
+**Post-restore state:**
+- All agents stopped
+- CaseStore matches checkpoint
+- Git HEAD at checkpoint commit
+- Workspaces cleaned (except those in checkpoint)
+- Ready to resume from checkpoint state
+
 ### Checkpoint Retention Policy
 
 Checkpoints are automatically cleaned up based on configured limits:
