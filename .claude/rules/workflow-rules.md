@@ -248,40 +248,14 @@ bd tree ax-xxx       # Shows full tree
 
 ---
 
-## Developer Context (MANDATORY)
+## Developer Context
 
-**User Profile:** Senior PHP/Laravel developer, new to Go.
+**User Profile:** Senior developer, learning Go.
 
 **Explanation Style:**
-- Compare Go concepts to PHP/Laravel equivalents
-- Senior-level depth (no hand-holding, but clarify Go-specific idioms)
-- Focus on "why" not just "how"
-
-**Go ↔ PHP/Laravel Mapping Reference:**
-
-| Go | PHP/Laravel |
-|----|-------------|
-| `go mod` | `composer` |
-| `go.mod` | `composer.json` |
-| `go.sum` | `composer.lock` |
-| `internal/` | `app/` (private) |
-| `cmd/` | `artisan` commands |
-| `pkg/` | `app/` (public/reusable) |
-| `struct` | `class` |
-| `interface` | `interface` (but implicit) |
-| `func (s *Store) Get()` | `public function get()` (method) |
-| `goroutine` | Queue job / async |
-| `channel` | Event / Queue |
-| `defer` | `try/finally` |
-| `error` return | `throw Exception` |
-| `golangci-lint` | `phpstan` / `larastan` |
-| `go test` | `phpunit` |
-| `Makefile` | `composer scripts` |
-
-**When explaining:**
-1. Show the Go way
-2. Brief PHP/Laravel equivalent if helpful
-3. Note key differences (e.g., "Go has no exceptions, uses error returns")
+- Senior-level depth (no hand-holding)
+- Focus on Go idioms and best practices
+- Explain "why" only when non-obvious
 
 ---
 

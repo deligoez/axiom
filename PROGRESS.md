@@ -19,10 +19,21 @@
 
 ## Current Milestone
 
-### MVP-01: Walking Skeleton
+### MVP-02: TBD
 - **Grey:** TBD
-- **Goal:** See a web page with header/footer
+- **Goal:** TBD
 - **Status:** NOT STARTED
+
+---
+
+## Completed Milestones
+
+### MVP-01: Walking Skeleton ✓
+- **Grey:** ax-zny (PLAN: MVP-01 - Walking Skeleton)
+- **Blue:** ax-zny.1 (F01: Web Server with Template)
+- **Goal:** See a web page with header/footer
+- **Status:** DONE
+- **Commits:** 51f9d3b..f834805
 
 ---
 
