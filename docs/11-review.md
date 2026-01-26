@@ -212,6 +212,47 @@ Override review mode by case label:
 
 Case with `security` tag always requires per-task review.
 
+### Label Precedence
+
+When a case has multiple labels, the **most restrictive** rule wins:
+
+**Restrictiveness order (most → least):**
+1. `per-task` + `autoApprove: false` (requires human review)
+2. `per-task` + `autoApprove: true` (allows auto-approve)
+3. `batch` (default - batched review)
+4. `auto-approve` (automatic approval)
+5. `skip` (no review)
+
+**Example:**
+
+Case has labels: `["security", "trivial"]`
+
+```
+labelRules:
+  security: { mode: "per-task", autoApprove: false }  ← Most restrictive
+  trivial: { mode: "auto-approve" }
+
+Result: per-task with autoApprove: false (security wins)
+```
+
+**Resolution algorithm:**
+
+```
+resolveReviewMode(case):
+  matchedRules = []
+  for label in case.labels:
+    if label in labelRules:
+      matchedRules.append(labelRules[label])
+
+  if matchedRules.length == 0:
+    return defaultMode
+
+  // Sort by restrictiveness, return most restrictive
+  return mostRestrictive(matchedRules)
+```
+
+**Priority ties:** If two labels have equal restrictiveness, alphabetically first label wins.
+
 ---
 
 ## Debrief System
