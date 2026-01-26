@@ -420,6 +420,112 @@ calculateScore(c):
 
 Autopilot maintains `maxParallel` agent slots. When a slot becomes available and ready Tasks exist, a new agent spawns automatically to fill the slot.
 
+### Slot States
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Slot Manager                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Slots (maxParallel: 3)                                          │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐                          │
+│  │ Slot 0  │  │ Slot 1  │  │ Slot 2  │                          │
+│  │ RUNNING │  │ RUNNING │  │  FREE   │                          │
+│  │ task-1  │  │ task-2  │  │         │                          │
+│  └─────────┘  └─────────┘  └─────────┘                          │
+│                                                                  │
+│  Queue (waiting for slots)                                       │
+│  ┌──────────────────────────────────────────┐                   │
+│  │ task-3 → task-4 → task-5                 │                   │
+│  └──────────────────────────────────────────┘                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| Slot State | Description |
+|------------|-------------|
+| `FREE` | Available for new agent |
+| `RUNNING` | Agent actively working |
+| `PAUSING` | Agent finishing current iteration before stop |
+| `RESERVED` | Slot claimed, agent spawning |
+
+### Queue Behavior
+
+When all slots are occupied, ready Tasks enter a priority queue:
+
+```
+onTaskReady(task):
+  if freeSlots() > 0:
+    // Immediate spawn
+    slot = claimSlot()
+    spawnAgent(slot, task)
+  else:
+    // Queue for later
+    queue.enqueue(task, priority = calculatePriority(task))
+
+onSlotFreed(slot):
+  if queue.isEmpty():
+    slot.state = FREE
+  else:
+    // Dequeue highest priority task
+    task = queue.dequeue()
+    spawnAgent(slot, task)
+```
+
+**Queue Priority Factors:**
+
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| Task priority | +100 per level | P0 > P1 > P2 > P3 |
+| Wait time | +1 per minute | Prevents starvation |
+| Blockers waiting | +10 per blocker | Unblock dependent tasks faster |
+| Retry penalty | -15 per retry | Deprioritize repeatedly failing tasks |
+
+### Slot Lifecycle
+
+```
+           claim()           spawn()          complete()
+  FREE ──────────► RESERVED ──────────► RUNNING ──────────► FREE
+    │                 │                    │
+    │                 │ timeout()          │ error()
+    │                 ▼                    ▼
+    │               FREE              (cleanup)
+    │                                      │
+    └──────────────────────────────────────┘
+```
+
+### Queue Starvation Prevention
+
+To prevent low-priority tasks from waiting indefinitely:
+
+1. **Age boost:** +1 priority point per minute in queue
+2. **Max queue time:** After 30 minutes, task gets +50 priority boost
+3. **Fairness check:** If a task has waited through 10 slot cycles, it gets next slot
+
+```
+calculateEffectivePriority(task):
+  base = task.priority * 100
+  ageBonus = min(50, minutesInQueue(task))
+  cycleBonus = 100 if slotCyclesMissed(task) >= 10 else 0
+  return base + ageBonus + cycleBonus
+```
+
+### Configuration
+
+```json
+{
+  "agents": {
+    "maxParallel": 3,
+    "queueMaxWaitMinutes": 60,
+    "fairnessThresholdCycles": 10
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `maxParallel` | 3 | Maximum concurrent agent slots |
+| `queueMaxWaitMinutes` | 60 | Max time in queue before alert |
+| `fairnessThresholdCycles` | 10 | Slot cycles before guaranteed scheduling |
+
 ---
 
 ## Signal Handling (Autopilot)
