@@ -174,6 +174,69 @@ processMergeQueue():
       escalateToHuman(entry)
 ```
 
+### Concurrent Merge Protection
+
+Merges are protected by a single-threaded merge worker:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MERGE WORKER                                  │
+│                                                                  │
+│  Single goroutine processes queue sequentially                   │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │                                                              ││
+│  │   ┌─────┐    ┌─────┐    ┌─────┐    ┌─────┐                 ││
+│  │   │ T1  │ →  │ T2  │ →  │ T3  │ →  │ T4  │   Queue         ││
+│  │   └─────┘    └─────┘    └─────┘    └─────┘                 ││
+│  │      ↓                                                       ││
+│  │   [Processing T1]                                            ││
+│  │      │                                                       ││
+│  │      └── git merge → verify → cleanup                        ││
+│  │                                                              ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  Guarantees:                                                     │
+│  • Only ONE merge at a time                                      │
+│  • Strict FIFO ordering (respects dependencies)                  │
+│  • No race conditions on main branch                             │
+│  • Atomic: merge completes or rolls back                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why single-threaded?**
+- Git merge is not concurrency-safe on same branch
+- Prevents race conditions on `main`
+- Ensures conflict detection is accurate
+- Simplifies rollback on failure
+
+**Queue guarantees:**
+| Guarantee | Description |
+|-----------|-------------|
+| **FIFO** | First completed Task merges first |
+| **Atomic** | Merge succeeds completely or rolls back |
+| **Dependency-aware** | Blocked Tasks stay queued until deps merge |
+| **Retry-safe** | Failed merges can retry without corruption |
+
+**Merge lock:**
+```go
+type MergeWorker struct {
+    queue    *MergeQueue
+    mutex    sync.Mutex  // Protects merge operation
+    active   *MergeEntry // Currently processing
+}
+
+func (w *MergeWorker) process(entry *MergeEntry) error {
+    w.mutex.Lock()
+    defer w.mutex.Unlock()
+
+    w.active = entry
+    defer func() { w.active = nil }()
+
+    return w.doMerge(entry)
+}
+```
+
 ---
 
 ## Workspace Lifecycle
