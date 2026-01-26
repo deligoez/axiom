@@ -28,6 +28,13 @@
 
 ## Completed Milestones
 
+### Refactor: Task to Case Migration ✓
+- **Grey:** ax-f5i (PLAN: Align with docs - Task to Case migration)
+- **Blue:** ax-f5i.1 (F04: Rename Task to Case)
+- **Goal:** Align implementation with docs/04-cases.md
+- **Status:** DONE
+- **Commits:** 5fcb28f..64bbbcb
+
 ### MVP-03: Tasks from Storage ✓
 - **Grey:** ax-1ku (PLAN: MVP-03 - Tasks from Storage)
 - **Blue:** ax-1ku.1 (F03: Load Tasks from File)
