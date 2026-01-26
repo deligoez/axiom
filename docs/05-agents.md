@@ -660,6 +660,42 @@ No agent is truly a "singleton" across AXIOM's lifetime:
 | Agent crashes | Max respawns mid-session → `max-002` |
 | Multiple Echo workers | `echo-001`, `echo-002`, `echo-003` concurrent |
 
+### Initial Counter State
+
+On first AXIOM run, Ash creates `.axiom/metrics/counters.json`:
+
+```json
+{
+  "ava": 0,
+  "axel": 0,
+  "echo": 0,
+  "rex": 0,
+  "cleo": 0,
+  "dex": 0,
+  "max": 0,
+  "ash": 0
+}
+```
+
+First spawn of any persona increments from 0 → 1, yielding ID like `echo-001`.
+
+**File creation:**
+- Created atomically on first AXIOM startup
+- Ash initializes file before any spawn requests
+- File lock prevents race conditions between concurrent spawns
+
+**Counter persistence:**
+- Counters persist across AXIOM restarts
+- Never reset (monotonically increasing)
+- If file is corrupted, restore from backup or reinitialize to 0
+
+**Missing file handling:**
+```
+File not found → Create with all counters at 0
+Invalid JSON → Log warning, create fresh file
+Permission error → Fatal error, cannot proceed
+```
+
 ---
 
 ## Agent Card (Web UI)
