@@ -30,10 +30,8 @@ go.work.sum
 # Beads cache (rebuild from JSONL)
 .beads/beads.db
 
-# AXIOM runtime state
-.axiom/state/
-.axiom/checkpoints/
-.axiom/feedback/
+# AXIOM runtime state (created when running axiom)
+.axiom/
 
 # Environment files (secrets)
 .env

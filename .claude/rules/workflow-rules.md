@@ -257,6 +257,32 @@ bd tree ax-xxx       # Shows full tree
 
 ---
 
+## TLDR-First Rule (MANDATORY)
+
+**Always use TLDR before directly reading files.**
+
+When exploring code or searching for information:
+
+```bash
+# Search for patterns
+tldr search "pattern" path/
+
+# Get file structure
+tldr structure path/ --lang go
+
+# Get context for a function
+tldr context function_name --project .
+```
+
+**Why:** TLDR provides 95% token savings compared to raw file reads. It gives structured context with call graphs, docstrings, and relationships.
+
+**Only read files directly when:**
+- You need to see exact implementation details
+- TLDR output isn't sufficient for the task
+- Making edits (must read before Edit tool)
+
+---
+
 ## Context Compaction Rules
 
 After a context compaction (session continuation):
