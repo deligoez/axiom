@@ -293,7 +293,7 @@ The Execution Loop is used **only in Phase 5 (VALIDATE)** where mechanical itera
 | Phase | Purpose | Interaction Style | When Complete |
 |-------|---------|-------------------|---------------|
 | **1. UNDERSTAND** | Clarify user's goal | Q&A dialogue | User answers or says "you decide" |
-| **2. ANALYZE** | Explore codebase context | Axel works autonomously | Context gathered |
+| **2. ANALYZE** | Find relevant files for THIS goal | Axel works autonomously | GoalContext.AnalysisComplete = true |
 | **3. PROPOSE** | Present high-level approach | Approval loop | User approves architecture |
 | **4. DECOMPOSE** | Generate atomic Tasks | One-shot generation | Tasks created |
 | **5. VALIDATE** | Check Tasks against rules | Execution Loop iteration | All Tasks pass |
@@ -327,16 +327,34 @@ Axel asks clarifying questions to fully understand the user's goal before genera
 
 ## Phase 2: ANALYZE
 
-Axel explores the codebase to understand existing patterns, tech stack, and relevant context.
+Axel analyzes the codebase to find files and patterns relevant to **THIS specific goal**.
 
-### Context Gathered
+> **Important Distinction:**
+> - Project-level analysis (tech stack, verification commands) → Ava did this, stored in config.json
+> - Goal-specific analysis (relevant files for THIS feature) → Axel does this in Phase 2
+
+### Goal Context (gathered per goal)
 
 ```go
-type CodebaseContext struct {
-    TechStack        []string         `json:"techStack"`        // ["TypeScript", "React", "Vitest"]
-    ExistingPatterns []PatternInfo    `json:"existingPatterns"`
-    RelevantFiles    []string         `json:"relevantFiles"`    // Files that might be affected
-    Conventions      ConventionInfo   `json:"conventions"`
+// GoalContext is gathered by Axel in Phase 2 (goal-specific, not project-level)
+type GoalContext struct {
+    // Files relevant to THIS goal (not all project files)
+    RelevantFiles      []RelevantFile  `json:"relevantFiles"`
+
+    // Patterns that should be followed for THIS feature
+    ApplicablePatterns []PatternInfo   `json:"applicablePatterns"`
+
+    // Other features that interact with THIS goal
+    Dependencies       []string        `json:"dependencies"`
+
+    // Completed when all above are populated
+    AnalysisComplete   bool            `json:"analysisComplete"`
+}
+
+type RelevantFile struct {
+    Path        string `json:"path"`
+    Relevance   string `json:"relevance"`   // "modify", "reference", "create"
+    Description string `json:"description"` // Why this file matters for this goal
 }
 
 type PatternInfo struct {
@@ -344,13 +362,62 @@ type PatternInfo struct {
     File        string `json:"file"`
     Description string `json:"description"`
 }
+```
 
-type ConventionInfo struct {
-    Naming    string `json:"naming"`    // "camelCase functions, PascalCase components"
-    Testing   string `json:"testing"`   // "AAA pattern, co-located test files"
-    Structure string `json:"structure"` // "Feature-based folders"
+### Completion Criteria
+
+Phase 2 is complete when:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Relevant Files Identified** | Files to modify, reference, or create for THIS goal |
+| **Applicable Patterns Found** | Naming, testing, structure patterns for THIS feature type |
+| **Dependencies Understood** | Features that interact with THIS goal |
+| **AnalysisComplete = true** | All above populated |
+
+```
+Transition: Phase 2 → Phase 3 when GoalContext.AnalysisComplete == true
+Signal: <axiom>PHASE_COMPLETE</axiom>
+```
+
+### Examples
+
+**Goal: "Add user authentication"**
+```json
+{
+  "relevantFiles": [
+    {"path": "internal/user/user.go", "relevance": "reference", "description": "User model to extend"},
+    {"path": "internal/api/routes.go", "relevance": "modify", "description": "Add auth endpoints"},
+    {"path": "internal/auth/jwt.go", "relevance": "create", "description": "New JWT service"}
+  ],
+  "applicablePatterns": [
+    {"name": "Handler pattern", "file": "internal/api/health.go", "description": "HTTP handler structure"}
+  ],
+  "dependencies": ["user-profile", "session-management"],
+  "analysisComplete": true
 }
 ```
+
+**Goal: "Fix login bug"**
+```json
+{
+  "relevantFiles": [
+    {"path": "internal/auth/login.go", "relevance": "modify", "description": "Bug location"},
+    {"path": "internal/auth/login_test.go", "relevance": "modify", "description": "Add test for bug"}
+  ],
+  "applicablePatterns": [],
+  "dependencies": [],
+  "analysisComplete": true
+}
+```
+
+### What Phase 2 is NOT
+
+Phase 2 does NOT:
+- Detect tech stack (Ava did this → config.json)
+- Find verification commands (Ava did this → config.json)
+- Setup project (Ava did this)
+- Analyze unrelated code (only THIS goal)
 
 ---
 
