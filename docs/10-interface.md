@@ -298,6 +298,201 @@ func handleAssignTask(w http.ResponseWriter, r *http.Request) {
 
 ---
 
+## Error Recovery
+
+### SSE Connection Recovery
+
+SSE connections can drop due to network issues. HTMX SSE extension handles reconnection automatically:
+
+```html
+<!-- SSE with auto-reconnect -->
+<div hx-ext="sse"
+     sse-connect="/api/events"
+     sse-reconnect="true">
+
+    <!-- Connection status indicator -->
+    <div id="connection-status"
+         class="sse-connected">
+        Connected
+    </div>
+
+</div>
+```
+
+**Reconnection behavior:**
+
+| Scenario | Behavior |
+|----------|----------|
+| Connection lost | Auto-reconnect after 3 seconds |
+| Server restart | Reconnect when server available |
+| Auth expired | Redirect to login |
+| Too many failures | Show manual reconnect button |
+
+**Connection status handling:**
+
+```html
+<script>
+document.body.addEventListener('htmx:sseOpen', function() {
+    document.getElementById('connection-status').className = 'sse-connected';
+    document.getElementById('connection-status').textContent = 'Connected';
+});
+
+document.body.addEventListener('htmx:sseError', function() {
+    document.getElementById('connection-status').className = 'sse-disconnected';
+    document.getElementById('connection-status').textContent = 'Reconnecting...';
+});
+</script>
+```
+
+**Stale UI detection:**
+
+When reconnecting, HTMX triggers a full refresh of SSE-dependent elements:
+
+```html
+<div hx-get="/partials/tasks"
+     hx-trigger="sse:task-updated, sse:reconnected"
+     hx-swap="innerHTML">
+</div>
+```
+
+### Server Error Handling
+
+```html
+<!-- Target different elements for success vs error -->
+<button hx-post="/api/action/assign"
+        hx-target="#result"
+        hx-target-error="#error-panel"
+        hx-swap="innerHTML">
+    Assign Task
+</button>
+
+<div id="result"></div>
+<div id="error-panel" class="error-message"></div>
+```
+
+**Server-side error responses:**
+
+```go
+func handleAssign(w http.ResponseWriter, r *http.Request) {
+    result, err := daemon.Assign(args)
+    if err != nil {
+        // Return error fragment with 4xx/5xx status
+        w.WriteHeader(http.StatusBadRequest)
+        tmpl.ExecuteTemplate(w, "partials/error.html", map[string]any{
+            "Message": err.Error(),
+            "Retry":   true,
+        })
+        return
+    }
+
+    // Success response
+    tmpl.ExecuteTemplate(w, "partials/assign-result.html", result)
+}
+```
+
+**Error fragment template:**
+
+```html
+<!-- templates/partials/error.html -->
+<div class="error-message">
+    <span class="error-icon">✗</span>
+    <span class="error-text">{{.Message}}</span>
+    {{if .Retry}}
+    <button hx-get="{{.RetryURL}}" hx-swap="outerHTML">
+        Retry
+    </button>
+    {{end}}
+</div>
+```
+
+**HTTP status handling:**
+
+| Status | Behavior |
+|--------|----------|
+| 200 | Success, update target |
+| 4xx | Client error, update error target |
+| 5xx | Server error, show retry option |
+| Timeout | Show timeout message with retry |
+
+### Request Timeout Handling
+
+```html
+<button hx-post="/api/action/assign"
+        hx-timeout="10000"
+        hx-on:htmx:timeout="handleTimeout(event)">
+    Assign Task
+</button>
+
+<script>
+function handleTimeout(event) {
+    document.getElementById('error-panel').innerHTML =
+        '<div class="timeout-error">Request timed out. <a href="#" onclick="retryRequest()">Retry</a></div>';
+}
+</script>
+```
+
+### Progressive Enhancement
+
+AXIOM works without JavaScript (degraded) and enhances with HTMX:
+
+**Without JS (fallback):**
+- Full page reloads for navigation
+- Standard form submissions
+- No real-time updates (manual refresh)
+
+**With JS (enhanced):**
+- Partial DOM updates via HTMX
+- Real-time SSE updates
+- Loading indicators and transitions
+
+**Fallback form example:**
+
+```html
+<!-- Works with or without JS -->
+<form action="/api/action/assign" method="POST"
+      hx-post="/api/action/assign"
+      hx-swap="none">
+    <input type="hidden" name="taskId" value="{{.TaskID}}">
+    <button type="submit">Assign Task</button>
+</form>
+```
+
+**Detecting JS availability:**
+
+```html
+<noscript>
+    <div class="no-js-warning">
+        JavaScript is disabled. Real-time updates are unavailable.
+        <a href="javascript:location.reload()">Refresh</a> to see latest state.
+    </div>
+</noscript>
+```
+
+### Client Error Recovery
+
+```html
+<!-- Global error handler -->
+<script>
+document.body.addEventListener('htmx:responseError', function(evt) {
+    const status = evt.detail.xhr.status;
+    const target = document.getElementById('global-error');
+
+    if (status === 0) {
+        target.innerHTML = 'Network error. Check your connection.';
+    } else if (status >= 500) {
+        target.innerHTML = 'Server error. Please try again.';
+    } else if (status === 401) {
+        window.location.href = '/login';
+    }
+
+    target.style.display = 'block';
+    setTimeout(() => target.style.display = 'none', 5000);
+});
+</script>
+```
+
+---
+
 ## Keyboard Shortcuts
 
 Global shortcuts work anywhere in the UI:
