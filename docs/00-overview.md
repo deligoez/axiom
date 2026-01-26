@@ -78,6 +78,14 @@ Discovery cases are created when agents emit discovery signals during Task execu
 
 Single binary, no dependencies. Each agent runs in its own git workspace with isolated state.
 
+**Why git worktree for isolation?**
+- **Disk efficient:** Shares .git directory (no duplicate history)
+- **Fast:** Instant branch creation, shared object database
+- **Clean:** No merge conflicts during parallel work
+- **Native:** Uses Git's built-in feature, no custom isolation
+
+See [16-glossary.md](./16-glossary.md#workspace-vs-worktree-terminology) for terminology guide.
+
 ---
 
 ## Two Operating Modes
