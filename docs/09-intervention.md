@@ -239,6 +239,104 @@ recover():
 | Workspaces | Git | Full |
 | Agent memory | Lost | None |
 
+### Event Log Validation
+
+When loading `events.jsonl`, AXIOM validates each line:
+
+```
+Load events.jsonl
+     │
+     ▼
+For each line:
+     │
+     ├── Valid JSON? ──No──► Mark line as corrupted
+     │         │
+     │        Yes
+     │         │
+     │         ▼
+     │     Valid event schema?
+     │         │
+     │        No ──► Mark line as corrupted
+     │        Yes
+     │         │
+     │         ▼
+     │     Add to valid events
+     │
+     ▼
+Replay valid events only
+```
+
+### Corrupted Event Log Recovery
+
+When `events.jsonl` is corrupted (e.g., truncated during crash):
+
+```
+Both snapshot and events corrupted:
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Recovery Options                               │
+│                                                                  │
+│  Snapshot: INVALID (checksum mismatch)                           │
+│  Events: PARTIAL (342/400 lines valid, 58 corrupted)             │
+│                                                                  │
+│  Options:                                                        │
+│  [P] Partial recovery - Replay 342 valid events                  │
+│      └─ Warning: May lose recent state changes                   │
+│                                                                  │
+│  [B] Restore from backup - Use events.jsonl.backup               │
+│      └─ Backup age: 2 hours ago                                  │
+│                                                                  │
+│  [C] Reconstruct from cases.jsonl                                │
+│      └─ Case states preserved, agent states lost                 │
+│                                                                  │
+│  [F] Fresh start - Begin with empty state                        │
+│      └─ All state lost, cases preserved                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Recovery Priority:**
+1. **Partial replay** - Replay valid prefix of events
+2. **Backup restore** - Use `events.jsonl.backup` if recent
+3. **Case reconstruction** - Rebuild from `cases.jsonl`
+4. **Fresh start** - Last resort, preserves cases but loses orchestration state
+
+### Event Log Backup
+
+AXIOM maintains rolling backups:
+
+```json
+{
+  "state": {
+    "eventLogBackupInterval": 300,
+    "eventLogBackupCount": 3
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `eventLogBackupInterval` | 300 | Seconds between backups |
+| `eventLogBackupCount` | 3 | Number of backups to keep |
+
+**Backup files:**
+```
+.axiom/state/
+├── events.jsonl            # Active log
+├── events.jsonl.backup     # Latest backup
+├── events.jsonl.backup.1   # Previous backup
+└── events.jsonl.backup.2   # Oldest backup
+```
+
+### Error Codes
+
+| Code | Cause | Recovery |
+|------|-------|----------|
+| `EVENT_LOG_CORRUPTED` | Invalid JSON lines | Partial replay |
+| `EVENT_LOG_TRUNCATED` | Incomplete last line | Skip last line |
+| `EVENT_SCHEMA_INVALID` | Event doesn't match schema | Skip event |
+| `RECOVERY_FAILED` | All recovery methods failed | Fresh start |
+
 ---
 
 ## Task Recovery

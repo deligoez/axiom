@@ -633,8 +633,32 @@ func checkDiskSpace() error {
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
 | `snapshot corrupt` | Crash during write | Use event log | Automatic |
-| `events corrupt` | Parse error | Start fresh, warn | User decision |
+| `events corrupt` | Parse error | Partial replay | User decision |
 | `cases.jsonl corrupt` | Invalid JSON | Recover valid lines | Log lost entries |
+| `EVENT_LOG_CORRUPTED` | Invalid JSON lines | Partial replay | User decision |
+| `EVENT_LOG_TRUNCATED` | Incomplete last line | Skip last line | Automatic |
+| `EVENT_SCHEMA_INVALID` | Invalid event schema | Skip event | Automatic |
+| `RECOVERY_FAILED` | All methods failed | Fresh start | User action |
+
+#### EVENT_LOG_CORRUPTED
+
+**Severity:** High
+**Recoverable:** Yes (partial replay)
+
+```
+Warning: Event log contains corrupted entries
+
+File: .axiom/state/events.jsonl
+Valid lines: 342/400 (85%)
+Corrupted: 58 lines (15%)
+
+Recovery options:
+  [P] Partial recovery (replay 342 valid events)
+  [B] Restore from backup (events.jsonl.backup, 2 hours old)
+  [F] Fresh start (loses orchestration state)
+```
+
+See [09-intervention.md](./09-intervention.md#corrupted-event-log-recovery) for detailed recovery procedures.
 
 **Recovery Strategy:**
 ```go
