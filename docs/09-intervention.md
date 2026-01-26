@@ -240,6 +240,98 @@ Please review the workspace state and continue from where the previous attempt l
 
 ---
 
+## Planning Crash Recovery
+
+If AXIOM crashes during planning phase:
+
+### Planning State Persistence
+
+Planning state is continuously persisted to `.axiom/planning-state.json`:
+
+```json
+{
+  "status": "planning",
+  "phase": "decompose",
+  "directiveCase": { "id": "case-001", "jtbd": "..." },
+  "clarifications": [...],
+  "proposals": [{ "version": 1, "approved": true }, ...],
+  "partialCases": {
+    "created": ["op-001", "op-002", "op-003"],
+    "pending": ["op-004", "op-005"]
+  },
+  "lastCheckpoint": "2026-01-15T10:30:00Z"
+}
+```
+
+### Recovery Flow
+
+```
+AXIOM restarts after crash
+     │
+     ▼
+┌─────────────────────────┐
+│ Load planning-state.json│
+└───────────┬─────────────┘
+            │
+     ┌──────┴──────┐
+     │ Was in      │
+     │ planning?   │
+     └──────┬──────┘
+            │
+      Yes   │   No
+            │
+     ┌──────┴──────────────────┐
+     │ Planning Recovery       │
+     │ Options:                │
+     │ [R] Resume from phase   │
+     │ [S] Start planning over │
+     │ [K] Keep cases, skip    │
+     └─────────────────────────┘
+```
+
+### Recovery Options
+
+| Option | Description | Effect |
+|--------|-------------|--------|
+| **Resume** | Continue from last phase | Axel resumes from saved state |
+| **Start Over** | Restart planning | Archive partial cases, begin fresh |
+| **Keep and Skip** | Accept partial work | Mark created cases as ready, skip planning |
+
+### Phase-Specific Recovery
+
+| Crashed During | Recovery Behavior |
+|----------------|-------------------|
+| **UNDERSTAND** | Resume Q&A (clarifications preserved) |
+| **ANALYZE** | Re-run analysis (fast, no user input needed) |
+| **PROPOSE** | Resume with last proposal version |
+| **DECOMPOSE** | Resume case generation from `partialCases.pending` |
+| **VALIDATE** | Resume validation loop |
+
+### Partial Case Handling
+
+When crash occurs during DECOMPOSE with partial cases:
+
+```
+Created before crash:     Pending (not created):
+├── op-001 (complete)     ├── op-004 (in partialCases.pending)
+├── op-002 (complete)     └── op-005 (in partialCases.pending)
+└── op-003 (complete)
+
+Recovery options:
+1. Resume: Create op-004, op-005, then validate all
+2. Start Over: Archive op-001..003, begin fresh
+3. Keep and Skip: Validate op-001..003 only, proceed to implementation
+```
+
+### Non-Interactive Recovery
+
+With `--non-interactive` or in CI:
+1. If < 50% cases created: Start over
+2. If >= 50% cases created: Keep and skip
+3. Log decision for audit
+
+---
+
 ## Config Recovery
 
 If `config.json` is corrupted at startup:

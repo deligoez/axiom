@@ -911,7 +911,12 @@ Stored in `.axiom/planning-state.json`:
   "clarifications": [],
   "codebaseContext": {},
   "proposals": [],
-  "validationIterations": []
+  "validationIterations": [],
+  "partialCases": {
+    "created": [],
+    "pending": []
+  },
+  "lastCheckpoint": "2026-01-15T10:30:00Z"
 }
 ```
 
@@ -929,3 +934,13 @@ Stored in `.axiom/planning-state.json`:
 | `decompose` | Phase 4: Task generation |
 | `validate` | Phase 5: Execution Loop validation |
 | `ready` | All Tasks valid, ready for implementation |
+
+### Crash Recovery
+
+Planning state is persisted after each phase transition and during case generation. If AXIOM crashes during planning:
+
+- **Resume:** Continue from last saved phase
+- **Start Over:** Archive partial work, begin fresh
+- **Keep and Skip:** Accept partial cases, proceed to implementation
+
+See [09-intervention.md](./09-intervention.md#planning-crash-recovery) for detailed recovery flow.
