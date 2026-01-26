@@ -37,6 +37,37 @@ Agents emit discovery signals during work:
 | Debugging insight | Local | "This error means X, fix with Y" |
 | Architecture decision | Global | "All API routes in src/routes/" |
 
+### Writing Quality Discoveries
+
+**High-value discoveries:**
+- "This API has rate limiting of 100/hour - cache responses"
+- "TypeScript strict mode causes false positives with JSON imports - use type assertion"
+- "Test database must be seeded before auth tests run"
+- "The retry logic in http.ts expects exponential backoff"
+
+**Characteristics of good discoveries:**
+| Quality | Description |
+|---------|-------------|
+| **Actionable** | Tells what to do, not just what exists |
+| **Specific** | Mentions exact files, functions, values |
+| **Non-obvious** | Not already in docs/README |
+| **Time-saving** | Prevents repeating mistakes |
+
+**Low-value discoveries to avoid:**
+- "Fixed the bug" (not reusable)
+- "Tests should pass" (obvious)
+- "Good code is better" (vague)
+- "This file is important" (no actionable info)
+
+### Local vs Global Decision
+
+| Choose | When |
+|--------|------|
+| **Local** | Personal debugging notes, approach that worked for this task, context-specific tricks |
+| **Global** | Architectural constraints, performance bottlenecks, API quirks, test setup requirements |
+
+**Rule of thumb:** If 3+ agents would benefit, make it global.
+
 ---
 
 ## Discovery Log as Query View
