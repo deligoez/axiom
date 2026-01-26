@@ -7,78 +7,91 @@
 
 ---
 
+## Current Work
+
+**No active tasks** - Clean slate!
+
+Next steps to consider:
+- Test Ava end-to-end (manual integration test)
+- Implement Axel (planning agent)
+- Implement Echo (implementation agent)
+
+---
+
 ## Completed Milestones
+
+### MVP-04: Ava Init System ✓
+- **Goal:** First run spawns Ava for project setup
+- **Status:** DONE
+- **What was built:**
+  - Scaffold system (.axiom/, config.json, ava/prompt.md)
+  - Agent spawner (claude --print --system-prompt)
+  - Signal parser (<axiom>TYPE:payload</axiom>)
+  - Main integration (scaffold → spawn Ava → AVA_COMPLETE)
+- **Tasks completed:**
+  - ax-tgh: MVP Scaffold System
+  - ax-rf9: Signal Format Standardization
+  - ax-ab3: Agent Spawner
+  - ax-urm: Signal Parser
+  - ax-9ik: Main Spawn Ava
+  - ax-d0r: Docs Update
+- **Key files:**
+  - internal/scaffold/scaffold.go
+  - internal/agent/spawner.go
+  - internal/signal/signal.go
+  - cmd/axiom/main.go
 
 ### m0-bootstrap: Project Setup ✓
-- **Grey:** ax-od8 (PLAN: Project Bootstrap)
-- **Blue:** ax-od8.1 (F00: Go Project Ready)
 - **Status:** DONE
-- **Commits:** 02a9554..274f958
-
----
-
-## Current Milestone
-
-### MVP-04: TBD
-- **Grey:** TBD
-- **Goal:** Create task via UI
-- **Status:** NOT STARTED
-
----
-
-## Completed Milestones
-
-### Refactor: Task to Case Migration ✓
-- **Grey:** ax-f5i (PLAN: Align with docs - Task to Case migration)
-- **Blue:** ax-f5i.1 (F04: Rename Task to Case)
-- **Goal:** Align implementation with docs/04-cases.md
-- **Status:** DONE
-- **Commits:** 5fcb28f..64bbbcb
-
-### MVP-03: Tasks from Storage ✓
-- **Grey:** ax-1ku (PLAN: MVP-03 - Tasks from Storage)
-- **Blue:** ax-1ku.1 (F03: Load Tasks from File)
-- **Goal:** Read tasks from JSONL file
-- **Status:** DONE
-- **Commits:** 3ed4765..eb1528e
-
-### MVP-02: Task List UI ✓
-- **Grey:** ax-88w (PLAN: MVP-02 - Task List UI)
-- **Blue:** ax-88w.1 (F02: Task List Page)
-- **Goal:** See a task list in UI with hardcoded data
-- **Status:** DONE
-- **Commits:** c3eced6..5ee6b86
 
 ### MVP-01: Walking Skeleton ✓
-- **Grey:** ax-zny (PLAN: MVP-01 - Walking Skeleton)
-- **Blue:** ax-zny.1 (F01: Web Server with Template)
 - **Goal:** See a web page with header/footer
 - **Status:** DONE
-- **Commits:** 51f9d3b..f834805
+
+### MVP-02: Task List UI ✓
+- **Goal:** See a task list in UI with hardcoded data
+- **Status:** DONE
+
+### MVP-03: Tasks from Storage ✓
+- **Goal:** Read tasks from JSONL file
+- **Status:** DONE
+
+### Refactor: Task to Case Migration ✓
+- **Goal:** Align implementation with docs/04-cases.md
+- **Status:** DONE
 
 ---
 
-## Backlog (Outcome-Focused)
+## Architecture Summary
 
-**Approach:** Vertical slices, not horizontal layers. Each milestone = something visible in UI.
+### Startup Flow
+```
+axiom command
+     ↓
+.axiom/ exists? ─No─→ Scaffold
+     ↓                    ↓
+    Yes              Spawn Ava
+     ↓                    ↓
+Start server      AVA_COMPLETE?
+                       ↓
+                  Start server
+```
 
-| Milestone | Goal (What we SEE) | Infra Needed |
-|-----------|-------------------|--------------|
-| MVP-01 | Web page with header/footer | Go web server, templates |
-| MVP-02 | Hardcoded task list in UI | HTML template |
-| MVP-03 | Real tasks from storage | Basic CaseStore |
-| MVP-04 | Create task via UI | Form handling |
-| MVP-05 | Task status changes | Status enum, update |
-| MVP-06 | Planning view | Draft/Operation types |
-| ... | ... | ... |
+### Agent Spawning
+```bash
+claude --print --dangerously-skip-permissions --system-prompt "$(cat prompt.md)"
+```
 
-**Note:** This backlog will evolve. We discover what's next after each milestone.
+### Signal Format
+```
+<axiom>TYPE</axiom>
+<axiom>TYPE:payload</axiom>
+```
 
 ---
 
 ## Infrastructure Reference
 
-When we need infrastructure, reference these docs:
 - `docs/04-cases.md` - Case types, CaseStore API
 - `docs/01-configuration.md` - Config system
 - `docs/05-agents.md` - Agent system
@@ -93,4 +106,4 @@ When we need infrastructure, reference these docs:
 After `/clear` or new session:
 1. `cat PROGRESS.md` - Where are we?
 2. `bd ready -n 0` - What's next?
-3. Continue from Current Milestone
+3. Continue from Current Work section
