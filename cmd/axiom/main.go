@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/deligoez/axiom/internal/agent"
 	"github.com/deligoez/axiom/internal/scaffold"
+	"github.com/deligoez/axiom/internal/signal"
 	"github.com/deligoez/axiom/internal/web"
 )
 
@@ -23,6 +25,29 @@ func main() {
 			log.Fatalf("prompt error: %v", err)
 		}
 		fmt.Println("Created .axiom/ directory")
+
+		// Spawn Ava for project initialization
+		fmt.Println("Starting Ava for project setup...")
+		output, err := agent.Spawn(".axiom/agents/ava/prompt.md")
+		if err != nil {
+			log.Fatalf("ava error: %v", err)
+		}
+
+		// Check for AVA_COMPLETE signal
+		signals := signal.Parse(output)
+		avaCompleted := false
+		for _, s := range signals {
+			if s.Type == signal.AvaComplete {
+				avaCompleted = true
+				break
+			}
+		}
+
+		if avaCompleted {
+			fmt.Println("Project initialized successfully!")
+		} else {
+			fmt.Println("Warning: Ava did not complete initialization")
+		}
 	}
 
 	addr := ":8080"
