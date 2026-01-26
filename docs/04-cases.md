@@ -74,7 +74,7 @@ Discovery cases have knowledge-lifecycle statuses:
 
 ```
 Case
-├── id: string              // "case-001", "task-002"
+├── id: string              // See "Case ID Format" below
 ├── type: CaseType          // directive, draft, research, pending, deferred, operation, task, discovery
 ├── status: Status          // pending, active, blocked, done (+ type-specific statuses)
 ├── content: string         // JTBD for Directive, description for others
@@ -147,6 +147,62 @@ TaskExecution
 ├── lastError: string
 └── signals: string[]       // ['PROGRESS:50', 'COMPLETE']
 ```
+
+---
+
+## Case ID Format
+
+Case IDs follow the pattern: `{type-prefix}-{NNN}`
+
+### Type Prefixes
+
+| Type | Prefix | Example |
+|------|--------|---------|
+| Directive | `dir` | `dir-001` |
+| Draft | `draft` | `draft-012` |
+| Research | `res` | `res-003` |
+| Pending | `pend` | `pend-001` |
+| Deferred | `def` | `def-008` |
+| Operation | `op` | `op-005` |
+| Task | `task` | `task-042` |
+| Discovery | `disc` | `disc-030` |
+
+### Counter Mechanism
+
+- Each type has its own independent counter
+- Counters stored in `.axiom/metrics/counters.json`
+- Counters increment monotonically, never reset
+- Counters persist across AXIOM restarts
+
+```json
+{
+  "dir": 1,
+  "draft": 15,
+  "res": 4,
+  "pend": 2,
+  "def": 8,
+  "op": 12,
+  "task": 47,
+  "disc": 142
+}
+```
+
+### Format Rules
+
+| Rule | Description |
+|------|-------------|
+| Zero-padded | 3 digits minimum: `001`, `042`, `999` |
+| Overflow | Extends beyond 999: `1000`, `1001` |
+| Immutable | IDs never change once assigned |
+| Unique | No two cases share the same ID |
+
+### ID Assignment
+
+IDs are assigned by Auditor Ash (event-driven):
+1. Case creation event fires
+2. Ash reads current counter for case type
+3. Ash increments counter and generates ID
+4. ID written atomically to case and counter file
 
 ---
 
