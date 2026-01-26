@@ -547,6 +547,63 @@ Axel runs a repeated cycle for clarifying Draft cases:
 
 **Why "spiral" not "loop"?** Each pass produces more refined cases. You're never in the same place twice.
 
+### Spiral Exit Conditions
+
+The planning spiral terminates when any of these conditions is met:
+
+| Exit Condition | Trigger | Result |
+|----------------|---------|--------|
+| **Ready** | First Operation cases are ready | Move to implementation |
+| **Max Iterations** | Reached `maxPlanningIterations` (default: 10) | Prompt user to continue or accept |
+| **User Override** | User explicitly approves current state | Move to implementation as-is |
+| **All Pending** | Every Draft case became Pending | Blocked - waiting for user decisions |
+| **Infinite Loop** | Same case state detected twice | Error - prompt manual intervention |
+
+**Exit Decision Flow:**
+
+```
+After each spiral iteration:
+     │
+     ▼
+Are Operation cases ready?
+     │
+    Yes ──► EXIT: Move to implementation
+     │
+    No
+     │
+     ▼
+Iteration count < maxPlanningIterations?
+     │
+    No ──► PAUSE: Ask user to continue or accept
+     │
+    Yes
+     │
+     ▼
+Any Draft cases still refineable?
+     │
+    No ──► EXIT: All Pending (blocked on user)
+     │
+    Yes
+     │
+     ▼
+State hash same as previous iteration?
+     │
+    Yes ──► ERROR: Infinite loop detected
+     │
+    No ──► Continue to next iteration
+```
+
+**Configuration:**
+
+```json
+{
+  "planning": {
+    "maxPlanningIterations": 10,
+    "detectInfiniteLoop": true
+  }
+}
+```
+
 ---
 
 ## The Implementation Loop
