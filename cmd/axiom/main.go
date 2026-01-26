@@ -6,10 +6,25 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/deligoez/axiom/internal/scaffold"
 	"github.com/deligoez/axiom/internal/web"
 )
 
 func main() {
+	// Scaffold .axiom/ directory if it doesn't exist
+	if !scaffold.Exists(".") {
+		if err := scaffold.Scaffold("."); err != nil {
+			log.Fatalf("scaffold error: %v", err)
+		}
+		if err := scaffold.WriteConfig(".axiom"); err != nil {
+			log.Fatalf("config error: %v", err)
+		}
+		if err := scaffold.WriteAvaPrompt(".axiom"); err != nil {
+			log.Fatalf("prompt error: %v", err)
+		}
+		fmt.Println("Created .axiom/ directory")
+	}
+
 	addr := ":8080"
 	caseFile := ".axiom/cases.jsonl"
 
