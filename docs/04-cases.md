@@ -301,31 +301,40 @@ Discovery cases are always children of the Task that produced them.
 
 ## CaseStore API
 
-### CRUD Operations
+CaseStore provides two types of operations: **mutations** (modify state) and **queries** (read state).
 
-| Method | Description |
-|--------|-------------|
-| `create(input)` | Create new case |
-| `get(id)` | Get case by ID |
-| `update(id, changes)` | Update case |
-| `delete(id, reason)` | Soft-delete |
+### Mutation vs Query
 
-### Lifecycle Operations
+| Type | Characteristics | Examples |
+|------|-----------------|----------|
+| **Mutation** | Modifies state, emits events, writes to disk | `create`, `update`, `transition` |
+| **Query** | Read-only, no side effects, no events | `get`, `byType`, `ready` |
 
-| Method | Description |
-|--------|-------------|
-| `transition(id, newType, reason)` | Change type |
-| `split(id, children)` | Create children from case |
-| `claim(id, agentId)` | Claim Task for execution |
-| `release(id)` | Release claimed Task |
-| `complete(id, result)` | Mark done with result |
-| `block(id, reason)` | Mark blocked |
-| `defer(id)` | Move to Deferred |
+### CRUD Operations (Mutations)
+
+| Method | Description | Events Emitted |
+|--------|-------------|----------------|
+| `create(input)` | Create new case | `case:created` |
+| `update(id, changes)` | Update case fields | `case:updated` |
+| `delete(id, reason)` | Soft-delete (marks deleted, preserves data) | `case:deleted` |
+
+### Lifecycle Operations (Mutations)
+
+| Method | Description | Events Emitted |
+|--------|-------------|----------------|
+| `transition(id, newType, reason)` | Change case type | `case:transitioned` |
+| `split(id, children)` | Create children from case | `case:split`, `case:created` (per child) |
+| `claim(id, agentId)` | Claim Task for execution | `case:claimed` |
+| `release(id)` | Release claimed Task | `case:released` |
+| `complete(id, result)` | Mark done with result | `case:completed` |
+| `block(id, reason)` | Mark blocked | `case:blocked` |
+| `defer(id)` | Move to Deferred | `case:deferred` |
 
 ### Query Operations
 
 | Method | Description |
 |--------|-------------|
+| `get(id)` | Get case by ID |
 | `byType(type)` | All cases of a type |
 | `ready(type?)` | Ready for processing |
 | `blocked()` | Blocked cases |
@@ -334,6 +343,52 @@ Discovery cases are always children of the Task that produced them.
 | `lineage(id)` | Full tree from Directive |
 | `discoveriesByScope(scope)` | Discovery cases by scope (local/global) |
 | `activeDiscoveries(agentId?)` | Active Discovery cases for injection |
+
+### Mutation Guarantees
+
+All mutations provide these guarantees:
+
+| Guarantee | Description |
+|-----------|-------------|
+| **Atomic** | Either fully succeeds or fully fails (no partial writes) |
+| **Validated** | Input validated before mutation (see Validation Rules) |
+| **Persisted** | Written to JSONL before returning |
+| **Event-emitting** | Events fired after successful persistence |
+| **History-tracking** | All changes recorded in case history |
+
+### Validation Rules
+
+Mutations are validated before execution:
+
+```go
+type ValidationRules struct {
+    // Type transitions (what types can transition to what)
+    AllowedTransitions map[CaseType][]CaseType
+
+    // Status transitions (what statuses can transition to what)
+    AllowedStatuses map[CaseType][]Status
+
+    // Required fields per type
+    RequiredFields map[CaseType][]string
+}
+
+// Example: Draft can transition to Research, Operation, or Deferred
+AllowedTransitions["draft"] = ["research", "operation", "deferred"]
+
+// Example: Task can have these statuses
+AllowedStatuses["task"] = ["pending", "active", "blocked", "done", "failed", "timeout", "review"]
+```
+
+**Common validation errors:**
+
+| Error | Cause |
+|-------|-------|
+| `InvalidTransition` | Type cannot transition to requested type |
+| `InvalidStatus` | Status not allowed for case type |
+| `MissingRequired` | Required field not provided |
+| `NotFound` | Case ID doesn't exist |
+| `AlreadyClaimed` | Task already claimed by another agent |
+| `NotClaimed` | Trying to release/complete unclaimed Task |
 
 ---
 
