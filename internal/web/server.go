@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/deligoez/axiom/internal/task"
+	casestore "github.com/deligoez/axiom/internal/case"
 )
 
 //go:embed templates/*.html
@@ -17,12 +17,12 @@ var templatesFS embed.FS
 type Server struct {
 	mux       *http.ServeMux
 	templates *template.Template
-	taskStore *task.TaskStore
-	taskFile  string
+	caseStore *casestore.CaseStore
+	caseFile  string
 }
 
 // NewServer creates a new AXIOM web server.
-func NewServer(taskFile string) *Server {
+func NewServer(caseFile string) *Server {
 	tmpl, err := template.ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		log.Fatalf("failed to parse templates: %v", err)
@@ -31,8 +31,8 @@ func NewServer(taskFile string) *Server {
 	s := &Server{
 		mux:       http.NewServeMux(),
 		templates: tmpl,
-		taskStore: task.NewTaskStore(),
-		taskFile:  taskFile,
+		caseStore: casestore.NewCaseStore(),
+		caseFile:  caseFile,
 	}
 	s.routes()
 	return s
@@ -56,19 +56,19 @@ func (s *Server) StaticDir(dir string) {
 
 // PageData holds data passed to templates.
 type PageData struct {
-	Tasks []task.Task
+	Cases []casestore.Case
 }
 
 // handleRoot handles GET /.
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
-	tasks, err := s.taskStore.Load(s.taskFile)
+	cases, err := s.caseStore.Load(s.caseFile)
 	if err != nil {
 		// Graceful degradation: show empty list if file missing
-		tasks = []task.Task{}
+		cases = []casestore.Case{}
 	}
 
 	data := PageData{
-		Tasks: tasks,
+		Cases: cases,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

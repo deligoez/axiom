@@ -11,7 +11,7 @@ import (
 
 func TestServer_GetRoot_Returns200(t *testing.T) {
 	// Arrange - use nonexistent file (graceful degradation)
-	server := NewServer("/nonexistent/tasks.jsonl")
+	server := NewServer("/nonexistent/cases.jsonl")
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -26,7 +26,7 @@ func TestServer_GetRoot_Returns200(t *testing.T) {
 
 func TestServer_GetRoot_ReturnsHTML(t *testing.T) {
 	// Arrange
-	server := NewServer("/nonexistent/tasks.jsonl")
+	server := NewServer("/nonexistent/cases.jsonl")
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -53,20 +53,20 @@ func TestServer_GetRoot_ReturnsHTML(t *testing.T) {
 	}
 }
 
-func TestServer_GetRoot_ContainsTasks(t *testing.T) {
-	// Arrange - create temp file with test tasks
+func TestServer_GetRoot_ContainsCases(t *testing.T) {
+	// Arrange - create temp file with test cases
 	dir := t.TempDir()
-	taskFile := filepath.Join(dir, "tasks.jsonl")
+	caseFile := filepath.Join(dir, "cases.jsonl")
 
-	content := `{"id":"task-001","title":"Test task one","status":"done"}
-{"id":"task-002","title":"Test task two","status":"active"}
+	content := `{"id":"task-001","type":"task","status":"done","content":"Test case one","createdAt":"2026-01-26T10:00:00Z"}
+{"id":"task-002","type":"task","status":"active","content":"Test case two","createdAt":"2026-01-26T11:00:00Z"}
 `
-	err := os.WriteFile(taskFile, []byte(content), 0o644)
+	err := os.WriteFile(caseFile, []byte(content), 0o644)
 	if err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
-	server := NewServer(taskFile)
+	server := NewServer(caseFile)
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -76,14 +76,14 @@ func TestServer_GetRoot_ContainsTasks(t *testing.T) {
 	// Assert
 	body := rec.Body.String()
 
-	expectedTasks := []string{
-		"Test task one",
-		"Test task two",
+	expectedCases := []string{
+		"Test case one",
+		"Test case two",
 	}
 
-	for _, taskTitle := range expectedTasks {
-		if !strings.Contains(body, taskTitle) {
-			t.Errorf("response should contain task title %q", taskTitle)
+	for _, caseContent := range expectedCases {
+		if !strings.Contains(body, caseContent) {
+			t.Errorf("response should contain case content %q", caseContent)
 		}
 	}
 }

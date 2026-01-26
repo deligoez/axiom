@@ -11,9 +11,9 @@ import (
 
 func main() {
 	addr := ":8080"
-	taskFile := ".axiom/tasks.jsonl"
+	caseFile := ".axiom/cases.jsonl"
 
-	server := web.NewServer(taskFile)
+	server := web.NewServer(caseFile)
 	server.StaticDir("web/static")
 
 	fmt.Printf("AXIOM server starting on http://localhost%s\n", addr)
