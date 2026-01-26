@@ -64,6 +64,12 @@ axiom command
            │Yes        │ Run: git init               │
            ▼           └─────────────────────────────┘
      ┌─────────────┐   ┌─────────────────────────────┐
+     │ Clean work- │─No─►│ Warning: PREREQ_DIRTY_WORKDIR│
+     │ ing dir?    │   │ (continues if allowed)      │
+     └─────┬───────┘   └─────────────────────────────┘
+           │Yes/Allowed
+           ▼
+     ┌─────────────┐   ┌─────────────────────────────┐
      │ Claude CLI? │─No─►│ Error: PREREQ_NO_CLAUDE     │
      └─────┬───────┘   │ "Claude CLI not found"      │
            │Yes        │ Install: brew install claude │
@@ -100,6 +106,44 @@ Error: Not a git repository
 
 AXIOM requires a git repository for workspace isolation.
 Initialize one with: git init
+```
+
+#### Clean Working Directory Check
+
+AXIOM checks for uncommitted changes before starting. This helps prevent conflicts between agent work and local changes.
+
+**Check:** `git status --porcelain`
+
+**Warning:** `PREREQ_DIRTY_WORKDIR`
+```
+Warning: Uncommitted changes detected
+
+You have uncommitted changes in your working directory:
+  modified:   src/app.ts
+  untracked:  temp.log
+
+Options:
+  [c] Continue anyway (changes may conflict with agent work)
+  [s] Stash changes (git stash push -m "axiom-pre-init")
+  [q] Quit and handle manually
+
+Recommendation: Commit or stash changes before starting AXIOM.
+```
+
+**Config:**
+| Option | Default | Behavior |
+|--------|---------|----------|
+| `init.allowDirtyWorkdir` | true | Allow continuing with uncommitted changes |
+| `init.warnDirtyWorkdir` | true | Show warning dialog (if allowed) |
+
+When `allowDirtyWorkdir: false`, AXIOM refuses to start:
+```
+Error: Uncommitted changes detected
+
+AXIOM cannot start with uncommitted changes.
+Commit your work:  git add . && git commit -m "WIP"
+Or stash:          git stash push -m "pre-axiom"
+Or configure:      "init.allowDirtyWorkdir": true
 ```
 
 #### Claude CLI Requirement

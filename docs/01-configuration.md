@@ -49,6 +49,11 @@ All AXIOM configuration is stored in `.axiom/config.json`.
     "cleanupOnSuccess": true
   },
 
+  "init": {
+    "allowDirtyWorkdir": true,
+    "warnDirtyWorkdir": true
+  },
+
   "checkpoints": {
     "periodic": 5,
     "beforeAutopilot": true
@@ -83,6 +88,15 @@ All AXIOM configuration is stored in `.axiom/config.json`.
 |-------|----------|
 | `semi-auto` | User selects Tasks, agent stops after each |
 | `autopilot` | Fully autonomous until queue empty |
+
+### Init
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `allowDirtyWorkdir` | true | Allow starting with uncommitted changes |
+| `warnDirtyWorkdir` | true | Show warning for uncommitted changes |
+
+When `allowDirtyWorkdir` is `false` and uncommitted changes exist, AXIOM will refuse to start and suggest stashing or committing changes.
 
 ### Agents
 

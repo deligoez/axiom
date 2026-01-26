@@ -26,6 +26,7 @@ These errors occur during Init Mode before AXIOM can start. All are critical and
 | Code | Message | Cause | Resolution |
 |------|---------|-------|------------|
 | `PREREQ_NO_GIT` | Not a git repository | Directory lacks `.git/` | Run `git init` |
+| `PREREQ_DIRTY_WORKDIR` | Uncommitted changes | Working directory has changes | Commit, stash, or configure |
 | `PREREQ_NO_CLAUDE` | Claude CLI not found | `claude` not in PATH | Install Claude CLI |
 | `PREREQ_DISK_LOW` | Insufficient disk space | Less than 500MB free | Free up disk space |
 | `PREREQ_NO_WRITE` | Directory not writable | Permission denied | Check directory permissions |
@@ -53,6 +54,83 @@ Initialize one with: git init
 git init
 git add .
 git commit -m "Initial commit"
+```
+
+### PREREQ_DIRTY_WORKDIR
+
+**Severity:** Medium (warning) or Critical (if `allowDirtyWorkdir: false`)
+**Recoverable:** Yes (user choice)
+
+```
+Warning: Uncommitted changes detected
+
+You have uncommitted changes in your working directory:
+  modified:   src/app.ts
+  untracked:  temp.log
+
+Options:
+  [c] Continue anyway (changes may conflict with agent work)
+  [s] Stash changes (git stash push -m "axiom-pre-init")
+  [q] Quit and handle manually
+```
+
+**Why this matters:**
+- Agent workspaces are created from current HEAD
+- Local changes won't appear in agent workspaces
+- Agent commits may conflict with uncommitted changes during merge
+
+**Detection:**
+```go
+func checkCleanWorkdir(config *Config) error {
+    output, err := exec.Command("git", "status", "--porcelain").Output()
+    if err != nil {
+        return err
+    }
+
+    if len(output) > 0 {
+        if !config.Init.AllowDirtyWorkdir {
+            return &PrereqError{
+                Code:    "PREREQ_DIRTY_WORKDIR",
+                Message: "Uncommitted changes detected",
+                Suggestions: []string{
+                    "git add . && git commit -m 'WIP'",
+                    "git stash push -m 'pre-axiom'",
+                    "Set init.allowDirtyWorkdir: true",
+                },
+            }
+        }
+
+        if config.Init.WarnDirtyWorkdir {
+            // Show interactive warning
+            return &PrereqWarning{
+                Code:    "PREREQ_DIRTY_WORKDIR",
+                Message: "Uncommitted changes detected",
+                Changes: string(output),
+            }
+        }
+    }
+    return nil
+}
+```
+
+**Config options:**
+
+| Option | Default | Behavior |
+|--------|---------|----------|
+| `init.allowDirtyWorkdir` | true | Allow continuing with uncommitted changes |
+| `init.warnDirtyWorkdir` | true | Show interactive warning |
+
+**Resolution:**
+```bash
+# Option 1: Commit changes
+git add . && git commit -m "WIP before AXIOM"
+
+# Option 2: Stash changes
+git stash push -m "pre-axiom"
+
+# Option 3: Configure to allow
+# In .axiom/config.json:
+# "init": { "allowDirtyWorkdir": true, "warnDirtyWorkdir": false }
 ```
 
 ### PREREQ_NO_CLAUDE
