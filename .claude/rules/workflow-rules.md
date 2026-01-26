@@ -118,10 +118,28 @@ func TestFunctionName_Scenario(t *testing.T) {
 2. Each Green: RED → GREEN → COMMIT
 3. Close each Green when done
 
-#### Step 5: Review
-1. After all Greens done, close Blue
-2. **REVIEW** all completed work
-3. Decide: next Blue, or new Grey needed?
+#### Step 5: Review (MANDATORY after each Blue)
+
+After closing a Blue task, ALWAYS do this review:
+
+1. **Task Review:**
+   ```bash
+   bd list -t epic -n 0    # Grey tasks (milestones)
+   bd list -t feature -n 0 # Blue tasks (features)
+   bd ready -n 0           # What's next?
+   ```
+
+2. **Progress Review:**
+   ```bash
+   cat PROGRESS.md         # Milestone status
+   ```
+
+3. **Update PROGRESS.md** if milestone status changed
+
+4. **Decide next step:**
+   - More Blues under current Grey? → Create next Blue
+   - Grey complete? → Close Grey, update PROGRESS.md
+   - New Grey needed? → Discuss and create
 
 ### Beads Task Types for Colors (MANDATORY)
 
