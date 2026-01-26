@@ -504,6 +504,8 @@ With `--non-interactive` or in CI:
 2. If >= 50% cases created: Keep and skip
 3. Log decision for audit
 
+See [03-planning.md](./03-planning.md#planning-state) for planning state details and phase descriptions.
+
 ---
 
 ## Config Recovery

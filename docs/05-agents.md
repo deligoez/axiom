@@ -945,6 +945,8 @@ Invalid signals are logged to `.axiom/logs/signals.jsonl`:
 - `raw`: Original signal string
 - `type`: Parsed type (if available)
 
+See [15-errors.md](./15-errors.md#signal-errors) for complete error code reference.
+
 ---
 
 ## Agent Machine States

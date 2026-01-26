@@ -176,6 +176,8 @@ Deduplicate (content hash)
           Notify active agents (prompt injection)
 ```
 
+See [05-agents.md](./05-agents.md#curator-cleo) for Cleo's persona details and agent lifecycle.
+
 ---
 
 ## Deduplication

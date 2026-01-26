@@ -197,6 +197,8 @@ AXIOM cannot create .axiom/ directory.
 Check permissions: ls -la .
 ```
 
+See [15-errors.md](./15-errors.md#prerequisite-errors) for complete prerequisite error reference.
+
 ### Init Flow
 
 ```
