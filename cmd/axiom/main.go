@@ -6,13 +6,16 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/deligoez/axiom/internal/agent"
 	"github.com/deligoez/axiom/internal/scaffold"
-	"github.com/deligoez/axiom/internal/signal"
 	"github.com/deligoez/axiom/internal/web"
 )
 
 func main() {
+	addr := ":8080"
+	caseFile := ".axiom/cases.jsonl"
+	promptPath := ".axiom/agents/ava/prompt.md"
+	initMode := false
+
 	// Scaffold .axiom/ directory if it doesn't exist
 	if !scaffold.Exists(".") {
 		if err := scaffold.Scaffold("."); err != nil {
@@ -25,38 +28,21 @@ func main() {
 			log.Fatalf("prompt error: %v", err)
 		}
 		fmt.Println("Created .axiom/ directory")
-
-		// Spawn Ava for project initialization
-		fmt.Println("Starting Ava for project setup...")
-		output, err := agent.Spawn(".axiom/agents/ava/prompt.md", "Analyze this project and configure AXIOM.")
-		if err != nil {
-			log.Fatalf("ava error: %v", err)
-		}
-
-		// Check for AVA_COMPLETE signal
-		signals := signal.Parse(output)
-		avaCompleted := false
-		for _, s := range signals {
-			if s.Type == signal.AvaComplete {
-				avaCompleted = true
-				break
-			}
-		}
-
-		if avaCompleted {
-			fmt.Println("Project initialized successfully!")
-		} else {
-			fmt.Println("Warning: Ava did not complete initialization")
-		}
+		initMode = true
 	}
-
-	addr := ":8080"
-	caseFile := ".axiom/cases.jsonl"
 
 	server := web.NewServer(caseFile)
 	server.StaticDir("web/static")
 
-	fmt.Printf("AXIOM server starting on http://localhost%s\n", addr)
+	// Enable init mode if first run
+	if initMode {
+		server.EnableInitMode(promptPath)
+		fmt.Printf("AXIOM server starting on http://localhost%s/init\n", addr)
+		fmt.Println("Open the URL above to complete project setup with Ava.")
+	} else {
+		fmt.Printf("AXIOM server starting on http://localhost%s\n", addr)
+	}
+
 	if err := http.ListenAndServe(addr, server); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
