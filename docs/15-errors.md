@@ -494,6 +494,31 @@ func createWorkspace(taskID, agentID string) (string, error) {
 | `nothing to merge` | Already merged | Skip, mark done | Never |
 | `not mergeable` | Diverged history | Rebase attempt | Human review |
 | `protected branch` | Main branch rules | Human push | Immediately |
+| `REMOTE_FORCE_PUSH` | Remote main diverged | Pause queue, user decision | Immediately |
+| `REMOTE_FETCH_FAILED` | Network error on fetch | Retry with backoff | After 3 retries |
+| `REBASE_CONFLICT` | Rebase failed | Classify conflict | Based on level |
+
+#### REMOTE_FORCE_PUSH
+
+**Severity:** High
+**Recoverable:** Yes (user decision)
+
+```
+Warning: Remote force-push detected
+
+Local main:  abc123 (2 hours ago)
+Remote main: def456 (5 minutes ago)
+
+The remote main branch has diverged (likely force-pushed).
+Integration queue paused.
+
+Options:
+  [r] Rebase all queued branches on new main
+  [c] Cancel affected merges (return Tasks to pending)
+  [i] Ignore and continue with current refs
+```
+
+See [06-integration.md](./06-integration.md#force-push-recovery) for detailed recovery flow.
 
 ### Conflict Classification
 

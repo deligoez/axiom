@@ -249,7 +249,34 @@ Tasks wait in queue until their dependencies merge successfully.
 
 ## Force-Push Recovery
 
-If main branch is force-pushed (e.g., by human), AXIOM detects and recovers:
+If main branch is force-pushed (e.g., by human), AXIOM detects and recovers.
+
+### Detection Mechanism
+
+AXIOM checks for remote divergence before each merge attempt:
+
+```
+Pre-merge check
+     │
+     ▼
+git fetch origin main
+     │
+     ▼
+Compare: local main vs origin/main
+     │
+     ├── Same commit ──► Proceed with merge
+     │
+     ├── Remote ahead ──► Fast-forward local, proceed
+     │
+     └── Diverged ──► Force-push detected
+```
+
+**Detection triggers:**
+- Before each merge attempt (inline check)
+- Periodic sync check (every 5 minutes, configurable)
+- On user request (manual refresh)
+
+### Recovery Flow
 
 ```
 Force-push detected on main
@@ -258,7 +285,7 @@ Force-push detected on main
 Pause integration queue
      │
      ▼
-Alert user (Web UI notification)
+Alert user (Web UI notification + on-error hook)
      │
      ▼
 User options:
@@ -268,6 +295,45 @@ User options:
 ```
 
 Rebase operation runs in background, re-testing each branch before queue resumes.
+
+### Rebase Recovery Detail
+
+When user selects [r] Rebase:
+
+```
+For each queued branch:
+     │
+     ├── git rebase origin/main
+     │
+     ├── Rebase success ──► Re-run verification ──► Re-queue for merge
+     │
+     └── Rebase conflict ──► Mark branch as conflict ──► Classify and handle
+```
+
+### Config Options
+
+```json
+{
+  "merge": {
+    "remoteSyncInterval": 300,
+    "autoFetchBeforeMerge": true
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `remoteSyncInterval` | 300 | Seconds between remote sync checks |
+| `autoFetchBeforeMerge` | true | Fetch before each merge attempt |
+
+### Error Codes
+
+| Code | Trigger | Severity |
+|------|---------|----------|
+| `REMOTE_FORCE_PUSH` | Remote diverged (force push) | High |
+| `REMOTE_AHEAD` | Remote has new commits (normal) | Info |
+| `REMOTE_FETCH_FAILED` | Network error on fetch | Medium |
+| `REBASE_CONFLICT` | Rebase failed due to conflicts | High |
 
 ---
 
