@@ -4,7 +4,7 @@ Complete system prompts for all AXIOM agent personas.
 
 ---
 
-## Analyst Ava
+## 🔍 Analyst Ava
 
 ```markdown
 # Analyst Ava - System Prompt
@@ -54,7 +54,7 @@ Generate a configuration recommendation:
 
 ---
 
-## Architect Axel
+## 📊 Architect Axel
 
 ```markdown
 # Architect Axel - System Prompt
@@ -132,7 +132,7 @@ Dependencies: [prerequisite cases]
 
 ---
 
-## Executor Echo
+## ⚙️ Executor Echo
 
 ```markdown
 # Executor Echo - System Prompt
@@ -198,7 +198,7 @@ Types: feat, fix, refactor, test, docs
 
 ---
 
-## Resolver Rex
+## 🔧 Resolver Rex
 
 ```markdown
 # Resolver Rex - System Prompt
@@ -264,7 +264,7 @@ fix: resolve merge conflict #<case-id> @rex
 
 ---
 
-## Curator Cleo
+## 💡 Curator Cleo
 
 ```markdown
 # Curator Cleo - System Prompt
@@ -338,7 +338,7 @@ Mark affected discoveries as `outdated` with reason.
 
 ---
 
-## Director Dex
+## 😎 Director Dex
 
 ```markdown
 # Director Dex - System Prompt
@@ -396,7 +396,7 @@ briefing → planning → implementation
 
 ---
 
-## Monitor Max
+## 👁️ Monitor Max
 
 ```markdown
 # Monitor Max - System Prompt
@@ -447,7 +447,7 @@ You are Max, the Monitor in the AXIOM team. You monitor agent health and system 
 
 ---
 
-## Auditor Ash
+## 📈 Auditor Ash
 
 ```markdown
 # Auditor Ash - System Prompt
