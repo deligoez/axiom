@@ -1,6 +1,6 @@
 # Configuration
 
-All Swarm configuration is stored in `.swarm/config.json`.
+All AXIOM configuration is stored in `.axiom/config.json`.
 
 ---
 
@@ -17,12 +17,12 @@ All Swarm configuration is stored in `.swarm/config.json`.
   },
 
   "completion": {
-    "signal": "<swarm>COMPLETE</swarm>",
+    "signal": "<axiom>COMPLETE</axiom>",
     "maxIterations": 50,
     "stuckThreshold": 5
   },
 
-  "qualityCommands": [
+  "verification": [
     "npm test",
     "npm run typecheck",
     "npm run lint"
@@ -81,7 +81,7 @@ All Swarm configuration is stored in `.swarm/config.json`.
 
 | Value | Behavior |
 |-------|----------|
-| `semi-auto` | User selects ideas, agent stops after each |
+| `semi-auto` | User selects Tasks, agent stops after each |
 | `autopilot` | Fully autonomous until queue empty |
 
 ### Agents
@@ -89,30 +89,30 @@ All Swarm configuration is stored in `.swarm/config.json`.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `maxParallel` | 3 | Concurrent agent slots |
-| `timeoutMinutes` | 30 | Per-idea timeout |
+| `timeoutMinutes` | 30 | Per-Task timeout |
 | `defaultModel` | sonnet | AI model for agents |
 
 ### Completion
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `signal` | `<swarm>COMPLETE</swarm>` | Completion signal format |
+| `signal` | `<axiom>COMPLETE</axiom>` | Completion signal format |
 | `maxIterations` | 50 | Max iterations before timeout |
 | `stuckThreshold` | 5 | Iterations without commit = warning |
 
-### Quality Commands
+### Verification
 
-Array of commands that must all pass before idea completion. Run in order.
+Array of commands that must all pass before Task completion. Run in order.
 
 ```json
 // Node.js project
-"qualityCommands": ["npm test", "npm run typecheck", "npm run lint"]
+"verification": ["npm test", "npm run typecheck", "npm run lint"]
 
 // Python project
-"qualityCommands": ["pytest", "mypy .", "ruff check ."]
+"verification": ["pytest", "mypy .", "ruff check ."]
 
 // Go project
-"qualityCommands": ["go test ./...", "go vet ./..."]
+"verification": ["go test ./...", "go vet ./..."]
 ```
 
 ### Planning
@@ -121,7 +121,7 @@ Array of commands that must all pass before idea completion. Run in order.
 |--------|---------|-------------|
 | `incrementalEnabled` | true | Just-in-time planning |
 | `readyThreshold` | 3 | Trigger planning when ready < threshold |
-| `maxBatchSize` | 10 | Max ideas per planning cycle |
+| `maxBatchSize` | 10 | Max Tasks per planning cycle |
 | `horizonBoundary` | milestone | Planning stop point |
 
 Horizon boundaries: `milestone`, `feature`, `uncertainty`
@@ -130,7 +130,7 @@ Horizon boundaries: `milestone`, `feature`, `uncertainty`
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `defaultMode` | batch | Review mode for ideas |
+| `defaultMode` | batch | Review mode for Tasks |
 | `autoApprove.enabled` | true | Enable auto-approve |
 | `autoApprove.maxIterations` | 3 | Auto-approve if iterations <= N |
 | `labelRules` | {} | Per-label review mode overrides |
@@ -139,7 +139,7 @@ Review modes: `per-task`, `batch`, `auto-approve`, `skip`
 
 #### Label Rules
 
-Override review mode based on idea labels:
+Override review mode based on case labels:
 
 ```json
 "labelRules": {
@@ -149,21 +149,21 @@ Override review mode based on idea labels:
 }
 ```
 
-Ideas with `security` tag always require per-task review.
+Cases with `security` tag always require per-task review.
 
 ### Merge
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `autoMerge` | true | Queue completed ideas automatically |
+| `autoMerge` | true | Queue completed Tasks automatically |
 | `conflictRetries` | 3 | Retries before human escalation |
-| `cleanupOnSuccess` | true | Remove worktree after merge |
+| `cleanupOnSuccess` | true | Remove workspace after merge |
 
 ### Checkpoints
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `periodic` | 5 | Checkpoint every N completed ideas |
+| `periodic` | 5 | Checkpoint every N completed Tasks |
 | `beforeAutopilot` | true | Checkpoint before autopilot starts |
 
 ### UI (Web Interface)
@@ -178,12 +178,12 @@ Ideas with `security` tag always require per-task review.
 
 | Hook | When | Use Case |
 |------|------|----------|
-| `pre-start` | Before agent starts idea | Custom setup |
-| `post-complete` | After idea done | Notifications |
+| `pre-start` | Before agent starts Task | Custom setup |
+| `post-complete` | After Task done | Notifications |
 | `pre-merge` | Before merge | Extra validation |
 | `post-merge` | After merge | Deployment |
 | `on-conflict` | Conflict detected | Alert team |
-| `on-learning` | Learning extracted | Knowledge base |
+| `on-discovery` | Discovery extracted | Knowledge base |
 | `on-pause` | Session paused | Status update |
 | `on-error` | Agent error | Logging |
 
@@ -192,9 +192,9 @@ Ideas with `security` tag always require per-task review.
 | Option | Description |
 |--------|-------------|
 | `target.type` | count, duration, until_time, no_ready |
-| `target.value` | Target value (N ideas, N hours, time) |
-| `filters.includeTags` | Only run ideas with these tags |
-| `filters.excludeTags` | Skip ideas with these tags |
+| `target.value` | Target value (N Tasks, N hours, time) |
+| `filters.includeTags` | Only run Tasks with these tags |
+| `filters.excludeTags` | Skip Tasks with these tags |
 | `options.checkpointBefore` | Create checkpoint before sprint |
 | `options.batchReview` | Batch review at end |
 
@@ -206,8 +206,8 @@ Settings can come from multiple sources (higher overrides lower):
 
 | # | Source | Description |
 |---|--------|-------------|
-| 1 | CLI flags | `swarm --mode autopilot` |
-| 2 | Environment variables | `SWARM_MODE=autopilot` |
+| 1 | CLI flags | `axiom --mode autopilot` |
+| 2 | Environment variables | `AXIOM_MODE=autopilot` |
 | 3 | planning-state.json | User's choice after planning |
 | 4 | state/snapshot.json | Runtime state |
 | 5 | config.json | Project defaults |
@@ -218,22 +218,22 @@ Settings can come from multiple sources (higher overrides lower):
 
 | Variable | Config Override |
 |----------|-----------------|
-| `SWARM_MODE` | `mode` |
-| `SWARM_MAX_AGENTS` | `agents.maxParallel` |
-| `SWARM_MODEL` | `agents.defaultModel` |
-| `SWARM_TIMEOUT` | `agents.timeoutMinutes` |
+| `AXIOM_MODE` | `mode` |
+| `AXIOM_MAX_AGENTS` | `agents.maxParallel` |
+| `AXIOM_MODEL` | `agents.defaultModel` |
+| `AXIOM_TIMEOUT` | `agents.timeoutMinutes` |
 
 ---
 
-## Per-Idea Overrides
+## Per-Case Overrides
 
-Ideas can override defaults via properties or tags:
+Cases can override defaults via properties or tags:
 
 ```json
 {
-  "id": "idea-001",
+  "id": "task-001",
   "content": "Complex refactoring",
   "model": "opus",
-  "tags": ["review:per-idea", "security"]
+  "tags": ["review:per-task", "security"]
 }
 ```

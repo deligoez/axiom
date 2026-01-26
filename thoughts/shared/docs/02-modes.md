@@ -1,17 +1,17 @@
 # Operating Modes
 
-Swarm has three workflow phases and two operating modes that control idea assignment and execution.
+AXIOM has three workflow phases and two operating modes that control Task assignment and execution.
 
 ---
 
 ## Mode Routing
 
 ```
-swarm command
+axiom command
      │
      ▼
 ┌─────────────────┐
-│ Check .swarm/  │
+│ Check .axiom/   │
 │ directory       │
 └────────┬────────┘
          │
@@ -27,7 +27,7 @@ swarm command
 │  MODE   │        └──────┬──────┘
 └────┬────┘               │
      │              ┌─────┴─────┐
-     ▼              │ has ideas?│
+     ▼              │ has Tasks?│
 ┌─────────────┐     └─────┬─────┘
 │  PLANNING   │           │
 │    MODE     │◀──No──────┤
@@ -43,7 +43,7 @@ swarm command
 
 ## Init Mode
 
-Init Mode runs only for first-time projects (no `.swarm/` directory). Analyzer Ace guides the user through project setup in a conversational interface.
+Init Mode runs only for first-time projects (no `.axiom/` directory). Analyst Ava guides the user through project setup in a conversational interface.
 
 ### Init Flow
 
@@ -52,7 +52,7 @@ Step 1: Welcome Screen
     │
     ├─► [M] Meet the Team ──► Step 2: Show Personas ──► Step 3
     │
-    └─► [Enter] Skip ──► Step 3: Ace Init Process
+    └─► [Enter] Skip ──► Step 3: Ava Briefing
                               │
                               ▼
                          Step 4: Complete (Auto-scaffold)
@@ -63,10 +63,10 @@ Step 1: Welcome Screen
 
 ### Step 1: Welcome Screen
 
-Introduces Swarm and explains what will happen:
-- Ace will analyze project structure
-- Configure quality commands
-- Set up `.swarm/` directory
+Introduces AXIOM and explains what will happen:
+- Ava will analyze project structure
+- Configure verification commands
+- Set up `.axiom/` directory
 - Options: `[M]` Meet the Team, `[Enter]` Start
 
 ### Step 2: Meet the Team (Optional)
@@ -76,13 +76,13 @@ Carousel showing all 8 agent personas:
 - Shows emoji, name, role, responsibilities
 - Press Enter to continue to init
 
-### Step 3: Ace Init Process
+### Step 3: Ava Briefing
 
-Conversational chat interface with Ace:
+Conversational chat interface with Ava:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   🔍 ACE - Project Analyzer                     │
+│                   🔍 AVA - Analyst                              │
 │                                                                 │
 │  Analyzing your project...                                      │
 │                                                                 │
@@ -90,7 +90,7 @@ Conversational chat interface with Ace:
 │  ✓ Found: Vitest with 47 test files                            │
 │  ✓ Found: Biome for linting                                    │
 │                                                                 │
-│  ┌─ Quality Commands ─────────────────────────────────────┐    │
+│  ┌─ Verification Commands ───────────────────────────────┐     │
 │  │ test:      npm run test:run                            │    │
 │  │ typecheck: npm run typecheck                           │    │
 │  │ lint:      npm run lint                                │    │
@@ -103,28 +103,28 @@ Conversational chat interface with Ace:
 User can:
 - Press Enter to accept defaults
 - Type to customize (e.g., "add knip command")
-- Ace responds conversationally and updates
+- Ava responds conversationally and updates
 
 ### Step 4: Auto-Scaffold
 
-When user accepts, Ace creates `.swarm/` directory immediately (no confirmation dialog):
+When user accepts, Ava creates `.axiom/` directory immediately (no confirmation dialog):
 
 ```
-Created .swarm/ directory:
+Created .axiom/ directory:
 
 ├── config.json              Configuration
-├── ideas.jsonl              Idea database (empty)
+├── cases.jsonl              Case database (empty)
 ├── planning-state.json      Mode/planning state
 ├── rules/                   Shared agent rules (4 files)
 ├── agents/                  Agent personas (8 agents)
-│   ├── ace/                 🔍 Analyzer Ace
-│   ├── ed/                  ⚙️ Engineer Ed
-│   ├── pat/                 📊 Planner Pat
-│   ├── finn/                🔧 Fixer Finn
-│   ├── lou/                 💡 Logger Lou
-│   ├── dan/                 😎 Director Dan
-│   ├── will/                👁️ Watcher Will
-│   └── carl/                📈 Counter Carl
+│   ├── ava/                 🔍 Analyst Ava
+│   ├── echo/                ⚙️ Executor Echo
+│   ├── axel/                📊 Architect Axel
+│   ├── rex/                 🔧 Resolver Rex
+│   ├── cleo/                💡 Curator Cleo
+│   ├── dex/                 😎 Director Dex
+│   ├── max/                 👁️ Monitor Max
+│   └── ash/                 📈 Auditor Ash
 └── templates/               Scratchpad template
 ```
 
@@ -134,7 +134,7 @@ Transitions to Planning Mode after scaffold complete.
 
 ## Planning Mode
 
-Chat interface with Planner Pat for idea decomposition. Uses the Planning Dialogue Model (5 phases).
+Chat interface with Architect Axel for case decomposition. Uses the Planning Dialogue Model (5 phases).
 
 See [03-planning.md](./03-planning.md) for detailed Planning Dialogue Model.
 
@@ -142,31 +142,31 @@ See [03-planning.md](./03-planning.md) for detailed Planning Dialogue Model.
 
 ## Implementation Mode
 
-After planning completes, Swarm enters Implementation Mode with two sub-modes:
+After planning completes, AXIOM enters Implementation Mode with two sub-modes:
 
 ---
 
 ## Semi-Auto Mode (Default)
 
-User maintains control over idea assignment.
+User maintains control over Task assignment.
 
 ### Workflow
 
-1. View ideas in Idea Panel
-2. Select idea and assign to an agent
+1. View Tasks in Task Panel
+2. Select Task and assign to an agent
 3. Watch agent work in Agent Grid
-4. Agent completes, outputs `<swarm>COMPLETE</swarm>`
-5. Idea marked done, agent stops
+4. Agent completes, outputs `<axiom>COMPLETE</axiom>`
+5. Task marked done, agent stops
 6. User decides next action
 
 ### Signal Handling
 
 | Event | Behavior |
 |-------|----------|
-| Agent completes idea | Idea done, agent stops, user selects next |
-| Agent signals BLOCKED | Idea marked blocked, agent stops |
-| Agent signals NEEDS_HUMAN | Agent pauses, user notified |
-| Agent times out | Idea marked timeout, agent stops |
+| Agent completes Task | Task done, agent stops, user selects next |
+| Agent signals BLOCKED | Task marked blocked, agent stops |
+| Agent signals PENDING | Agent pauses, user notified |
+| Agent times out | Task marked timeout, agent stops |
 
 ### Use Cases
 
@@ -179,31 +179,31 @@ User maintains control over idea assignment.
 
 ## Autopilot Mode
 
-Fully autonomous execution until all ready ideas complete.
+Fully autonomous execution until all ready Tasks complete.
 
 ### Workflow
 
-1. Get ready ideas from IdeaStore
-2. Fill available agent slots with ideas
+1. Get ready Tasks from CaseStore
+2. Fill available agent slots with Tasks
 3. On agent completion:
    - Queue branch for merge
-   - Mark idea done
-   - Pick next ready idea
-4. Continue until no ready ideas remain
+   - Mark Task done
+   - Pick next ready Task
+4. Continue until no ready Tasks remain
 
 ### Signal Handling
 
 | Event | Behavior |
 |-------|----------|
-| Agent completes idea | Idea done, merge queued, next idea assigned |
-| Agent signals BLOCKED | Idea stays blocked, agent picks different idea |
-| Agent signals NEEDS_HUMAN | Alert user, agent pauses, others continue |
-| Agent times out | Idea marked timeout, agent picks next idea |
+| Agent completes Task | Task done, merge queued, next Task assigned |
+| Agent signals BLOCKED | Task stays blocked, agent picks different Task |
+| Agent signals PENDING | Alert user, agent pauses, others continue |
+| Agent times out | Task marked timeout, agent picks next Task |
 
 ### Use Cases
 
 - Overnight batch processing
-- Well-defined idea queues
+- Well-defined Task queues
 - High confidence changes with good test coverage
 - Post-planning execution
 
@@ -216,7 +216,7 @@ Mode can be toggled via Web UI. Confirmation dialogs prevent accidental switches
 ### Switching to Autopilot
 
 Shows:
-- Number of ready ideas
+- Number of ready Tasks
 - Max parallel agents
 - Warning about automatic assignment
 
@@ -224,7 +224,7 @@ Shows:
 
 Shows:
 - Currently running agents
-- Notice that running agents will finish current ideas
+- Notice that running agents will finish current Tasks
 - Notice that new agents won't auto-start
 
 ---
@@ -233,9 +233,9 @@ Shows:
 
 | Feature | Semi-Auto | Autopilot |
 |---------|-----------|-----------|
-| Idea selection | User picks | Automatic (intelligent) |
+| Task selection | User picks | Automatic (intelligent) |
 | Agent spawn | Manual | On slot available |
-| After completion | Agent stops | Picks next idea |
+| After completion | Agent stops | Picks next Task |
 | Parallel agents | Yes (user spawns each) | Yes (auto-fills slots) |
 | Human intervention | Always available | Available (pauses that agent) |
 
@@ -264,7 +264,7 @@ Both modes respect safety limits:
 | Limit | Default | Config Path |
 |-------|---------|-------------|
 | Max parallel agents | 3 | `agents.maxParallel` |
-| Idea timeout | 30 min | `agents.timeoutMinutes` |
+| Task timeout | 30 min | `agents.timeoutMinutes` |
 | Max iterations | 50 | `completion.maxIterations` |
 | Stuck threshold | 5 | `completion.stuckThreshold` |
 | Error threshold | 3 | Consecutive errors pause autopilot |

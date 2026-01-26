@@ -1,6 +1,6 @@
-# Swarm Planning Method
+# AXIOM Planning Method
 
-Swarm uses the Swarm Planning Method - an emergent approach where ideas refine into implementable units through iterative cycles.
+AXIOM uses the AXIOM Planning Method - an emergent approach where cases refine into implementable units through iterative cycles.
 
 ---
 
@@ -8,7 +8,7 @@ Swarm uses the Swarm Planning Method - an emergent approach where ideas refine i
 
 **The Emergent Todo List**
 
-Traditional todo lists assume all items are known upfront. Swarm operates differently: some todo items produce other todo items.
+Traditional todo lists assume all items are known upfront. AXIOM operates differently: some todo items produce other todo items.
 
 ```
 Traditional:              Emergent:
@@ -25,40 +25,40 @@ You're never blocked because there's always a next action - even if that action 
 ## The Refinement Chain
 
 ```
-⬛ Black (Raw Need/PRD)
+⬛ Directive (Raw Need/PRD)
      │
-     └── SPLIT → ⬜ Gray (Plan Drafts)
+     └── SPLIT → ⬜ Draft (Plan Drafts)
                       │
          ┌───────────┼───────────┐
          │           │           │
          ▼           ▼           ▼
-    🟧 Orange   🟪 Purple    🟦 Blue
-    (Research)  (Decision)  (Feature)
+    🟧 Research  🟪 Pending   🟦 Operation
+    (Spike)     (Decision)   (Feature)
          │           │           │
          └─────┬─────┘           │
                │                 │
-               └────► ⬜ Gray ───┘
+               └────► ⬜ Draft ──┘
                          │
-                         └── SPLIT → 🟦 Blue (Features)
+                         └── SPLIT → 🟦 Operation (Features)
                                           │
-                                          └── SPLIT → 🟩 Green (Ideas)
+                                          └── SPLIT → 🟩 Task (Atomic)
                                                            │
                                                     ┌──────┴──────┐
                                                     │             │
                                                     ▼             ▼
-                                            status: done    🟡 Yellow
-                                            (White)        (Learning)
+                                            status: done    🟡 Discovery
+                                            (Complete)      (Learning)
 ```
 
-Yellow ideas are **byproducts** of Green execution via learning signals, not refinement steps.
+Discovery cases are **byproducts** of Task execution via discovery signals, not refinement steps.
 
 ---
 
-## Color Definitions
+## Case Type Definitions
 
-### ⬛ Black: Raw Need (The PRD)
+### ⬛ Directive: Raw Need (The PRD)
 
-The black idea is the single source of truth. Written in JTBD format:
+The Directive case is the single source of truth. Written in JTBD format:
 
 ```
 "When [situation], I want [motivation], so that [expected outcome]."
@@ -71,95 +71,95 @@ I want a blog under my control,
 so that I can reach readers without depending on Medium."
 ```
 
-**Pat's behavior:**
-1. Writes Black idea in JTBD format
+**Axel's behavior:**
+1. Writes Directive case in JTBD format
 2. Confirms with user
 3. Asks initial analysis questions
-4. Splits into Gray ideas
+4. Splits into Draft cases
 
-**When is Black "realized"?** After each implementation cycle, check: "Is the original need satisfied?"
+**When is Directive "realized"?** After each implementation cycle, check: "Is the original need satisfied?"
 
 ---
 
-### ⬜ Gray: Plan Draft
+### ⬜ Draft: Plan Draft
 
-Gray ideas are undetailed parts of the plan:
+Draft cases are undetailed parts of the plan:
 - Features known to be needed but unclear how to implement
 - Large blocks not yet broken into smaller pieces
 - Areas with undetermined dependencies
 
 **Example:**
 ```
-Gray: Auth system needed
-Gray: Blog post management
-Gray: Comment system
+Draft: Auth system needed
+Draft: Blog post management
+Draft: Comment system
 ```
 
-**Pat's behavior:**
-1. Reviews Gray ideas in planning spiral
+**Axel's behavior:**
+1. Reviews Draft cases in planning spiral
 2. Asks clarifying questions
-3. When clear enough, splits into Blue ideas
-4. If uncertainty exists, transitions to Orange or Purple
+3. When clear enough, splits into Operation cases
+4. If uncertainty exists, transitions to Research or Pending
 
 ---
 
-### 🟧 Orange: Research Needed (Spike)
+### 🟧 Research: Investigation Needed (Spike)
 
-Orange marks areas requiring investigation. Time-boxed, information-gathering work.
+Research marks areas requiring investigation. Time-boxed, information-gathering work.
 
 **Examples:**
 ```
-Orange: Which auth library? (NextAuth vs Clerk vs Auth0)
-Orange: Markdown parser selection
-Orange: WebSocket vs SSE vs Polling?
+Research: Which auth library? (NextAuth vs Clerk vs Auth0)
+Research: Markdown parser selection
+Research: WebSocket vs SSE vs Polling?
 ```
 
-**Pat's behavior:**
-- **Simple research:** Pat reads docs, compares, decides → transitions to Blue/Gray
-- **Complex research (needs code):** Pat creates mini Gray-Blue-Green cycle as PoC
+**Axel's behavior:**
+- **Simple research:** Axel reads docs, compares, decides → transitions to Operation/Draft
+- **Complex research (needs code):** Axel creates mini Draft-Operation-Task cycle as PoC
 
-**Dependency rule:** Orange must be resolved before downstream Blue/Green can start.
+**Dependency rule:** Research must be resolved before downstream Operation/Task can start.
 
 ---
 
-### 🟪 Purple: Decision Pending (Blocker)
+### 🟪 Pending: Decision Pending (Blocker)
 
-Purple marks points waiting for user response. Blocks progress on that branch.
+Pending marks points waiting for user response. Blocks progress on that branch.
 
 **Examples:**
 ```
-Purple: Should comments be self-hosted or 3rd party?
-Purple: Will there be premium content?
-Purple: What will the domain name be?
+Pending: Should comments be self-hosted or 3rd party?
+Pending: Will there be premium content?
+Pending: What will the domain name be?
 ```
 
-**Pat's behavior:**
+**Axel's behavior:**
 1. Presents options and trade-offs to user
 2. Branch doesn't progress until user responds
-3. When answered → transitions to Gray or Blue
+3. When answered → transitions to Draft or Operation
 
 ---
 
-### 🟥 Red: Deferred
+### 🟥 Deferred: Out of Scope
 
-Red marks ideas moved outside current scope. Not deleted, but not active.
+Deferred marks cases moved outside current scope. Not deleted, but not active.
 
 **Examples:**
 ```
-Red: Analytics dashboard [V2]
-Red: Multi-language support [Later]
+Deferred: Analytics dashboard [V2]
+Deferred: Multi-language support [Later]
 ```
 
-**When something becomes Red:**
+**When something becomes Deferred:**
 - During initial scoping
 - During planning spiral (too complex)
-- During retrospective (deprioritized)
+- During Debrief (deprioritized)
 
 ---
 
-### 🟦 Blue: Concrete Feature (Vertical Slice)
+### 🟦 Operation: Concrete Feature (Vertical Slice)
 
-Blue ideas are **minimum viable features** that work end-to-end. Each Blue spans all layers (DB, API, UI) for one independent feature.
+Operation cases are **minimum viable features** that work end-to-end. Each Operation spans all layers (DB, API, UI) for one independent feature.
 
 **Vertical slicing principle:**
 ```
@@ -169,25 +169,25 @@ Blue ideas are **minimum viable features** that work end-to-end. Each Blue spans
    "Build all UI"              "Create post" (min DB + API + UI)
 ```
 
-**Example Blue with children:**
+**Example Operation with children:**
 ```
-Blue: View post
-├── Green: Create post DB schema
-├── Green: GET /posts/[id] API endpoint
-└── Green: PostDetail component
+Operation: View post
+├── Task: Create post DB schema
+├── Task: GET /posts/[id] API endpoint
+└── Task: PostDetail component
 ```
 
-**Pat's behavior:**
-1. Splits Gray into vertical slices (Blue)
-2. Ensures each Blue can work independently
+**Axel's behavior:**
+1. Splits Draft into vertical slices (Operation)
+2. Ensures each Operation can work independently
 3. Applies INVEST criteria
 4. Defines acceptance criteria
 
 ---
 
-### 🟩 Green: Atomic Idea
+### 🟩 Task: Atomic Unit
 
-Green ideas are the smallest implementable units. One Blue splits into multiple Greens.
+Task cases are the smallest implementable units. One Operation splits into multiple Tasks.
 
 **INVEST Criteria:**
 - **I**ndependent: Can be done without waiting
@@ -199,83 +199,83 @@ Green ideas are the smallest implementable units. One Blue splits into multiple 
 
 **Example:**
 ```
-Green: Create post DB schema
+Task: Create post DB schema
   Acceptance: posts table exists with id, title, content, createdAt
   Test: Migration runs successfully
 ```
 
-Green with `status: done` = White (completed). White is a status, not a separate color.
+Task with `status: done` = Completed. Completed is a status, not a separate type.
 
 ---
 
-### 🟡 Yellow: Learning/Discovery
+### 🟡 Discovery: Learning/Finding
 
-Yellow ideas capture learnings discovered during Green execution. They are created by Logger Lou when agents emit learning signals.
+Discovery cases capture learnings discovered during Task execution. They are created by Curator Cleo when agents emit discovery signals.
 
 **Scope Types:**
 | Scope | Created From | Injected Into |
 |-------|--------------|---------------|
-| `local` | `LEARNING_LOCAL` signal | Same agent's prompts |
-| `global` | `LEARNING_GLOBAL` signal | All agents' prompts |
+| `local` | `DISCOVERY_LOCAL` signal | Same agent's prompts |
+| `global` | `DISCOVERY_GLOBAL` signal | All agents' prompts |
 
 **Example:**
 ```
-Yellow: rehype requires explicit config for GFM
-  Parent: Green idea-020 (Setup rehype)
+Discovery: rehype requires explicit config for GFM
+  Parent: Task task-020 (Setup rehype)
   Scope: global
   Impact: high
 ```
 
-Yellow ideas are always children of the Green that produced them.
+Discovery cases are always children of the Task that produced them.
 
 ---
 
 ## Two Types of State Changes
 
-### Transition (same item, color changes)
+### Transition (same item, type changes)
 
 ```
-Gray "Auth system"
+Draft "Auth system"
   │
-  └── TRANSITION → Orange "Research auth options"
+  └── TRANSITION → Research "Research auth options"
                       │
-                      └── TRANSITION → Blue "Clerk integration"
+                      └── TRANSITION → Operation "Clerk integration"
 ```
 
 ### Split (new children created)
 
 ```
-Blue "Login flow"
+Operation "Login flow"
   │
-  └── SPLIT → Green "Clerk setup"
-              Green "Login UI"
-              Green "Session handling"
+  └── SPLIT → Task "Clerk setup"
+              Task "Login UI"
+              Task "Session handling"
 ```
 
 | Change Type | When | Example |
 |-------------|------|---------|
-| Transition | Idea refines but stays conceptually one thing | Gray → Orange → Blue |
-| Split | Idea breaks into multiple distinct things | Blue → [Green, Green, Green] |
+| Transition | Case refines but stays conceptually one thing | Draft → Research → Operation |
+| Split | Case breaks into multiple distinct things | Operation → [Task, Task, Task] |
 
-Note: Yellow creation is neither transition nor split - it's a **byproduct** of Green execution via learning signals.
+Note: Discovery creation is neither transition nor split - it's a **byproduct** of Task execution via discovery signals.
 
 ---
 
 ## Planning Dialogue Model
 
-Planning is not just idea generation—it's a structured dialogue between the user and Planner Pat. The process follows 5 distinct phases.
+Planning is not just case generation—it's a structured dialogue between the user and Architect Axel. The process follows 5 distinct phases.
 
-### Why Not Completion Drive for Planning?
+### Why Not Execution Loop for Planning?
 
-| Aspect | Implementation (Completion Drive fits) | Planning (Dialogue fits) |
-|--------|----------------------------------------|--------------------------|
+| Aspect | Implementation (Execution Loop fits) | Planning (Dialogue fits) |
+|--------|--------------------------------------|--------------------------|
 | **Nature** | Mechanical iteration | Conversational exchange |
 | **Completion** | Objective (tests pass) | Subjective (user satisfied) |
 | **Feedback** | Binary (pass/fail) | Nuanced (modify, clarify) |
 | **Iteration** | Same action, retry | Different questions each time |
 | **User role** | Observer | Active participant |
 
-The Completion Drive is used **only in Phase 5 (VALIDATE)** where mechanical iteration makes sense.
+The Execution Loop is used **only in Phase 5 (VALIDATE)** where mechanical iteration makes sense.
 
 ### The 5 Phases
 
@@ -285,7 +285,7 @@ The Completion Drive is used **only in Phase 5 (VALIDATE)** where mechanical ite
 │                                                                              │
 │   Phase 1        Phase 2        Phase 3        Phase 4        Phase 5       │
 │  UNDERSTAND  →   ANALYZE   →   PROPOSE   →  DECOMPOSE  →   VALIDATE        │
-│  (Q&A)          (Explore)     (Approval)    (Generate)  (Completion Drive) │
+│  (Q&A)          (Explore)     (Approval)    (Generate)  (Execution Loop)   │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -293,16 +293,16 @@ The Completion Drive is used **only in Phase 5 (VALIDATE)** where mechanical ite
 | Phase | Purpose | Interaction Style | When Complete |
 |-------|---------|-------------------|---------------|
 | **1. UNDERSTAND** | Clarify user's goal | Q&A dialogue | User answers or says "you decide" |
-| **2. ANALYZE** | Explore codebase context | Pat works autonomously | Context gathered |
+| **2. ANALYZE** | Explore codebase context | Axel works autonomously | Context gathered |
 | **3. PROPOSE** | Present high-level approach | Approval loop | User approves architecture |
-| **4. DECOMPOSE** | Generate atomic ideas | One-shot generation | Ideas created |
-| **5. VALIDATE** | Check ideas against rules | Completion Drive iteration | All ideas pass |
+| **4. DECOMPOSE** | Generate atomic Tasks | One-shot generation | Tasks created |
+| **5. VALIDATE** | Check Tasks against rules | Execution Loop iteration | All Tasks pass |
 
 ---
 
 ## Phase 1: UNDERSTAND
 
-Pat asks clarifying questions to fully understand the user's goal before generating anything.
+Axel asks clarifying questions to fully understand the user's goal before generating anything.
 
 ### Question Categories
 
@@ -318,16 +318,16 @@ Pat asks clarifying questions to fully understand the user's goal before generat
 
 | Response | Effect |
 |----------|--------|
-| Direct answer | Pat uses the answer for planning |
-| "You decide" | Pat makes a reasonable choice and documents it |
-| "Skip" | Pat proceeds without this information |
-| Ask back | User can ask Pat for recommendations |
+| Direct answer | Axel uses the answer for planning |
+| "You decide" | Axel makes a reasonable choice and documents it |
+| "Skip" | Axel proceeds without this information |
+| Ask back | User can ask Axel for recommendations |
 
 ---
 
 ## Phase 2: ANALYZE
 
-Pat explores the codebase to understand existing patterns, tech stack, and relevant context.
+Axel explores the codebase to understand existing patterns, tech stack, and relevant context.
 
 ### Context Gathered
 
@@ -356,7 +356,7 @@ type ConventionInfo struct {
 
 ## Phase 3: PROPOSE
 
-Pat proposes a high-level architecture before generating ideas. User must approve before proceeding.
+Axel proposes a high-level architecture before generating Tasks. User must approve before proceeding.
 
 ### Proposal Structure
 
@@ -375,7 +375,7 @@ Pat proposes a high-level architecture before generating ideas. User must approv
 | Password hash | bcrypt | Industry standard |
 
 ### Estimated Scope
-- ~8 ideas
+- ~8 Tasks
 - ~45 tests
 ```
 
@@ -384,41 +384,41 @@ Pat proposes a high-level architecture before generating ideas. User must approv
 | Action | Effect |
 |--------|--------|
 | **Approve** | Proceed to DECOMPOSE |
-| **Modify** | Pat adjusts specific parts |
-| **Reject** | Pat creates new proposal with feedback |
-| **Ask question** | Pat explains reasoning |
+| **Modify** | Axel adjusts specific parts |
+| **Reject** | Axel creates new proposal with feedback |
+| **Ask question** | Axel explains reasoning |
 
 ---
 
 ## Phase 4: DECOMPOSE
 
-Pat generates atomic ideas from the approved architecture. This is one-shot generation.
+Axel generates atomic Tasks from the approved architecture. This is one-shot generation.
 
-### Idea Generation Rules
+### Task Generation Rules
 
 | Rule | Description |
 |------|-------------|
-| **Atomic** | One responsibility per idea |
+| **Atomic** | One responsibility per Task |
 | **Testable** | All criteria verifiable |
 | **Context-fit** | Fits in agent context window |
 | **Clear dependencies** | Explicit blocker relationships |
 
 ---
 
-## Phase 5: VALIDATE (Completion Drive)
+## Phase 5: VALIDATE (Execution Loop)
 
-The ONLY phase where the Completion Drive pattern applies. Mechanical iteration until all ideas pass validation.
+The ONLY phase where the Execution Loop pattern applies. Mechanical iteration until all Tasks pass validation.
 
 ### Validation Issue Types
 
 | Type | Auto-fixable? | Action |
 |------|---------------|--------|
-| **Too many criteria** | ✓ | Split idea into sub-ideas |
+| **Too many criteria** | ✓ | Split Task into sub-Tasks |
 | **Circular dependency** | ✓ | Remove weakest link |
 | **Missing dependency** | ✓ | Add inferred dependency |
 | **Vague criteria** | ✗ | Prompt user for clarification |
-| **Context too large** | ✓ | Split idea |
-| **Duplicate idea** | ✓ | Merge or remove |
+| **Context too large** | ✓ | Split Task |
+| **Duplicate Task** | ✓ | Merge or remove |
 
 ### Convergence Criteria
 
@@ -432,103 +432,103 @@ The validation loop converges when:
 
 ## The Planning Spiral
 
-Pat runs a repeated cycle for clarifying Gray ideas:
+Axel runs a repeated cycle for clarifying Draft cases:
 
 ```
-1. Read Black idea and Gray ideas
+1. Read Directive case and Draft cases
      ↓
 2. Consistency check
    • Any contradictions?
    • Missing connections?
      ↓
-3. For each Gray idea:
-   • Clear enough? → Blue
-   • Research needed? → Orange
-   • Decision needed? → Purple
-   • Can split into Blues?
+3. For each Draft case:
+   • Clear enough? → Operation
+   • Research needed? → Research
+   • Decision needed? → Pending
+   • Can split into Operations?
      ↓
 4. Ask necessary questions to user
      ↓
-5. Update Gray ideas and dependency tree
+5. Update Draft cases and dependency tree
      ↓
-6. Are first Blue ideas ready?
+6. Are first Operation cases ready?
    • Yes → Move to implementation
    • No → Return to step 1
 ```
 
-**Why "spiral" not "loop"?** Each pass produces more refined ideas. You're never in the same place twice.
+**Why "spiral" not "loop"?** Each pass produces more refined cases. You're never in the same place twice.
 
 ---
 
 ## The Implementation Loop
 
-For each Blue idea:
+For each Operation case:
 
 ```
-1. Pat splits Blue into Green ideas
+1. Axel splits Operation into Tasks
      ↓
-2. For each Green:
+2. For each Task:
    • INVEST check
    • Write acceptance criteria
    • User can add criteria
      ↓
-3. Ed implements Green
+3. Echo implements Task
      ↓
 4. During execution:
-   • Learning signals → Lou creates Yellow ideas
+   • Discovery signals → Cleo creates Discovery cases
      ↓
-5. Quality check
-   • Pass → Green status: done, Yellow children: archived
-   • Fail → Ed continues iterating
+5. Verification
+   • Pass → Task status: done, Discovery children: archived
+   • Fail → Echo continues iterating
      ↓
-6. All Greens done?
-   • Yes → Retrospective
-   • No → Continue to next Green
+6. All Tasks done?
+   • Yes → Debrief
+   • No → Continue to next Task
 ```
 
 ---
 
-## Retrospective
+## Debrief
 
-After each Blue feature completes (all its Greens done and merged):
+After each Operation feature completes (all its Tasks done and merged):
 
 ```
-Pat runs Retrospective:
-  1. Query Yellow ideas from this Blue's Greens
-  2. Check: Black idea impact?
-  3. Revise Gray ideas based on learnings
+Axel runs Debrief:
+  1. Query Discovery cases from this Operation's Tasks
+  2. Check: Directive case impact?
+  3. Revise Draft cases based on discoveries
   4. Update dependency tree
-  5. Check: Is Black satisfied?
+  5. Check: Is Directive satisfied?
      • Yes → Project complete 🎉
-     • Partially → Continue to next Blue
-     • No → Add new Grays if needed
+     • Partially → Continue to next Operation
+     • No → Add new Drafts if needed
 ```
 
-Retrospective is automatic, triggered by Blue completion. Pat queries Yellow ideas created during the Blue's Green executions.
+Debrief is automatic, triggered by Operation completion. Axel queries Discovery cases created during the Operation's Task executions.
 
 ---
 
 ## PoC as Mini-Cycle
 
-When Orange research needs working code:
+When Research needs working code:
 
 ```
-Orange: Which auth library?
+Research: Which auth library?
 │
 │  [Needs code comparison]
 │
-└── Gray: Compare auth libraries (sub-project)
+└── Draft: Compare auth libraries (sub-project)
     │
-    ├── Blue: Clerk PoC
-    │   └── Green: Basic Clerk login → Ed implements
+    ├── Operation: Clerk PoC
+    │   └── Task: Basic Clerk login → Echo implements
     │
-    ├── Blue: NextAuth PoC
-    │   └── Green: Basic NextAuth login → Ed implements
+    ├── Operation: NextAuth PoC
+    │   └── Task: Basic NextAuth login → Echo implements
     │
-    └── [Results compared, Orange resolved]
+    └── [Results compared, Research resolved]
 ```
 
-The Orange spawns its own mini planning cycle. PoCs are real Greens that Ed implements.
+The Research spawns its own mini planning cycle. PoCs are real Tasks that Echo implements.
 
 ---
 
@@ -537,39 +537,39 @@ The Orange spawns its own mini planning cycle. PoCs are real Greens that Ed impl
 Dependencies form a tree structure:
 
 ```
-⬛ Black: "I want a technical blog..."
+⬛ Directive: "I want a technical blog..."
 │
-├── ⬜ Gray: Blog post system
+├── ⬜ Draft: Blog post system
 │   │
-│   ├── 🟧 Orange: Markdown parser selection
-│   │   └── [Resolved] → 🟦 Blue: rehype rendering
+│   ├── 🟧 Research: Markdown parser selection
+│   │   └── [Resolved] → 🟦 Operation: rehype rendering
 │   │
-│   ├── 🟦 Blue: View post
-│   │   ├── 🟩 Green: Post DB schema [done]
-│   │   │   └── 🟡 Yellow: "Drizzle ORM requires explicit type imports" [local]
-│   │   ├── 🟩 Green: GET /posts/[id] API [done]
-│   │   │   └── 🟡 Yellow: "Use zod for API validation" [global]
-│   │   └── 🟩 Green: PostDetail component
+│   ├── 🟦 Operation: View post
+│   │   ├── 🟩 Task: Post DB schema [done]
+│   │   │   └── 🟡 Discovery: "Drizzle ORM requires explicit type imports" [local]
+│   │   ├── 🟩 Task: GET /posts/[id] API [done]
+│   │   │   └── 🟡 Discovery: "Use zod for API validation" [global]
+│   │   └── 🟩 Task: PostDetail component
 │   │
-│   └── ⬜ Gray: Comment system
-│       └── 🟪 Purple: [BLOCKER] Self-host or 3rd party?
+│   └── ⬜ Draft: Comment system
+│       └── 🟪 Pending: [BLOCKER] Self-host or 3rd party?
 │
-└── 🟥 Red: Analytics dashboard [V2 - deferred]
+└── 🟥 Deferred: Analytics dashboard [V2 - deferred]
 ```
 
-Yellow ideas are always children of the Green that produced them via learning signals.
+Discovery cases are always children of the Task that produced them via discovery signals.
 
 **Dependency Rules:**
-1. Orange unresolved → downstream Blue/Green cannot start
-2. Purple unresolved → that branch cannot progress
-3. Gray not split into Blue → Green cannot be created
+1. Research unresolved → downstream Operation/Task cannot start
+2. Pending unresolved → that branch cannot progress
+3. Draft not split into Operation → Task cannot be created
 4. Independent branches → can progress in parallel
 
 ---
 
 ## Init Mode
 
-Before planning, Analyzer Ace examines the project:
+Before planning, Analyst Ava examines the project:
 
 | Target | Extracted Info |
 |--------|----------------|
@@ -579,7 +579,7 @@ Before planning, Analyzer Ace examines the project:
 | Linter config | Code style rules |
 
 **Init Output:**
-- Creates `.swarm/` directory
+- Creates `.axiom/` directory
 - Writes `config.json` with detected settings
 - Transitions to Planning Mode
 
@@ -587,12 +587,12 @@ Before planning, Analyzer Ace examines the project:
 
 ## JTBD for Existing Projects
 
-For existing projects, Pat adapts:
+For existing projects, Axel adapts:
 
 ```
 User: "Add wishlist feature to my e-commerce app"
      ↓
-Pat: "I'll frame this as a goal:
+Axel: "I'll frame this as a goal:
 
      When browsing products in your e-commerce app,
      I want to save items to a wishlist,
@@ -602,12 +602,12 @@ Pat: "I'll frame this as a goal:
      ↓
 User: Confirms
      ↓
-Pat: Creates Black with project context
+Axel: Creates Directive with project context
 ```
 
-**Black with context:**
+**Directive with context:**
 ```
-Black {
+Directive {
   jtbd: "When..., I want..., so that...",
   projectContext: {
     stack: "Next.js, Prisma, Clerk",
@@ -620,23 +620,23 @@ Black {
 
 ## Incremental Planning
 
-Rather than planning all ideas upfront, Swarm supports **incremental planning** - creating ideas just-in-time as implementation progresses.
+Rather than planning all Tasks upfront, AXIOM supports **incremental planning** - creating Tasks just-in-time as implementation progresses.
 
 ### Why Incremental Planning?
 
 | Benefit | Description |
 |---------|-------------|
-| **Reduced waste** | Don't plan ideas for features that may change |
+| **Reduced waste** | Don't plan Tasks for features that may change |
 | **Better accuracy** | Plan with knowledge gained from implementation |
 | **Natural flow** | Implementation informs the next planning cycle |
-| **Manageable scope** | Avoid overwhelming idea lists |
+| **Manageable scope** | Avoid overwhelming Task lists |
 
 ### Planning Triggers
 
-Planning is triggered when ready idea count drops below threshold (default: 3).
+Planning is triggered when ready Task count drops below threshold (default: 3).
 
 ```
-         Ready Idea Count
+         Ready Task Count
                │
   ┌────────────┴────────────┐
   │ readyCount < threshold? │
@@ -648,41 +648,41 @@ Planning is triggered when ready idea count drops below threshold (default: 3).
   ▼                         ▼
 ┌──────────────┐      ┌──────────────┐
 │ TRIGGER      │      │ SKIP         │
-│ Pat creates  │      │ Enough work  │
-│ more ideas   │      │ available    │
+│ Axel creates │      │ Enough work  │
+│ more Tasks   │      │ available    │
 └──────────────┘      └──────────────┘
 ```
 
 ### Planning Horizon
 
-Pat plans up to the next **horizon** - a logical stopping point:
+Axel plans up to the next **horizon** - a logical stopping point:
 
 | Stop Condition | Example |
 |----------------|---------|
-| **Milestone boundary** | Complete all M1 ideas before planning M2 |
+| **Milestone boundary** | Complete all M1 Tasks before planning M2 |
 | **Feature boundary** | Finish "auth" before planning "notifications" |
-| **Uncertainty point** | Stop at ideas requiring user decisions |
-| **Max batch size** | Default 10 ideas per planning cycle |
+| **Uncertainty point** | Stop at Tasks requiring user decisions |
+| **Max batch size** | Default 10 Tasks per planning cycle |
 
 ### Manual Triggers
 
 | Key | Action | Description |
 |-----|--------|-------------|
 | `P` | Plan | Trigger incremental planning (only if ready < threshold) |
-| `Shift+P` | Force Plan | Force planning even if enough ready ideas exist |
-| `Ctrl+L` | Learning Review | Review learnings and their impact |
+| `Shift+P` | Force Plan | Force planning even if enough ready Tasks exist |
+| `Ctrl+L` | Discovery Review | Review discoveries and their impact |
 
 ---
 
 ## Spec Lifecycle
 
-Specs are treated as **consumable resources**. As implementation progresses, spec sections are consumed into ideas.
+Specs are treated as **consumable resources**. As implementation progresses, spec sections are consumed into Tasks.
 
 ### Spec States
 
 ```
    ┌──────────────┐
-   │    draft     │  ← Being discussed with Pat, not finalized
+   │    draft     │  ← Being discussed with Axel, not finalized
    └──────┬───────┘
           │ User approves or defers
           │
@@ -690,15 +690,15 @@ Specs are treated as **consumable resources**. As implementation progresses, spe
     │           │
     ▼           ▼
 ┌──────────┐  ┌──────────┐
-│ deferred │  │ partial  │  ← Clarified but postponed / Some ideas created
+│ deferred │  │ partial  │  ← Clarified but postponed / Some Tasks created
 └──────────┘  └────┬─────┘
-    │              │ More ideas created
+    │              │ More Tasks created
     │ User         │
     │ reactivates  ▼
     │         ┌──────────┐
-    └────────▶│ consumed │  ← All ideas created from this section
+    └────────▶│ consumed │  ← All Tasks created from this section
               └────┬─────┘
-                   │ All ideas complete (or section no longer needed)
+                   │ All Tasks complete (or section no longer needed)
                    ▼
               ┌──────────┐
               │ archived │  ← Moved to specs/archive/
@@ -709,10 +709,10 @@ Specs are treated as **consumable resources**. As implementation progresses, spe
 
 | State | Description | Visibility to Agents |
 |-------|-------------|---------------------|
-| **draft** | Being discussed with Pat | Full content visible |
+| **draft** | Being discussed with Axel | Full content visible |
 | **deferred** | Postponed (not for current sprint) | Hidden from agents |
-| **partial** | Some ideas created, more content remains | Remaining content visible |
-| **consumed** | All content converted to ideas | Collapsed reference only |
+| **partial** | Some Tasks created, more content remains | Remaining content visible |
+| **consumed** | All content converted to Tasks | Collapsed reference only |
 | **archived** | Complete or obsolete | Not in context |
 
 ### Section Collapsing
@@ -731,7 +731,7 @@ The user model should include:
 
 <!-- AFTER: Collapsed (consumed state) -->
 ## User Model
-> 📋 **CONSUMED**: See ideas idea-001, idea-002 for details.
+> 📋 **CONSUMED**: See Tasks task-001, task-002 for details.
 ```
 
 **Benefits:**
@@ -741,7 +741,7 @@ The user model should include:
 
 ### Spec Progress Tracking
 
-Progress tracked in `.swarm/specs/progress.json`:
+Progress tracked in `.axiom/specs/progress.json`:
 
 ```json
 {
@@ -751,12 +751,12 @@ Progress tracked in `.swarm/specs/progress.json`:
         {
           "heading": "## User Model",
           "state": "consumed",
-          "ideas": ["idea-001", "idea-002"]
+          "tasks": ["task-001", "task-002"]
         },
         {
           "heading": "## JWT Service",
           "state": "partial",
-          "ideas": ["idea-003"]
+          "tasks": ["task-003"]
         },
         {
           "heading": "## OAuth",
@@ -771,29 +771,29 @@ Progress tracked in `.swarm/specs/progress.json`:
 
 ---
 
-## Idea Validation Rules
+## Case Validation Rules
 
-All ideas are validated before implementation begins.
+All cases are validated before implementation begins.
 
 ### Built-in Rules (Always Enforced)
 
 | Rule | Description |
 |------|-------------|
-| **Atomic** | Each idea must have a single responsibility |
+| **Atomic** | Each Task must have a single responsibility |
 | **Testable** | All acceptance criteria must be verifiable |
 | **Acyclic** | No circular dependencies allowed |
-| **Context-fit** | Idea must fit within one agent context window |
+| **Context-fit** | Task must fit within one agent context window |
 
-### Configurable Rules (`.swarm/idea-rules.md`)
+### Configurable Rules (`.axiom/case-rules.md`)
 
 ```markdown
-# Idea Rules
+# Case Rules
 
 ## Configurable Limits
 
 | Setting | Value | Description |
 |---------|-------|-------------|
-| max_acceptance_criteria | 10 | Maximum criteria per idea |
+| max_acceptance_criteria | 10 | Maximum criteria per Task |
 | max_description_length | 500 | Maximum chars for description |
 
 ## Optional Rules
@@ -807,15 +807,15 @@ All ideas are validated before implementation begins.
 
 ## Planning State
 
-Stored in `.swarm/planning-state.json`:
+Stored in `.axiom/planning-state.json`:
 
 ```json
 {
   "status": "implementation",
   "chosenMode": "semi-auto",
   "phase": "ready",
-  "blackIdea": {
-    "id": "idea-001",
+  "directiveCase": {
+    "id": "case-001",
     "jtbd": "When I want to share...",
     "satisfied": false
   },
@@ -829,14 +829,14 @@ Stored in `.swarm/planning-state.json`:
 | Status | Meaning |
 |--------|---------|
 | `init` | Running Init Mode |
-| `planning` | Pat running spiral |
-| `implementation` | Ed executing Greens |
+| `planning` | Axel running spiral |
+| `implementation` | Echo executing Tasks |
 
 | Phase | Meaning |
 |-------|---------|
 | `understand` | Phase 1: Q&A with user |
 | `analyze` | Phase 2: Codebase exploration |
 | `propose` | Phase 3: Architecture approval |
-| `decompose` | Phase 4: Idea generation |
-| `validate` | Phase 5: Completion Drive validation |
-| `ready` | All ideas valid, ready for implementation |
+| `decompose` | Phase 4: Task generation |
+| `validate` | Phase 5: Execution Loop validation |
+| `ready` | All Tasks valid, ready for implementation |
