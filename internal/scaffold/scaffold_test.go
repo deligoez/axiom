@@ -67,3 +67,44 @@ func TestExists_ReturnsTrueAfterScaffold(t *testing.T) {
 		t.Error("expected Exists to return true after scaffold")
 	}
 }
+
+func TestWriteConfig_CreatesFile(t *testing.T) {
+	dir := t.TempDir()
+	axiomDir := filepath.Join(dir, ".axiom")
+	if err := os.MkdirAll(axiomDir, 0o755); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	err := WriteConfig(axiomDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	configPath := filepath.Join(axiomDir, "config.json")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Error("config.json was not created")
+	}
+}
+
+func TestWriteConfig_ValidJSON(t *testing.T) {
+	dir := t.TempDir()
+	axiomDir := filepath.Join(dir, ".axiom")
+	if err := os.MkdirAll(axiomDir, 0o755); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	if err := WriteConfig(axiomDir); err != nil {
+		t.Fatalf("write config failed: %v", err)
+	}
+
+	configPath := filepath.Join(axiomDir, "config.json")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config failed: %v", err)
+	}
+
+	expected := `{"version":"1.0.0"}`
+	if string(content) != expected {
+		t.Errorf("config content = %q, want %q", string(content), expected)
+	}
+}
