@@ -14,41 +14,150 @@ We build AXIOM using AXIOM's own methodology - manually playing the roles until 
 ⬛ Directive (Black)  = docs/ folder (the spec/PRD)
         │
         ▼
-⬜ Draft (Grey)       = Milestone planning tasks (PLAN: m1-core, etc.)
+⬜ Draft (Grey)       = High-level planning (one at a time)
         │
         ▼
-🟦 Operation (Blue)   = Feature groups (F01: CaseStore, etc.)
+🟦 Operation (Blue)   = ATOMIC feature (smallest deliverable feature)
         │
         ▼
-🟩 Task (Green)       = TDD implementation units
+🟩 Task (Green)       = ATOMIC implementation step (TDD unit)
 ```
 
-### Workflow
+### Atomicity Rules
 
-1. **Directive exists** - `docs/` folder is our PRD
-2. **Extract Draft** - Create `PLAN: <milestone>` task, think through it
-3. **Draft → Operations** - Break down into feature tasks (F01, F02, ...)
-4. **Operations → Tasks** - If needed, break further into smaller units
-5. **Implement** - TDD: RED → GREEN → REFACTOR → COMMIT
-6. **Close and continue** - Close task, pick next
+**Blue (Operation) = Smallest Deliverable Feature:**
+- Can be demoed or tested independently
+- Has clear "done" criteria
+- Provides value on its own (even if small)
+- Example: "Config file loading" not "Config system"
 
-### Beads Labels for Case Types
+**Green (Task) = Smallest TDD Step:**
+- ONE test + ONE implementation
+- Should take < 30 minutes
+- Single responsibility
+- Example: "Load() returns error on missing file" not "Load config"
 
-| Case Type | Beads Label | Example |
-|-----------|-------------|---------|
-| Draft | `plan` | `PLAN: m1-core Implementation` |
-| Operation | `m1-core`, `m2-workspace`, etc. | `F01: CaseStore` |
-| Task | Same as parent Operation | `F01.1: Store.Create method` |
+### TDD Format for Green Tasks
 
-### Manual Axel Role
+Each Green task body MUST include:
 
-Before starting a new milestone:
+```markdown
+## Test Case
+`TestFunctionName_Scenario`
 
-1. **Read relevant docs** - Understand what's needed
-2. **Create Draft task** - `bd create "PLAN: <milestone>" -p 1 -l plan`
-3. **Think through** - Dependencies, order, test strategy
-4. **Extract Operations** - Create feature tasks with acceptance criteria
-5. **Close Draft** - Mark planning complete
+## Expected Behavior
+When [condition], should [result]
+
+## Acceptance
+- [ ] Test written and RED
+- [ ] Implementation GREEN
+- [ ] Committed
+```
+
+### Test Coverage Rules
+
+**MANDATORY:**
+- Every Green task with logic = has test(s)
+- Happy path + at least 1 edge case per function
+- Error conditions tested explicitly
+
+**Edge Cases to Consider:**
+- Empty input / nil
+- Invalid input
+- Boundary values
+- Error returns
+
+**Go Test Style:**
+
+```go
+func TestFunctionName_Scenario(t *testing.T) {
+    // Arrange
+    input := ...
+
+    // Act
+    result, err := Function(input)
+
+    // Assert
+    if err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+    if result != expected {
+        t.Errorf("got %v, want %v", result, expected)
+    }
+}
+```
+
+**PHP/Laravel karşılığı:** `phpunit` ile aynı mantık, sadece syntax farklı.
+
+### Deliberate Workflow (MANDATORY)
+
+**Each level requires discussion before creating the next level.**
+
+#### Step 1: Grey (Draft) Extraction
+1. Look at Directive (docs/)
+2. **DISCUSS** what the first Grey task should be
+3. Create ONE Grey task after agreement
+4. Mark Grey as in_progress
+
+#### Step 2: Grey → Blue Discussion
+1. Read and understand the Grey task
+2. **DISCUSS** what Blue tasks should come from it
+3. Agree on Blue tasks and their order
+4. Create Blue tasks
+5. Close Grey task
+
+#### Step 3: Blue → Green Discussion
+1. Pick ONE Blue task
+2. **DISCUSS** what Green tasks should come from it
+3. Agree on Green tasks with acceptance criteria
+4. Create Green tasks
+5. Mark Blue as in_progress
+
+#### Step 4: Green Implementation
+1. Implement ALL Green tasks under current Blue (TDD)
+2. Each Green: RED → GREEN → COMMIT
+3. Close each Green when done
+
+#### Step 5: Review
+1. After all Greens done, close Blue
+2. **REVIEW** all completed work
+3. Decide: next Blue, or new Grey needed?
+
+### Beads Task Types for Colors (MANDATORY)
+
+| Renk | Beads Type | Prefix | Label | Parent |
+|------|------------|--------|-------|--------|
+| ⬜ Grey | `epic` | `PLAN:` | milestone | - |
+| 🟦 Blue | `feature` | `F##:` | milestone | Grey ID |
+| 🟩 Green | `task` | `F##.#:` | milestone | Blue ID |
+
+**Creation Commands:**
+
+```bash
+# Grey (Epic)
+bd create "PLAN: m1-core" -t epic -l m1-core -p 1
+
+# Blue (Feature) - parent is Grey
+bd create "F01: Config Load" -t feature -l m1-core --parent ax-xxx -p 1
+
+# Green (Task) - parent is Blue
+bd create "F01.1: Load returns error on missing file" -t task -l m1-core --parent ax-yyy -p 1
+```
+
+**Filtering by Color:**
+
+```bash
+bd list -t epic      # All Grey tasks
+bd list -t feature   # All Blue tasks
+bd list -t task      # All Green tasks
+```
+
+**Hierarchy Query:**
+
+```bash
+bd show ax-xxx       # Shows children
+bd tree ax-xxx       # Shows full tree
+```
 
 ### Rule: Everything Through Beads
 
@@ -60,14 +169,50 @@ Before starting a new milestone:
 - Bug fixes = `BUG:` prefixed tasks
 - Chores = `CHORE:` prefixed tasks
 
-```bash
-# Before ANY work
-bd ready -n 0              # Check available tasks
-bd update ax-xxx --status=in_progress  # Claim task
+### Rule: No Premature Task Creation
 
-# After completing
-bd close ax-xxx            # Close task
-```
+**NEVER create next-level tasks without discussion:**
+
+- Don't create Blues until Grey is discussed
+- Don't create Greens until Blue is discussed
+- Each level = conversation first, then task creation
+
+---
+
+## Developer Context (MANDATORY)
+
+**User Profile:** Senior PHP/Laravel developer, new to Go.
+
+**Explanation Style:**
+- Compare Go concepts to PHP/Laravel equivalents
+- Senior-level depth (no hand-holding, but clarify Go-specific idioms)
+- Focus on "why" not just "how"
+
+**Go ↔ PHP/Laravel Mapping Reference:**
+
+| Go | PHP/Laravel |
+|----|-------------|
+| `go mod` | `composer` |
+| `go.mod` | `composer.json` |
+| `go.sum` | `composer.lock` |
+| `internal/` | `app/` (private) |
+| `cmd/` | `artisan` commands |
+| `pkg/` | `app/` (public/reusable) |
+| `struct` | `class` |
+| `interface` | `interface` (but implicit) |
+| `func (s *Store) Get()` | `public function get()` (method) |
+| `goroutine` | Queue job / async |
+| `channel` | Event / Queue |
+| `defer` | `try/finally` |
+| `error` return | `throw Exception` |
+| `golangci-lint` | `phpstan` / `larastan` |
+| `go test` | `phpunit` |
+| `Makefile` | `composer scripts` |
+
+**When explaining:**
+1. Show the Go way
+2. Brief PHP/Laravel equivalent if helpful
+3. Note key differences (e.g., "Go has no exceptions, uses error returns")
 
 ---
 

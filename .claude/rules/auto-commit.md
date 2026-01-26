@@ -20,19 +20,30 @@ Run these commands in order after tests are GREEN:
 # 1. Tests
 go test ./...
 
-# 2. Lint (golangci-lint)
+# 2. Format (auto-fix, always run)
+gofmt -w .
+
+# 3. Lint (golangci-lint)
 golangci-lint run
 
-# 3. Build (ensure it compiles)
+# 4. Build (ensure it compiles)
 go build ./...
 ```
 
-**All three must pass before committing.**
+**All must pass before committing.**
 
 Quick combined check:
 ```bash
-go test ./... && golangci-lint run && go build ./...
+go test ./... && gofmt -w . && golangci-lint run && go build ./...
 ```
+
+**PHP/Laravel karşılığı:**
+| Go | PHP |
+|----|-----|
+| `go test` | `phpunit` |
+| `gofmt` | `php-cs-fixer fix` |
+| `golangci-lint` | `phpstan analyse` |
+| `go build` | (PHP interpreted, no build) |
 
 ## Rules
 
