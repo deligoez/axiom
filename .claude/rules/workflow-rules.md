@@ -138,8 +138,6 @@ func TestFunctionName_Scenario(t *testing.T) {
 }
 ```
 
-**PHP/Laravel karşılığı:** `phpunit` ile aynı mantık, sadece syntax farklı.
-
 ### Deliberate Workflow (MANDATORY)
 
 **Each level requires discussion before creating the next level.**
@@ -267,7 +265,9 @@ After a context compaction (session continuation):
 3. **Re-read auto-commit.md** for TDD commit rules
 4. **Continue from the summary** without asking questions
 
-## Language Rule (MANDATORY)
+## Language Rules (MANDATORY)
+
+### Project Artifacts: English
 
 All project artifacts MUST be in **English**:
 
@@ -279,6 +279,14 @@ All project artifacts MUST be in **English**:
 - **Error messages**: User-facing and internal errors
 
 This ensures consistency and accessibility across the codebase.
+
+### User Communication: Turkish
+
+Communicate with the user in **Turkish** during the session:
+
+- Explanations, questions, status updates in Turkish
+- Only project artifacts (code, docs, tasks, commits) in English
+- This does NOT apply to generated code or documentation
 
 ## Bug Task Rules
 
