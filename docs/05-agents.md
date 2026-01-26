@@ -25,11 +25,32 @@ All 8 personas are agents with consistent file structure. Each gets instance num
 
 ### Analyst Ava
 
-Examines project structure during init. Detects:
-- Project type (Node, Python, Go)
-- Test framework
-- Linter/formatter
-- Build system
+**Init Agent** - Runs automatically on first AXIOM startup when no `.axiom/` directory exists.
+
+**Trigger:**
+- First run: Automatic (scaffold creates `.axiom/`, then spawns Ava)
+- Later: Manual via command palette (planned)
+
+**Responsibilities:**
+- Greet and introduce AXIOM to user
+- Detect project type and tech stack (Go, TypeScript, Python, etc.)
+- Identify verification commands (test, lint, build)
+- Create/update `.axiom/config.json`
+- Onboard new users
+- Help returning users with config changes
+
+**Workflow:**
+1. Check if `.axiom/config.json` exists
+2. If NO → First Run: Full onboarding flow
+3. If YES → Returning User: Ask what they need
+
+**Signal:**
+- Emits `<axiom>AVA_COMPLETE</axiom>` when done
+
+**Does NOT:**
+- Plan tasks (Axel does this)
+- Implement code (Echo does this)
+- Make assumptions (asks user when uncertain)
 
 ### Architect Axel
 

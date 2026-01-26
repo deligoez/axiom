@@ -2,6 +2,18 @@
 
 All AXIOM configuration is stored in `.axiom/config.json`.
 
+## Config Creation
+
+On first run, AXIOM creates a minimal config:
+
+```json
+{"version":"1.0.0"}
+```
+
+**Analyst Ava** then detects the project and populates:
+- `verification` array (test, lint, build commands)
+- Tech stack specific settings
+
 ---
 
 ## Configuration Schema

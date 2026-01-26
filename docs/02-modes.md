@@ -45,7 +45,45 @@ axiom command
 
 Init Mode runs only for first-time projects (no `.axiom/` directory). Analyst Ava guides the user through project setup in a conversational interface.
 
-### Prerequisites Check
+### Current Implementation
+
+```
+axiom command
+     │
+     ▼
+┌─────────────────────┐
+│  .axiom/ exists?    │
+└──────────┬──────────┘
+           │
+     ┌─────┴─────┐
+     │    No     │
+     └─────┬─────┘
+           ▼
+┌─────────────────────┐
+│  Scaffold:          │
+│  - .axiom/          │
+│  - config.json      │
+│  - agents/ava/      │
+│    prompt.md        │
+└──────────┬──────────┘
+           ▼
+┌─────────────────────┐
+│  Spawn Ava          │
+│  (claude --print    │
+│   --system-prompt)  │
+└──────────┬──────────┘
+           ▼
+┌─────────────────────┐
+│  Parse output for   │
+│  AVA_COMPLETE       │
+└──────────┬──────────┘
+           ▼
+┌─────────────────────┐
+│  Start web server   │
+└─────────────────────┘
+```
+
+### Prerequisites Check (Planned)
 
 Before Init Mode starts, AXIOM validates system requirements:
 
