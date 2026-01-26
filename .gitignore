@@ -54,5 +54,5 @@ logs/
 # TLDR tool cache (runtime state)
 .tldr/
 
-# IDE (optional - uncomment if you want to track)
-# .idea/
+# IDE
+.idea/
