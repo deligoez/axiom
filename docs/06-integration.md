@@ -275,6 +275,85 @@ When conflicts can't be auto-resolved:
 4. Approve via Web UI to continue
 5. Queue resumes processing
 
+### Escalation Timeout
+
+Human escalations have configurable timeouts to prevent indefinite blocking:
+
+**Config:**
+```json
+{
+  "merge": {
+    "escalationTimeout": 3600,
+    "escalationAction": "defer"
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `escalationTimeout` | 3600 | Seconds before timeout (1 hour) |
+| `escalationAction` | defer | Action on timeout |
+
+**Timeout actions:**
+
+| Action | Description |
+|--------|-------------|
+| `defer` | Move Task to deferred, continue queue |
+| `skip` | Skip this merge, Task stays pending |
+| `retry` | Retry merge (may fail again) |
+| `notify` | Send notification, keep waiting |
+
+**Timeout flow:**
+```
+Human escalation triggered
+     │
+     ▼
+Timer starts (escalationTimeout)
+     │
+     ├── Human resolves before timeout ──► Continue merge
+     │
+     └── Timeout reached
+              │
+              ▼
+         escalationAction:
+         ├── defer ──► Task → deferred, queue continues
+         ├── skip ──► Task → pending, queue continues
+         ├── retry ──► Attempt merge again
+         └── notify ──► Send on-escalation hook, keep waiting
+```
+
+### Escalation Notifications
+
+Configure `on-escalation` hook for alerts:
+
+```bash
+#!/bin/bash
+# .axiom/hooks/on-escalation.sh
+
+# Variables:
+# AXIOM_TASK_ID        - Task ID
+# AXIOM_CONFLICT_FILES - Conflicting files
+# AXIOM_CONFLICT_LEVEL - COMPLEX
+# AXIOM_WORKSPACE      - Workspace path
+
+# Example: Slack alert
+curl -X POST "$SLACK_WEBHOOK" \
+  -d "{\"text\": \"⚠️ Human intervention needed for $AXIOM_TASK_ID\"}"
+
+# Example: Email
+echo "Conflict in $AXIOM_TASK_ID" | mail -s "AXIOM Escalation" team@example.com
+```
+
+### AFK Handling
+
+For overnight or weekend scenarios:
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Overnight batch | Set `escalationAction: defer` |
+| CI/CD pipeline | Set `escalationAction: skip` |
+| Attended session | Set `escalationAction: notify` |
+
 ---
 
 ## Branch Naming

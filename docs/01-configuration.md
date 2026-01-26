@@ -262,6 +262,12 @@ Cases with `security` tag always require per-task review.
 | `autoMerge` | true | Queue completed Tasks automatically |
 | `conflictRetries` | 3 | Retries before human escalation |
 | `cleanupOnSuccess` | true | Remove workspace after merge |
+| `remoteSyncInterval` | 300 | Seconds between remote sync checks |
+| `autoFetchBeforeMerge` | true | Fetch before each merge attempt |
+| `escalationTimeout` | 3600 | Seconds before escalation timeout |
+| `escalationAction` | defer | Action on timeout (defer/skip/retry/notify) |
+
+See [06-integration.md](./06-integration.md#escalation-timeout) for timeout handling.
 
 ### Checkpoints
 
