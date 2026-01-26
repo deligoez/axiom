@@ -50,3 +50,29 @@ func TestServer_GetRoot_ReturnsHTML(t *testing.T) {
 		t.Error("response should contain '2025 AXIOM' in footer")
 	}
 }
+
+func TestServer_GetRoot_ContainsTasks(t *testing.T) {
+	// Arrange
+	server := NewServer()
+	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+	rec := httptest.NewRecorder()
+
+	// Act
+	server.ServeHTTP(rec, req)
+
+	// Assert
+	body := rec.Body.String()
+
+	// Check that task titles from GetTasks() are present
+	expectedTasks := []string{
+		"Setup project structure",
+		"Add web server",
+		"Implement task list",
+	}
+
+	for _, taskTitle := range expectedTasks {
+		if !strings.Contains(body, taskTitle) {
+			t.Errorf("response should contain task title %q", taskTitle)
+		}
+	}
+}

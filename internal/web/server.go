@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/deligoez/axiom/internal/task"
 )
 
 //go:embed templates/*.html
@@ -48,10 +50,19 @@ func (s *Server) StaticDir(dir string) {
 	s.mux.Handle("/static/", http.StripPrefix("/static/", fs))
 }
 
+// PageData holds data passed to templates.
+type PageData struct {
+	Tasks []task.Task
+}
+
 // handleRoot handles GET /.
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	data := PageData{
+		Tasks: task.GetTasks(),
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err := s.templates.ExecuteTemplate(w, "layout.html", nil)
+	err := s.templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
