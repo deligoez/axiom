@@ -454,7 +454,39 @@ The Discovery case stays in CaseStore with same ID - only scope changes.
 
 ## Outdated Discovery Detection
 
-Cleo detects when Discovery cases become outdated:
+Cleo detects when Discovery cases become outdated through multiple mechanisms.
+
+### Detection Triggers
+
+| Trigger | When | Check Type |
+|---------|------|------------|
+| Post-merge | After any branch merge | File-based |
+| Periodic | Every 5 minutes during active session | File + contradiction |
+| On discovery creation | When new Discovery added | Contradiction only |
+| Manual | User requests validation | All checks |
+
+### File Path Extraction
+
+Discovery content is scanned for file paths:
+
+```
+extractFilePaths(content):
+  patterns = [
+    /`([^`]+\.(ts|tsx|js|jsx|go|py|rs|md))`/,  // Backtick paths
+    /\b(src\/[^\s]+)/,                          // src/ paths
+    /\b(\w+\/\w+\.\w+)/,                        // dir/file.ext patterns
+    /in\s+`?([^`\s]+\.\w+)`?/                   // "in file.ts" patterns
+  ]
+
+  paths = []
+  for pattern in patterns:
+    matches = content.matchAll(pattern)
+    paths.extend(matches)
+
+  return unique(paths)
+```
+
+### Core Detection Algorithm
 
 ```
 checkOutdated(discovery, recentCommits):
@@ -487,7 +519,69 @@ checkOutdated(discovery, recentCommits):
   return { outdated: false }
 ```
 
+### Contradiction Detection
+
+Two discoveries contradict if they:
+1. Reference the same file(s) or concept
+2. Make incompatible claims
+
+```
+contradicts(older, newer):
+  // Same files referenced?
+  olderFiles = extractFilePaths(older.content)
+  newerFiles = extractFilePaths(newer.content)
+
+  if not olderFiles.intersects(newerFiles):
+    // Check for semantic overlap (keyword matching)
+    olderKeywords = extractKeywords(older.content)
+    newerKeywords = extractKeywords(newer.content)
+
+    if overlap(olderKeywords, newerKeywords) < 0.3:
+      return false  // Different topics
+
+  // Look for contradiction signals
+  contradictionPatterns = [
+    (older contains "use X", newer contains "don't use X"),
+    (older contains "requires", newer contains "doesn't require"),
+    (older contains "always", newer contains "never"),
+    (older contains "should", newer contains "shouldn't")
+  ]
+
+  for pattern in contradictionPatterns:
+    if pattern.matches(older.content, newer.content):
+      return true
+
+  // Default: same topic, different content = potential contradiction
+  if similarity(older.content, newer.content) < 0.7:
+    return true  // Different enough to be contradiction
+
+  return false
+```
+
+### Recent Commits Definition
+
+"Recent commits" = commits since the Discovery was created or last validated:
+
+```
+getRecentCommits(discovery):
+  since = discovery.metadata.validatedAt
+         ?? discovery.createdAt
+
+  return git.log({
+    since: since,
+    paths: extractFilePaths(discovery.content)  // Scoped to relevant files
+  })
+```
+
+### Outdated Status Handling
+
 Outdated Discovery cases are flagged for review, not auto-deleted. They remain in CaseStore with `status: outdated`.
+
+| Action | Effect |
+|--------|--------|
+| Mark outdated | Status → `outdated`, not injected into prompts |
+| User confirms | Delete or update content, reset to `active` |
+| Auto-archive | After 7 days if unreviewed (configurable) |
 
 ---
 
