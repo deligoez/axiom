@@ -19,14 +19,21 @@
 
 ## Current Milestone
 
-### MVP-02: TBD
+### MVP-03: TBD
 - **Grey:** TBD
-- **Goal:** TBD
+- **Goal:** Real tasks from storage
 - **Status:** NOT STARTED
 
 ---
 
 ## Completed Milestones
+
+### MVP-02: Task List UI ✓
+- **Grey:** ax-88w (PLAN: MVP-02 - Task List UI)
+- **Blue:** ax-88w.1 (F02: Task List Page)
+- **Goal:** See a task list in UI with hardcoded data
+- **Status:** DONE
+- **Commits:** c3eced6..5ee6b86
 
 ### MVP-01: Walking Skeleton ✓
 - **Grey:** ax-zny (PLAN: MVP-01 - Walking Skeleton)
