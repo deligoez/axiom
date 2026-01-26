@@ -449,7 +449,82 @@ For overnight or weekend scenarios:
 
 ## Dependency Wait Behavior
 
-When Tasks complete out of order (e.g., task-002 finishes before task-001), the integration queue handles gracefully:
+When Tasks complete out of order (e.g., task-002 finishes before task-001), the integration queue handles gracefully.
+
+### Queue Entry States
+
+| State | Description | Can Merge |
+|-------|-------------|-----------|
+| `waiting` | Dependencies not yet merged | No |
+| `ready` | All dependencies merged | Yes |
+| `merging` | Currently being merged | - |
+| `conflict` | Merge conflict detected | No |
+| `merged` | Successfully merged | - |
+
+### Dependency Check Algorithm
+
+```
+checkDependencies(entry):
+  task = caseStore.get(entry.taskId)
+  dependencies = task.metadata.dependencies || []
+
+  // Check if all dependency Tasks are merged
+  for depId in dependencies:
+    depEntry = mergeQueue.find(depId)
+
+    if depEntry == null:
+      // Not in queue yet - dep hasn't completed
+      return { ready: false, reason: 'dependency not completed', blocking: depId }
+
+    if depEntry.state != 'merged':
+      // In queue but not merged yet
+      return { ready: false, reason: 'dependency not merged', blocking: depId }
+
+  return { ready: true }
+
+onTaskComplete(taskId):
+  entry = createQueueEntry(taskId)
+  entry.state = 'waiting'
+
+  result = checkDependencies(entry)
+  if result.ready:
+    entry.state = 'ready'
+
+  mergeQueue.add(entry)
+  notifyWaiters(taskId)  // Wake up Tasks waiting on this one
+
+notifyWaiters(mergedTaskId):
+  for entry in mergeQueue.filter(e => e.state == 'waiting'):
+    if entry.blockingOn == mergedTaskId:
+      result = checkDependencies(entry)
+      if result.ready:
+        entry.state = 'ready'
+```
+
+### Queue Ordering Algorithm
+
+The queue processes entries in priority order, not strict FIFO:
+
+```
+sortQueue(entries):
+  return entries.sortBy([
+    // 1. Ready entries before waiting
+    (e) => e.state == 'ready' ? 0 : 1,
+
+    // 2. Entries with fewer remaining deps first
+    (e) => countBlockingDeps(e),
+
+    // 3. Older entries first (completion time)
+    (e) => e.completedAt
+  ])
+
+countBlockingDeps(entry):
+  deps = entry.dependencies
+  merged = deps.filter(d => mergeQueue.get(d)?.state == 'merged')
+  return deps.length - merged.length
+```
+
+### Queue Processing
 
 ```
 Queue Processing:
@@ -461,9 +536,40 @@ Queue Processing:
      ▼
   Check dependencies
      │
-     ├── task-001 not merged ──► Hold in queue
+     ├── task-001 not merged ──► state: 'waiting', blockingOn: task-001
      │
-     └── task-001 merged ──► Attempt merge
+     └── task-001 merged ──► state: 'ready' ──► Attempt merge
+
+  Later: task-001 completes and merges
+     │
+     ▼
+  notifyWaiters(task-001)
+     │
+     ▼
+  task-002 re-checked ──► all deps merged ──► state: 'ready'
+```
+
+### Circular Dependency Prevention
+
+Tasks cannot form circular dependencies (validated at Task creation). If detected in queue:
+
+```
+detectCycle(entries):
+  for entry in entries:
+    visited = set()
+    if hasCycle(entry, visited):
+      // Mark affected Tasks as conflict
+      markCycleConflict(getCycleMembers(entry))
+
+hasCycle(entry, visited):
+  if entry.taskId in visited:
+    return true
+  visited.add(entry.taskId)
+  for depId in entry.dependencies:
+    depEntry = entries.find(depId)
+    if depEntry && hasCycle(depEntry, visited):
+      return true
+  return false
 ```
 
 Tasks wait in queue until their dependencies merge successfully.
