@@ -85,6 +85,61 @@ All hooks receive context via `AXIOM_*` prefixed environment variables:
 
 ---
 
+## Execution Context
+
+### Working Directory
+
+Hooks run in the **project root directory** (same directory as `.axiom/`).
+
+For workspace-specific operations, use the `$AXIOM_WORKSPACE` environment variable:
+
+```bash
+#!/bin/bash
+# Run commands in workspace
+cd "$AXIOM_WORKSPACE" && npm test
+
+# Or reference workspace files
+cat "$AXIOM_WORKSPACE/package.json"
+```
+
+### Environment Inheritance
+
+Hooks inherit:
+- System PATH and standard environment
+- All `AXIOM_*` prefixed variables
+- Current user's environment
+
+Hooks do NOT inherit:
+- Agent's internal state
+- Claude CLI context
+- Other agent's environment variables
+
+### Output Handling
+
+| Output | Handling |
+|--------|----------|
+| stdout | Logged to `.axiom/logs/hooks.jsonl` |
+| stderr | Logged to `.axiom/logs/hooks.jsonl` |
+| Exit code 0 | Hook succeeded |
+| Exit code non-zero | Hook failed (logged, continues) |
+
+### Process Management
+
+| Scenario | Behavior |
+|----------|----------|
+| Hook times out | Child processes killed |
+| Hook spawns background process | Process orphaned (not recommended) |
+| Hook modifies project files | Changes visible to agents |
+| Hook modifies workspace files | Use `$AXIOM_WORKSPACE` path |
+
+**Best practices:**
+- Keep hooks fast (< 30 seconds)
+- Avoid modifying files outside workspace
+- Use `$AXIOM_WORKSPACE` for workspace operations
+- Log important output for debugging
+
+---
+
 ## Hook Interface
 
 ```bash
