@@ -295,12 +295,50 @@ When starting work on a bug task that was opened for later investigation:
 2. **Research online** - Search for relevant documentation, similar issues, or solutions
 3. **Then start implementation** - Begin fixing the bug with research context
 
-## Standing Instruction
+## Implementation Gate Rule (CRITICAL)
 
-"Ben soyleyene kadar hic durmadan, en uygun taski alip devam et"
-(Continue without stopping until told, picking the most appropriate task)
+**NEVER start implementation without explicit user approval.**
 
-Task selection rules:
+### What This Means
+
+1. **Grey (PLAN) tasks**: Can be worked on (research, design, documentation)
+2. **Blue (F) tasks**: Can be CREATED but NOT IMPLEMENTED without approval
+3. **Green tasks**: Can be CREATED but NOT IMPLEMENTED without approval
+
+### Workflow
+
+```
+1. User gives goal
+2. Create/update Grey (PLAN) task
+3. Design solution in Grey task
+4. ASK USER: "Blue task'ları oluşturayım mı?"
+5. User approves → Create Blue tasks
+6. ASK USER: "Implementasyona geçeyim mi?"
+7. User approves → Implement
+```
+
+### What Requires Approval
+
+| Action | Needs Approval? |
+|--------|-----------------|
+| Creating PLAN tasks | No |
+| Working on PLAN tasks (research, design) | No |
+| Creating Blue/Green tasks | Yes |
+| Starting implementation (writing code) | Yes |
+| Running tests on existing code | No |
+| Committing implemented code | No (auto-commit rule) |
+
+### Exception: Explicit Standing Instruction
+
+If user explicitly says "devam et" or "implement et", then continue until:
+- That specific task is done, OR
+- User says stop
+
+**Default mode is ALWAYS ask before implementing.**
+
+## Task Selection Rules (When Approved to Implement)
+
+When user has approved implementation:
 1. **P0 > P1 > P2** - Priority order
 2. **Fastest completion** - Among same priority, pick quickest to complete
 3. **Independent over chain-starter** - If task A starts a chain but B is independent, prefer B (quick win)
