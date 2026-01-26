@@ -19,29 +19,40 @@
 
 ## Current Milestone
 
-### m1-core: Core Infrastructure
+### MVP-01: Walking Skeleton
 - **Grey:** TBD
-- **Scope:** CaseStore, Config, Types
+- **Goal:** See a web page with header/footer
 - **Status:** NOT STARTED
-- **Docs:**
-  - docs/04-cases.md (CaseStore, Types)
-  - docs/01-configuration.md (Config)
 
 ---
 
-## Backlog
+## Backlog (Outcome-Focused)
 
-| Milestone | Scope | Depends On |
-|-----------|-------|------------|
-| m2-workspace | Git worktree management | m1-core |
-| m3-agent | Agent spawning, signals | m1-core, m2-workspace |
-| m4-integration | Merge service | m2-workspace, m3-agent |
-| m5-execution | Execution loop, slot manager | m1-core, m3-agent |
-| m6-ui | Web interface (htmx) | m1-core, m5-execution |
-| m7-planning | 5-Phase dialogue | m1-core, m3-agent |
-| m8-discovery | Learning system | m1-core, m3-agent |
-| m9-review | Human review, debrief | m6-ui, m5-execution |
-| m10-intervention | Pause, rollback | m5-execution |
+**Approach:** Vertical slices, not horizontal layers. Each milestone = something visible in UI.
+
+| Milestone | Goal (What we SEE) | Infra Needed |
+|-----------|-------------------|--------------|
+| MVP-01 | Web page with header/footer | Go web server, templates |
+| MVP-02 | Hardcoded task list in UI | HTML template |
+| MVP-03 | Real tasks from storage | Basic CaseStore |
+| MVP-04 | Create task via UI | Form handling |
+| MVP-05 | Task status changes | Status enum, update |
+| MVP-06 | Planning view | Draft/Operation types |
+| ... | ... | ... |
+
+**Note:** This backlog will evolve. We discover what's next after each milestone.
+
+---
+
+## Infrastructure Reference
+
+When we need infrastructure, reference these docs:
+- `docs/04-cases.md` - Case types, CaseStore API
+- `docs/01-configuration.md` - Config system
+- `docs/05-agents.md` - Agent system
+- `docs/06-integration.md` - Merge service
+- `docs/07-execution.md` - Execution loop
+- `docs/10-interface.md` - Web UI
 
 ---
 

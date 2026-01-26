@@ -8,6 +8,57 @@ Additional workflow rules for working on AXIOM.
 
 We build AXIOM using AXIOM's own methodology - manually playing the roles until the system exists.
 
+### Core Philosophy (MANDATORY)
+
+**"Take small steps, learn from each one, update the plan."**
+
+### Meta-Rule: When in Doubt, Act Like AXIOM
+
+When unsure how to proceed, ask: "What would AXIOM do?"
+- Small steps over big plans
+- Learn and adapt over predict and commit
+- Working software over comprehensive documentation
+- Vertical slices over horizontal layers
+
+### MVP / Vertical Slice Approach (MANDATORY)
+
+**NEVER do Big Design Up Front.** Always:
+
+1. **Start from UI** - What do we want to SEE?
+2. **Minimum infrastructure** - Only build what's needed for that UI
+3. **Iterate** - See it working, then decide next slice
+
+**Wrong (Horizontal Layers):**
+```
+Types → CaseStore → Config → Workspace → Agent → ... → UI
+                                                      ↑
+                                        (months later, finally see something)
+```
+
+**Right (Vertical Slices):**
+```
+"I want to see X in UI"
+       ↓
+What's the minimum to show X?
+       ↓
+Build only that (UI → Backend → Persistence)
+       ↓
+See it working
+       ↓
+"Now I want to see Y" → repeat
+```
+
+### Grey Task Naming for MVP
+
+Instead of infrastructure-focused Grey tasks:
+- ❌ `PLAN: m1-core` (Types, CaseStore, Config)
+- ❌ `PLAN: m2-workspace` (Git worktrees)
+
+Use feature/outcome-focused Grey tasks:
+- ✅ `PLAN: MVP - Walking Skeleton` (See a web page)
+- ✅ `PLAN: MVP - Task List` (See tasks in UI)
+- ✅ `PLAN: MVP - Create Task` (Add task via UI)
+
 ### Case Hierarchy
 
 ```
