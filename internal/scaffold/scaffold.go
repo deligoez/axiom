@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/deligoez/axiom/internal/agent"
 )
 
 // Scaffold creates the .axiom/ directory structure.
@@ -36,6 +38,17 @@ func WriteConfig(axiomDir string) error {
 
 	if err := os.WriteFile(configPath, config, 0o644); err != nil {
 		return fmt.Errorf("write config: %w", err)
+	}
+
+	return nil
+}
+
+// WriteAvaPrompt writes the Ava prompt template to .axiom/agents/ava/prompt.md.
+func WriteAvaPrompt(axiomDir string) error {
+	promptPath := filepath.Join(axiomDir, "agents", "ava", "prompt.md")
+
+	if err := os.WriteFile(promptPath, []byte(agent.AvaPromptTemplate), 0o644); err != nil {
+		return fmt.Errorf("write ava prompt: %w", err)
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package scaffold
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -106,5 +107,53 @@ func TestWriteConfig_ValidJSON(t *testing.T) {
 	expected := `{"version":"1.0.0"}`
 	if string(content) != expected {
 		t.Errorf("config content = %q, want %q", string(content), expected)
+	}
+}
+
+func TestWriteAvaPrompt_CreatesFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// First scaffold to create directories
+	if err := Scaffold(dir); err != nil {
+		t.Fatalf("scaffold failed: %v", err)
+	}
+
+	axiomDir := filepath.Join(dir, ".axiom")
+	err := WriteAvaPrompt(axiomDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	promptPath := filepath.Join(axiomDir, "agents", "ava", "prompt.md")
+	if _, err := os.Stat(promptPath); os.IsNotExist(err) {
+		t.Error("prompt.md was not created")
+	}
+}
+
+func TestWriteAvaPrompt_ContentMatches(t *testing.T) {
+	dir := t.TempDir()
+
+	if err := Scaffold(dir); err != nil {
+		t.Fatalf("scaffold failed: %v", err)
+	}
+
+	axiomDir := filepath.Join(dir, ".axiom")
+	if err := WriteAvaPrompt(axiomDir); err != nil {
+		t.Fatalf("write prompt failed: %v", err)
+	}
+
+	promptPath := filepath.Join(axiomDir, "agents", "ava", "prompt.md")
+	content, err := os.ReadFile(promptPath)
+	if err != nil {
+		t.Fatalf("read prompt failed: %v", err)
+	}
+
+	// Check for key content from the template
+	if len(content) == 0 {
+		t.Error("prompt content is empty")
+	}
+
+	if !strings.Contains(string(content), "Analyst Ava") {
+		t.Error("prompt does not contain 'Analyst Ava'")
 	}
 }
