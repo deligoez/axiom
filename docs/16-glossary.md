@@ -37,6 +37,30 @@ AXIOM's unique terminology and concepts. This document defines the language of A
 
 ---
 
+### Completion Drive
+
+**Definition:** The continuous iteration pattern where an agent works toward Task completion through multiple attempts, learning from verification failures.
+
+**Also known as:** Execution Loop (see [07-execution.md](./07-execution.md))
+
+**Why it matters:** Rather than single-shot execution, AXIOM agents iterate: attempt → verify → learn → retry. This mirrors human development where first attempts rarely succeed. The "drive" toward completion persists until verification passes or limits are reached.
+
+**Iteration flow:**
+```
+Attempt → Verification fails → Agent learns from output → Retry
+    ↓
+Attempt → Verification passes → Complete
+```
+
+**Contrast:**
+| Single-shot | Completion Drive |
+|-------------|------------------|
+| One attempt | Multiple iterations |
+| Fail = failed | Fail = feedback |
+| No learning | Progressive refinement |
+
+---
+
 ## Workflow Phases
 
 Three distinct phases that AXIOM progresses through:
