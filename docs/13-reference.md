@@ -185,6 +185,8 @@ Note: `discoveries.md` files are **views** generated from Discovery cases in `ca
 | `AXIOM_MODE` | mode |
 | `AXIOM_MAX_AGENTS` | agents.maxParallel |
 | `AXIOM_MODEL` | agents.defaultModel |
+| `AXIOM_NON_INTERACTIVE` | Non-interactive mode (true/false) |
+| `AXIOM_TIMEOUT` | agents.timeoutMinutes |
 
 ---
 
@@ -268,13 +270,37 @@ AXIOM Server
 axiom
 
 # Options
-axiom --port 8080      # Custom port
-axiom --no-open        # Don't open browser
-axiom --version        # Show version
-axiom --help           # Show help
+axiom --port 8080           # Custom port
+axiom --no-open             # Don't open browser
+axiom --non-interactive     # Non-interactive mode (for CI/scripts)
+axiom --mode autopilot      # Override mode
+axiom --version             # Show version
+axiom --help                # Show help
 ```
 
 The CLI is minimal - just start the server. All interaction happens via Web UI.
+
+### Non-Interactive Mode
+
+For CI pipelines and automated scripts, use `--non-interactive`:
+
+```bash
+axiom --non-interactive --mode autopilot
+```
+
+**Behavior changes in non-interactive mode:**
+
+| Scenario | Interactive | Non-Interactive |
+|----------|-------------|-----------------|
+| Corrupted config | Prompt user for recovery option | Try backup, then use defaults |
+| Planning crash | Prompt for Resume/StartOver/Keep | Auto-decide based on progress |
+| Human escalation | Wait for user input | Defer/skip based on config |
+| Low disk space | Prompt for cleanup options | Auto-cleanup or stop |
+| Plan approval | Wait for user approval | Use `autoApprove` config |
+
+**Environment detection:** AXIOM auto-detects CI environments (`CI=true`, `GITHUB_ACTIONS`, `GITLAB_CI`, etc.) and enables non-interactive mode automatically.
+
+**Config override:** Set `AXIOM_NON_INTERACTIVE=true` environment variable as alternative to CLI flag.
 
 ---
 

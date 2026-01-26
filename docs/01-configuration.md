@@ -348,6 +348,22 @@ Settings can come from multiple sources (higher overrides lower):
 | `AXIOM_MAX_AGENTS` | `agents.maxParallel` |
 | `AXIOM_MODEL` | `agents.defaultModel` |
 | `AXIOM_TIMEOUT` | `agents.timeoutMinutes` |
+| `AXIOM_NON_INTERACTIVE` | Enable non-interactive mode |
+
+### CI Environment Detection
+
+AXIOM automatically detects CI environments and enables non-interactive mode:
+
+| Environment Variable | CI System |
+|---------------------|-----------|
+| `CI=true` | Generic CI |
+| `GITHUB_ACTIONS` | GitHub Actions |
+| `GITLAB_CI` | GitLab CI |
+| `JENKINS_URL` | Jenkins |
+| `CIRCLECI` | CircleCI |
+| `TRAVIS` | Travis CI |
+
+When detected, AXIOM behaves as if `--non-interactive` was passed.
 
 ---
 
