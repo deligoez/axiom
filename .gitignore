@@ -8,6 +8,9 @@ docs/.vitepress/dist/
 node_modules/
 package-lock.json
 
+# Tailwind CSS output (generated)
+web/static/css/output.css
+
 # Go binaries and build artifacts
 /bin/
 /axiom
