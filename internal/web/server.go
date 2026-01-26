@@ -42,6 +42,12 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/", s.handleRoot)
 }
 
+// StaticDir sets the directory for serving static files.
+func (s *Server) StaticDir(dir string) {
+	fs := http.FileServer(http.Dir(dir))
+	s.mux.Handle("/static/", http.StripPrefix("/static/", fs))
+}
+
 // handleRoot handles GET /.
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

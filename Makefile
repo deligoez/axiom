@@ -1,6 +1,6 @@
 # AXIOM Makefile
 
-.PHONY: build test lint fmt clean all
+.PHONY: build test lint fmt clean all run dev css
 
 # Default target
 all: fmt lint test build
@@ -8,6 +8,22 @@ all: fmt lint test build
 # Build the binary
 build:
 	go build -o bin/axiom ./cmd/axiom
+
+# Build CSS
+css:
+	npm run css:build
+
+# Run the server
+run: css build
+	./bin/axiom
+
+# Development mode (Go server + Tailwind watch)
+dev:
+	@echo "Starting AXIOM in development mode..."
+	@npm run css:build
+	@trap 'kill 0' SIGINT; \
+		npm run css:watch & \
+		go run ./cmd/axiom
 
 # Run tests
 test:
