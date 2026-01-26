@@ -4,17 +4,17 @@ Web-based UI built with htmx for real-time server-rendered updates.
 
 ---
 
-## Starting Swarm
+## Starting AXIOM
 
 ```bash
-# Start Swarm server (opens browser automatically)
-swarm
+# Start AXIOM server (opens browser automatically)
+axiom
 
 # Start on custom port
-swarm --port 8080
+axiom --port 8080
 
 # Start without opening browser
-swarm --no-open
+axiom --no-open
 ```
 
 Server starts at `http://localhost:3000` by default.
@@ -23,20 +23,20 @@ Server starts at `http://localhost:3000` by default.
 
 ## Layout Overview
 
-The Web UI uses a responsive two-panel layout: Idea Panel on the left (30%) and Agent Grid on the right (70%), with Header and Footer bars.
+The Web UI uses a responsive two-panel layout: Task Panel on the left (30%) and Agent Grid on the right (70%), with Header and Footer bars.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  SWARM   semi-auto ●   Agents: 2/3   Ideas: 15             │
+│  AXIOM   semi-auto ●   Agents: 2/3   Tasks: 15              │
 ├────────────────────┬────────────────────────────────────────┤
 │                    │                                        │
-│   IDEA PANEL       │           AGENT GRID                   │
+│   TASK PANEL       │           AGENT GRID                   │
 │                    │                                        │
-│  ■ Black Need      │  ┌─────────────┐  ┌─────────────┐     │
-│  ▢ Blue Feature    │  │   ed-001    │  │   ed-002    │     │
-│  ▤ Green Task ●    │  │  idea-123   │  │  idea-456   │     │
-│  ▤ Green Task →    │  │  iter: 3    │  │  iter: 1    │     │
-│  ● Yellow Learn    │  │  [████░░]   │  │  [██░░░░]   │     │
+│  ■ Directive       │  ┌─────────────┐  ┌─────────────┐     │
+│  ▢ Operation       │  │  echo-001   │  │  echo-002   │     │
+│  ▤ Task ●          │  │  task-123   │  │  task-456   │     │
+│  ▤ Task →          │  │  iter: 3    │  │  iter: 1    │     │
+│  ● Discovery       │  │  [████░░]   │  │  [██░░░░]   │     │
 │                    │  └─────────────┘  └─────────────┘     │
 │                    │                                        │
 ├────────────────────┴────────────────────────────────────────┤
@@ -50,28 +50,28 @@ The Web UI uses a responsive two-panel layout: Idea Panel on the left (30%) and 
 
 ### Header Bar
 
-Shows: App title, current mode indicator, active/max agents count, total ideas.
+Shows: App title, current mode indicator, active/max agents count, total cases.
 
 Mode indicator:
 - `semi-auto ○` - Semi-auto mode (user controls assignment)
 - `autopilot ●` - Autopilot mode (fully autonomous)
 
-### Idea Panel (Left - 30%)
+### Task Panel (Left - 30%)
 
-Lists ideas organized by color with status indicators. Click to select, double-click to expand details.
+Lists cases organized by type with status indicators. Click to select, double-click to expand details.
 
-#### Color Symbols
+#### Type Symbols
 
-| Symbol | Color | Name |
+| Symbol | Color | Type |
 |--------|-------|------|
-| `■` | ⬛ Black | Raw need |
-| `□` | ⬜ Gray | Plan draft |
-| `◆` | 🟧 Orange | Research needed |
-| `◇` | 🟪 Purple | Decision pending |
-| `▣` | 🟥 Red | Deferred |
-| `▢` | 🟦 Blue | Feature |
-| `▤` | 🟩 Green | Atomic task |
-| `●` | 🟡 Yellow | Learning |
+| `■` | ⬛ | Directive |
+| `□` | ⬜ | Draft |
+| `◆` | 🟧 | Research |
+| `◇` | 🟪 | Pending |
+| `▣` | 🟥 | Deferred |
+| `▢` | 🟦 | Operation |
+| `▤` | 🟩 | Task |
+| `●` | 🟡 | Discovery |
 
 #### Status Symbols
 
@@ -81,15 +81,15 @@ Lists ideas organized by color with status indicators. Click to select, double-c
 | `●` | active | Running |
 | `✓` | done | Completed |
 | `⊗` | blocked | Blocked |
-| `✗` | failed | Error (Green only) |
-| `⏱` | timeout | Timed out (Green only) |
-| `◐` | review | Awaiting review (Green only) |
+| `✗` | failed | Error (Task only) |
+| `⏱` | timeout | Timed out (Task only) |
+| `◐` | review | Awaiting review (Task only) |
 
 ### Agent Grid (Right - 70%)
 
 Shows active agents in a responsive grid. Each card displays:
 - Agent ID and persona emoji
-- Current idea being worked on
+- Current Task being worked on
 - Iteration count and elapsed time
 - Progress bar
 - Current activity/status
@@ -98,7 +98,7 @@ Cards are clickable to view agent details and logs.
 
 ### Footer Bar
 
-Shows: Idea statistics (done/running/ready/blocked counts), merge queue status, session runtime.
+Shows: Task statistics (done/running/ready/blocked counts), integration queue status, session runtime.
 
 ---
 
@@ -108,10 +108,10 @@ The UI updates in real-time using Server-Sent Events (SSE):
 
 ```
 Browser ←─────── SSE ──────── Server
-         idea-updated
+         task-updated
          agent-progress
          merge-complete
-         learning-added
+         discovery-added
 ```
 
 No page refreshes needed. htmx handles partial DOM updates automatically.
@@ -128,19 +128,19 @@ Global shortcuts work anywhere in the UI:
 | `Esc` | Close modal / Cancel action |
 | `Space` | Toggle autopilot (with confirmation) |
 | `P` | Open planning mode |
-| `L` | Open learnings panel |
-| `M` | Open merge queue |
+| `L` | Open discoveries panel |
+| `M` | Open integration queue |
 | `S` | Open settings |
 
-### Idea Panel Shortcuts
+### Task Panel Shortcuts
 
 | Key | Action |
 |-----|--------|
 | `j` / `↓` | Move selection down |
 | `k` / `↑` | Move selection up |
-| `Enter` | Assign selected idea to agent |
-| `e` | Edit selected idea |
-| `d` | Mark as deferred (Red) |
+| `Enter` | Assign selected Task to agent |
+| `e` | Edit selected case |
+| `d` | Mark as Deferred |
 | `b` | Mark as blocked |
 
 ### Agent Grid Shortcuts
@@ -168,23 +168,23 @@ Allows human intervention on running agent:
 - Rollback to checkpoint
 - Force stop
 
-### Learnings Panel (`L`)
-Browse and manage Yellow ideas (learnings):
+### Discoveries Panel (`L`)
+Browse and manage Discovery cases:
 - Filter by scope (local/global)
 - Search by content
 - Mark as outdated/archived
 
-### Merge Panel (`M`)
-View merge queue status:
+### Integration Panel (`M`)
+View integration queue status:
 - Pending merges
 - Conflict resolution status
 - Force merge options
 
 ### Settings Panel (`S`)
-Configure Swarm options:
+Configure AXIOM options:
 - Mode toggle (semi-auto/autopilot)
 - Max parallel agents
-- Quality commands
+- Verification commands
 - Review settings
 
 ---
@@ -192,7 +192,7 @@ Configure Swarm options:
 ## Confirmation Dialogs
 
 Dangerous actions require confirmation:
-- Quit Swarm
+- Quit AXIOM
 - Stop running agent
 - Rollback to checkpoint
 - Enable autopilot mode
@@ -229,11 +229,11 @@ Duration configurable via `ui.toastDuration` in config.
 ## Themes
 
 Built-in themes:
-- `default` - Dark theme with Swarm colors
+- `default` - Dark theme with AXIOM colors
 - `light` - Light theme for bright environments
 - `high-contrast` - Accessibility-focused
 
-Custom themes can be added via `.swarm/themes/`.
+Custom themes can be added via `.axiom/themes/`.
 
 ---
 
@@ -256,7 +256,7 @@ Click an agent card to expand and see:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  ⚙️ ed-001                              idea-042  ●     │
+│  ⚙️ echo-001                             task-042  ●    │
 ├─────────────────────────────────────────────────────────┤
 │  Iteration: 5 of 50                    Elapsed: 04:32   │
 │  Progress: [████████████░░░░░░░░] 60%                   │
@@ -273,7 +273,7 @@ Click an agent card to expand and see:
 │  SIGNALS                                                │
 │  ─────────────────────────────────────────────────────  │
 │  04:30  PROGRESS:60                                     │
-│  04:15  LEARNING_LOCAL:This API uses JWT auth           │
+│  04:15  DISCOVERY_LOCAL:This API uses JWT auth          │
 │  04:00  PROGRESS:50                                     │
 ├─────────────────────────────────────────────────────────┤
 │  [View Full Logs]  [Intervene]  [Stop]                  │
@@ -304,7 +304,7 @@ Browser ←──── SSE: /api/agents/:id/stream ──── Server
 | `success` | Green | Tests passed, commit made |
 | `warning` | Yellow | Retry, slow operation |
 | `error` | Red | Test failed, command error |
-| `signal` | Blue badge | PROGRESS, LEARNING, etc. |
+| `signal` | Blue badge | PROGRESS, DISCOVERY, etc. |
 
 ### Log Filtering
 
@@ -324,12 +324,12 @@ Click "View Full Logs" to open modal with complete history:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Agent Logs: ed-001 / idea-042               [✕ Close] │
+│  Agent Logs: echo-001 / task-042              [✕ Close] │
 ├─────────────────────────────────────────────────────────┤
 │  Filter: [all ▼]  Search: [________]     [Download]    │
 ├─────────────────────────────────────────────────────────┤
 │  2026-01-25 10:00:00  [START] Iteration 1              │
-│  2026-01-25 10:00:05  > Reading idea context...        │
+│  2026-01-25 10:00:05  > Reading Task context...        │
 │  2026-01-25 10:00:10  > Analyzing acceptance criteria  │
 │  2026-01-25 10:00:30  [SIGNAL] PROGRESS:25             │
 │  2026-01-25 10:00:45  > Writing test: auth.test.ts     │
@@ -345,11 +345,11 @@ Click "View Full Logs" to open modal with complete history:
 
 ### Log Persistence
 
-Logs are stored in `.swarm/agents/{persona}/logs/{ideaId}.jsonl`:
+Logs are stored in `.axiom/agents/{persona}/logs/{taskId}.jsonl`:
 
 ```json
 {"ts":"2026-01-25T10:00:00Z","level":"info","event":"start","iteration":1}
-{"ts":"2026-01-25T10:00:05Z","level":"info","line":"> Reading idea context..."}
+{"ts":"2026-01-25T10:00:05Z","level":"info","line":"> Reading Task context..."}
 {"ts":"2026-01-25T10:00:30Z","level":"signal","type":"PROGRESS","payload":"25"}
 {"ts":"2026-01-25T10:01:05Z","level":"error","line":"✗ Test failed: expected true"}
 ```
@@ -374,9 +374,9 @@ Commits made by agent are highlighted:
 ┌─────────────────────────────────────────────────────────┐
 │  COMMITS                                                │
 │  ─────────────────────────────────────────────────────  │
-│  abc1234  feat: add login validation #idea-042 @ed-001 │
+│  abc1234  feat: add login validation #task-042 @echo-001│
 │           +45 -12  src/auth.ts, src/auth.test.ts       │
-│  def5678  fix: handle empty email #idea-042 @ed-001    │
+│  def5678  fix: handle empty email #task-042 @echo-001  │
 │           +8 -2   src/auth.ts                          │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -400,12 +400,12 @@ The Web UI communicates with these internal endpoints:
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/` | GET | Main UI |
-| `/api/ideas` | GET | List ideas |
-| `/api/ideas/:id` | GET/PUT | Idea details |
+| `/api/cases` | GET | List cases |
+| `/api/cases/:id` | GET/PUT | Case details |
 | `/api/agents` | GET | List agents |
 | `/api/agents/:id` | GET | Agent details |
 | `/api/agents/:id/logs` | GET | Agent logs |
 | `/api/events` | SSE | Real-time updates |
-| `/api/action/assign` | POST | Assign idea to agent |
+| `/api/action/assign` | POST | Assign Task to agent |
 | `/api/action/stop` | POST | Stop agent |
 | `/api/action/rollback` | POST | Rollback to checkpoint |

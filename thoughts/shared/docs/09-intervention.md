@@ -10,7 +10,7 @@ The Intervention Panel provides quick actions for controlling agents and managin
 
 ### Pause
 
-Pauses all agents at safe boundaries:
+Pauses all agents at Checkpoints:
 1. Stop spawning new agents
 2. Let running iterations complete
 3. Hold at iteration boundary
@@ -20,25 +20,25 @@ Pauses all agents at safe boundaries:
 
 Stops selected agent immediately:
 1. Kill agent process
-2. Idea status → pending
-3. Preserve worktree (for debugging)
+2. Task status → pending
+3. Preserve workspace (for debugging)
 4. Free slot
 
 ### Redirect
 
-Changes agent to different idea:
+Changes agent to different Task:
 1. Stop current work
 2. Commit any changes (WIP)
-3. Select new idea
-4. Continue in same worktree or create new
+3. Select new Task
+4. Continue in same workspace or create new
 
 ### Create Checkpoint
 
 Saves current state for rollback:
 1. Tag current commit
 2. Snapshot State machine
-3. Record idea states
-4. Store in `.swarm/checkpoints/`
+3. Record case states
+4. Store in `.axiom/checkpoints/`
 
 ---
 
@@ -48,7 +48,7 @@ Saves current state for rollback:
 
 | Trigger | Config | Description |
 |---------|--------|-------------|
-| Periodic | `checkpoints.periodic: 5` | Every N completed ideas |
+| Periodic | `checkpoints.periodic: 5` | Every N completed Tasks |
 | Before autopilot | `checkpoints.beforeAutopilot: true` | Safety snapshot |
 
 ### Manual Checkpoints
@@ -58,9 +58,9 @@ User can create named checkpoints via Web UI dialog.
 ### Checkpoint Storage
 
 ```
-.swarm/checkpoints/
+.axiom/checkpoints/
 ├── before-autopilot-2026-01-13T10-00-00.json
-├── after-idea-003-2026-01-13T11-00-00.json
+├── after-task-003-2026-01-13T11-00-00.json
 └── before-auth-refactor-2026-01-13T12-00-00.json
 ```
 
@@ -71,14 +71,14 @@ User can create named checkpoints via Web UI dialog.
   "name": "before-auth-refactor",
   "createdAt": "2026-01-13T12:00:00Z",
   "gitCommit": "abc123",
-  "ideaStates": {
-    "idea-001": "done",
-    "idea-002": "active",
-    "idea-003": "pending"
+  "caseStates": {
+    "task-001": "done",
+    "task-002": "active",
+    "task-003": "pending"
   },
   "stateSnapshot": { ... },
   "agentStates": [
-    { "id": "ed-001", "ideaId": "idea-002", "iteration": 5 }
+    { "id": "echo-001", "taskId": "task-002", "iteration": 5 }
   ]
 }
 ```
@@ -102,19 +102,19 @@ Stop all agents
 Git reset to checkpoint commit
      │
      ▼
-Restore idea states
+Restore case states
      │
      ▼
 Restore State machine snapshot
      │
      ▼
-Clean up orphaned worktrees
+Clean up orphaned workspaces
      │
      ▼
 Resume operation
 ```
 
-Rollback confirmation shows what will be lost (in-progress ideas, completed work since checkpoint).
+Rollback confirmation shows what will be lost (in-progress Tasks, completed work since checkpoint).
 
 ---
 
@@ -123,7 +123,7 @@ Rollback confirmation shows what will be lost (in-progress ideas, completed work
 ### State machine Persistence
 
 ```
-.swarm/state/
+.axiom/state/
 ├── snapshot.json     # Primary: full actor state
 └── events.jsonl      # Fallback: event log
 ```
@@ -159,8 +159,8 @@ recover():
 |------|--------|--------------|
 | State machine context | Snapshot | Full |
 | Agent states | Snapshot | Full |
-| Idea states | JSONL | Full |
-| Worktrees | Git | Full |
+| Case states | JSONL | Full |
+| Workspaces | Git | Full |
 | Agent memory | Lost | None |
 
 ---
@@ -172,13 +172,13 @@ User-defined hooks allow custom scripts to run at key lifecycle events.
 ### Hook File Structure
 
 ```
-.swarm/hooks/
-├── pre-start.sh               # Before agent starts idea
-├── post-complete.sh           # After idea completes
+.axiom/hooks/
+├── pre-start.sh               # Before agent starts Task
+├── post-complete.sh           # After Task completes
 ├── pre-merge.sh               # Before branch merge
 ├── post-merge.sh              # After successful merge
 ├── on-conflict.sh             # When merge conflict detected
-├── on-learning.sh             # When learning extracted
+├── on-discovery.sh            # When Discovery extracted
 ├── on-pause.sh                # When session paused
 └── on-error.sh                # When error occurs
 ```
@@ -187,32 +187,32 @@ User-defined hooks allow custom scripts to run at key lifecycle events.
 
 | Hook | Trigger | Variables |
 |------|---------|-----------|
-| `pre-start` | Agent claims idea | IDEA_ID, AGENT, WORKTREE |
-| `post-complete` | Idea done/failed | IDEA_ID, AGENT, STATUS, DURATION |
-| `pre-merge` | Before merge attempt | IDEA_ID, BRANCH, TARGET |
-| `post-merge` | After successful merge | IDEA_ID, COMMIT_HASH |
-| `on-conflict` | Merge conflict detected | IDEA_ID, FILES, LEVEL |
-| `on-learning` | Learning extracted | LEARNING_ID, SCOPE, CONTENT |
-| `on-pause` | Session paused | REASON, RUNNING_IDEAS |
-| `on-error` | Error occurred | ERROR_TYPE, MESSAGE, IDEA_ID |
+| `pre-start` | Agent claims Task | TASK_ID, AGENT, WORKSPACE |
+| `post-complete` | Task done/failed | TASK_ID, AGENT, STATUS, DURATION |
+| `pre-merge` | Before merge attempt | TASK_ID, BRANCH, TARGET |
+| `post-merge` | After successful merge | TASK_ID, COMMIT_HASH |
+| `on-conflict` | Merge conflict detected | TASK_ID, FILES, LEVEL |
+| `on-discovery` | Discovery extracted | DISCOVERY_ID, SCOPE, CONTENT |
+| `on-pause` | Session paused | REASON, RUNNING_TASKS |
+| `on-error` | Error occurred | ERROR_TYPE, MESSAGE, TASK_ID |
 
 ### Hook Interface
 
 ```bash
 #!/bin/bash
-# .swarm/hooks/post-complete.sh
+# .axiom/hooks/post-complete.sh
 
 # Environment variables available:
-# SWARM_IDEA_ID     - Idea ID (e.g., idea-001)
-# SWARM_AGENT       - Agent name (e.g., ed-001)
-# SWARM_STATUS      - Completion status (done, failed)
-# SWARM_DURATION    - Duration in seconds
-# SWARM_BRANCH      - Git branch name
+# AXIOM_TASK_ID     - Task ID (e.g., task-001)
+# AXIOM_AGENT       - Agent name (e.g., echo-001)
+# AXIOM_STATUS      - Completion status (done, failed)
+# AXIOM_DURATION    - Duration in seconds
+# AXIOM_BRANCH      - Git branch name
 
 # Example: Notify on completion
-if [ "$SWARM_STATUS" = "done" ]; then
-  echo "Idea $SWARM_IDEA_ID completed by $SWARM_AGENT"
-  # notify-send "Swarm: $SWARM_IDEA_ID done"
+if [ "$AXIOM_STATUS" = "done" ]; then
+  echo "Task $AXIOM_TASK_ID completed by $AXIOM_AGENT"
+  # notify-send "AXIOM: $AXIOM_TASK_ID done"
 fi
 ```
 
@@ -229,33 +229,33 @@ fi
 
 ### Hook Timeout
 
-Hooks have a default timeout of 30 seconds. If a hook doesn't complete, Swarm logs a warning and continues.
+Hooks have a default timeout of 30 seconds. If a hook doesn't complete, AXIOM logs a warning and continues.
 
 ---
 
-## Idea Recovery
+## Task Recovery
 
-### Orphaned Ideas
+### Orphaned Tasks
 
-Ideas in "active" state with no running agent:
+Tasks in "active" state with no running agent:
 
 ```
-recoverOrphanedIdeas():
-  orphaned = ideaStore.list({ status: 'active' })
+recoverOrphanedTasks():
+  orphaned = caseStore.list({ type: 'task', status: 'active' })
 
-  for idea in orphaned:
-    ideaStore.audit(idea.id, 'crash_recovery')
-    ideaStore.update(idea.id, {
+  for task in orphaned:
+    caseStore.audit(task.id, 'crash_recovery')
+    caseStore.update(task.id, {
       status: 'pending',
       execution: {
-        retryCount: idea.execution.retryCount + 1
+        retryCount: task.execution.retryCount + 1
       }
     })
 ```
 
 ### Retry Context
 
-When retried idea is claimed, audit log injected into prompt with previous attempt details.
+When retried Task is claimed, audit log injected into prompt with previous attempt details.
 
 ### Recovery Context Injection
 
@@ -263,7 +263,7 @@ When retried idea is claimed, audit log injected into prompt with previous attem
 type RecoveryContext struct {
     PreviousAttempts   int          `json:"previousAttempts"`
     AuditLog           []AuditEntry `json:"auditLog"`
-    WorktreeHasChanges bool         `json:"worktreeHasChanges"`
+    WorkspaceHasChanges bool        `json:"workspaceHasChanges"`
     Instruction        string       `json:"instruction"` // "Previous attempt crashed. Review log."
 }
 
@@ -291,10 +291,10 @@ Injected into agent prompt:
 ```markdown
 ## Recovery Context
 
-This idea was previously attempted but crashed.
+This Task was previously attempted but crashed.
 
 **Previous attempts:** 2
-**Worktree has uncommitted changes:** Yes
+**Workspace has uncommitted changes:** Yes
 
 ### Last Attempt Log
 - Started: 2026-01-15T10:00:00Z
@@ -303,7 +303,7 @@ This idea was previously attempted but crashed.
 - Last commit: abc123 "feat: add auth module"
 - Crashed during iteration 5
 
-Please review the worktree state and continue from where the previous attempt left off.
+Please review the workspace state and continue from where the previous attempt left off.
 ```
 
 ---
@@ -312,9 +312,9 @@ Please review the worktree state and continue from where the previous attempt le
 
 `Ctrl+C` triggers graceful shutdown:
 
-1. Stop accepting new ideas
+1. Stop accepting new Tasks
 2. Signal agents to pause
-3. Wait for safe boundaries (5s timeout)
+3. Wait for Checkpoints (5s timeout)
 4. Persist State machine snapshot
 5. Exit cleanly
 

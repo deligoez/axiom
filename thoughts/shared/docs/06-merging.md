@@ -1,19 +1,19 @@
-# Merge Service
+# Integration Service
 
-Background merge service handles branch integration with conflict resolution.
+Background integration service handles branch merging with conflict resolution.
 
 ---
 
-## Merge Queue
+## Integration Queue
 
-Completed ideas are queued for merge. The queue processes entries FIFO with conflict handling. Each entry tracks: idea ID, branch name, and status (pending, merging, conflict, completed).
+Completed Tasks are queued for merge. The queue processes entries FIFO with conflict handling. Each entry tracks: Task ID, branch name, and status (pending, merging, conflict, completed).
 
 ---
 
 ## Merge Flow
 
 ```
-Idea Completed
+Task Completed
      │
      ▼
 Queue for Merge
@@ -21,7 +21,7 @@ Queue for Merge
      ▼
 Attempt git merge
      │
-     ├── No conflict ────► Merge success ───► Cleanup worktree
+     ├── No conflict ────► Merge success ───► Cleanup workspace
      │
      └── Conflict ────► Classify conflict
                              │
@@ -30,7 +30,7 @@ Attempt git merge
             SIMPLE       MEDIUM       COMPLEX
                │            │            │
                ▼            ▼            ▼
-          Auto-resolve  Finn tries   Human required
+          Auto-resolve  Rex tries    Human required
                │            │
                ▼            │
           Retry merge ◄─────┘
@@ -47,7 +47,7 @@ Attempt git merge
 | Level | Description | Resolution |
 |-------|-------------|------------|
 | SIMPLE | Whitespace, formatting, adjacent lines | Auto-resolve |
-| MEDIUM | Semantic conflicts, overlapping changes | Fixer Finn |
+| MEDIUM | Semantic conflicts, overlapping changes | Resolver Rex |
 | COMPLEX | Structural changes, renames, deletions | Human escalation |
 
 ### Classification Criteria
@@ -85,17 +85,17 @@ classifyConflict(conflict):
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `autoMerge` | true | Queue completed ideas automatically |
+| `autoMerge` | true | Queue completed Tasks automatically |
 | `conflictRetries` | 3 | Retries before human escalation |
-| `cleanupOnSuccess` | true | Remove worktree after merge |
+| `cleanupOnSuccess` | true | Remove workspace after merge |
 
 ---
 
-## Fixer Finn
+## Resolver Rex
 
-Finn resolves MEDIUM conflicts via AI-assisted merge.
+Rex resolves MEDIUM conflicts via AI-assisted merge.
 
-### Finn Workflow
+### Rex Workflow
 
 1. Receive conflict context
 2. Analyze both branches
@@ -104,13 +104,13 @@ Finn resolves MEDIUM conflicts via AI-assisted merge.
 5. Apply and test
 6. Report success or escalate
 
-### Finn Prompt Context
+### Rex Prompt Context
 
 ```
 Conflict in: src/auth/login.ts
 Base commit: abc123
 Branch A (main): def456
-Branch B (agent/ed-001/idea-004): ghi789
+Branch B (agent/echo-001/task-004): ghi789
 
 Branch A changes:
   - Added rate limiting to login
@@ -123,19 +123,19 @@ Conflict region:
   const result = await rateLimit(user);
 =======
   const result = await check2FA(user);
->>>>>>> agent/ed-001/idea-004
+>>>>>>> agent/echo-001/task-004
 
-Idea context:
-  idea-004: Add two-factor authentication to login flow
+Task context:
+  task-004: Add two-factor authentication to login flow
 ```
 
 ---
 
-## Merge Queue Events
+## Integration Queue Events
 
 | Event | Description |
 |-------|-------------|
-| `ENQUEUE_MERGE` | Idea completed, add to queue |
+| `ENQUEUE_MERGE` | Task completed, add to queue |
 | `MERGE_STARTED` | Processing queue entry |
 | `MERGE_COMPLETED` | Successfully merged |
 | `MERGE_CONFLICT` | Conflict detected |
@@ -156,8 +156,8 @@ processMergeQueue():
     if result.success:
       queue.dequeue()
       if config.cleanupOnSuccess:
-        removeWorktree(entry.worktree)
-      emit('MERGE_COMPLETED', entry.ideaId)
+        removeWorkspace(entry.workspace)
+      emit('MERGE_COMPLETED', entry.taskId)
 
     else if result.conflictLevel == SIMPLE:
       autoResolve(result.conflicts)
@@ -165,7 +165,7 @@ processMergeQueue():
 
     else if result.conflictLevel == MEDIUM:
       if entry.retryCount < config.conflictRetries:
-        spawnFinn(result.conflicts)
+        spawnRex(result.conflicts)
         entry.retryCount++
       else:
         escalateToHuman(entry)
@@ -176,28 +176,28 @@ processMergeQueue():
 
 ---
 
-## Worktree Lifecycle
+## Workspace Lifecycle
 
 ```
 Agent Start
      │
      ▼
-Create Worktree
-.worktrees/{agentId}-{ideaId}/
+Create Workspace
+.workspaces/{agentId}-{taskId}/
      │
      ▼
 Agent Works
 (commits to branch)
      │
      ▼
-Idea Complete
+Task Complete
      │
      ▼
 Queue for Merge
      │
-     ├── Success ──► Remove Worktree
+     ├── Success ──► Remove Workspace
      │
-     └── Failure ──► Keep Worktree (for debugging)
+     └── Failure ──► Keep Workspace (for debugging)
 ```
 
 ---
@@ -207,8 +207,8 @@ Queue for Merge
 When conflicts can't be auto-resolved:
 
 1. Web UI shows notification with conflict details
-2. Merge queue paused for this entry
-3. Human resolves conflict in worktree
+2. Integration queue paused for this entry
+3. Human resolves conflict in workspace
 4. Approve via Web UI to continue
 5. Queue resumes processing
 
@@ -218,44 +218,44 @@ When conflicts can't be auto-resolved:
 
 | Branch | Pattern | Example |
 |--------|---------|---------|
-| Agent work | `agent/{agentId}/{ideaId}` | `agent/ed-001/idea-004` |
-| Finn merge | `merge/{ideaId}` | `merge/idea-004` |
+| Agent work | `agent/{agentId}/{taskId}` | `agent/echo-001/task-004` |
+| Rex merge | `merge/{taskId}` | `merge/task-004` |
 | Main | `main` or `master` | - |
 
 ---
 
 ## Dependency Wait Behavior
 
-When ideas complete out of order (e.g., idea-002 finishes before idea-001), the merge queue handles gracefully:
+When Tasks complete out of order (e.g., task-002 finishes before task-001), the integration queue handles gracefully:
 
 ```
 Queue Processing:
-  idea-002 completes (depends on idea-001)
+  task-002 completes (depends on task-001)
      │
      ▼
-  Add to merge queue
+  Add to integration queue
      │
      ▼
   Check dependencies
      │
-     ├── idea-001 not merged ──► Hold in queue
+     ├── task-001 not merged ──► Hold in queue
      │
-     └── idea-001 merged ──► Attempt merge
+     └── task-001 merged ──► Attempt merge
 ```
 
-Ideas wait in queue until their dependencies merge successfully.
+Tasks wait in queue until their dependencies merge successfully.
 
 ---
 
 ## Force-Push Recovery
 
-If main branch is force-pushed (e.g., by human), Swarm detects and recovers:
+If main branch is force-pushed (e.g., by human), AXIOM detects and recovers:
 
 ```
 Force-push detected on main
      │
      ▼
-Pause merge queue
+Pause integration queue
      │
      ▼
 Alert user (Web UI notification)
@@ -263,7 +263,7 @@ Alert user (Web UI notification)
      ▼
 User options:
 ├── [r] Rebase queued branches on new main
-├── [c] Cancel affected merges (ideas → pending)
+├── [c] Cancel affected merges (Tasks → pending)
 └── [i] Ignore (continue with current refs)
 ```
 
@@ -271,14 +271,14 @@ Rebase operation runs in background, re-testing each branch before queue resumes
 
 ---
 
-## Merge Statistics
+## Integration Statistics
 
-Carl tracks merge metrics:
+Auditor Ash tracks merge metrics:
 
 | Metric | Description |
 |--------|-------------|
 | Total merges | Successful merge count |
 | Auto-resolved | SIMPLE conflicts resolved |
-| Finn-resolved | MEDIUM conflicts resolved |
+| Rex-resolved | MEDIUM conflicts resolved |
 | Human-resolved | COMPLEX conflicts resolved |
 | Avg merge time | Queue to completion |

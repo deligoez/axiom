@@ -1,6 +1,6 @@
-# Review and Retrospective
+# Review and Debrief
 
-Human review (optional) and automatic retrospective after each Blue completion.
+Human review (optional) and automatic Debrief after each Operation completion.
 
 ---
 
@@ -8,8 +8,8 @@ Human review (optional) and automatic retrospective after each Blue completion.
 
 | System | Trigger | Actor | Purpose |
 |--------|---------|-------|---------|
-| **Review** | Green completion | Human | Quality check, approve/reject |
-| **Retrospective** | Blue completion | Pat | Learn, update plan, check Black |
+| **Review** | Task completion | Human | Quality check, approve/reject |
+| **Debrief** | Operation completion | Axel | Learn, update plan, check Directive |
 
 ---
 
@@ -18,7 +18,7 @@ Human review (optional) and automatic retrospective after each Blue completion.
 Review runs asynchronously without blocking agent work.
 
 ```
-Green idea completes
+Task completes
      │
      ▼
 Queue for review
@@ -53,7 +53,7 @@ Queue for review
 │  └─────────┘        └─────────┘        └─────────┘        └─────────┘  │
 │       │                   │                  │                  │        │
 │  Review each         Collect in          Auto-approve        Skip       │
-│  Green as it         "review",           if quality          review     │
+│  Task as it          "review",           if verification     review     │
 │  completes           user reviews        checks pass         entirely   │
 │                      when ready                                         │
 │                                                                          │
@@ -64,7 +64,7 @@ Queue for review
 |------|----------|----------|
 | `per-task` | Status bar flashes, immediate attention | Security, architecture |
 | `batch` | Collect in review, user reviews when ready | Normal workflow (default) |
-| `auto-approve` | Auto-approve if quality checks pass | Low-risk, well-tested |
+| `auto-approve` | Auto-approve if verification checks pass | Low-risk, well-tested |
 | `skip` | Skip review, go directly to done | Docs, trivial changes |
 
 > **Note:** All modes except `skip` are non-blocking.
@@ -92,11 +92,11 @@ Queue for review
 
 ## Auto-Approve Criteria
 
-Greens auto-approve when ALL conditions met:
+Tasks auto-approve when ALL conditions met:
 - Iterations <= `maxIterations` (default: 3)
-- All quality commands pass
-- No BLOCKED or NEEDS_HUMAN signals
-- Idea tags don't require review
+- All verification commands pass
+- No BLOCKED or PENDING signals
+- Case tags don't require review
 
 ---
 
@@ -104,10 +104,10 @@ Greens auto-approve when ALL conditions met:
 
 | Action | Effect |
 |--------|--------|
-| Approve | Green → merge queue |
-| Request changes | Green → back to agent with feedback |
-| Skip | Green → skip review, don't merge |
-| Defer | Green → review later |
+| Approve | Task → integration queue |
+| Request changes | Task → back to agent with feedback |
+| Skip | Task → skip review, don't merge |
+| Defer | Task → review later |
 
 Feedback from "request changes" is injected into agent's next iteration prompt.
 
@@ -134,7 +134,7 @@ Free-form text describing what needs to change.
 | Option | Description |
 |--------|-------------|
 | Keep current changes | Iterate on top of existing work |
-| Reset to before this idea | Fresh start with feedback |
+| Reset to before this Task | Fresh start with feedback |
 | Reset to checkpoint | Rollback to specific checkpoint |
 
 ### Selection Hint After Redo
@@ -149,20 +149,20 @@ Free-form text describing what needs to change.
 
 ## Feedback Storage
 
-Feedback persisted in `.swarm/feedback/`:
+Feedback persisted in `.axiom/feedback/`:
 
 ```
-.swarm/feedback/
-├── idea-001.json
-├── idea-003.json
+.axiom/feedback/
+├── task-001.json
+├── task-003.json
 └── ...
 ```
 
 ### Feedback Format
 
 ```go
-type IdeaFeedback struct {
-    IdeaID  string          `json:"ideaId"`
+type TaskFeedback struct {
+    TaskID  string          `json:"taskId"`
     History []FeedbackEntry `json:"history"`
 }
 
@@ -180,7 +180,7 @@ type FeedbackEntry struct {
 
 ### Feedback Injection
 
-When agent picks up redo idea:
+When agent picks up redo Task:
 
 ```markdown
 ## Previous Review Feedback (Iteration 3)
@@ -200,7 +200,7 @@ Please address these concerns in this iteration.
 
 ## Per-Label Rules
 
-Override review mode by idea label:
+Override review mode by case label:
 
 ```json
 "labelRules": {
@@ -210,51 +210,51 @@ Override review mode by idea label:
 }
 ```
 
-Idea with `security` tag always requires per-task review.
+Case with `security` tag always requires per-task review.
 
 ---
 
-## Retrospective System
+## Debrief System
 
-Retrospective runs automatically when a Blue idea completes (all its Greens are done and merged).
+Debrief runs automatically when an Operation completes (all its Tasks are done and merged).
 
-### Retrospective Flow
+### Debrief Flow
 
 ```
-Blue completes (all Greens done)
+Operation completes (all Tasks done)
      │
      ▼
-Pat triggered for Retrospective
+Axel triggered for Debrief
      │
      ▼
-Query Yellow ideas from this Blue
+Query Discovery cases from this Operation
      │
      ▼
-Check impact on Black idea
+Check impact on Directive case
      │
-     ├── Black satisfied? ──► Project complete 🎉
+     ├── Directive satisfied? ──► Project complete 🎉
      │
-     ├── Partially satisfied ──► Continue to next Blue
+     ├── Partially satisfied ──► Continue to next Operation
      │
-     └── Not satisfied ──► Add new Gray ideas if needed
+     └── Not satisfied ──► Add new Draft cases if needed
           │
           ▼
 Update dependency tree
      │
      ▼
-Revise remaining Gray ideas based on learnings
+Revise remaining Draft cases based on discoveries
      │
      ▼
-Retrospective complete
+Debrief complete
 ```
 
-### Pat's Retrospective Actions
+### Axel's Debrief Actions
 
-1. **Query Yellow Ideas**: Read all learnings (Yellow ideas) from this Blue's Greens
-2. **Check Black Impact**: Does completed Blue satisfy original need?
-3. **Revise Grays**: Update remaining Gray ideas based on learnings
+1. **Query Discovery Cases**: Read all discoveries from this Operation's Tasks
+2. **Check Directive Impact**: Does completed Operation satisfy original need?
+3. **Revise Drafts**: Update remaining Draft cases based on discoveries
 4. **Update Dependencies**: Adjust dependency tree if needed
-5. **Create New Ideas**: Add new Grays if gaps discovered
+5. **Create New Cases**: Add new Drafts if gaps discovered
 
 ---
 
@@ -266,10 +266,10 @@ Configuration wrapper for batch execution. Sprint planning provides a Web UI pan
 
 | Target | Description |
 |--------|-------------|
-| `count` | Run N Greens then stop |
+| `count` | Run N Tasks then stop |
 | `duration` | Run for N hours then stop |
 | `until_time` | Run until specific time |
-| `no_ready` | Run until no ready Greens |
+| `no_ready` | Run until no ready Tasks |
 
 ---
 
@@ -283,7 +283,7 @@ Configuration wrapper for batch execution. Sprint planning provides a Web UI pan
       "value": 10
     },
     "filters": {
-      "includeBlues": ["idea-015"],
+      "includeOperations": ["case-015"],
       "excludeTags": ["later"]
     },
     "options": {
@@ -299,8 +299,8 @@ Configuration wrapper for batch execution. Sprint planning provides a Web UI pan
 
 | Setting | Config Key | Default | Description |
 |---------|------------|---------|-------------|
-| Max iterations | `completion.maxIterations` | 50 | Max iterations per idea |
-| Idea timeout | `agents.timeoutMinutes` | 30 min | Timeout per idea |
+| Max iterations | `completion.maxIterations` | 50 | Max iterations per Task |
+| Task timeout | `agents.timeoutMinutes` | 30 min | Timeout per Task |
 | Stuck detection | - | 5 iterations | Alert if no git commits |
 | Error threshold | - | 3 consecutive | Pause if 3 errors in a row |
 
@@ -308,7 +308,7 @@ Configuration wrapper for batch execution. Sprint planning provides a Web UI pan
 
 ## Sprint Statistics
 
-Sprint data stored in `.swarm/sprints.jsonl`:
+Sprint data stored in `.axiom/sprints.jsonl`:
 
 ```go
 type SprintStats struct {
@@ -317,31 +317,31 @@ type SprintStats struct {
     EndedAt   *int64       `json:"endedAt"` // nil if still running
     Target    SprintTarget `json:"target"`
 
-    // Idea counts
-    TotalIdeas     int `json:"totalIdeas"`
-    CompletedIdeas int `json:"completedIdeas"`
-    FailedIdeas    int `json:"failedIdeas"`
-    ReviewingIdeas int `json:"reviewingIdeas"`
+    // Task counts
+    TotalTasks     int `json:"totalTasks"`
+    CompletedTasks int `json:"completedTasks"`
+    FailedTasks    int `json:"failedTasks"`
+    ReviewingTasks int `json:"reviewingTasks"`
 
-    // Per-idea stats (for analytics)
-    IdeaStats []IdeaStat `json:"ideaStats"`
+    // Per-task stats (for analytics)
+    TaskStats []TaskStat `json:"taskStats"`
 
     // Settings used
     Settings SprintSettings `json:"settings"`
 }
 
-type IdeaStat struct {
-    IdeaID         string `json:"ideaId"`
+type TaskStat struct {
+    TaskID         string `json:"taskId"`
     StartedAt      int64  `json:"startedAt"`
     CompletedAt    int64  `json:"completedAt"`
     Iterations     int    `json:"iterations"`
-    QualityPassed  bool   `json:"qualityPassed"`
+    VerificationPassed bool `json:"verificationPassed"`
     ReviewDecision string `json:"reviewDecision,omitempty"` // "approved", "redo", "rejected"
 }
 
 type SprintSettings struct {
     MaxIterations int  `json:"maxIterations"`
-    IdeaTimeout   int  `json:"ideaTimeout"`
+    TaskTimeout   int  `json:"taskTimeout"`
     PauseOnStuck  bool `json:"pauseOnStuck"`
     PauseOnErrors bool `json:"pauseOnErrors"`
 }
@@ -363,8 +363,8 @@ sprint:
 │
 ├── running
 │   entry: notifySprintStarted
-│   on: IDEA_COMPLETED → updateSprintStats
-│       IDEA_FAILED → updateSprintStats
+│   on: TASK_COMPLETED → updateSprintStats
+│       TASK_FAILED → updateSprintStats
 │       TARGET_REACHED → completing
 │       PAUSE_SPRINT → paused
 │       CANCEL_SPRINT → idle (saveSprintStats)
@@ -399,7 +399,7 @@ Run until target met
      │
      ├── Error (if pauseOnError) ──► Pause
      │
-     └── No ready Greens ──► Stop
+     └── No ready Tasks ──► Stop
           │
           ▼
 Batch review (if enabled)
@@ -435,16 +435,16 @@ Non-blocking: agents continue while review queue fills.
 
 ---
 
-## State machine Retrospective Events
+## State machine Debrief Events
 
-Retrospective triggered via State machine events:
+Debrief triggered via State machine events:
 
 ```
 on:
-  BLUE_COMPLETED:
-    actions: queueRetrospective
-  RETROSPECTIVE_START:
-    invoke: patRetrospective
-  RETROSPECTIVE_DONE:
-    actions: [updateGrays, checkBlackSatisfaction]
+  OPERATION_COMPLETED:
+    actions: queueDebrief
+  DEBRIEF_START:
+    invoke: axelDebrief
+  DEBRIEF_DONE:
+    actions: [updateDrafts, checkDirectiveSatisfaction]
 ```

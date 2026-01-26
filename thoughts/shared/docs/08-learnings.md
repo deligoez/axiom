@@ -1,31 +1,31 @@
 # Discovery System
 
-Yellow ideas capture learnings during implementation. Discovery Log is a query view on global Yellow ideas.
+Discovery cases capture learnings during implementation. Discovery Log is a query view on global Discovery cases.
 
 ---
 
-## Yellow Ideas: Learnings as First-Class Citizens
+## Discovery Cases: Learnings as First-Class Citizens
 
-Learnings are stored as **Yellow ideas** in the IdeaStore, not separate files. This provides:
-- Unified data model with other ideas
-- Lineage tracking (parent Green)
+Learnings are stored as **Discovery cases** in the CaseStore, not separate files. This provides:
+- Unified data model with other cases
+- Lineage tracking (parent Task)
 - History and metadata
 - Single source of truth
 
-| Type | Signal | Yellow Scope | Parent | Injection |
-|------|--------|--------------|--------|-----------|
-| Local | `LEARNING_LOCAL` | `local` | Current Green | Same agent only |
-| Global | `LEARNING_GLOBAL` | `global` | Current Green | All agents |
+| Type | Signal | Discovery Scope | Parent | Injection |
+|------|--------|-----------------|--------|-----------|
+| Local | `DISCOVERY_LOCAL` | `local` | Current Task | Same agent only |
+| Global | `DISCOVERY_GLOBAL` | `global` | Current Task | All agents |
 
 ---
 
-## Learning Signals
+## Discovery Signals
 
-Agents emit learning signals during work:
+Agents emit discovery signals during work:
 
 ```
-<swarm>LEARNING_LOCAL:This API requires authentication header</swarm>
-<swarm>LEARNING_GLOBAL:All test files should use .test.ts extension</swarm>
+<axiom>DISCOVERY_LOCAL:This API requires authentication header</axiom>
+<axiom>DISCOVERY_GLOBAL:All test files should use .test.ts extension</axiom>
 ```
 
 ### When to Emit
@@ -41,16 +41,16 @@ Agents emit learning signals during work:
 
 ## Discovery Log as Query View
 
-The Discovery Log is **not a separate file** but a query on Yellow ideas:
+The Discovery Log is **not a separate file** but a query on Discovery cases:
 
 ```go
-func (s *IdeaStore) GetDiscoveryLog() []Yellow {
-    yellows := s.ByColor("yellow")
+func (s *CaseStore) GetDiscoveryLog() []Discovery {
+    discoveries := s.ByType("discovery")
 
-    var globals []Yellow
-    for _, y := range yellows {
-        if y.Metadata.Scope == "global" {
-            globals = append(globals, y)
+    var globals []Discovery
+    for _, d := range discoveries {
+        if d.Metadata.Scope == "global" {
+            globals = append(globals, d)
         }
     }
 
@@ -62,13 +62,13 @@ func (s *IdeaStore) GetDiscoveryLog() []Yellow {
 }
 ```
 
-This ensures IdeaStore remains the single source of truth.
+This ensures CaseStore remains the single source of truth.
 
-### Yellow Idea Structure
+### Discovery Case Structure
 
-See [04-ideas.md](./04-ideas.md#color-specific-metadata) for full `YellowMetadata` structure.
+See [04-ideas.md](./04-ideas.md#type-specific-metadata) for full `DiscoveryMetadata` structure.
 
-Key fields: `scope` (local/global), `sourceGreenId`, `sourceAgentId`, `impact`, `validated`, `appliedTo`, `supersededBy`.
+Key fields: `scope` (local/global), `sourceTaskId`, `sourceAgentId`, `impact`, `validated`, `appliedTo`, `supersededBy`.
 
 ### Impact Classification
 
@@ -81,83 +81,83 @@ Key fields: `scope` (local/global), `sourceGreenId`, `sourceAgentId`, `impact`, 
 
 ---
 
-## Logger Lou
+## Curator Cleo
 
-Lou creates Yellow ideas from learning signals. Lou runs as a queue-managed goroutine to ensure sequential processing and prevent duplicate races.
+Cleo creates Discovery cases from discovery signals. Cleo runs as a queue-managed goroutine to ensure sequential processing and prevent duplicate races.
 
-### Lou Queue Mechanism
+### Cleo Queue Mechanism
 
 ```go
-type LouQueue struct {
-    queue      chan LearningSignal
-    ideaStore  *IdeaStore
+type CleoQueue struct {
+    queue      chan DiscoverySignal
+    caseStore  *CaseStore
     seenHashes map[string]bool
     mu         sync.Mutex
 }
 
-func NewLouQueue(store *IdeaStore) *LouQueue {
-    lq := &LouQueue{
-        queue:      make(chan LearningSignal, 100),
-        ideaStore:  store,
+func NewCleoQueue(store *CaseStore) *CleoQueue {
+    cq := &CleoQueue{
+        queue:      make(chan DiscoverySignal, 100),
+        caseStore:  store,
         seenHashes: make(map[string]bool),
     }
-    go lq.processLoop()
-    return lq
+    go cq.processLoop()
+    return cq
 }
 
-func (lq *LouQueue) Enqueue(signal LearningSignal) {
-    lq.queue <- signal
+func (cq *CleoQueue) Enqueue(signal DiscoverySignal) {
+    cq.queue <- signal
 }
 
-func (lq *LouQueue) processLoop() {
-    for signal := range lq.queue {
-        if err := lq.processSignal(signal); err != nil {
-            log.Error("Lou processing error", "error", err)
+func (cq *CleoQueue) processLoop() {
+    for signal := range cq.queue {
+        if err := cq.processSignal(signal); err != nil {
+            log.Error("Cleo processing error", "error", err)
         }
     }
 }
 
-func (lq *LouQueue) processSignal(signal LearningSignal) error {
+func (cq *CleoQueue) processSignal(signal DiscoverySignal) error {
     // Deduplication check
     hash := hashContent(signal.Content)
-    lq.mu.Lock()
-    if lq.seenHashes[hash] {
-        lq.mu.Unlock()
+    cq.mu.Lock()
+    if cq.seenHashes[hash] {
+        cq.mu.Unlock()
         return nil // Skip duplicate
     }
-    lq.seenHashes[hash] = true
-    lq.mu.Unlock()
+    cq.seenHashes[hash] = true
+    cq.mu.Unlock()
 
-    // Create Yellow idea
-    return lq.ideaStore.CreateYellow(signal)
+    // Create Discovery case
+    return cq.caseStore.CreateDiscovery(signal)
 }
 ```
 
 Sequential processing prevents duplicate detection races and ensures consistent ordering.
 
-### Lou Workflow
+### Cleo Workflow
 
 ```
-LEARNING signal received
+DISCOVERY signal received
      │
      ▼
-Extract content + context (greenId, agentId)
+Extract content + context (taskId, agentId)
      │
      ▼
 Deduplicate (content hash)
      │
      ├── Duplicate ──► Skip
      │
-     └── New ──► Create Yellow Idea
+     └── New ──► Create Discovery Case
                    │
                    ▼
-          ideaStore.create({
-            color: 'yellow',
+          caseStore.create({
+            type: 'discovery',
             content: signal.content,
-            parentId: greenId,
+            parentId: taskId,
             metadata: {
-              scope: signal.type === 'LEARNING_LOCAL' ? 'local' : 'global',
-              sourceGreenId: greenId,
+              scope: signal.type === 'DISCOVERY_LOCAL' ? 'local' : 'global',
+              sourceTaskId: taskId,
               sourceAgentId: agentId,
               impact: classifyImpact(content),
               validated: false,
@@ -167,10 +167,10 @@ Deduplicate (content hash)
           })
                    │
                    ▼
-          Emit 'idea:yellow_created' event
+          Emit 'case:discovery_created' event
                    │
                    ▼
-          Regenerate learnings.md views
+          Regenerate discoveries.md views
                    │
                    ▼
           Notify active agents (prompt injection)
@@ -180,7 +180,7 @@ Deduplicate (content hash)
 
 ## Deduplication
 
-Learnings are deduplicated using content hash:
+Discoveries are deduplicated using content hash:
 
 ```
 normalize(content):
@@ -189,8 +189,8 @@ normalize(content):
 hash(content):
   return sha256(normalize(content))
 
-shouldStore(learning):
-  h = hash(learning.content)
+shouldStore(discovery):
+  h = hash(discovery.content)
   if h in seenHashes:
     return false
   seenHashes.add(h)
@@ -201,71 +201,71 @@ shouldStore(learning):
 
 ## Storage Format
 
-### Primary Storage: IdeaStore (ideas.jsonl)
+### Primary Storage: CaseStore (cases.jsonl)
 
-Yellow ideas are stored alongside other ideas in `.swarm/ideas.jsonl`:
+Discovery cases are stored alongside other cases in `.axiom/cases.jsonl`:
 
 ```json
-{"id":"idea-030","color":"yellow","status":"active","content":"rehype requires explicit config for GFM","parentId":"idea-020","metadata":{"scope":"global","sourceGreenId":"idea-020","sourceAgentId":"ed-001","impact":"high","validated":true,"appliedTo":["idea-021","idea-022"],"supersededBy":null}}
-{"id":"idea-031","color":"yellow","status":"archived","content":"Use unified() not rehype()","parentId":"idea-020","metadata":{"scope":"local","sourceGreenId":"idea-020","sourceAgentId":"ed-001","impact":"medium","validated":false,"appliedTo":[],"supersededBy":null}}
+{"id":"disc-030","type":"discovery","status":"active","content":"rehype requires explicit config for GFM","parentId":"task-020","metadata":{"scope":"global","sourceTaskId":"task-020","sourceAgentId":"echo-001","impact":"high","validated":true,"appliedTo":["task-021","task-022"],"supersededBy":null}}
+{"id":"disc-031","type":"discovery","status":"archived","content":"Use unified() not rehype()","parentId":"task-020","metadata":{"scope":"local","sourceTaskId":"task-020","sourceAgentId":"echo-001","impact":"medium","validated":false,"appliedTo":[],"supersededBy":null}}
 ```
 
-### View Files (Generated from IdeaStore)
+### View Files (Generated from CaseStore)
 
 These files are **regenerated views**, not primary storage:
 
-**Project Learnings (learnings.md)** - View of global Yellow ideas:
+**Project Discoveries (discoveries.md)** - View of global Discovery cases:
 
 ```markdown
-# Project Learnings
+# Project Discoveries
 
 ## Architecture
-- [idea-030] rehype requires explicit config for GFM
-- [idea-035] All API routes defined in `src/routes/`
+- [disc-030] rehype requires explicit config for GFM
+- [disc-035] All API routes defined in `src/routes/`
 
 ## Testing
-- [idea-040] Tests use Vitest, not Jest
+- [disc-040] Tests use Vitest, not Jest
 ```
 
-**Agent Learnings (agents/{persona}/learnings.md)** - View of local Yellow ideas:
+**Agent Discoveries (agents/{persona}/discoveries.md)** - View of local Discovery cases:
 
 ```markdown
-# Ed Learnings
+# Echo Discoveries
 
 ## Patterns Observed
-- [idea-031] Use unified() not rehype()
-- [idea-032] This hook requires cleanup function
+- [disc-031] Use unified() not rehype()
+- [disc-032] This hook requires cleanup function
 ```
 
-Each entry includes Yellow idea ID for traceability.
+Each entry includes Discovery case ID for traceability.
 
 ---
 
-## Learning Injection
+## Discovery Injection
 
-Yellow ideas are injected into agent prompts based on scope and status:
+Discovery cases are injected into agent prompts based on scope and status:
 
 ### Injection Query
 
 ```go
-func (s *IdeaStore) GetInjectableLearnings(agentID string) []Yellow {
-    yellows := s.ByColor("yellow")
+func (s *CaseStore) GetInjectableDiscoveries(agentID string) []Discovery {
+    discoveries := s.ByType("discovery")
 
-    var result []Yellow
+    var result []Discovery
 
-    // Global learnings (available to all agents)
-    for _, y := range yellows {
-        if y.Metadata.Scope == "global" && y.Status == "active" {
-            result = append(result, y)
+    // Global discoveries (available to all agents)
+    for _, d := range discoveries {
+        if d.Metadata.Scope == "global" && d.Status == "active" {
+            result = append(result, d)
         }
     }
 
-    // Local learnings (specific to this agent)
-    for _, y := range yellows {
-        if y.Metadata.Scope == "local" &&
-           y.Metadata.SourceAgentID == agentID &&
-           y.Status == "active" {
-            result = append(result, y)
+    // Local discoveries (specific to this agent)
+    for _, d := range discoveries {
+        if d.Metadata.Scope == "local" &&
+           d.Metadata.SourceAgentID == agentID &&
+           d.Status == "active" {
+            result = append(result, d)
         }
     }
 
@@ -276,57 +276,57 @@ func (s *IdeaStore) GetInjectableLearnings(agentID string) []Yellow {
 ### Prompt Template
 
 ```
-# Project Learnings (Global)
+# Project Discoveries (Global)
 
-{formatted active Yellow ideas with scope: global}
+{formatted active Discovery cases with scope: global}
 
-# Your Learnings (Local)
+# Your Discoveries (Local)
 
-{formatted active Yellow ideas with scope: local for this agent}
+{formatted active Discovery cases with scope: local for this agent}
 ```
 
-### Archived Yellow Ideas
+### Archived Discovery Cases
 
-When a Green completes (status: done), its child Yellow ideas transition to `archived`:
-- They are preserved in IdeaStore for history
+When a Task completes (status: done), its child Discovery cases transition to `archived`:
+- They are preserved in CaseStore for history
 - They are NOT injected into prompts
-- They can be queried for retrospective analysis
+- They can be queried for Debrief analysis
 
 ---
 
-## Learning Review
+## Discovery Review
 
-The Learning Review panel shows recent Yellow ideas with source info (agent, parent Green, timestamp). Users can:
-- Edit Yellow idea content
-- Delete Yellow idea (soft-delete)
+The Discovery Review panel shows recent Discovery cases with source info (agent, parent Task, timestamp). Users can:
+- Edit Discovery case content
+- Delete Discovery case (soft-delete)
 - Promote local → global (change scope in metadata)
 - Mark as validated
 - Mark as outdated
 
 ---
 
-## Learning Promotion
+## Discovery Promotion
 
-Local Yellow ideas can be promoted to global by updating metadata:
+Local Discovery cases can be promoted to global by updating metadata:
 
 ```
-promoteYellow(yellowId):
-  ideaStore.update(yellowId, {
+promoteDiscovery(discoveryId):
+  caseStore.update(discoveryId, {
     metadata: {
       ...existing,
       scope: 'global'  // Change from 'local' to 'global'
     }
   })
-  emit 'idea:updated' event
+  emit 'case:updated' event
   regenerate view files
   notify active agents
 ```
 
-The Yellow idea stays in IdeaStore with same ID - only scope changes.
+The Discovery case stays in CaseStore with same ID - only scope changes.
 
 ---
 
-## Learning Categories
+## Discovery Categories
 
 | Category | Examples |
 |----------|----------|
@@ -339,75 +339,75 @@ The Yellow idea stays in IdeaStore with same ID - only scope changes.
 
 ---
 
-## Outdated Yellow Detection
+## Outdated Discovery Detection
 
-Lou detects when Yellow ideas become outdated:
+Cleo detects when Discovery cases become outdated:
 
 ```
-checkOutdated(yellow, recentCommits):
-  // Check if files mentioned in Yellow content were modified
-  affectedFiles = extractFilePaths(yellow.content)
+checkOutdated(discovery, recentCommits):
+  // Check if files mentioned in Discovery content were modified
+  affectedFiles = extractFilePaths(discovery.content)
 
   for commit in recentCommits:
     if commit.files.intersects(affectedFiles):
-      ideaStore.update(yellow.id, { status: 'outdated' })
-      emit 'idea:yellow_outdated'
+      caseStore.update(discovery.id, { status: 'outdated' })
+      emit 'case:discovery_outdated'
       return {
         outdated: true,
         reason: 'affected files modified',
         commit: commit.hash
       }
 
-  // Check if contradicting Yellow exists
-  newer = findNewerYellow(yellow)
-  if newer && contradicts(yellow, newer):
-    ideaStore.update(yellow.id, {
+  // Check if contradicting Discovery exists
+  newer = findNewerDiscovery(discovery)
+  if newer && contradicts(discovery, newer):
+    caseStore.update(discovery.id, {
       status: 'outdated',
-      metadata: { ...yellow.metadata, supersededBy: newer.id }
+      metadata: { ...discovery.metadata, supersededBy: newer.id }
     })
     return {
       outdated: true,
-      reason: 'superseded by newer learning',
+      reason: 'superseded by newer discovery',
       supersededBy: newer.id
     }
 
   return { outdated: false }
 ```
 
-Outdated Yellow ideas are flagged for review, not auto-deleted. They remain in IdeaStore with `status: outdated`.
+Outdated Discovery cases are flagged for review, not auto-deleted. They remain in CaseStore with `status: outdated`.
 
 ---
 
 ## Cross-Agent Propagation
 
-When global Yellow idea is created:
-1. Lou creates Yellow in IdeaStore
-2. Emits `idea:yellow_created` event
-3. Regenerates learnings.md view
+When global Discovery case is created:
+1. Cleo creates Discovery in CaseStore
+2. Emits `case:discovery_created` event
+3. Regenerates discoveries.md view
 4. Active agents notified (via state machine event)
-5. Next prompt injection includes new Yellow
+5. Next prompt injection includes new Discovery
 6. No agent restart required
 
 ---
 
-## Yellow Lifecycle Timing
+## Discovery Lifecycle Timing
 
-Detailed timeline of Yellow idea state changes:
+Detailed timeline of Discovery case state changes:
 
 ### Creation
 
 ```
-Agent emits LEARNING signal
+Agent emits DISCOVERY signal
      │
      ▼ (immediate)
-Lou receives signal via event queue
+Cleo receives signal via event queue
      │
      ▼ (< 100ms)
 Deduplication check (content hash)
      │
      ├── Duplicate → Skip, log
      │
-     └── New → Create Yellow idea
+     └── New → Create Discovery case
                     │
                     ▼ (immediate)
                status: 'active'
@@ -418,44 +418,44 @@ Deduplication check (content hash)
 
 | Trigger | Timing | Action |
 |---------|--------|--------|
-| New prompt assembly | On each iteration | Yellow injected if `status: active` |
-| File modification | On commit | Check if Yellow mentions modified file |
-| Newer contradicting Yellow | On Yellow creation | Mark as superseded |
+| New prompt assembly | On each iteration | Discovery injected if `status: active` |
+| File modification | On commit | Check if Discovery mentions modified file |
+| Newer contradicting Discovery | On Discovery creation | Mark as superseded |
 | User marks outdated | Manual | `status: outdated` |
 
 ### Archival
 
 ```
-Parent Green completes (status: done)
+Parent Task completes (status: done)
      │
      ▼ (immediate, same transaction)
-All child Yellow ideas archived
+All child Discovery cases archived
      │
      ▼
 status: 'active' → 'archived'
      │
-     ├── Still in IdeaStore (history)
+     ├── Still in CaseStore (history)
      ├── NOT injected into prompts
-     └── Visible in Learning Review panel
+     └── Visible in Discovery Review panel
 ```
 
 **Archival Logic:**
 
 ```go
-func onGreenComplete(greenID string) {
-    // Find all Yellow ideas with this Green as parent
-    yellows := ideaStore.Query(IdeaQuery{
-        Color:    "yellow",
-        ParentID: greenID,
+func onTaskComplete(taskID string) {
+    // Find all Discovery cases with this Task as parent
+    discoveries := caseStore.Query(CaseQuery{
+        Type:     "discovery",
+        ParentID: taskID,
         Status:   "active",
     })
 
-    for _, yellow := range yellows {
-        ideaStore.Update(yellow.ID, IdeaUpdate{
+    for _, discovery := range discoveries {
+        caseStore.Update(discovery.ID, CaseUpdate{
             Status: "archived",
             Metadata: map[string]any{
                 "archivedAt":     time.Now(),
-                "archivedReason": "parent_green_completed",
+                "archivedReason": "parent_task_completed",
             },
         })
     }
@@ -472,7 +472,7 @@ func onGreenComplete(greenID string) {
      │  active  │───── outdated ──────────►│ outdated│
      └────┬─────┘                          └─────────┘
           │                                     │
-          │ parent Green done                   │ user confirms
+          │ parent Task done                    │ user confirms
           ▼                                     ▼
      ┌──────────┐                          ┌─────────┐
      │ archived │◄─────────────────────────│ deleted │
@@ -483,28 +483,28 @@ func onGreenComplete(greenID string) {
 
 | Event | When | Duration |
 |-------|------|----------|
-| Signal → Yellow created | Immediate | < 100ms |
-| Yellow → Injected | Next iteration | 0-30s (depends on iteration timing) |
-| Green done → Yellow archived | Same transaction | Immediate |
+| Signal → Discovery created | Immediate | < 100ms |
+| Discovery → Injected | Next iteration | 0-30s (depends on iteration timing) |
+| Task done → Discovery archived | Same transaction | Immediate |
 | File changed → Outdated check | On commit detection | < 1s |
 | User action → Status change | Manual | Immediate |
 
 ### Resurrection
 
-Archived Yellow ideas can be resurrected:
+Archived Discovery cases can be resurrected:
 
 ```go
-func resurrectYellow(yellowID string) error {
-    yellow, err := ideaStore.Get(yellowID)
+func resurrectDiscovery(discoveryID string) error {
+    discovery, err := caseStore.Get(discoveryID)
     if err != nil {
         return err
     }
 
-    if yellow.Status != "archived" {
-        return errors.New("can only resurrect archived yellows")
+    if discovery.Status != "archived" {
+        return errors.New("can only resurrect archived discoveries")
     }
 
-    return ideaStore.Update(yellowID, IdeaUpdate{
+    return caseStore.Update(discoveryID, CaseUpdate{
         Status: "active",
         Metadata: map[string]any{
             "resurrectedAt": time.Now(),
@@ -514,20 +514,20 @@ func resurrectYellow(yellowID string) error {
 }
 ```
 
-Use case: Learning discovered in one Green is still relevant for future work.
+Use case: Discovery from one Task is still relevant for future work.
 
 ---
 
-## Yellow Idea Metrics
+## Discovery Metrics
 
 | Metric | Description |
 |--------|-------------|
-| Total Yellow ideas | `ideaStore.byColor('yellow').length` |
+| Total Discovery cases | `caseStore.byType('discovery').length` |
 | Active vs archived | Distribution by status |
 | Local vs global | Distribution by scope |
 | Duplicates prevented | Dedup hash collision count |
-| Source Greens | Which Greens produced Yellow children |
-| Injection rate | Yellow ideas injected per prompt |
+| Source Tasks | Which Tasks produced Discovery children |
+| Injection rate | Discovery cases injected per prompt |
 | Impact distribution | Low/medium/high/critical counts |
 | Validation rate | `validated: true` percentage |
 | Outdated rate | `status: outdated` percentage |

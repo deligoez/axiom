@@ -1,29 +1,29 @@
 # Agent Personas
 
-Swarm uses a multi-persona architecture with eight named agents.
+AXIOM uses a multi-persona architecture with eight named agents.
 
 ---
 
 ## Persona System
 
-All 8 personas are agents with consistent file structure. Each gets instance numbers (`ace-001`, `ed-047`) that persist across Swarm restarts.
+All 8 personas are agents with consistent file structure. Each gets instance numbers (`ava-001`, `echo-047`) that persist across AXIOM restarts.
 
 | Persona | Emoji | Role | Color | Concurrency |
 |---------|-------|------|-------|-------------|
-| Analyzer Ace | 🔍 | Analyzer | Indigo | 1 at a time |
-| Planner Pat | 📊 | Planner | Purple | 1 at a time |
-| Engineer Ed | ⚙️ | Worker | Blue | N parallel |
-| Fixer Finn | 🔧 | Resolver | Orange | 1 at a time |
-| Logger Lou | 💡 | Learning Extractor | Teal | 1 at a time |
-| Director Dan | 😎 | Orchestrator | Gold | 1 at a time |
-| Watcher Will | 👁️ | Health Monitor | Amber | 1 at a time |
-| Counter Carl | 📈 | Statistician | Slate | 1 at a time |
+| Analyst Ava | 🔍 | Project analysis | Indigo | 1 at a time |
+| Architect Axel | 📊 | Planning + Debrief | Purple | 1 at a time |
+| Executor Echo | ⚙️ | Implementation | Blue | N parallel |
+| Resolver Rex | 🔧 | Merge conflict resolution | Orange | 1 at a time |
+| Curator Cleo | 💡 | Discovery creation | Teal | 1 at a time |
+| Director Dex | 😎 | Orchestration | Gold | 1 at a time |
+| Monitor Max | 👁️ | Health monitoring | Amber | 1 at a time |
+| Auditor Ash | 📈 | Metrics and ID assignment | Slate | 1 at a time |
 
 ---
 
 ## Agent Roles
 
-### Analyzer Ace
+### Analyst Ava
 
 Examines project structure during init. Detects:
 - Project type (Node, Python, Go)
@@ -31,54 +31,54 @@ Examines project structure during init. Detects:
 - Linter/formatter
 - Build system
 
-### Planner Pat
+### Architect Axel
 
-Runs the full Swarm Planning spiral. Handles:
-- Black idea creation (JTBD format)
-- Gray idea refinement
-- Orange research (simple cases)
-- Purple decision facilitation
-- Blue vertical slice creation
-- Green idea breakdown
-- Retrospective after Blue completion
+Runs the full AXIOM Planning dialogue. Handles:
+- Directive case creation (JTBD format)
+- Draft case refinement
+- Research cases (simple investigations)
+- Pending decision facilitation
+- Operation vertical slice creation
+- Task breakdown
+- Debrief after Operation completion
 
-Pat is the central planning persona, managing the entire idea lifecycle from Black to Green.
+Axel is the central planning persona, managing the entire case lifecycle from Directive to Task.
 
-### Engineer Ed
+### Executor Echo
 
-Implements Green ideas in worktrees. Multiple Ed instances can run in parallel, each with unique ID (`ed-001`, `ed-002`).
+Implements Tasks in workspaces. Multiple Echo instances can run in parallel, each with unique ID (`echo-001`, `echo-002`).
 
-### Fixer Finn
+### Resolver Rex
 
-Resolves merge conflicts. Called when MergeService encounters conflicts that can't be auto-resolved.
+Resolves merge conflicts. Called when Integration Queue encounters conflicts that can't be auto-resolved.
 
-### Logger Lou
+### Curator Cleo
 
-Creates Yellow ideas from learning signals and manages knowledge lifecycle. Processes:
-- `LEARNING_LOCAL` signals → Yellow idea (scope: local, parent: current Green)
-- `LEARNING_GLOBAL` signals → Yellow idea (scope: global, parent: current Green)
+Creates Discovery cases from discovery signals and manages knowledge lifecycle. Processes:
+- `DISCOVERY_LOCAL` signals → Discovery case (scope: local, parent: current Task)
+- `DISCOVERY_GLOBAL` signals → Discovery case (scope: global, parent: current Task)
 - Commit analysis for outdated detection
 - Error patterns
-- Impact classification for Yellow ideas
+- Impact classification for Discovery cases
 
-Lou is the bridge between ephemeral signals and persistent Yellow ideas in the IdeaStore.
+Cleo is the bridge between ephemeral signals and persistent Discovery cases in the CaseStore.
 
-### Director Dan
+### Director Dex
 
 Orchestrates all agents. Manages:
 - Mode switching
 - Agent spawning
 - Overall coordination
 
-### Watcher Will
+### Monitor Max
 
 Health monitoring on 1-minute timer. Checks:
 - Agent responsiveness
 - Stalled iterations
-- Worktree disk usage
+- Workspace disk usage
 - System resources
 
-### Counter Carl
+### Auditor Ash
 
 Metrics collection and ID assignment. Owns:
 - Agent spawn counters
@@ -90,14 +90,14 @@ Metrics collection and ID assignment. Owns:
 ## Agent File Structure
 
 ```
-.swarm/agents/{persona}/
+.axiom/agents/{persona}/
 ├── prompt.md           # System prompt
 ├── rules.md            # Persona-specific rules
 ├── skills/             # Skill files (*.md)
-├── learnings.md        # Per-agent learnings
+├── discoveries.md      # Per-agent Discovery cases (view)
 ├── metrics.json        # Performance metrics
 └── logs/
-    └── {ideaId}.jsonl  # Execution logs
+    └── {taskId}.jsonl  # Execution logs
 ```
 
 ---
@@ -109,10 +109,10 @@ Agent prompts are assembled from multiple sources in a specific order.
 ### Loading Order
 
 ```
-1. .swarm/rules/*.md              (shared rules - ALL agents)
-2. .swarm/agents/{name}/rules.md  (persona rules - specific agent)
-3. .swarm/agents/{name}/prompt.md (persona prompt - specific agent)
-4. .swarm/agents/{name}/skills/   (persona skills - specific agent)
+1. .axiom/rules/*.md              (shared rules - ALL agents)
+2. .axiom/agents/{name}/rules.md  (persona rules - specific agent)
+3. .axiom/agents/{name}/prompt.md (persona prompt - specific agent)
+4. .axiom/agents/{name}/skills/   (persona skills - specific agent)
 ```
 
 ### Prompt File Format
@@ -121,7 +121,7 @@ Agent prompts are assembled from multiple sources in a specific order.
 # {Persona Name} - System Prompt
 
 ## Identity
-You are {NAME}, the {role} in the Swarm team.
+You are {NAME}, the {role} in the AXIOM team.
 {personality description}
 
 ## Responsibilities
@@ -132,7 +132,7 @@ You are {NAME}, the {role} in the Swarm team.
 {voice guidelines}
 
 ## Rules Reference
-See: .swarm/agents/{name}/rules.md
+See: .axiom/agents/{name}/rules.md
 ```
 
 ### Rules File Format
@@ -147,7 +147,7 @@ See: .swarm/agents/{name}/rules.md
 ## Must Not Do
 - {forbidden behavior 1}
 
-## Quality Standards
+## Verification Standards
 - {standard 1}
 ```
 
@@ -156,9 +156,9 @@ See: .swarm/agents/{name}/rules.md
 | Rule Type | Can Override? |
 |-----------|---------------|
 | Signal Types | No - protocol is fixed |
-| Learning Format | No - categories can extend |
+| Discovery Format | No - categories can extend |
 | Commit Format | Partial - can add prefixes |
-| Completion Protocol | Partial - can add quality commands |
+| Completion Protocol | Partial - can add verification commands |
 | Persona Prompt | Yes - full control |
 | Persona Rules | Yes - full control |
 
@@ -166,7 +166,7 @@ See: .swarm/agents/{name}/rules.md
 
 ## Skill Files
 
-Skills are reusable capability modules stored in `.swarm/agents/{persona}/skills/`. Each skill is a markdown file that extends an agent's capabilities.
+Skills are reusable capability modules stored in `.axiom/agents/{persona}/skills/`. Each skill is a markdown file that extends an agent's capabilities.
 
 ### Skill File Structure
 
@@ -264,11 +264,11 @@ function validateEmail(email: string): boolean {
 
 Continue with next test case.
 
-## Quality Gate
+## Verification Gate
 
 Before COMPLETE signal:
 1. All tests pass
-2. Run quality commands
+2. Run verification commands
 3. Check coverage (if configured)
 ```
 
@@ -353,22 +353,22 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
 
 Write integration tests with mocked responses.
 
-## Learning Signals
+## Discovery Signals
 
 When discovering API quirks:
-- `<swarm>LEARNING_GLOBAL:API X requires header Y for Z</swarm>`
+- `<axiom>DISCOVERY_GLOBAL:API X requires header Y for Z</axiom>`
 ```
 
 **Conflict Resolution Skill (`skills/conflict-resolution.md`):**
 
 ```markdown
-# Conflict Resolution (Finn)
+# Conflict Resolution (Rex)
 
 Resolve git merge conflicts by understanding intent.
 
 ## When to Use
 
-- MEDIUM level conflicts assigned by MergeService
+- MEDIUM level conflicts assigned by Integration Queue
 - Overlapping changes in same file
 
 ## Instructions
@@ -412,7 +412,7 @@ npm run typecheck
 Commit with resolution rationale:
 
 ```
-fix: resolve merge conflict #idea-042 @finn
+fix: resolve merge conflict #task-042 @rex
 
 - Kept rate limiting from main
 - Kept 2FA check from feature branch
@@ -423,7 +423,7 @@ fix: resolve merge conflict #idea-042 @finn
 
 If unable to resolve:
 ```
-<swarm>NEEDS_HUMAN:Conflict too complex - structural changes in auth module</swarm>
+<axiom>PENDING:Conflict too complex - structural changes in auth module</axiom>
 ```
 ```
 
@@ -432,12 +432,12 @@ If unable to resolve:
 Skills are loaded after rules and prompt:
 
 ```
-1. .swarm/rules/*.md           (shared rules)
-2. .swarm/agents/{name}/rules.md
-3. .swarm/agents/{name}/prompt.md
-4. .swarm/agents/{name}/skills/*.md  ← Skills loaded here
-5. Idea context
-6. Yellow ideas injection
+1. .axiom/rules/*.md           (shared rules)
+2. .axiom/agents/{name}/rules.md
+3. .axiom/agents/{name}/prompt.md
+4. .axiom/agents/{name}/skills/*.md  ← Skills loaded here
+5. Case context
+6. Discovery injection
 ```
 
 ### Skill Conventions
@@ -454,14 +454,14 @@ Skills are loaded after rules and prompt:
 
 ## Shared Rules System
 
-All agents share common protocols stored in `.swarm/rules/`:
+All agents share common protocols stored in `.axiom/rules/`:
 
 ```
-.swarm/rules/
+.axiom/rules/
 ├── signal-types.md              # Signal format and valid types
-├── learning-format.md           # Learning scope prefixes
+├── discovery-format.md          # Discovery scope prefixes
 ├── commit-format.md             # Commit message format
-└── completion-protocol.md       # Quality checks and completion
+└── completion-protocol.md       # Verification and completion
 ```
 
 ### Signal Types (`signal-types.md`)
@@ -470,52 +470,52 @@ All agents share common protocols stored in `.swarm/rules/`:
 # Signal Types
 
 ## Format
-All signals must use: `<swarm>TYPE:payload</swarm>` or `<swarm>TYPE</swarm>`
+All signals must use: `<axiom>TYPE:payload</axiom>` or `<axiom>TYPE</axiom>`
 
 ## Valid Types
 
 ### Control Signals
-- `COMPLETE` - Idea finished successfully
+- `COMPLETE` - Task finished successfully
 - `BLOCKED` - External blocker (payload: reason)
-- `NEEDS_HUMAN` - Human intervention required (payload: reason)
+- `PENDING` - Human intervention required (payload: reason)
 - `PROGRESS` - Progress update (payload: percentage)
-- `RESOLVED` - Merge conflict resolved (Finn)
+- `RESOLVED` - Merge conflict resolved (Rex)
 
-### Learning Signals
-- `LEARNING_LOCAL` - Agent-specific learning (payload: content)
-- `LEARNING_GLOBAL` - Project-wide learning (payload: content)
+### Discovery Signals
+- `DISCOVERY_LOCAL` - Agent-specific discovery (payload: content)
+- `DISCOVERY_GLOBAL` - Project-wide discovery (payload: content)
 
 ## Examples
-<swarm>COMPLETE</swarm>
-<swarm>BLOCKED:Database schema mismatch</swarm>
-<swarm>NEEDS_HUMAN:Cannot determine correct API version</swarm>
-<swarm>PROGRESS:75</swarm>
-<swarm>RESOLVED</swarm>
-<swarm>LEARNING_GLOBAL:All API endpoints require rate limiting</swarm>
+<axiom>COMPLETE</axiom>
+<axiom>BLOCKED:Database schema mismatch</axiom>
+<axiom>PENDING:Cannot determine correct API version</axiom>
+<axiom>PROGRESS:75</axiom>
+<axiom>RESOLVED</axiom>
+<axiom>DISCOVERY_GLOBAL:All API endpoints require rate limiting</axiom>
 ```
 
-### Learning Format (`learning-format.md`)
+### Discovery Format (`discovery-format.md`)
 
 ```markdown
-# Learning Format
+# Discovery Format
 
-## Signal-Based Learning Capture
+## Signal-Based Discovery Capture
 
-Agents emit learning signals during execution:
+Agents emit discovery signals during execution:
 
-- `<swarm>LEARNING_LOCAL:content</swarm>` - Agent-specific
-- `<swarm>LEARNING_GLOBAL:content</swarm>` - Project-wide
+- `<axiom>DISCOVERY_LOCAL:content</axiom>` - Agent-specific
+- `<axiom>DISCOVERY_GLOBAL:content</axiom>` - Project-wide
 
-Lou extracts these signals and creates Yellow ideas in IdeaStore.
+Cleo extracts these signals and creates Discovery cases in CaseStore.
 
-## Yellow Idea Creation
+## Discovery Case Creation
 
-| Signal | Yellow Scope | Parent | Injection |
-|--------|--------------|--------|-----------|
-| LEARNING_LOCAL | local | Current Green | Same agent only |
-| LEARNING_GLOBAL | global | Current Green | All agents |
+| Signal | Discovery Scope | Parent | Injection |
+|--------|-----------------|--------|-----------|
+| DISCOVERY_LOCAL | local | Current Task | Same agent only |
+| DISCOVERY_GLOBAL | global | Current Task | All agents |
 
-## Categories (Auto-detected by Lou)
+## Categories (Auto-detected by Cleo)
 performance, testing, debugging, error-handling, patterns, architecture, general
 ```
 
@@ -525,11 +525,11 @@ performance, testing, debugging, error-handling, patterns, architecture, general
 # Commit Format
 
 ## Required Format
-`<type>: <description> #<idea-id> @<agent>`
+`<type>: <description> #<task-id> @<agent>`
 
 ## Format Elements
-- `#idea-xxx` - Idea reference (grep-friendly)
-- `@ed-001` - Agent attribution
+- `#task-xxx` - Task reference (grep-friendly)
+- `@echo-001` - Agent attribution
 - `@human` - Manual commits by user
 
 ## Types
@@ -539,57 +539,57 @@ performance, testing, debugging, error-handling, patterns, architecture, general
 - `test:` - Test changes
 
 ## Examples
-feat: add login validation #idea-001 @ed-001
-fix: handle null response #idea-002 @ed-002
-fix: resolve merge conflict #idea-001 @finn
+feat: add login validation #task-001 @echo-001
+fix: handle null response #task-002 @echo-002
+fix: resolve merge conflict #task-001 @rex
 ```
 
 ---
 
 ## Agent Data Storage
 
-### Execution Logs (`logs/{ideaId}.jsonl`)
+### Execution Logs (`logs/{taskId}.jsonl`)
 
-Per-idea execution log in JSONL format:
+Per-task execution log in JSONL format:
 
 ```json
-{"timestamp":"2026-01-13T10:00:00Z","event":"start","ideaId":"idea-001"}
+{"timestamp":"2026-01-13T10:00:00Z","event":"start","taskId":"task-001"}
 {"timestamp":"2026-01-13T10:01:00Z","event":"iteration","number":1,"input":"...","output":"..."}
 {"timestamp":"2026-01-13T10:02:00Z","event":"signal","type":"PROGRESS","payload":"50"}
 {"timestamp":"2026-01-13T10:05:00Z","event":"complete","durationMs":300000,"iterations":3}
 ```
 
-### Agent Learnings (`learnings.md`)
+### Agent Discoveries (`discoveries.md`)
 
-Agent-specific learnings file is a **view** of Yellow ideas with `scope: local` for this agent. The file is regenerated from IdeaStore Yellow ideas.
+Agent-specific discoveries file is a **view** of Discovery cases with `scope: local` for this agent. The file is regenerated from CaseStore Discovery cases.
 
 ```markdown
-# Ed's Learnings
+# Echo's Discoveries
 
 ## Testing Patterns
-- [idea-030] Vitest parallel mode causes flaky tests with shared state
+- [task-030] Vitest parallel mode causes flaky tests with shared state
 
 ## TDD Workflow
-- [idea-031] Run quality checks before commit, not after
+- [task-031] Run verification before commit, not after
 ```
 
-Each entry references the Yellow idea ID for traceability.
+Each entry references the parent Task ID for traceability.
 
 ### Performance Metrics (`metrics.json`)
 
 ```json
 {
-  "persona": "ed",
+  "persona": "echo",
   "updated": "2026-01-13T10:00:00Z",
-  "ideas": {
+  "tasks": {
     "completed": 47,
     "failed": 3,
     "successRate": 0.94
   },
   "iterations": {
     "total": 142,
-    "avgPerIdea": 2.84,
-    "maxPerIdea": 8
+    "avgPerTask": 2.84,
+    "maxPerTask": 8
   },
   "timing": {
     "avgDurationMs": 180000,
@@ -607,15 +607,15 @@ Each entry references the Yellow idea ID for traceability.
 
 ## Agent ID Assignment
 
-Counter Carl owns spawn counters. Flow:
+Auditor Ash owns spawn counters. Flow:
 
 ```
-Orchestrator: AGENT_SPAWN_REQUEST { persona: 'ed' }
-Carl: increments ed counter 46 → 47, returns 'ed-047'
-Orchestrator: spawns ed-047
+Orchestrator: AGENT_SPAWN_REQUEST { persona: 'echo' }
+Ash: increments echo counter 46 → 47, returns 'echo-047'
+Orchestrator: spawns echo-047
 ```
 
-Counters persist in `.swarm/metrics/counters.json`.
+Counters persist in `.axiom/metrics/counters.json`.
 
 ### Spawn vs Invocation
 
@@ -623,31 +623,31 @@ Counters persist in `.swarm/metrics/counters.json`.
 |------|---------|---------------------|
 | **Spawn** | New agent instance created (new process/actor) | Yes |
 | **Invocation** | Agent does work (iteration, task) | No |
-| **Restart** | Swarm quits and starts again | Yes (new spawn) |
+| **Restart** | AXIOM quits and starts again | Yes (new spawn) |
 | **Respawn** | Agent crashes, new instance created | Yes |
 
-No agent is truly a "singleton" across Swarm's lifetime:
+No agent is truly a "singleton" across AXIOM's lifetime:
 
 | Scenario | What Happens |
 |----------|--------------|
-| Swarm restarts | Ace runs init again → `ace-002` |
-| Session starts | Dan spawns → `dan-003` (if 2 previous sessions) |
-| Agent crashes | Will respawns mid-session → `will-002` |
-| Multiple Ed workers | `ed-001`, `ed-002`, `ed-003` concurrent |
+| AXIOM restarts | Ava runs init again → `ava-002` |
+| Session starts | Dex spawns → `dex-003` (if 2 previous sessions) |
+| Agent crashes | Max respawns mid-session → `max-002` |
+| Multiple Echo workers | `echo-001`, `echo-002`, `echo-003` concurrent |
 
 ---
 
 ## Agent Card (Web UI)
 
-Each agent displays in the Agent Grid showing: agent ID, current idea, iteration count, elapsed time, progress bar, and current activity. Card border color and indicator reflect agent state (idle, running, completed, failed, paused).
+Each agent displays in the Agent Grid showing: agent ID, current task, iteration count, elapsed time, progress bar, and current activity. Card border color and indicator reflect agent state (idle, running, completed, failed, paused).
 
 ---
 
-## Support Agents: Will and Carl
+## Support Agents: Max and Ash
 
-Will and Carl don't work in worktrees. They support orchestration.
+Max and Ash don't work in workspaces. They support orchestration.
 
-### Will: Timer-Based Monitoring
+### Max: Timer-Based Monitoring
 
 Runs on 1-minute timer with guards:
 
@@ -658,30 +658,30 @@ monitor region:
       target: checkingHealth
       guard: hasActiveAgents
   checkingHealth:
-    invoke: willHealthCheck
+    invoke: maxHealthCheck
     onDone: idle
 ```
 
-### Carl: Event-Driven Metrics
+### Ash: Event-Driven Metrics
 
 Responds to events without blocking:
 
 ```
 on:
-  AGENT_SPAWN_REQUEST: carlAssignAgentId (sync)
-  AGENT_SPAWNED: carlRecordSpawn
-  AGENT_COMPLETED: carlRecordCompletion
+  AGENT_SPAWN_REQUEST: ashAssignAgentId (sync)
+  AGENT_SPAWNED: ashRecordSpawn
+  AGENT_COMPLETED: ashRecordCompletion
 ```
 
 ### Support Agent Files
 
 ```
-.swarm/
+.axiom/
 ├── agents/
-│   ├── will/
+│   ├── max/
 │   │   ├── prompt.md
 │   │   └── logs/
-│   └── carl/
+│   └── ash/
 │       ├── prompt.md
 │       └── logs/
 └── metrics/
@@ -694,20 +694,20 @@ on:
 
 ---
 
-## Worktree Isolation
+## Workspace Isolation
 
-Each Ed agent works in an isolated git worktree:
+Each Echo agent works in an isolated git workspace:
 
 ```
-.worktrees/
-├── ed-001-idea-004/     # Ed working on idea-004
-├── ed-002-idea-007/     # Ed working on idea-007
-└── finn-001-merge/      # Finn resolving conflict
+.workspaces/
+├── echo-001-task-004/     # Echo working on task-004
+├── echo-002-task-007/     # Echo working on task-007
+└── rex-001-merge/         # Rex resolving conflict
 ```
 
 Benefits:
 - No interference between agents
-- Clean git history per idea
+- Clean git history per task
 - Easy rollback via branch deletion
 - Parallel file system access
 
@@ -715,7 +715,7 @@ Benefits:
 
 ## Agent CLI Invocation
 
-Swarm spawns agents via the Claude CLI with specific configuration:
+AXIOM spawns agents via the Claude CLI with specific configuration:
 
 ```bash
 claude \
@@ -723,7 +723,7 @@ claude \
   --dangerously-skip-permissions \
   --model ${model} \
   --system-prompt "${systemPrompt}" \
-  --cwd "${worktreePath}"
+  --cwd "${workspacePath}"
 ```
 
 ### Invocation Parameters
@@ -734,24 +734,24 @@ claude \
 | `--dangerously-skip-permissions` | - | Bypass permission prompts (agents are trusted) |
 | `--model` | `sonnet` (default) | Model selection from config |
 | `--system-prompt` | Assembled prompt | Full agent prompt (see Prompt Construction) |
-| `--cwd` | Worktree path | Execute in isolated worktree |
+| `--cwd` | Workspace path | Execute in isolated workspace |
 
 ### Prompt Injection
 
 The prompt is sent via stdin after process spawn:
 
 ```typescript
-const process = spawn('claude', args, { cwd: worktreePath });
-process.stdin.write(ideaPrompt);
+const process = spawn('claude', args, { cwd: workspacePath });
+process.stdin.write(taskPrompt);
 process.stdin.end();
 ```
 
 ### Output Parsing
 
 Agent output is parsed for:
-1. **Signals**: `<swarm>TYPE:payload</swarm>` format
-2. **Commits**: Git activity in worktree
-3. **Progress**: Status updates for TUI
+1. **Signals**: `<axiom>TYPE:payload</axiom>` format
+2. **Commits**: Git activity in workspace
+3. **Progress**: Status updates for Web UI
 
 ---
 
@@ -764,7 +764,7 @@ Agent output is parsed for:
               │ START
               ▼
          ┌──────────┐
-         │preparing │ ← Setup worktree
+         │preparing │ ← Setup workspace
          └────┬─────┘
               │ READY
               ▼
@@ -776,7 +776,7 @@ Agent output is parsed for:
     │        │           │  │
     │        ▼           │  │
     │  ┌────────────┐    │  │
-    │  │checkQuality│────┼──┘
+    │  │verification│────┼──┘
     │  └─────┬──────┘    │
     │        │ ALL_PASS  │
     └────────┼───────────┘
