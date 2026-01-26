@@ -347,6 +347,87 @@ See [01-configuration.md](./01-configuration.md#config-validation-and-recovery) 
 
 ---
 
+## Disk Space Recovery
+
+When Monitor Max detects critically low disk space:
+
+### Automatic Cleanup
+
+```
+Max detects disk < 500MB
+     │
+     ▼
+Pause agent spawning
+     │
+     ▼
+Auto-cleanup triggers:
+├── Remove merged workspaces (status: done, merged: true)
+├── Git garbage collection (git gc --prune=now)
+├── Remove stale temp files (.axiom/tmp/*)
+└── Compress old logs (> 7 days)
+     │
+     ▼
+Re-check disk space
+     │
+     ├── >= 500MB ──► Resume normal operation
+     │
+     └── < 500MB ──► Manual intervention required
+```
+
+### Manual Cleanup Options
+
+If auto-cleanup insufficient:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   DISK SPACE CRITICAL                            │
+│                                                                  │
+│  Current free: 234MB (need 500MB minimum)                        │
+│  Auto-cleanup freed: 150MB                                       │
+│                                                                  │
+│  Manual cleanup options:                                         │
+│  [1] Remove old checkpoints (43 checkpoints, ~120MB)             │
+│  [2] Remove failed workspaces (2 workspaces, ~85MB)              │
+│  [3] Archive old sprint logs (15 sprints, ~60MB)                 │
+│  [Q] Quit and handle manually                                    │
+│                                                                  │
+│  Or free space externally and press [R] to retry                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Config Options
+
+```json
+{
+  "system": {
+    "diskWarningThreshold": 1000,
+    "diskCriticalThreshold": 500,
+    "diskEmergencyThreshold": 100,
+    "autoCleanupEnabled": true
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `diskWarningThreshold` | 1000 | MB free before warning |
+| `diskCriticalThreshold` | 500 | MB free before pause |
+| `diskEmergencyThreshold` | 100 | MB free before emergency stop |
+| `autoCleanupEnabled` | true | Allow automatic cleanup |
+
+### Error Codes
+
+| Code | Trigger | Severity |
+|------|---------|----------|
+| `DISK_WARNING` | < 1GB free | Low |
+| `DISK_CRITICAL` | < 500MB free | High |
+| `DISK_EMERGENCY` | < 100MB free | Critical |
+| `DISK_CHECKOUT_FAILED` | git worktree fails | High |
+
+See [15-errors.md](./15-errors.md#disk-errors) for detailed error handling.
+
+---
+
 ## Emergency Stop
 
 `Ctrl+C` triggers graceful shutdown:

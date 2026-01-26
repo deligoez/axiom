@@ -77,6 +77,13 @@ All AXIOM configuration is stored in `.axiom/config.json`.
     "target": { "type": "count", "value": 10 },
     "filters": { "includeTags": [], "excludeTags": ["later"] },
     "options": { "checkpointBefore": true, "batchReview": true }
+  },
+
+  "system": {
+    "diskWarningThreshold": 1000,
+    "diskCriticalThreshold": 500,
+    "diskEmergencyThreshold": 100,
+    "autoCleanupEnabled": true
   }
 }
 ```
@@ -291,6 +298,17 @@ Cases with `security` tag always require per-task review.
 | `filters.excludeTags` | Skip Tasks with these tags |
 | `options.checkpointBefore` | Create checkpoint before sprint |
 | `options.batchReview` | Batch review at end |
+
+### System
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `diskWarningThreshold` | 1000 | MB free before warning |
+| `diskCriticalThreshold` | 500 | MB free before agent pause |
+| `diskEmergencyThreshold` | 100 | MB free before emergency stop |
+| `autoCleanupEnabled` | true | Auto-cleanup when disk low |
+
+See [09-intervention.md](./09-intervention.md#disk-space-recovery) for disk recovery procedures.
 
 ---
 

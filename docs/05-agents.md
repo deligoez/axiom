@@ -85,6 +85,24 @@ Health monitoring on 1-minute timer. Checks:
 - Workspace disk usage
 - System resources
 
+**Disk space monitoring actions:**
+
+| Threshold | Action |
+|-----------|--------|
+| > 1GB free | Normal operation |
+| 500MB - 1GB | Warning logged, user notified |
+| < 500MB | Critical: pause all agents, cleanup old workspaces |
+| < 100MB | Emergency stop: all agents terminated |
+
+When disk is critically low:
+1. Pause new agent spawns
+2. Let running iterations complete
+3. Trigger automatic workspace cleanup
+4. Alert user via Web UI and `on-error` hook
+5. Resume when disk > 500MB
+
+See [09-intervention.md](./09-intervention.md#disk-space-recovery) for recovery procedures.
+
 ### Auditor Ash
 
 Metrics collection and ID assignment. Owns:

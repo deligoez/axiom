@@ -522,9 +522,49 @@ func classifyConflict(conflict Conflict) ConflictLevel {
 
 | Error | Cause | Recovery | Escalation |
 |-------|-------|----------|------------|
-| `ENOSPC` | Disk full | Cleanup old workspaces | If still full |
+| `DISK_WARNING` | < 1GB free | Log warning | Never |
+| `DISK_CRITICAL` | < 500MB free | Pause agents, auto-cleanup | If cleanup fails |
+| `DISK_EMERGENCY` | < 100MB free | Emergency stop | User action required |
+| `DISK_CHECKOUT_FAILED` | Git worktree fails (no space) | Retry after cleanup | User action |
+| `ENOSPC` | Disk full (system) | Cleanup old workspaces | If still full |
 | `EROFS` | Read-only filesystem | Abort | User action required |
 | `EIO` | I/O error | Retry once | If persists |
+
+#### DISK_CRITICAL
+
+**Severity:** High
+**Recoverable:** Yes (auto-cleanup)
+
+```
+Warning: Disk space critically low
+
+Current free: 423MB (critical threshold: 500MB)
+Action: Pausing new agent spawns, triggering cleanup...
+
+Cleanup progress:
+  ✓ Removed 3 merged workspaces (freed 85MB)
+  ✓ Git gc completed (freed 42MB)
+  - Removing temp files...
+
+Current free: 550MB - Resuming normal operation
+```
+
+**Config:** See `system.diskCriticalThreshold` in [01-configuration.md](./01-configuration.md#system).
+
+#### DISK_CHECKOUT_FAILED
+
+**Severity:** High
+**Recoverable:** Yes (after cleanup)
+
+```
+Error: Failed to create workspace
+
+Command: git worktree add -b agent/echo-001/task-042 .workspaces/echo-001-task-042
+Error: fatal: Unable to create '.workspaces/echo-001-task-042': No space left on device
+
+Action: Triggering disk cleanup...
+Retry: Will retry workspace creation after cleanup
+```
 
 **Disk Monitoring:**
 ```go
