@@ -273,6 +273,47 @@ Suggestion: Add to config.json:
 
 At least one required verification command is recommended for production use.
 
+### Verification Environment
+
+Verification commands run in a controlled environment:
+
+**Working Directory:**
+Commands run in the **agent workspace directory** (e.g., `.workspaces/echo-001-task-042`).
+
+**Available Environment Variables:**
+| Variable | Value | Example |
+|----------|-------|---------|
+| `PWD` | Workspace path | `.workspaces/echo-001-task-042` |
+| `AXIOM_TASK_ID` | Current Task ID | `task-042` |
+| `AXIOM_AGENT` | Agent ID | `echo-001` |
+| `AXIOM_ITERATION` | Current iteration number | `3` |
+| `PATH` | Inherited from system | System PATH |
+| `HOME` | User home directory | `/Users/dev` |
+
+**Shell Execution:**
+Commands run via `sh -c "<command>"` for portability across systems:
+
+```go
+proc := exec.CommandContext(ctx, "sh", "-c", cmd)
+proc.Dir = workspace
+```
+
+**Environment Inheritance:**
+- System PATH inherited (node, npm, python, etc. available)
+- User environment inherited (NODE_ENV, etc.)
+- AXIOM-specific variables added
+
+**Shell Features:**
+- Pipes supported: `npm test | grep -v PASS`
+- Redirects supported: `npm test > /dev/null 2>&1`
+- Subshells supported: `(cd subdir && npm test)`
+- Environment variables: `NODE_ENV=test npm test`
+
+**Limitations:**
+- No interactive input (stdin closed)
+- Long-running commands should respect timeout
+- Background processes not recommended
+
 ### Timeout Handling
 
 ```go
