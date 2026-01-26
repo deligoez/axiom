@@ -19,14 +19,21 @@
 
 ## Current Milestone
 
-### MVP-03: TBD
+### MVP-04: TBD
 - **Grey:** TBD
-- **Goal:** Real tasks from storage
+- **Goal:** Create task via UI
 - **Status:** NOT STARTED
 
 ---
 
 ## Completed Milestones
+
+### MVP-03: Tasks from Storage ✓
+- **Grey:** ax-1ku (PLAN: MVP-03 - Tasks from Storage)
+- **Blue:** ax-1ku.1 (F03: Load Tasks from File)
+- **Goal:** Read tasks from JSONL file
+- **Status:** DONE
+- **Commits:** 3ed4765..eb1528e
 
 ### MVP-02: Task List UI ✓
 - **Grey:** ax-88w (PLAN: MVP-02 - Task List UI)
