@@ -408,6 +408,59 @@ Load config.json
 └─────────────┘
 ```
 
+### Unknown Keys
+
+Unknown configuration keys are **ignored with a warning**:
+
+```
+[WARN] Unknown config key 'foo.bar' ignored
+[WARN] Unknown config key 'agents.unknownOption' ignored
+```
+
+This allows forward compatibility—configs from newer AXIOM versions can be used with older versions (unknown features simply ignored).
+
+### Invalid Values
+
+Invalid values fall back to defaults with a warning:
+
+```
+[WARN] Invalid agents.maxParallel=-1 (must be >= 1), using default: 3
+[WARN] Invalid mode='invalid' (must be semi-auto|autopilot), using default: semi-auto
+[WARN] Invalid checkpoints.maxAgeDays='forever' (must be integer), using default: 30
+```
+
+**Validation rules:**
+
+| Field | Validation | Default |
+|-------|------------|---------|
+| `mode` | Must be `semi-auto` or `autopilot` | `semi-auto` |
+| `agents.maxParallel` | Integer >= 1, <= 10 | `3` |
+| `agents.timeoutMinutes` | Integer >= 1, <= 1440 | `30` |
+| `completion.maxIterations` | Integer >= 1, <= 100 | `50` |
+| `verification` | Array or object | `[]` |
+| `checkpoints.maxAgeDays` | Integer >= 1 | `30` |
+
+### Schema Version
+
+Config files include a version for future migrations:
+
+```json
+{
+  "version": 1,
+  "mode": "semi-auto",
+  ...
+}
+```
+
+**Version migration:**
+
+| From | To | Migration |
+|------|----|----|
+| (none) | 1 | Automatic, adds `version: 1` |
+| 1 | 2 | (future) Auto-migrate with warnings |
+
+When `version` is missing, AXIOM assumes version 1 and adds it on next save.
+
 ### Automatic Backup
 
 Every time config is successfully loaded, AXIOM creates a backup:
