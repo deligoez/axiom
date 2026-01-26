@@ -51,8 +51,9 @@ coverage/
 *.log
 logs/
 
-# TLDR tool cache (runtime state)
+# TLDR tool (Continuous Claude)
 .tldr/
+.tldrignore
 
 # IDE
 .idea/
