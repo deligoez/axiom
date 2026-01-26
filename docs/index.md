@@ -16,7 +16,7 @@ hero:
 features:
   - icon: 🎭
     title: 8 Specialized Personas
-    details: Each agent has a distinct role — Ava analyzes, Axel plans, Echo implements, Rex resolves conflicts, Cleo curates learnings, Dex selects tasks, Max orchestrates, Ash audits.
+    details: Each agent has a distinct role — Ava analyzes, Axel plans, Echo implements, Rex resolves conflicts, Cleo curates learnings, Dex orchestrates, Max monitors, Ash audits.
     link: /05-agents
     linkText: Meet the Personas
 
