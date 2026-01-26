@@ -755,6 +755,137 @@ Agent output is parsed for:
 
 ---
 
+## Signal Validation
+
+### Valid Signal Format
+
+Signals must match the exact format:
+
+```
+<axiom>TYPE</axiom>
+<axiom>TYPE:payload</axiom>
+```
+
+### Validation Regex
+
+```go
+var signalRegex = regexp.MustCompile(`<axiom>([A-Z_]+)(?::(.+?))?</axiom>`)
+```
+
+**Captures:**
+- Group 1: Signal type (e.g., `COMPLETE`, `PROGRESS`)
+- Group 2: Payload (optional, e.g., `75` for progress)
+
+### Valid Signal Types
+
+| Type | Payload | Example |
+|------|---------|---------|
+| `COMPLETE` | None | `<axiom>COMPLETE</axiom>` |
+| `BLOCKED` | Reason (required) | `<axiom>BLOCKED:Database locked</axiom>` |
+| `PENDING` | Reason (required) | `<axiom>PENDING:Need API key</axiom>` |
+| `PROGRESS` | Percentage (0-100) | `<axiom>PROGRESS:75</axiom>` |
+| `RESOLVED` | None | `<axiom>RESOLVED</axiom>` |
+| `DISCOVERY_LOCAL` | Content (required) | `<axiom>DISCOVERY_LOCAL:API uses JWT</axiom>` |
+| `DISCOVERY_GLOBAL` | Content (required) | `<axiom>DISCOVERY_GLOBAL:Rate limit 100/min</axiom>` |
+
+### Validation Rules
+
+```go
+func validateSignal(raw string) (*Signal, error) {
+    matches := signalRegex.FindStringSubmatch(raw)
+    if matches == nil {
+        return nil, &SignalError{
+            Code:    "SIGNAL_MALFORMED",
+            Raw:     raw,
+            Message: "Signal does not match expected format",
+        }
+    }
+
+    signalType := matches[1]
+    payload := matches[2]
+
+    // Check if type is valid
+    if !isValidType(signalType) {
+        return nil, &SignalError{
+            Code:    "SIGNAL_UNKNOWN_TYPE",
+            Raw:     raw,
+            Type:    signalType,
+            Message: fmt.Sprintf("Unknown signal type: %s", signalType),
+        }
+    }
+
+    // Check if payload is required but missing
+    if requiresPayload(signalType) && payload == "" {
+        return nil, &SignalError{
+            Code:    "SIGNAL_MISSING_PAYLOAD",
+            Raw:     raw,
+            Type:    signalType,
+            Message: fmt.Sprintf("%s requires a payload", signalType),
+        }
+    }
+
+    // Validate PROGRESS payload is numeric 0-100
+    if signalType == "PROGRESS" {
+        pct, err := strconv.Atoi(payload)
+        if err != nil || pct < 0 || pct > 100 {
+            return nil, &SignalError{
+                Code:    "SIGNAL_INVALID_PAYLOAD",
+                Raw:     raw,
+                Type:    signalType,
+                Message: "PROGRESS payload must be 0-100",
+            }
+        }
+    }
+
+    return &Signal{Type: signalType, Payload: payload}, nil
+}
+```
+
+### Invalid Signal Handling
+
+When a signal fails validation:
+
+| Error | Behavior | Logged? | Agent Impact |
+|-------|----------|---------|--------------|
+| `SIGNAL_MALFORMED` | Ignore, continue parsing | Yes (warning) | None |
+| `SIGNAL_UNKNOWN_TYPE` | Ignore signal | Yes (warning) | None |
+| `SIGNAL_MISSING_PAYLOAD` | Ignore signal | Yes (warning) | None |
+| `SIGNAL_INVALID_PAYLOAD` | Ignore signal | Yes (warning) | None |
+
+**Key principle:** Invalid signals are logged but never crash the agent or block execution. The agent continues working.
+
+### Common Invalid Signal Examples
+
+| Invalid Signal | Error | Reason |
+|----------------|-------|--------|
+| `<axiom>COMPLET</axiom>` | `UNKNOWN_TYPE` | Typo in type |
+| `<axiom>complete</axiom>` | `UNKNOWN_TYPE` | Lowercase (case-sensitive) |
+| `<axiom>BLOCKED</axiom>` | `MISSING_PAYLOAD` | BLOCKED requires reason |
+| `<axiom>PROGRESS:abc</axiom>` | `INVALID_PAYLOAD` | Not a number |
+| `<axiom>PROGRESS:150</axiom>` | `INVALID_PAYLOAD` | Out of range |
+| `[AXIOM:COMPLETE]` | `MALFORMED` | Wrong delimiter format |
+| `<AXIOM>COMPLETE</AXIOM>` | `MALFORMED` | Wrong case in tag |
+
+### Signal Logging
+
+Invalid signals are logged to `.axiom/logs/signals.jsonl`:
+
+```json
+{"ts":"2026-01-25T10:00:00Z","level":"warn","code":"SIGNAL_UNKNOWN_TYPE","agent":"echo-001","task":"task-042","raw":"<axiom>COMPLET</axiom>","type":"COMPLET"}
+{"ts":"2026-01-25T10:00:05Z","level":"warn","code":"SIGNAL_MISSING_PAYLOAD","agent":"echo-001","task":"task-042","raw":"<axiom>BLOCKED</axiom>","type":"BLOCKED"}
+```
+
+**Log fields:**
+- `ts`: Timestamp
+- `level`: Always `warn` for invalid signals
+- `code`: Error code
+- `agent`: Agent ID
+- `task`: Current task
+- `raw`: Original signal string
+- `type`: Parsed type (if available)
+
+---
+
 ## Agent Machine States
 
 ```

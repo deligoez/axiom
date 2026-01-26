@@ -226,6 +226,63 @@ func spawnAgent(ctx context.Context, config AgentConfig) error {
 | `empty output` | Agent produced nothing | Retry iteration | After 3 empty outputs |
 | `output too large` | Exceeded buffer | Truncate, warn | Never |
 
+### Signal Validation Errors
+
+Invalid signals are logged but never block agent execution.
+
+| Code | Cause | Example | Recovery |
+|------|-------|---------|----------|
+| `SIGNAL_MALFORMED` | Doesn't match `<axiom>TYPE</axiom>` format | `[AXIOM:COMPLETE]` | Ignore, log warning |
+| `SIGNAL_UNKNOWN_TYPE` | Type not in valid list | `<axiom>COMPLET</axiom>` | Ignore, log warning |
+| `SIGNAL_MISSING_PAYLOAD` | Required payload absent | `<axiom>BLOCKED</axiom>` | Ignore, log warning |
+| `SIGNAL_INVALID_PAYLOAD` | Payload fails validation | `<axiom>PROGRESS:abc</axiom>` | Ignore, log warning |
+
+**Validation Code:**
+```go
+func validateSignal(raw string) (*Signal, error) {
+    // Regex: <axiom>TYPE</axiom> or <axiom>TYPE:payload</axiom>
+    matches := signalRegex.FindStringSubmatch(raw)
+    if matches == nil {
+        return nil, &SignalError{Code: "SIGNAL_MALFORMED", Raw: raw}
+    }
+
+    signalType := matches[1]
+    payload := matches[2]
+
+    // Validate type is known
+    validTypes := []string{
+        "COMPLETE", "BLOCKED", "PENDING", "PROGRESS",
+        "RESOLVED", "DISCOVERY_LOCAL", "DISCOVERY_GLOBAL",
+    }
+    if !slices.Contains(validTypes, signalType) {
+        return nil, &SignalError{Code: "SIGNAL_UNKNOWN_TYPE", Type: signalType}
+    }
+
+    // Validate required payloads
+    requiresPayload := []string{"BLOCKED", "PENDING", "DISCOVERY_LOCAL", "DISCOVERY_GLOBAL"}
+    if slices.Contains(requiresPayload, signalType) && payload == "" {
+        return nil, &SignalError{Code: "SIGNAL_MISSING_PAYLOAD", Type: signalType}
+    }
+
+    // Validate PROGRESS is 0-100
+    if signalType == "PROGRESS" {
+        pct, err := strconv.Atoi(payload)
+        if err != nil || pct < 0 || pct > 100 {
+            return nil, &SignalError{Code: "SIGNAL_INVALID_PAYLOAD", Type: signalType}
+        }
+    }
+
+    return &Signal{Type: signalType, Payload: payload}, nil
+}
+```
+
+**Logging:**
+```json
+{"ts":"...","level":"warn","code":"SIGNAL_UNKNOWN_TYPE","agent":"echo-001","task":"task-042","raw":"<axiom>COMPLET</axiom>"}
+```
+
+**Key Principle:** Invalid signals are never fatal. Log and continue.
+
 ### Agent Behavior Errors
 
 | Error | Cause | Recovery | Escalation |
