@@ -17,10 +17,12 @@ var templatesFS embed.FS
 type Server struct {
 	mux       *http.ServeMux
 	templates *template.Template
+	taskStore *task.TaskStore
+	taskFile  string
 }
 
 // NewServer creates a new AXIOM web server.
-func NewServer() *Server {
+func NewServer(taskFile string) *Server {
 	tmpl, err := template.ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		log.Fatalf("failed to parse templates: %v", err)
@@ -29,6 +31,8 @@ func NewServer() *Server {
 	s := &Server{
 		mux:       http.NewServeMux(),
 		templates: tmpl,
+		taskStore: task.NewTaskStore(),
+		taskFile:  taskFile,
 	}
 	s.routes()
 	return s
@@ -57,12 +61,18 @@ type PageData struct {
 
 // handleRoot handles GET /.
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	tasks, err := s.taskStore.Load(s.taskFile)
+	if err != nil {
+		// Graceful degradation: show empty list if file missing
+		tasks = []task.Task{}
+	}
+
 	data := PageData{
-		Tasks: task.GetTasks(),
+		Tasks: tasks,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err := s.templates.ExecuteTemplate(w, "layout.html", data)
+	err = s.templates.ExecuteTemplate(w, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

@@ -3,13 +3,15 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestServer_GetRoot_Returns200(t *testing.T) {
-	// Arrange
-	server := NewServer()
+	// Arrange - use nonexistent file (graceful degradation)
+	server := NewServer("/nonexistent/tasks.jsonl")
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -24,7 +26,7 @@ func TestServer_GetRoot_Returns200(t *testing.T) {
 
 func TestServer_GetRoot_ReturnsHTML(t *testing.T) {
 	// Arrange
-	server := NewServer()
+	server := NewServer("/nonexistent/tasks.jsonl")
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -52,8 +54,19 @@ func TestServer_GetRoot_ReturnsHTML(t *testing.T) {
 }
 
 func TestServer_GetRoot_ContainsTasks(t *testing.T) {
-	// Arrange
-	server := NewServer()
+	// Arrange - create temp file with test tasks
+	dir := t.TempDir()
+	taskFile := filepath.Join(dir, "tasks.jsonl")
+
+	content := `{"id":"task-001","title":"Test task one","status":"done"}
+{"id":"task-002","title":"Test task two","status":"active"}
+`
+	err := os.WriteFile(taskFile, []byte(content), 0o644)
+	if err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	server := NewServer(taskFile)
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -63,11 +76,9 @@ func TestServer_GetRoot_ContainsTasks(t *testing.T) {
 	// Assert
 	body := rec.Body.String()
 
-	// Check that task titles from GetTasks() are present
 	expectedTasks := []string{
-		"Setup project structure",
-		"Add web server",
-		"Implement task list",
+		"Test task one",
+		"Test task two",
 	}
 
 	for _, taskTitle := range expectedTasks {
