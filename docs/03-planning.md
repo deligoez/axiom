@@ -386,7 +386,96 @@ Axel proposes a high-level architecture before generating Tasks. User must appro
 | **Approve** | Proceed to DECOMPOSE |
 | **Modify** | Axel adjusts specific parts |
 | **Reject** | Axel creates new proposal with feedback |
+| **Partial Approve** | Approve some components, reject others |
 | **Ask question** | Axel explains reasoning |
+
+### Plan Rejection Flow
+
+When user rejects the proposal, AXIOM follows a structured rejection flow:
+
+```
+User rejects proposal
+     │
+     ▼
+┌─────────────────────┐
+│ Collect Feedback    │  ← Optional rejection reason
+└──────────┬──────────┘
+           │
+     ┌─────┴─────┐
+     │ Feedback? │
+     └─────┬─────┘
+           │
+     ┌─────┴─────┐
+     │           │
+     ▼ No        ▼ Yes
+Full restart  Targeted revision
+     │           │
+     ▼           ▼
+Clear all    Axel revises
+Draft cases  specific parts
+     │           │
+     ▼           ▼
+Back to      New proposal
+Phase 1      (same phase)
+```
+
+#### Rejection Options
+
+| Option | Description | Effect |
+|--------|-------------|--------|
+| **Reject with feedback** | User explains what's wrong | Axel revises proposal, stays in Phase 3 |
+| **Reject and restart** | Start planning from scratch | Clear Draft/Operation cases, return to Phase 1 |
+| **Partial approve** | Accept some components | Approved parts proceed, rejected parts revised |
+
+#### Case Cleanup on Rejection
+
+| Rejection Type | Cases Created | Cleanup Action |
+|----------------|---------------|----------------|
+| Reject with feedback | Draft cases may exist | Keep Drafts, revise proposal |
+| Reject and restart | Draft, Operation cases | Mark all as `cancelled`, archive |
+| Partial approve | Mixed | Keep approved, revise rejected |
+
+**Archived cases:**
+```
+.axiom/archive/rejected/
+├── proposal-001-rejected-2026-01-15.json
+│   ├── reason: "Too complex, need simpler approach"
+│   └── cases: [draft-001, draft-002, op-001]
+└── proposal-002-rejected-2026-01-15.json
+```
+
+#### Rejection Feedback UI
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Plan Rejected                                  │
+│                                                                  │
+│  What would you like to do?                                      │
+│                                                                  │
+│  [R] Revise - Axel will modify the proposal                      │
+│      └─ Tell Axel what to change: ___________                    │
+│                                                                  │
+│  [P] Partial - Approve some components, reject others            │
+│      └─ Select components to keep                                │
+│                                                                  │
+│  [S] Start Over - Clear everything, begin fresh                  │
+│      └─ All Draft/Operation cases will be archived               │
+│                                                                  │
+│  [Q] Quit - Exit planning mode                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Revision Limits
+
+| Counter | Default | Config |
+|---------|---------|--------|
+| Max revisions per phase | 5 | `planning.maxRevisions` |
+| Total rejections before warning | 3 | - |
+
+After max revisions, Axel suggests:
+1. Breaking the goal into smaller parts
+2. Starting with a simpler MVP
+3. Switching to Research case for exploration
 
 ---
 

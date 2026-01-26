@@ -41,8 +41,15 @@ Runs the full AXIOM Planning dialogue. Handles:
 - Operation vertical slice creation
 - Task breakdown
 - Debrief after Operation completion
+- **Plan rejection handling** (revise, restart, or partial approve)
 
 Axel is the central planning persona, managing the entire case lifecycle from Directive to Task.
+
+**On plan rejection:**
+- With feedback: Revises proposal targeting specific concerns
+- Without feedback: Asks clarifying questions before restart
+- Partial approve: Proceeds with approved components, revises rejected
+- After 5 revisions: Suggests breaking goal into smaller parts
 
 ### Executor Echo
 
