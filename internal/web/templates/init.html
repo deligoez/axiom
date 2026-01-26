@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM - Project Setup</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/sse.js"></script>
+    <link rel="stylesheet" href="/static/css/output.css">
+</head>
+<body class="min-h-screen bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="text-4xl mb-2">🔍</div>
+            <h1 class="text-2xl font-bold">AVA - Analyst</h1>
+            <p class="text-gray-400">Project Setup</p>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="bg-gray-800 rounded-lg p-6 min-h-[400px]">
+            <!-- Initial Message -->
+            <div class="mb-4">
+                <p class="text-gray-300">Analyzing your project...</p>
+            </div>
+
+            <!-- SSE Output Container -->
+            <div
+                id="ava-output"
+                hx-ext="sse"
+                sse-connect="/sse/init"
+                sse-swap="message"
+                hx-swap="beforeend"
+            >
+                <!-- Streamed content will appear here -->
+            </div>
+
+            <!-- Done Container (shown via SSE event) -->
+            <div
+                id="ava-done"
+                hx-ext="sse"
+                sse-connect="/sse/init"
+                sse-swap="done"
+                hx-swap="innerHTML"
+                class="hidden"
+            >
+            </div>
+        </div>
+
+        <!-- Action Buttons (hidden until done) -->
+        <div id="action-buttons" class="mt-6 flex justify-center gap-4 hidden">
+            <button
+                class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-medium"
+                hx-get="/"
+                hx-push-url="true"
+            >
+                Accept & Continue
+            </button>
+            <button
+                class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded font-medium"
+            >
+                Customize
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Show action buttons when done event received
+        document.body.addEventListener('sse:done', function() {
+            document.getElementById('action-buttons').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

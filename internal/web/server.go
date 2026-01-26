@@ -46,6 +46,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // routes registers all HTTP routes.
 func (s *Server) routes() {
 	s.mux.HandleFunc("/", s.handleRoot)
+	s.mux.HandleFunc("/init", s.handleInit)
 }
 
 // StaticDir sets the directory for serving static files.
@@ -57,6 +58,16 @@ func (s *Server) StaticDir(dir string) {
 // PageData holds data passed to templates.
 type PageData struct {
 	Cases []casestore.Case
+}
+
+// handleInit handles GET /init for project setup.
+func (s *Server) handleInit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err := s.templates.ExecuteTemplate(w, "init.html", nil)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleRoot handles GET /.
