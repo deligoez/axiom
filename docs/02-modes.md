@@ -406,7 +406,7 @@ AXIOM automatically enables non-interactive mode when CI environment detected:
 | Scenario | Interactive | Non-Interactive |
 |----------|-------------|-----------------|
 | Config corrupt | Prompt user for recovery | Use backup → defaults |
-| Planning crash | Prompt Resume/StartOver/Keep | Auto-resume if >50% done |
+| Planning crash | Prompt Resume/StartOver/Keep | <50%: start over, ≥50%: keep and skip |
 | Human escalation | Wait for user input | Defer case, continue |
 | PENDING signal | Pause, wait for user | Mark pending, continue |
 | Low disk space | Prompt cleanup options | Auto-cleanup |
