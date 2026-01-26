@@ -52,3 +52,20 @@ func TestTaskStore_Load_ReturnsTasksFromFile(t *testing.T) {
 		t.Errorf("got Status %v, want %v", tasks[2].Status, StatusPending)
 	}
 }
+
+func TestTaskStore_Load_MissingFile_ReturnsError(t *testing.T) {
+	// Arrange
+	store := NewTaskStore()
+	path := "/nonexistent/path/tasks.jsonl"
+
+	// Act
+	tasks, err := store.Load(path)
+
+	// Assert
+	if err == nil {
+		t.Error("expected error for missing file, got nil")
+	}
+	if tasks != nil {
+		t.Errorf("expected nil tasks, got %v", tasks)
+	}
+}
