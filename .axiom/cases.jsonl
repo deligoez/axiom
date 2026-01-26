@@ -1,0 +1,5 @@
+{"id":"task-001","type":"task","status":"done","content":"Setup project structure","createdAt":"2026-01-26T10:00:00Z"}
+{"id":"task-002","type":"task","status":"done","content":"Add web server","createdAt":"2026-01-26T10:01:00Z"}
+{"id":"task-003","type":"task","status":"done","content":"Implement task list","createdAt":"2026-01-26T10:02:00Z"}
+{"id":"task-004","type":"task","status":"active","content":"Add persistence","createdAt":"2026-01-26T10:03:00Z"}
+{"id":"task-005","type":"task","status":"pending","content":"Implement planning","createdAt":"2026-01-26T10:04:00Z"}
