@@ -45,6 +45,114 @@ axiom command
 
 Init Mode runs only for first-time projects (no `.axiom/` directory). Analyst Ava guides the user through project setup in a conversational interface.
 
+### Prerequisites Check
+
+Before Init Mode starts, AXIOM validates system requirements:
+
+```
+axiom command
+     │
+     ▼
+┌─────────────────────┐
+│  Prerequisites      │
+│  Check              │
+└──────────┬──────────┘
+           │
+     ┌─────┴─────┐     ┌─────────────────────────────┐
+     │ Git repo? │──No─►│ Error: PREREQ_NO_GIT        │
+     └─────┬─────┘     │ "Not a git repository"      │
+           │Yes        │ Run: git init               │
+           ▼           └─────────────────────────────┘
+     ┌─────────────┐   ┌─────────────────────────────┐
+     │ Claude CLI? │─No─►│ Error: PREREQ_NO_CLAUDE     │
+     └─────┬───────┘   │ "Claude CLI not found"      │
+           │Yes        │ Install: brew install claude │
+           ▼           └─────────────────────────────┘
+     ┌─────────────┐   ┌─────────────────────────────┐
+     │ Disk space? │─No─►│ Error: PREREQ_DISK_LOW      │
+     │ (>500MB)    │   │ "Insufficient disk space"   │
+     └─────┬───────┘   │ Need 500MB free             │
+           │Yes        └─────────────────────────────┘
+           ▼
+     ┌─────────────┐   ┌─────────────────────────────┐
+     │ Permissions?│─No─►│ Error: PREREQ_NO_WRITE      │
+     │ (writable)  │   │ "Directory not writable"    │
+     └─────┬───────┘   └─────────────────────────────┘
+           │Yes
+           ▼
+     ┌─────────────┐
+     │ Init Mode   │
+     │ continues   │
+     └─────────────┘
+```
+
+#### Git Repository Requirement
+
+AXIOM requires a git repository for:
+- Agent workspace isolation (git worktrees)
+- Branch-per-task workflow
+- Integration queue management
+- Checkpoint and rollback
+
+**Error:** `PREREQ_NO_GIT`
+```
+Error: Not a git repository
+
+AXIOM requires a git repository for workspace isolation.
+Initialize one with: git init
+```
+
+#### Claude CLI Requirement
+
+AXIOM spawns Claude CLI agents for task execution.
+
+**Check:** `which claude` or `claude --version`
+
+**Error:** `PREREQ_NO_CLAUDE`
+```
+Error: Claude CLI not found
+
+AXIOM requires Claude CLI to spawn agents.
+Install with: brew install claude
+         or: npm install -g @anthropic/claude-cli
+```
+
+#### Disk Space Requirement
+
+Each agent workspace requires ~50-100MB. With 3 parallel agents plus overhead:
+
+| Component | Space Required |
+|-----------|---------------|
+| `.axiom/` directory | ~10MB |
+| Per-agent workspace | ~50-100MB |
+| Git objects (shared) | ~50MB |
+| Safety buffer | ~200MB |
+| **Minimum total** | **500MB** |
+
+**Warning at:** 90% disk usage
+**Error at:** 95% disk usage or <500MB free
+
+**Error:** `PREREQ_DISK_LOW`
+```
+Error: Insufficient disk space
+
+AXIOM requires at least 500MB free disk space.
+Current free: 234MB
+Suggestion: Clean up with: git gc --prune=now
+```
+
+#### Write Permission Requirement
+
+AXIOM needs write access to create `.axiom/` directory and workspaces.
+
+**Error:** `PREREQ_NO_WRITE`
+```
+Error: Directory not writable
+
+AXIOM cannot create .axiom/ directory.
+Check permissions: ls -la .
+```
+
 ### Init Flow
 
 ```

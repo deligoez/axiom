@@ -8,11 +8,181 @@ Comprehensive error handling, recovery strategies, and escalation paths.
 
 | Category | Source | Severity Range |
 |----------|--------|----------------|
+| Prerequisite Errors | Init Mode checks | Critical |
 | Agent Errors | Claude CLI, output parsing | Low - Critical |
 | Git Errors | Workspace, merge operations | Medium - Critical |
 | System Errors | Disk, memory, network | Medium - Critical |
 | State Errors | Persistence, recovery | Low - High |
 | User Errors | Invalid input, config | Low - Medium |
+
+---
+
+## Prerequisite Errors
+
+These errors occur during Init Mode before AXIOM can start. All are critical and require user action.
+
+### Error Codes
+
+| Code | Message | Cause | Resolution |
+|------|---------|-------|------------|
+| `PREREQ_NO_GIT` | Not a git repository | Directory lacks `.git/` | Run `git init` |
+| `PREREQ_NO_CLAUDE` | Claude CLI not found | `claude` not in PATH | Install Claude CLI |
+| `PREREQ_DISK_LOW` | Insufficient disk space | Less than 500MB free | Free up disk space |
+| `PREREQ_NO_WRITE` | Directory not writable | Permission denied | Check directory permissions |
+
+### PREREQ_NO_GIT
+
+**Severity:** Critical
+**Recoverable:** No (user action required)
+
+```
+Error: Not a git repository
+
+AXIOM requires a git repository for workspace isolation.
+Initialize one with: git init
+```
+
+**Why git is required:**
+- Agent workspaces use `git worktree` for isolation
+- Branch-per-task workflow needs git branching
+- Integration queue relies on git merge
+- Checkpoint/rollback uses git refs
+
+**Resolution:**
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+### PREREQ_NO_CLAUDE
+
+**Severity:** Critical
+**Recoverable:** No (user action required)
+
+```
+Error: Claude CLI not found
+
+AXIOM requires Claude CLI to spawn agents.
+Install with: brew install claude
+         or: npm install -g @anthropic/claude-cli
+```
+
+**Detection:**
+```go
+func checkClaudeCLI() error {
+    _, err := exec.LookPath("claude")
+    if err != nil {
+        return &PrereqError{
+            Code:    "PREREQ_NO_CLAUDE",
+            Message: "Claude CLI not found",
+            Suggestions: []string{
+                "brew install claude",
+                "npm install -g @anthropic/claude-cli",
+            },
+        }
+    }
+    return nil
+}
+```
+
+**Resolution:**
+```bash
+# macOS (Homebrew)
+brew install claude
+
+# npm (cross-platform)
+npm install -g @anthropic/claude-cli
+
+# Verify installation
+claude --version
+```
+
+### PREREQ_DISK_LOW
+
+**Severity:** Critical (at <500MB) / High (at 90-95%)
+**Recoverable:** Partially (auto-cleanup may help)
+
+```
+Error: Insufficient disk space
+
+AXIOM requires at least 500MB free disk space.
+Current free: 234MB
+
+Suggestions:
+- Clean git objects: git gc --prune=now
+- Remove old workspaces: rm -rf .workspaces/*
+- Check large files: du -sh * | sort -h
+```
+
+**Thresholds:**
+
+| Free Space | Action |
+|------------|--------|
+| > 1GB | Normal operation |
+| 500MB - 1GB | Warning logged |
+| < 500MB | Error, refuse to start |
+| < 100MB | Critical, stop all agents |
+
+**Detection:**
+```go
+func checkDiskSpace(path string) error {
+    var stat syscall.Statfs_t
+    syscall.Statfs(path, &stat)
+
+    freeBytes := stat.Bavail * uint64(stat.Bsize)
+    freeMB := freeBytes / 1024 / 1024
+
+    if freeMB < 500 {
+        return &PrereqError{
+            Code:    "PREREQ_DISK_LOW",
+            Message: fmt.Sprintf("Insufficient disk space: %dMB free", freeMB),
+            Suggestions: []string{
+                "git gc --prune=now",
+                "rm -rf .workspaces/*",
+            },
+        }
+    }
+    return nil
+}
+```
+
+### PREREQ_NO_WRITE
+
+**Severity:** Critical
+**Recoverable:** No (user action required)
+
+```
+Error: Directory not writable
+
+AXIOM cannot create .axiom/ directory.
+Current permissions: dr-xr-xr-x
+
+Resolution: chmod u+w .
+```
+
+**Detection:**
+```go
+func checkWritePermission(path string) error {
+    testFile := filepath.Join(path, ".axiom-write-test")
+
+    f, err := os.Create(testFile)
+    if err != nil {
+        return &PrereqError{
+            Code:    "PREREQ_NO_WRITE",
+            Message: "Directory not writable",
+            Suggestions: []string{
+                "chmod u+w .",
+                "Check if filesystem is read-only",
+            },
+        }
+    }
+
+    f.Close()
+    os.Remove(testFile)
+    return nil
+}
+```
 
 ---
 
