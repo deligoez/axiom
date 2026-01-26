@@ -263,6 +263,87 @@ Queue for Merge
      └── Failure ──► Keep Workspace (for debugging)
 ```
 
+### Workspace Cleanup Timing
+
+| Scenario | Cleanup | When |
+|----------|---------|------|
+| Merge success | Automatic | Immediately (if `cleanupOnSuccess: true`) |
+| Merge conflict | Keep | Until conflict resolved or Task deferred |
+| Task failed | Keep | Until manual cleanup or retry |
+| Task timeout | Keep | Until manual cleanup or retry |
+| Agent stopped | Keep | Until manual cleanup or Task reassigned |
+| Rollback | Remove | Orphaned workspaces cleaned on rollback |
+| Disk critical | Auto-clean | Oldest merged workspaces first |
+
+### Preserved Workspaces
+
+Workspaces are preserved for debugging in these cases:
+
+| Failure Type | Workspace State | Preserved Duration |
+|--------------|-----------------|-------------------|
+| Merge conflict | Has uncommitted conflict markers | Until human resolution |
+| Task failed | Contains partial work | 7 days default |
+| Agent crash | May have uncommitted changes | 7 days default |
+| Verification failed | Has failing code | Until retry or cleanup |
+
+**Why preserve?** Allows debugging by:
+- Inspecting git diff/log
+- Running tests manually
+- Checking agent's intermediate state
+
+### Automatic Cleanup Triggers
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    AUTOMATIC CLEANUP                             │
+│                                                                  │
+│  Trigger                │  What's Cleaned                       │
+│  ───────────────────────┼───────────────────────────────────────│
+│  Successful merge       │  Workspace for merged Task            │
+│  Disk < 500MB           │  Oldest preserved workspaces          │
+│  Workspace age > 7d     │  Non-active workspaces (configurable) │
+│  Rollback command       │  All workspaces for affected Tasks    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Manual Cleanup
+
+**CLI cleanup:**
+```bash
+# List all workspaces with status
+ls -la .workspaces/
+
+# Remove specific workspace
+rm -rf .workspaces/echo-001-task-042/
+
+# Clean all workspaces for completed Tasks
+find .workspaces -name "*.completed" -exec rm -rf {} \;
+```
+
+**Web UI cleanup:**
+1. Open Intervention Panel → Workspace tab
+2. Select workspace(s) to remove
+3. Click "Clean Up" (with confirmation)
+
+### Workspace Retention Config
+
+```json
+{
+  "workspace": {
+    "retentionDays": 7,
+    "cleanupOnSuccess": true,
+    "preserveOnFailure": true
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `retentionDays` | 7 | Days to keep failed/stopped workspaces |
+| `cleanupOnSuccess` | true | Auto-remove after successful merge |
+| `preserveOnFailure` | true | Keep workspace on Task failure |
+
 ---
 
 ## Human Escalation
