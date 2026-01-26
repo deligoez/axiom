@@ -1,17 +1,32 @@
 // Package web provides the HTTP server for AXIOM's web interface.
 package web
 
-import "net/http"
+import (
+	"embed"
+	"html/template"
+	"log"
+	"net/http"
+)
+
+//go:embed templates/*.html
+var templatesFS embed.FS
 
 // Server is the HTTP server for AXIOM.
 type Server struct {
-	mux *http.ServeMux
+	mux       *http.ServeMux
+	templates *template.Template
 }
 
 // NewServer creates a new AXIOM web server.
 func NewServer() *Server {
+	tmpl, err := template.ParseFS(templatesFS, "templates/*.html")
+	if err != nil {
+		log.Fatalf("failed to parse templates: %v", err)
+	}
+
 	s := &Server{
-		mux: http.NewServeMux(),
+		mux:       http.NewServeMux(),
+		templates: tmpl,
 	}
 	s.routes()
 	return s
@@ -29,6 +44,10 @@ func (s *Server) routes() {
 
 // handleRoot handles GET /.
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("AXIOM")) // Error ignored: response write failure is unrecoverable
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	err := s.templates.ExecuteTemplate(w, "layout.html", nil)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
