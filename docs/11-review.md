@@ -69,6 +69,33 @@ Queue for review
 
 > **Note:** All modes except `skip` are non-blocking.
 
+### Choosing Review Mode
+
+```
+Is this security/architecture critical?
+  │
+  ├─ Yes → per-task (never auto-approve)
+  │
+  └─ No → Are you confident in verification commands?
+          │
+          ├─ Yes → auto-approve (fast iteration)
+          │
+          └─ No → Are you actively monitoring?
+                  │
+                  ├─ Yes → per-task (immediate feedback)
+                  │
+                  └─ No → batch (review when ready)
+```
+
+**Risk Matrix:**
+
+| Mode | Risk | Speed | Recommended When |
+|------|------|-------|------------------|
+| `per-task` | Lowest | Slowest | Security changes, learning new codebase |
+| `batch` | Low | Fast | Normal workflow, trusted verification |
+| `auto-approve` | Medium | Fastest | Well-tested project, mature codebase |
+| `skip` | Highest | Instant | Documentation only, trivial formatting |
+
 ### Configuration
 
 ```json
