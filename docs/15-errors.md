@@ -567,6 +567,160 @@ func validateConfig(config *Config) []ValidationError {
 | `circular dependency` | Cases depend on each other | Reject, show cycle | Never |
 | `duplicate id` | ID collision | Generate new ID | Never |
 
+### Dependency Errors
+
+| Code | Cause | Recovery | Escalation |
+|------|-------|----------|------------|
+| `CIRCULAR_DEPENDENCY` | Adding dep would create cycle | Reject addition | Never |
+| `CIRCULAR_DEPENDENCY_EXISTING` | Cycle found in loaded data | Mark as blocked | User must fix |
+| `SELF_DEPENDENCY` | Case depends on itself | Reject addition | Never |
+
+#### CIRCULAR_DEPENDENCY
+
+**Severity:** Medium
+**Recoverable:** Yes (don't add the dependency)
+
+```
+Error: Adding this dependency would create a circular reference
+
+From: task-001 (Setup authentication)
+To:   task-002 (Add login page)
+
+Cycle that would be created:
+  task-001 → task-002 → task-001
+
+The dependency was not added.
+```
+
+**Detection (on add):**
+```go
+func (s *CaseStore) AddDependency(fromID, toID string) error {
+    // Check self-dependency
+    if fromID == toID {
+        return &DependencyError{Code: "SELF_DEPENDENCY", From: fromID}
+    }
+
+    // Check if toID can already reach fromID (would create cycle)
+    if s.canReach(toID, fromID) {
+        cycle := s.findCyclePath(toID, fromID)
+        return &DependencyError{
+            Code:  "CIRCULAR_DEPENDENCY",
+            From:  fromID,
+            To:    toID,
+            Cycle: append(cycle, fromID), // Complete the cycle
+        }
+    }
+
+    return nil
+}
+```
+
+#### CIRCULAR_DEPENDENCY_EXISTING
+
+**Severity:** High
+**Recoverable:** User must manually break cycle
+
+```
+Warning: Circular dependency detected in case database
+
+Cycle: task-001 → task-002 → task-003 → task-001
+
+All cases in cycle marked as 'blocked'.
+Use Web UI to remove one dependency and break the cycle.
+```
+
+**Detection (on load):**
+```go
+func (s *CaseStore) ValidateDependencyGraph() []CycleError {
+    // Tarjan's algorithm to find strongly connected components
+    index := 0
+    stack := []string{}
+    indices := make(map[string]int)
+    lowlinks := make(map[string]int)
+    onStack := make(map[string]bool)
+    var sccs [][]string
+
+    var strongconnect func(id string)
+    strongconnect = func(id string) {
+        indices[id] = index
+        lowlinks[id] = index
+        index++
+        stack = append(stack, id)
+        onStack[id] = true
+
+        for _, depID := range s.dependencies[id] {
+            if _, ok := indices[depID]; !ok {
+                strongconnect(depID)
+                lowlinks[id] = min(lowlinks[id], lowlinks[depID])
+            } else if onStack[depID] {
+                lowlinks[id] = min(lowlinks[id], indices[depID])
+            }
+        }
+
+        if lowlinks[id] == indices[id] {
+            var scc []string
+            for {
+                w := stack[len(stack)-1]
+                stack = stack[:len(stack)-1]
+                onStack[w] = false
+                scc = append(scc, w)
+                if w == id {
+                    break
+                }
+            }
+            if len(scc) > 1 {
+                sccs = append(sccs, scc)
+            }
+        }
+    }
+
+    for id := range s.cases {
+        if _, ok := indices[id]; !ok {
+            strongconnect(id)
+        }
+    }
+
+    // Convert SCCs to errors
+    var errors []CycleError
+    for _, scc := range sccs {
+        errors = append(errors, CycleError{
+            Code:    "CIRCULAR_DEPENDENCY_EXISTING",
+            Cycle:   scc,
+            Message: fmt.Sprintf("Cycle: %s", strings.Join(scc, " → ")),
+        })
+
+        // Mark all cases in cycle as blocked
+        for _, id := range scc {
+            s.cases[id].Status = "blocked"
+            s.cases[id].BlockReason = "Circular dependency"
+        }
+    }
+
+    return errors
+}
+```
+
+**Web UI indicator:**
+```
+┌────────────────────────────────────────┐
+│  ⚠ CIRCULAR DEPENDENCY                 │
+│  ────────────────────────────────────  │
+│  task-001 → task-002 → task-003        │
+│      ▲                    │            │
+│      └────────────────────┘            │
+│                                        │
+│  [Break: task-001 → task-002]          │
+│  [Break: task-002 → task-003]          │
+│  [Break: task-003 → task-001]          │
+└────────────────────────────────────────┘
+```
+
+**Logging:**
+```json
+{"ts":"...","level":"error","code":"CIRCULAR_DEPENDENCY_EXISTING","cycle":["task-001","task-002","task-003"],"action":"marked_blocked"}
+{"ts":"...","level":"warn","code":"CIRCULAR_DEPENDENCY","from":"task-004","to":"task-001","rejected":true}
+```
+
 ---
 
 ## Error Response Format

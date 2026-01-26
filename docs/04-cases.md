@@ -348,6 +348,7 @@ Cases persisted to `.axiom/cases.jsonl`:
 2. **Pending unresolved** → that branch cannot progress
 3. **Draft not split into Operation** → Task cannot be created
 4. **Independent branches** → can progress in parallel
+5. **Circular dependencies** → detected and blocked
 
 ```
 calculateReady(cases):
@@ -361,6 +362,164 @@ calculateReady(cases):
         if researchDeps.empty() && pendingDeps.empty():
           ready.push(case)
   return ready
+```
+
+---
+
+## Circular Dependency Detection
+
+### The Problem
+
+Circular dependencies create deadlock where no Task can proceed:
+
+```
+Task A ──blocks──► Task B
+   ▲                  │
+   │                  │
+   └────blocks────────┘
+
+Both A and B are blocked forever.
+```
+
+### Detection Algorithm
+
+CaseStore validates dependencies on every add/update:
+
+```go
+func (s *CaseStore) AddDependency(fromID, toID string) error {
+    // Check if this would create a cycle
+    if s.wouldCreateCycle(fromID, toID) {
+        return &DependencyError{
+            Code:    "CIRCULAR_DEPENDENCY",
+            From:    fromID,
+            To:      toID,
+            Cycle:   s.findCycle(fromID, toID),
+            Message: "Adding this dependency would create a circular reference",
+        }
+    }
+
+    // Safe to add
+    s.dependencies[fromID] = append(s.dependencies[fromID], toID)
+    return nil
+}
+
+func (s *CaseStore) wouldCreateCycle(fromID, toID string) bool {
+    // If toID can reach fromID, adding fromID→toID creates a cycle
+    return s.canReach(toID, fromID)
+}
+
+func (s *CaseStore) canReach(startID, targetID string) bool {
+    visited := make(map[string]bool)
+    return s.dfs(startID, targetID, visited)
+}
+
+func (s *CaseStore) dfs(currentID, targetID string, visited map[string]bool) bool {
+    if currentID == targetID {
+        return true
+    }
+    if visited[currentID] {
+        return false
+    }
+    visited[currentID] = true
+
+    for _, depID := range s.dependencies[currentID] {
+        if s.dfs(depID, targetID, visited) {
+            return true
+        }
+    }
+    return false
+}
+```
+
+### Cycle Detection at Load Time
+
+On startup, CaseStore validates all existing dependencies:
+
+```go
+func (s *CaseStore) ValidateDependencyGraph() []CycleError {
+    var cycles []CycleError
+
+    // Find all strongly connected components (SCCs) with >1 node
+    sccs := s.findSCCs()  // Tarjan's algorithm
+
+    for _, scc := range sccs {
+        if len(scc) > 1 {
+            cycles = append(cycles, CycleError{
+                Code:    "CIRCULAR_DEPENDENCY_EXISTING",
+                Cycle:   scc,
+                Message: fmt.Sprintf("Circular dependency detected: %s", strings.Join(scc, " → ")),
+            })
+        }
+    }
+
+    return cycles
+}
+```
+
+### Behavior on Detection
+
+| When | Behavior |
+|------|----------|
+| Adding dependency | Reject with error, no change |
+| Loading from JSONL | Log error, mark all cycle members as `blocked` |
+| Web UI | Show cycle members with warning indicator |
+
+### Web UI Indicator
+
+Cases in a cycle show a special indicator:
+
+```
+┌──────────────────────────────────────┐
+│  Tasks                               │
+│  ─────────────────────────────────── │
+│  ⚠ task-001   Setup auth    ⟳       │ ← Cycle indicator
+│  ⚠ task-002   Add login     ⟳       │
+│    task-003   Dashboard     →        │
+└──────────────────────────────────────┘
+
+Tooltip: "Circular dependency: task-001 → task-002 → task-001"
+```
+
+### Breaking Cycles
+
+Users can break cycles via Web UI:
+
+1. Select a case in the cycle
+2. Click "Dependencies" panel
+3. Remove one of the blocking dependencies
+4. System recalculates ready status
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Dependencies: task-001                                 │
+│  ───────────────────────────────────────────────────── │
+│  ⚠ CIRCULAR DEPENDENCY DETECTED                        │
+│                                                         │
+│  Cycle: task-001 → task-002 → task-001                 │
+│                                                         │
+│  Blocked by:                                            │
+│    task-002  Add login page   [Remove]                 │
+│                                                         │
+│  Blocking:                                              │
+│    task-002  Add login page   [Remove]                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Self-Dependency
+
+A case cannot depend on itself:
+
+```go
+func (s *CaseStore) AddDependency(fromID, toID string) error {
+    if fromID == toID {
+        return &DependencyError{
+            Code:    "SELF_DEPENDENCY",
+            From:    fromID,
+            Message: "A case cannot depend on itself",
+        }
+    }
+    // ... rest of validation
+}
 ```
 
 ---
