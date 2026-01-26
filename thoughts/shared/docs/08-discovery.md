@@ -66,7 +66,7 @@ This ensures CaseStore remains the single source of truth.
 
 ### Discovery Case Structure
 
-See [04-ideas.md](./04-ideas.md#type-specific-metadata) for full `DiscoveryMetadata` structure.
+See [04-cases.md](./04-cases.md#type-specific-metadata) for full `DiscoveryMetadata` structure.
 
 Key fields: `scope` (local/global), `sourceTaskId`, `sourceAgentId`, `impact`, `validated`, `appliedTo`, `supersededBy`.
 

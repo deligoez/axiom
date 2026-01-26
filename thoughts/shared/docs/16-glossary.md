@@ -765,15 +765,16 @@ A feature that spans all layers (DB, API, UI) for one capability.
 | 01 | Configuration | Config system |
 | 02 | Modes | Mode routing, Init, Operating modes |
 | 03 | Planning | Planning Dialogue, Spec Lifecycle |
-| 04 | Ideas | Case System, CaseStore |
+| 04 | Cases | Case System, CaseStore |
 | 05 | Agents | Personas, Prompt Construction |
-| 06 | Merging | Integration Service |
-| 07 | Autopilot | Execution Loop |
-| 08 | Learnings | Discovery System |
-| 09 | Intervention | Intervention, Rollback, Hooks |
+| 06 | Integration | Integration Service |
+| 07 | Execution | Execution Loop, Sprint |
+| 08 | Discovery | Discovery System |
+| 09 | Intervention | Intervention, Rollback |
 | 10 | Interface | Web UI components |
 | 11 | Review | Review and Debrief |
-| 12 | Reference | Quick reference |
-| 13 | Prompts | Default persona prompts |
-| 14 | Errors | Error handling |
-| **15** | **Glossary** | **Terminology reference** |
+| 12 | Hooks | Hooks System (lifecycle scripts) |
+| 13 | Reference | Quick reference |
+| 14 | Prompts | Default persona prompts |
+| 15 | Errors | Error handling |
+| **16** | **Glossary** | **Terminology reference** |

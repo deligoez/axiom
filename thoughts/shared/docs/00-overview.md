@@ -227,15 +227,16 @@ Native CaseStore with:
 | [01-configuration.md](./01-configuration.md) | Configuration system |
 | [02-modes.md](./02-modes.md) | Mode routing, Init Mode, Operating modes |
 | [03-planning.md](./03-planning.md) | Planning, 5-Phase Dialogue, Spec Lifecycle |
-| [04-ideas.md](./04-ideas.md) | Case management (Case System) |
+| [04-cases.md](./04-cases.md) | Case management (Case System) |
 | [05-agents.md](./05-agents.md) | Agent personas, Prompt Construction, Shared Rules |
-| [06-merging.md](./06-merging.md) | Integration service |
-| [07-autopilot.md](./07-autopilot.md) | Execution Loop (Task execution) |
-| [08-learnings.md](./08-learnings.md) | Discovery System (Discovery cases) |
+| [06-integration.md](./06-integration.md) | Integration service |
+| [07-execution.md](./07-execution.md) | Execution Loop (Task execution, Sprint) |
+| [08-discovery.md](./08-discovery.md) | Discovery System (Discovery cases) |
 | [09-intervention.md](./09-intervention.md) | Intervention and rollback |
 | [10-interface.md](./10-interface.md) | Web UI components |
 | [11-review.md](./11-review.md) | Review and Debrief |
-| [12-reference.md](./12-reference.md) | Quick reference |
-| [13-prompts.md](./13-prompts.md) | Default persona prompts |
-| [14-errors.md](./14-errors.md) | Error handling matrix |
-| [15-glossary.md](./15-glossary.md) | Terminology and unique concepts |
+| [12-hooks.md](./12-hooks.md) | Hooks System (lifecycle scripts) |
+| [13-reference.md](./13-reference.md) | Quick reference |
+| [14-prompts.md](./14-prompts.md) | Default persona prompts |
+| [15-errors.md](./15-errors.md) | Error handling matrix |
+| [16-glossary.md](./16-glossary.md) | Terminology and unique concepts |
