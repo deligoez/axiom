@@ -12,13 +12,33 @@
 **No active tasks** - Clean slate!
 
 Next steps to consider:
-- Test Ava end-to-end (manual integration test)
+- Test Init Mode end-to-end (manual integration test)
 - Implement Axel (planning agent)
 - Implement Echo (implementation agent)
 
 ---
 
 ## Completed Milestones
+
+### MVP-05: Init Mode Web UI ✓
+- **Goal:** Ava runs in browser with streaming output
+- **Status:** DONE
+- **What was built:**
+  - SSE infrastructure for agent streaming
+  - Agent streamer (non-blocking spawn with channels)
+  - Init Mode UI (/init page with Ava chat)
+  - Updated startup flow (server first, then SSE)
+- **Tasks completed:**
+  - ax-81w: PLAN - Init Mode Web UI Architecture
+  - ax-q03: Agent Streamer (non-blocking spawn)
+  - ax-s1o: SSE infrastructure for agent streaming
+  - ax-cju: Init Mode UI (Ava chat interface)
+  - ax-v50: Update startup flow for Init Mode UI
+- **Key files:**
+  - internal/agent/streamer.go
+  - internal/web/sse.go
+  - internal/web/templates/init.html
+  - cmd/axiom/main.go
 
 ### MVP-04: Ava Init System ✓
 - **Goal:** First run spawns Ava for project setup
@@ -68,18 +88,24 @@ Next steps to consider:
 ```
 axiom command
      ↓
-.axiom/ exists? ─No─→ Scaffold
-     ↓                    ↓
-    Yes              Spawn Ava
-     ↓                    ↓
-Start server      AVA_COMPLETE?
-                       ↓
-                  Start server
+.axiom/ exists? ─No─→ Scaffold → Init Mode
+     ↓                              ↓
+    Yes                    Server starts (/init)
+     ↓                              ↓
+Server starts (/)          Browser opens /init
+                                    ↓
+                           SSE spawns Ava (streaming)
+                                    ↓
+                           AVA_COMPLETE → redirect /
 ```
 
 ### Agent Spawning
-```bash
-claude --print --dangerously-skip-permissions --system-prompt "$(cat prompt.md)"
+```go
+// Blocking (for simple use)
+output, err := agent.Spawn(promptPath, message)
+
+// Streaming (for UI)
+lines, done, err := agent.SpawnStreaming(promptPath, message)
 ```
 
 ### Signal Format
