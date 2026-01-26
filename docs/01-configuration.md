@@ -102,17 +102,85 @@ All AXIOM configuration is stored in `.axiom/config.json`.
 
 ### Verification
 
-Array of commands that must all pass before Task completion. Run in order.
+Commands that must all pass before Task completion. Supports simple array or detailed configuration.
+
+#### Simple Format (Array)
+
+```json
+"verification": ["npm test", "npm run typecheck", "npm run lint"]
+```
+
+All commands use default timeout (300 seconds).
+
+#### Detailed Format (Object)
+
+```json
+"verification": {
+  "defaultTimeout": 300,
+  "commands": [
+    {
+      "command": "npm test",
+      "timeout": 600,
+      "required": true,
+      "name": "Unit Tests"
+    },
+    {
+      "command": "npm run typecheck",
+      "timeout": 120,
+      "required": true,
+      "name": "TypeScript"
+    },
+    {
+      "command": "npm run lint",
+      "timeout": 60,
+      "required": false,
+      "name": "Linting"
+    }
+  ]
+}
+```
+
+#### Verification Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `defaultTimeout` | 300 | Default timeout in seconds |
+| `commands[].command` | - | Command to run |
+| `commands[].timeout` | `defaultTimeout` | Per-command timeout (seconds) |
+| `commands[].required` | true | If false, timeout/failure is warning only |
+| `commands[].name` | command | Display name in UI |
+
+#### Examples by Project Type
 
 ```json
 // Node.js project
-"verification": ["npm test", "npm run typecheck", "npm run lint"]
+"verification": {
+  "defaultTimeout": 300,
+  "commands": [
+    { "command": "npm test", "timeout": 600, "name": "Tests" },
+    { "command": "npm run typecheck", "timeout": 120 },
+    { "command": "npm run lint", "timeout": 60 }
+  ]
+}
 
 // Python project
-"verification": ["pytest", "mypy .", "ruff check ."]
+"verification": {
+  "defaultTimeout": 300,
+  "commands": [
+    { "command": "pytest", "timeout": 600 },
+    { "command": "mypy .", "timeout": 180 },
+    { "command": "ruff check .", "timeout": 60, "required": false }
+  ]
+}
 
 // Go project
-"verification": ["go test ./...", "go vet ./..."]
+"verification": {
+  "defaultTimeout": 300,
+  "commands": [
+    { "command": "go test ./...", "timeout": 600 },
+    { "command": "go vet ./...", "timeout": 120 }
+  ]
+}
 ```
 
 ### Planning

@@ -165,15 +165,103 @@ After COMPLETE signal, run all verification commands:
 
 ```
 runVerificationGate():
-  for command in config.verification:
-    result = run(command, cwd=workspace)
+  for cmd in config.verification.commands:
+    timeout = cmd.timeout ?? config.verification.defaultTimeout ?? 300
+
+    result = runWithTimeout(cmd.command, timeout, cwd=workspace)
+
+    if result.timedOut:
+      if cmd.required:
+        return { pass: false, error: "VERIFICATION_TIMEOUT", command: cmd }
+      else:
+        log.warn("Optional verification timed out", cmd.name)
+        continue
+
     if result.exitCode != 0:
-      return { pass: false, command, output: result.stderr }
+      if cmd.required:
+        return { pass: false, error: "VERIFICATION_FAILED", command: cmd }
+      else:
+        log.warn("Optional verification failed", cmd.name)
+        continue
 
   return { pass: true }
 ```
 
 If verification fails, agent continues iterating to fix issues.
+
+### Verification Timeout Behavior
+
+| Scenario | `required: true` | `required: false` |
+|----------|------------------|-------------------|
+| Command succeeds | Continue | Continue |
+| Command fails | Verification fails, retry | Log warning, continue |
+| Command times out | Verification fails, retry | Log warning, continue |
+
+### Timeout Configuration
+
+```json
+{
+  "verification": {
+    "defaultTimeout": 300,
+    "commands": [
+      { "command": "npm test", "timeout": 600 },
+      { "command": "npm run lint", "timeout": 60, "required": false }
+    ]
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `defaultTimeout` | 300s (5 min) | Applied to commands without explicit timeout |
+| Per-command `timeout` | Inherits default | Override for slow commands |
+| `required` | true | If false, timeout/failure doesn't block |
+
+### Timeout Handling
+
+```go
+func runWithTimeout(cmd string, timeoutSecs int, cwd string) *Result {
+    ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecs)*time.Second)
+    defer cancel()
+
+    proc := exec.CommandContext(ctx, "sh", "-c", cmd)
+    proc.Dir = cwd
+
+    output, err := proc.CombinedOutput()
+
+    if ctx.Err() == context.DeadlineExceeded {
+        return &Result{
+            TimedOut: true,
+            Error:    fmt.Sprintf("Command timed out after %ds", timeoutSecs),
+        }
+    }
+
+    return &Result{
+        ExitCode: proc.ProcessState.ExitCode(),
+        Output:   string(output),
+        Error:    err,
+    }
+}
+```
+
+### Verification in Web UI
+
+The Agent Card shows verification progress:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  VERIFICATION                                           │
+│  ─────────────────────────────────────────────────────  │
+│  ✓ Unit Tests         passed     (42s / 600s)          │
+│  ● TypeScript         running... (15s / 120s)          │
+│  ○ Linting           waiting                           │
+└─────────────────────────────────────────────────────────┘
+```
+
+On timeout:
+```
+│  ✗ Unit Tests         TIMEOUT    (600s / 600s)         │
+```
 
 ---
 

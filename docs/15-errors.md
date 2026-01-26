@@ -292,6 +292,90 @@ func validateSignal(raw string) (*Signal, error) {
 | `invalid_commits` | Broken git state | Reset workspace | After 2 occurrences |
 | `verification_failures` | Tests/lint failing | Retry with feedback | After maxIterations |
 
+### Verification Errors
+
+| Code | Cause | Recovery | Escalation |
+|------|-------|----------|------------|
+| `VERIFICATION_TIMEOUT` | Command exceeded timeout | Retry iteration | After maxIterations |
+| `VERIFICATION_FAILED` | Command returned non-zero | Retry iteration | After maxIterations |
+| `VERIFICATION_SKIPPED` | Optional command failed/timeout | Continue (warning only) | Never |
+
+#### VERIFICATION_TIMEOUT
+
+**Severity:** Medium (required) / Low (optional)
+**Recoverable:** Yes (agent retries)
+
+```
+Error: Verification command timed out
+
+Command: npm test
+Timeout: 600 seconds
+Status: Required command - verification failed
+
+Agent will retry with fixes.
+```
+
+**Common causes:**
+- Test suite too slow
+- Infinite loop in tests
+- Network-dependent tests hanging
+- Database connection timeout
+
+**Resolution options:**
+1. Increase timeout in config: `{ "command": "npm test", "timeout": 900 }`
+2. Mark as optional: `{ "command": "npm test", "required": false }`
+3. Optimize slow tests
+4. Add test timeout in test framework
+
+**Detection:**
+```go
+func runVerificationCommand(cmd VerificationCommand, cwd string) *VerificationResult {
+    timeout := cmd.Timeout
+    if timeout == 0 {
+        timeout = 300 // default 5 minutes
+    }
+
+    ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+    defer cancel()
+
+    proc := exec.CommandContext(ctx, "sh", "-c", cmd.Command)
+    proc.Dir = cwd
+
+    output, err := proc.CombinedOutput()
+
+    if ctx.Err() == context.DeadlineExceeded {
+        return &VerificationResult{
+            Command:  cmd.Command,
+            TimedOut: true,
+            Error: &VerificationError{
+                Code:    "VERIFICATION_TIMEOUT",
+                Message: fmt.Sprintf("Command timed out after %ds", timeout),
+            },
+        }
+    }
+
+    if err != nil {
+        return &VerificationResult{
+            Command:  cmd.Command,
+            ExitCode: proc.ProcessState.ExitCode(),
+            Output:   string(output),
+            Error: &VerificationError{
+                Code:    "VERIFICATION_FAILED",
+                Message: fmt.Sprintf("Command failed with exit code %d", proc.ProcessState.ExitCode()),
+            },
+        }
+    }
+
+    return &VerificationResult{Command: cmd.Command, Success: true}
+}
+```
+
+**Logging:**
+```json
+{"ts":"...","level":"error","code":"VERIFICATION_TIMEOUT","agent":"echo-001","task":"task-042","command":"npm test","timeout":600}
+{"ts":"...","level":"warn","code":"VERIFICATION_SKIPPED","agent":"echo-001","task":"task-042","command":"npm run lint","reason":"timeout","required":false}
+```
+
 ---
 
 ## Git Errors
