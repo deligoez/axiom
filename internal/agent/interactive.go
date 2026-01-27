@@ -203,10 +203,11 @@ func (a *InteractiveAgent) runMessage(message string) {
 	}
 
 	// Poll for response using marker-based detection
-	pollInterval := 200 * time.Millisecond
+	// Use 50ms poll interval for more granular streaming
+	pollInterval := 50 * time.Millisecond
 	noChangeCount := 0
-	maxNoChangeCount := 25        // 5 seconds of no content change = done
-	maxWaitForResponse := 60 * 5  // 60 seconds max wait for first response marker (60s / 200ms = 300 polls)
+	maxNoChangeCount := 100       // 5 seconds of no content change = done (100 * 50ms)
+	maxWaitForResponse := 1200    // 60 seconds max wait for first response marker (1200 * 50ms)
 	waitForResponseCount := 0
 	lastExtractedLen := 0
 
