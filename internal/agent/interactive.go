@@ -161,6 +161,18 @@ func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan er
 	// Log user message
 	a.logger.Log("user", message)
 
+	// Close old channels to unblock any waiting goroutines
+	if a.chunks != nil {
+		close(a.chunks)
+	}
+	if a.done != nil {
+		select {
+		case a.done <- nil:
+		default:
+		}
+		close(a.done)
+	}
+
 	// Create fresh channels for this message
 	a.chunks = make(chan string, 100)
 	a.done = make(chan error, 1)
@@ -220,11 +232,16 @@ func (a *InteractiveAgent) readOutput() {
 		a.mu.Lock()
 		a.currentResponse.WriteString(char)
 		if a.chunks != nil {
-			select {
-			case a.chunks <- char:
-			default:
-				// Channel full, skip
-			}
+			// Use recover to handle closed channel (safe send)
+			func() {
+				//nolint:errcheck // recover() returns nil or panic value, we don't need it
+				defer func() { _ = recover() }()
+				select {
+				case a.chunks <- char:
+				default:
+					// Channel full, skip
+				}
+			}()
 		}
 		a.mu.Unlock()
 	}
