@@ -53,7 +53,7 @@ Thumbs.db
 *.sublime-*
 
 # Claude Code (keep rules, ignore cache)
-.claude/
+.claude/*
 !.claude/rules/
 
 # Test coverage (generated)

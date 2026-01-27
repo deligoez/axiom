@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-900">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,101 +10,237 @@
     <script src="/static/js/purify.min.js"></script>
     <link rel="stylesheet" href="/static/css/output.css">
 </head>
-<body class="min-h-screen flex flex-col bg-gray-50">
-    <!-- Header -->
-    <header class="bg-gray-900 text-white">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-bold">AXIOM</h1>
-            <span class="text-sm text-gray-400">Multi-agent AI orchestrator</span>
-        </div>
-    </header>
+<body class="h-full">
+    <!-- Static sidebar for desktop -->
+    <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+        <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-white/10 bg-gray-900 px-6">
+            <!-- Logo -->
+            <div class="flex h-16 shrink-0 items-center">
+                <span class="text-2xl font-bold text-white">AXIOM</span>
+            </div>
 
-    <!-- Main Content -->
-    <main class="flex-1 container mx-auto px-4 py-8">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Cases</h2>
-            {{template "case-list" .}}
+            <!-- Navigation -->
+            <nav class="flex flex-1 flex-col">
+                <ul role="list" class="flex flex-1 flex-col gap-y-7">
+                    <li>
+                        <ul role="list" class="-mx-2 space-y-1">
+                            <li>
+                                <a href="/" class="group flex gap-x-3 rounded-md bg-white/5 p-2 text-sm font-semibold text-white">
+                                    <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                                    </svg>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/cases" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white">
+                                    <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                                    </svg>
+                                    Cases
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/agents" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white">
+                                    <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                    </svg>
+                                    Agents
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/config" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white">
+                                    <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                    </svg>
+                                    Config
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Active Agents Section -->
+                    <li>
+                        <div class="text-xs font-semibold text-gray-500">Active Agents</div>
+                        <ul role="list" class="-mx-2 mt-2 space-y-1">
+                            {{if .InitMode}}
+                            <li>
+                                <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white">
+                                    <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[0.625rem] font-medium">A</span>
+                                    <span class="truncate">Ava (Setup)</span>
+                                    <span class="ml-auto flex size-2 rounded-full bg-green-400 animate-pulse"></span>
+                                </a>
+                            </li>
+                            {{else}}
+                            <li>
+                                <span class="group flex gap-x-3 rounded-md p-2 text-sm text-gray-500">
+                                    No active agents
+                                </span>
+                            </li>
+                            {{end}}
+                        </ul>
+                    </li>
+
+                    <!-- Status at bottom -->
+                    <li class="-mx-6 mt-auto">
+                        <div class="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold text-gray-400">
+                            <span class="flex size-2 rounded-full bg-green-400"></span>
+                            <span>System Ready</span>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Mobile header (hidden on lg+) -->
+    <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-gray-900 px-4 py-4 shadow-sm sm:px-6 lg:hidden">
+        <button type="button" class="-m-2.5 p-2.5 text-gray-400 lg:hidden">
+            <span class="sr-only">Open sidebar</span>
+            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </button>
+        <div class="flex-1 text-sm font-semibold text-white">AXIOM</div>
+    </div>
+
+    <!-- Main content area -->
+    <main class="lg:pl-72">
+        <div class="xl:pl-96">
+            <div class="px-4 py-6 sm:px-6 lg:px-8">
+                {{if .InitMode}}
+                <!-- Init Mode: Ava Chat -->
+                <div class="flex flex-col h-[calc(100vh-6rem)]">
+                    <!-- Chat Header -->
+                    <div class="flex items-center gap-x-3 pb-4 border-b border-white/10">
+                        <div class="flex size-10 items-center justify-center rounded-full bg-indigo-500">
+                            <span class="text-lg">🔍</span>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-white">Ava - Analyst</h2>
+                            <p class="text-sm text-gray-400">Project Setup</p>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages (scrollable) -->
+                    <div id="ava-output-container" class="flex-1 overflow-y-auto py-4">
+                        <div id="ava-output" class="space-y-4">
+                            <!-- Messages will appear here -->
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="border-t border-white/10 pt-4">
+                        <form id="init-input-form" class="flex gap-3"
+                            hx-post="/api/init/respond"
+                            hx-swap="none"
+                            hx-on::before-request="addUserMessage(this)"
+                            hx-on::after-request="this.reset()">
+                            <input
+                                type="text"
+                                name="message"
+                                id="user-message-input"
+                                placeholder="Type your response..."
+                                class="flex-1 rounded-lg border-0 bg-white/5 px-4 py-3 text-white shadow-sm ring-1 ring-inset ring-white/10 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                                autocomplete="off"
+                            />
+                            <button
+                                type="submit"
+                                class="rounded-lg bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                            >
+                                Send
+                            </button>
+                        </form>
+
+                        <!-- Continue Button (shown on completion) -->
+                        <div id="init-complete" class="hidden mt-4 flex justify-center">
+                            <button
+                                onclick="document.getElementById('init-complete').classList.add('hidden'); window.location.reload();"
+                                class="rounded-lg bg-green-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-400"
+                            >
+                                Continue to AXIOM
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {{else}}
+                <!-- Normal Mode: Dashboard/Cases -->
+                <div>
+                    <h1 class="text-2xl font-bold text-white mb-6">Dashboard</h1>
+                    {{template "case-list" .}}
+                </div>
+                {{end}}
+            </div>
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-gray-100 border-t">
-        <div class="container mx-auto px-4 py-4 text-center text-sm text-gray-500">
-            &copy; 2025 AXIOM
+    <!-- Secondary column (hidden on smaller screens) -->
+    <aside class="fixed inset-y-0 left-72 hidden w-96 overflow-y-auto border-r border-white/10 px-4 py-6 sm:px-6 lg:px-8 xl:block">
+        {{if .InitMode}}
+        <!-- Init Mode: Setup Status -->
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-sm font-semibold text-white">Setup Progress</h3>
+                <div class="mt-4 space-y-3">
+                    <div class="flex items-center gap-x-3">
+                        <span class="flex size-6 items-center justify-center rounded-full bg-green-500 text-white text-xs">✓</span>
+                        <span class="text-sm text-gray-300">Project detected</span>
+                    </div>
+                    <div class="flex items-center gap-x-3">
+                        <span class="flex size-6 items-center justify-center rounded-full bg-indigo-500 text-white text-xs animate-pulse">●</span>
+                        <span class="text-sm text-gray-300">Analyzing codebase</span>
+                    </div>
+                    <div class="flex items-center gap-x-3">
+                        <span class="flex size-6 items-center justify-center rounded-full border border-white/20 text-gray-500 text-xs">○</span>
+                        <span class="text-sm text-gray-500">Generate configuration</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 pt-6">
+                <h3 class="text-sm font-semibold text-white">Project Info</h3>
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div>
+                        <dt class="text-gray-500">Type</dt>
+                        <dd class="text-gray-300">Go Project</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Location</dt>
+                        <dd class="text-gray-300 truncate">{{.WorkDir}}</dd>
+                    </div>
+                </dl>
+            </div>
         </div>
-    </footer>
+        {{else}}
+        <!-- Normal Mode: Quick Stats -->
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-sm font-semibold text-white">Quick Stats</h3>
+                <dl class="mt-4 grid grid-cols-1 gap-4">
+                    <div class="rounded-lg bg-white/5 p-4">
+                        <dt class="text-sm text-gray-400">Active Cases</dt>
+                        <dd class="text-2xl font-semibold text-white">0</dd>
+                    </div>
+                    <div class="rounded-lg bg-white/5 p-4">
+                        <dt class="text-sm text-gray-400">Completed Today</dt>
+                        <dd class="text-2xl font-semibold text-white">0</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        {{end}}
+    </aside>
 
     {{if .InitMode}}
-    <!-- Init Mode Modal (80% of screen) -->
-    <div id="init-modal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black bg-opacity-70"></div>
-
-        <!-- Modal Content -->
-        <div class="relative bg-gray-900 text-white rounded-lg shadow-2xl w-[80vw] h-[80vh] flex flex-col">
-            <!-- Modal Header -->
-            <div class="text-center py-6 border-b border-gray-700">
-                <div class="text-4xl mb-2">🔍</div>
-                <h2 class="text-2xl font-bold">AVA - Analyst</h2>
-                <p class="text-gray-400">Project Setup</p>
-            </div>
-
-            <!-- Modal Body (scrollable) -->
-            <div class="flex-1 overflow-y-auto p-6" id="ava-output-container">
-                <!-- SSE Output Container (managed by JavaScript) -->
-                <div
-                    id="ava-output"
-                    class="font-mono text-sm text-gray-300 whitespace-pre-wrap"
-                >
-                    <!-- Streamed content appears here -->
-                </div>
-            </div>
-
-            <!-- Modal Footer - Input and Actions -->
-            <div class="border-t border-gray-700 p-4">
-                <!-- User Input Form -->
-                <form id="init-input-form" class="flex gap-3 mb-3"
-                    hx-post="/api/init/respond"
-                    hx-swap="none"
-                    hx-on::before-request="addUserMessage(this)"
-                    hx-on::after-request="this.reset()">
-                    <input
-                        type="text"
-                        name="message"
-                        id="user-message-input"
-                        placeholder="Type your response..."
-                        class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                        autocomplete="off"
-                    />
-                    <button
-                        type="submit"
-                        class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium"
-                    >
-                        Send
-                    </button>
-                </form>
-
-                <!-- Continue Button (shown on completion) -->
-                <div id="init-complete" class="hidden flex justify-center">
-                    <button
-                        onclick="document.getElementById('init-modal').remove()"
-                        class="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-lg font-medium text-lg"
-                    >
-                        Continue to AXIOM
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     <script>
         let sseSource = null;
-        let messageBuffer = [];  // Buffer for accumulating messages
-        let currentAssistantText = '';  // Current assistant message being built
+        let messageBuffer = [];
+        let currentAssistantText = '';
 
-        // Configure marked for safe rendering
         marked.setOptions({
-            breaks: true,  // Convert \n to <br>
-            gfm: true,     // GitHub Flavored Markdown
+            breaks: true,
+            gfm: true,
         });
 
         function renderMessages() {
@@ -113,21 +249,25 @@
 
             for (const msg of messageBuffer) {
                 if (msg.type === 'user') {
-                    html += '<div class="border-t border-gray-700 my-4"></div>';
-                    html += '<div class="py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200">';
-                    html += '<span class="font-semibold">You:</span> ' + DOMPurify.sanitize(msg.content);
-                    html += '</div>';
+                    html += '<div class="flex justify-end">';
+                    html += '<div class="max-w-[80%] rounded-lg bg-indigo-500 px-4 py-2 text-sm text-white">';
+                    html += DOMPurify.sanitize(msg.content);
+                    html += '</div></div>';
                 } else {
-                    // Render markdown for assistant messages
-                    const rendered = DOMPurify.sanitize(marked.parse(msg.content));
-                    html += '<div class="prose prose-invert prose-sm max-w-none">' + rendered + '</div>';
+                    html += '<div class="flex justify-start">';
+                    html += '<div class="max-w-[80%] rounded-lg bg-white/5 px-4 py-2 text-sm text-gray-300">';
+                    html += '<div class="prose prose-invert prose-sm max-w-none">';
+                    html += DOMPurify.sanitize(marked.parse(msg.content));
+                    html += '</div></div></div>';
                 }
             }
 
-            // Add current streaming text (render as markdown too)
             if (currentAssistantText) {
-                const rendered = DOMPurify.sanitize(marked.parse(currentAssistantText));
-                html += '<div class="prose prose-invert prose-sm max-w-none">' + rendered + '</div>';
+                html += '<div class="flex justify-start">';
+                html += '<div class="max-w-[80%] rounded-lg bg-white/5 px-4 py-2 text-sm text-gray-300">';
+                html += '<div class="prose prose-invert prose-sm max-w-none">';
+                html += DOMPurify.sanitize(marked.parse(currentAssistantText));
+                html += '</div></div></div>';
             }
 
             output.innerHTML = html;
@@ -139,33 +279,24 @@
                 sseSource.close();
             }
 
-            // Reset state for fresh connection
             messageBuffer = [];
             currentAssistantText = '';
 
             sseSource = new EventSource('/sse/init');
 
             sseSource.addEventListener('message', function(e) {
-                // Remove loading indicator
-                const loading = document.getElementById('ava-loading');
-                if (loading) loading.remove();
-
                 const data = e.data;
 
-                // Check if this is a user message (has special HTML structure from server)
                 if (data.includes('bg-blue-900') && data.includes('You:</span>')) {
-                    // Finalize current assistant text if any
                     if (currentAssistantText) {
                         messageBuffer.push({ type: 'assistant', content: currentAssistantText });
                         currentAssistantText = '';
                     }
-                    // Extract user message text from the HTML
                     const match = data.match(/You:<\/span>\s*(.+?)<\/div>/);
                     if (match) {
                         messageBuffer.push({ type: 'user', content: match[1] });
                     }
                 } else {
-                    // Assistant text chunk - accumulate it
                     currentAssistantText += data;
                 }
 
@@ -174,7 +305,6 @@
 
             sseSource.addEventListener('done', function(e) {
                 sseSource.close();
-                // Finalize any remaining text
                 if (currentAssistantText) {
                     messageBuffer.push({ type: 'assistant', content: currentAssistantText });
                     currentAssistantText = '';
@@ -193,25 +323,11 @@
             const message = input.value.trim();
             if (!message) return;
 
-            const output = document.getElementById('ava-output');
-
-            // Add loading indicator
-            const loading = document.createElement('div');
-            loading.id = 'ava-loading';
-            loading.className = 'py-1 text-gray-500 italic';
-            loading.textContent = 'Sending...';
-            output.appendChild(loading);
-
-            // Scroll to bottom
-            output.parentElement.scrollTop = output.parentElement.scrollHeight;
-
-            // Reconnect SSE after delay - server will replay full history
             setTimeout(function() {
                 initSSE();
             }, 500);
         }
 
-        // Initialize SSE on page load
         document.addEventListener('DOMContentLoaded', initSSE);
     </script>
     {{end}}
