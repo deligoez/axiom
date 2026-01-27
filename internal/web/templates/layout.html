@@ -48,27 +48,13 @@
             </div>
 
             <!-- Modal Body (scrollable) -->
-            <div class="flex-1 overflow-y-auto p-6" hx-ext="sse" sse-connect="/sse/init">
-                <div class="mb-4">
-                    <p class="text-gray-300">Analyzing your project...</p>
-                </div>
-
-                <!-- SSE Output Container (single connection, multiple event handlers) -->
+            <div class="flex-1 overflow-y-auto p-6" id="ava-output-container">
+                <!-- SSE Output Container (managed by JavaScript) -->
                 <div
                     id="ava-output"
-                    sse-swap="message"
-                    hx-swap="beforeend"
                     class="font-mono text-sm text-gray-300 space-y-1"
                 >
                     <!-- Streamed content appears here -->
-                </div>
-
-                <!-- Done event listener (same connection) -->
-                <div
-                    sse-swap="done"
-                    hx-swap="none"
-                    hx-on:htmx:sse-message="document.getElementById('init-complete').classList.remove('hidden')"
-                >
                 </div>
             </div>
 
@@ -78,10 +64,12 @@
                 <form id="init-input-form" class="flex gap-3 mb-3"
                     hx-post="/api/init/respond"
                     hx-swap="none"
-                    hx-on::after-request="this.reset(); document.getElementById('ava-output').innerHTML = ''; htmx.trigger('#sse-container', 'htmx:load')">
+                    hx-on::before-request="addUserMessage(this)"
+                    hx-on::after-request="this.reset()">
                     <input
                         type="text"
                         name="message"
+                        id="user-message-input"
                         placeholder="Type your response..."
                         class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                         autocomplete="off"
@@ -106,6 +94,78 @@
             </div>
         </div>
     </div>
+    <script>
+        let sseSource = null;
+
+        function initSSE() {
+            if (sseSource) {
+                sseSource.close();
+            }
+
+            sseSource = new EventSource('/sse/init');
+            const output = document.getElementById('ava-output');
+
+            sseSource.addEventListener('message', function(e) {
+                // Remove loading indicator
+                const loading = document.getElementById('ava-loading');
+                if (loading) loading.remove();
+
+                // Append new content
+                output.insertAdjacentHTML('beforeend', e.data);
+                output.parentElement.scrollTop = output.parentElement.scrollHeight;
+            });
+
+            sseSource.addEventListener('done', function(e) {
+                sseSource.close();
+                document.getElementById('init-complete').classList.remove('hidden');
+            });
+
+            sseSource.addEventListener('error', function(e) {
+                console.log('SSE error, will retry...');
+            });
+        }
+
+        function addUserMessage(form) {
+            const input = document.getElementById('user-message-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const output = document.getElementById('ava-output');
+
+            // Add separator
+            const separator = document.createElement('div');
+            separator.className = 'border-t border-gray-700 my-4';
+            output.appendChild(separator);
+
+            // Add user message (styled differently)
+            const userMsg = document.createElement('div');
+            userMsg.className = 'py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200';
+            userMsg.innerHTML = '<span class="font-semibold">You:</span> ' + escapeHtml(message);
+            output.appendChild(userMsg);
+
+            // Add loading indicator
+            const loading = document.createElement('div');
+            loading.id = 'ava-loading';
+            loading.className = 'py-1 text-gray-500 italic';
+            loading.textContent = 'Ava is thinking...';
+            output.appendChild(loading);
+
+            // Scroll to bottom
+            output.parentElement.scrollTop = output.parentElement.scrollHeight;
+
+            // Reconnect SSE after a short delay (server needs time to spawn agent)
+            setTimeout(initSSE, 500);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize SSE on page load
+        document.addEventListener('DOMContentLoaded', initSSE);
+    </script>
     {{end}}
 </body>
 </html>
