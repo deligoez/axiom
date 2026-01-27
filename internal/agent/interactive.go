@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/deligoez/axiom/internal/tmux"
 )
 
 // SessionLogger handles session-based logging for agent conversations.
@@ -60,15 +62,15 @@ func (l *SessionLogger) Close() error {
 	return l.logFile.Close()
 }
 
-// InteractiveAgent manages multi-turn conversations with Claude CLI using PTY.
-// Uses full interactive mode with output filtering for real-time streaming.
+// InteractiveAgent manages multi-turn conversations with Claude CLI using tmux.
+// Uses persistent tmux session for real-time streaming without -p flag.
+// Based on Gastown's production-tested approach for ink-based CLI interaction.
 type InteractiveAgent struct {
 	systemPrompt string
 	mu           sync.Mutex
-	isFirstCall  bool
 
-	// PTY agent for process management
-	pty *PTYAgent
+	// Tmux session for persistent Claude process
+	session *tmux.ClaudeSession
 
 	// Output streaming for current message
 	chunks chan string
@@ -76,10 +78,21 @@ type InteractiveAgent struct {
 
 	// Logging
 	logger *SessionLogger
+
+	// Output tracking for incremental capture
+	lastOutputLen int
+	cleaner       *StreamCleaner
 }
 
 // NewInteractiveAgent creates a new agent for multi-turn conversations.
+// Uses tmux for persistent process management instead of spawning new processes.
 func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, error) {
+	// Check tmux availability
+	t := tmux.New()
+	if !t.IsAvailable() {
+		return nil, fmt.Errorf("tmux is required for interactive agent but not found")
+	}
+
 	// Read prompt file
 	content, err := os.ReadFile(promptPath)
 	if err != nil {
@@ -92,19 +105,42 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
 
+	// Generate unique session name
+	sessionName := fmt.Sprintf("axiom-ava-%s", time.Now().Format("150405"))
+
+	// Get current working directory for the session
+	workDir, _ := os.Getwd()
+
 	agent := &InteractiveAgent{
 		systemPrompt: string(content),
-		isFirstCall:  true,
-		pty:          NewPTYAgent(),
+		session:      tmux.NewClaudeSession(sessionName, workDir),
 		chunks:       make(chan string, 100),
 		done:         make(chan error, 1),
 		logger:       logger,
+		cleaner:      NewStreamCleaner(),
 	}
 
 	// Log initial message
 	logger.Log("system", initialMessage)
 
-	// Start first message
+	// Start Claude in tmux session
+	if err := agent.session.Start(agent.systemPrompt); err != nil {
+		_ = logger.Close()
+		return nil, fmt.Errorf("starting claude session: %w", err)
+	}
+
+	// Wait for Claude to be ready (prompt appears)
+	if err := agent.session.WaitForPrompt(30 * time.Second); err != nil {
+		_ = agent.session.Stop()
+		_ = logger.Close()
+		return nil, fmt.Errorf("waiting for claude prompt: %w", err)
+	}
+
+	// Capture initial state
+	initialOutput, _ := agent.session.GetFullOutput()
+	agent.lastOutputLen = len(initialOutput)
+
+	// Send initial message
 	go agent.runMessage(initialMessage)
 
 	return agent, nil
@@ -135,6 +171,9 @@ func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan er
 	a.chunks = make(chan string, 100)
 	a.done = make(chan error, 1)
 
+	// Reset cleaner for new message
+	a.cleaner = NewStreamCleaner()
+
 	a.mu.Unlock()
 
 	// Run message
@@ -152,88 +191,99 @@ func (a *InteractiveAgent) GetChunks() (<-chan string, <-chan error) {
 	return a.chunks, a.done
 }
 
-// runMessage executes a single message and streams the response via PTY.
+// runMessage sends a message to Claude via tmux and streams the response.
 func (a *InteractiveAgent) runMessage(message string) {
-	// Find claude binary
-	binPath, err := exec.LookPath("claude")
-	if err != nil {
-		a.sendError(fmt.Errorf("claude CLI not found: %w", err))
+	// Send message via tmux
+	if err := a.session.SendMessage(message); err != nil {
+		a.sendError(fmt.Errorf("sending message: %w", err))
 		return
 	}
 
-	// Build command args for interactive mode
-	// -p (print mode) with single prompt - gives us one response then exits
-	// --dangerously-skip-permissions to avoid prompts
-	args := []string{
-		"--dangerously-skip-permissions",
-	}
+	// Poll for output changes and stream them
+	var fullResponse strings.Builder
+	pollInterval := 100 * time.Millisecond
+	noChangeCount := 0
+	maxNoChangeCount := 50 // 5 seconds of no change = done
 
-	a.mu.Lock()
-	isFirst := a.isFirstCall
-	if isFirst {
-		// First call: use system prompt
-		args = append(args, "--system-prompt", a.systemPrompt)
-		a.isFirstCall = false
-	} else {
-		// Subsequent calls: use --continue to maintain context
-		args = append(args, "--continue")
-	}
-	a.mu.Unlock()
-
-	// Add -p flag with the message for single-shot mode
-	args = append(args, "-p", message)
-
-	// Create cleaner for filtering PTY output
-	cleaner := NewStreamCleaner()
-
-	// Raw PTY chunks and done channels
-	rawChunks := make(chan string, 1000)
-	rawDone := make(chan error, 1)
-
-	// Start PTY process
-	go a.pty.RunStreaming(binPath, args, rawChunks, rawDone)
-
-	// Process and filter output
-	var fullResponse string
-	for chunk := range rawChunks {
-		// Clean the chunk (strip ANSI, filter UI elements)
-		cleaned := cleaner.Process(chunk)
-		if cleaned != "" {
-			fullResponse += cleaned
-			a.sendChunk(cleaned)
+	for {
+		// Capture current pane content
+		output, err := a.session.GetFullOutput()
+		if err != nil {
+			a.sendError(fmt.Errorf("capturing output: %w", err))
+			return
 		}
+
+		// Check for new content
+		if len(output) > a.lastOutputLen {
+			newContent := output[a.lastOutputLen:]
+			a.lastOutputLen = len(output)
+
+			// Clean the new content (strip ANSI, filter UI elements)
+			cleaned := a.cleaner.Process(newContent)
+			if cleaned != "" {
+				fullResponse.WriteString(cleaned)
+				a.sendChunk(cleaned)
+			}
+
+			noChangeCount = 0
+		} else {
+			noChangeCount++
+		}
+
+		// Check if Claude is done (prompt appeared again)
+		if a.isPromptReady(output) && noChangeCount > 5 {
+			break
+		}
+
+		// Timeout if no changes for too long
+		if noChangeCount >= maxNoChangeCount {
+			break
+		}
+
+		time.Sleep(pollInterval)
 	}
 
 	// Flush any remaining content
-	if remaining := cleaner.Flush(); remaining != "" {
-		fullResponse += remaining
+	if remaining := a.cleaner.Flush(); remaining != "" {
+		fullResponse.WriteString(remaining)
 		a.sendChunk(remaining)
 	}
 
-	// Wait for PTY to complete
-	cmdErr := <-rawDone
-
 	// Log complete response
-	if fullResponse != "" {
-		a.logger.Log("assistant", fullResponse)
+	if fullResponse.Len() > 0 {
+		a.logger.Log("assistant", fullResponse.String())
 	}
 
+	// Signal completion
 	a.mu.Lock()
 	if a.chunks != nil {
 		close(a.chunks)
 	}
 	if a.done != nil {
-		if cmdErr != nil {
-			a.done <- cmdErr
-		} else {
-			a.done <- nil
-		}
+		a.done <- nil
 		close(a.done)
 	}
 	// Prepare new channels for next message
 	a.chunks = make(chan string, 100)
 	a.done = make(chan error, 1)
 	a.mu.Unlock()
+}
+
+// isPromptReady checks if the Claude prompt (❯) is visible and ready for input.
+func (a *InteractiveAgent) isPromptReady(output string) bool {
+	lines := strings.Split(output, "\n")
+	if len(lines) < 2 {
+		return false
+	}
+
+	// Look for prompt in last few lines
+	for i := len(lines) - 1; i >= 0 && i >= len(lines)-5; i-- {
+		line := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(line, "❯") && !strings.Contains(line, "...") {
+			return true
+		}
+	}
+	return false
 }
 
 // sendChunk safely sends a chunk to the channel.
@@ -262,8 +312,8 @@ func (a *InteractiveAgent) sendError(err error) {
 	}
 }
 
-// Close closes the logger and stops any running process.
+// Close closes the logger and stops the tmux session.
 func (a *InteractiveAgent) Close() error {
-	_ = a.pty.Stop()
+	_ = a.session.Stop()
 	return a.logger.Close()
 }

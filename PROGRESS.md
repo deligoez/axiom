@@ -13,26 +13,35 @@ Next milestone to be determined. Run `bd ready -n 0` for available tasks.
 
 ---
 
-## Deferred Milestones
-
-### MVP-07: Persistent PTY Agent ⏸️
-- **Goal:** Single persistent Claude process for multi-turn conversation
-- **Status:** DEFERRED - Claude CLI limitation
-- **Problem:**
-  - Claude CLI uses ink-based custom input widget
-  - PTY stdin writes appear but don't submit
-  - This is a fundamental CLI architecture limitation
-- **Workaround:**
-  - Current `-p` mode with `--continue` works
-  - Real-time streaming via PTY ✓
-  - Each message spawns new process (context preserved via `--continue`)
-- **Unblock condition:**
-  - Claude CLI adds proper stdin API or
-  - Alternative input method discovered
-
----
-
 ## Completed Milestones
+
+### MVP-07: Persistent Tmux Agent ✓
+- **Goal:** Single persistent Claude process for multi-turn conversation
+- **Status:** DONE
+- **Problem solved:**
+  - Claude CLI uses ink-based custom input widget
+  - PTY stdin writes appear but don't submit (ink limitation)
+  - Solution: Use tmux send-keys (based on Gastown's production pattern)
+- **What was built:**
+  - Tmux package: Session management for Claude CLI (internal/tmux/tmux.go)
+  - ClaudeSession: High-level API for Claude interaction
+  - InteractiveAgent rewrite: Tmux-based instead of PTY spawning
+- **Key insight:**
+  - GitHub issue #15553 documents the same problem
+  - Gastown uses `tmux send-keys -l` + debounce + `Enter` successfully
+  - This is production-tested and works with ink-based CLIs
+- **Pattern:**
+  ```go
+  // Send text using literal mode
+  tmux.run("send-keys", "-t", session, "-l", message)
+  // Debounce (100ms)
+  time.Sleep(100 * time.Millisecond)
+  // Send Enter separately
+  tmux.run("send-keys", "-t", session, "Enter")
+  ```
+- **Key files:**
+  - internal/tmux/tmux.go (tmux operations)
+  - internal/agent/interactive.go (rewritten for tmux)
 
 ### MVP-06: Interactive Agent Mode ✓
 - **Goal:** Real-time streaming for agent output (character-by-character)
@@ -133,13 +142,19 @@ Server starts (/)          Browser opens /init
                            AVA_COMPLETE → redirect /
 ```
 
-### Agent Spawning
+### Agent Spawning (Tmux-Based)
 ```go
-// Blocking (for simple use)
-output, err := agent.Spawn(promptPath, message)
+// Create persistent session
+session := tmux.NewClaudeSession("agent-name", workDir)
+session.Start(systemPrompt)
+session.WaitForPrompt(30 * time.Second)
 
-// Streaming (for UI)
-lines, done, err := agent.SpawnStreaming(promptPath, message)
+// Send messages (multi-turn, context preserved)
+session.SendMessage("First question")
+session.SendMessage("Follow-up question")
+
+// Cleanup
+session.Stop()
 ```
 
 ### Signal Format

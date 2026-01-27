@@ -483,37 +483,55 @@ EOF
 
 ---
 
-## No Print Mode Rule (CRITICAL)
+## Tmux-Based Agent Rule (CRITICAL)
 
-**NEVER use `-p` or `--print` flag when spawning Claude CLI.**
+**Use tmux send-keys for persistent Claude CLI interaction.**
 
 ### Why
 
-The `-p`/`--print` flag causes:
-1. **No real-time streaming** - All output arrives at once after CLI completes
-2. **Process exit after response** - Can't maintain persistent conversation
-3. **Poor UX** - Users can't see live agent thinking/output
+Claude CLI uses ink-based custom input widget:
+1. **PTY stdin doesn't work** - Characters appear but don't submit
+2. **`-p` flag exits after response** - Can't maintain persistent conversation
+3. **tmux send-keys WORKS** - Based on Gastown's production-tested pattern
 
 ### Correct Approach
 
-Use **PTY-based interactive mode**:
-- Start Claude without `-p` flag
-- Write messages to stdin via PTY
-- Read output via PTY (real-time, character-by-character)
-- Filter ANSI codes and UI elements using StreamCleaner
+Use **tmux-based session management**:
+- Create tmux session with Claude CLI running
+- Send messages via `tmux send-keys -l` (literal mode)
+- Add debounce delay (100ms) between text and Enter
+- Capture output via `tmux capture-pane`
 
 ### Code Pattern
 
 ```go
-// WRONG - spawns new process, no streaming
-args := []string{"-p", message}
+// Create session
+session := tmux.NewClaudeSession("agent-name", workDir)
+session.Start(systemPrompt)
+session.WaitForPrompt(30 * time.Second)
 
-// RIGHT - persistent process, real-time streaming
-args := []string{"--dangerously-skip-permissions"}
-// Then use pty.Write(message + "\n") to send messages
+// Send messages (multi-turn, context preserved)
+session.SendMessage("First question")
+session.SendMessage("Follow-up question")
+
+// Cleanup
+session.Stop()
+```
+
+### tmux send-keys Pattern (from Gastown)
+
+```go
+// 1. Send text using literal mode (-l) to handle special chars
+t.run("send-keys", "-t", session, "-l", message)
+
+// 2. Debounce - wait for paste to be processed
+time.Sleep(100 * time.Millisecond)
+
+// 3. Send Enter separately - more reliable
+t.run("send-keys", "-t", session, "Enter")
 ```
 
 ### Historical Context
 
-MVP-06 discovered that `--print` mode does NOT provide real-time streaming.
-The solution was PTY-based approach with ANSI/UI filtering (StreamCleaner).
+MVP-07 discovered that PTY stdin doesn't work with Claude CLI's ink-based input.
+GitHub issue #15553 documents the same problem. Solution: tmux send-keys (Gastown pattern).
