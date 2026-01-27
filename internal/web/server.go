@@ -31,8 +31,18 @@ type Server struct {
 	initLines    <-chan string
 	initDone     <-chan error
 	initErr      error
+	initComplete bool
 	conversation *agent.Conversation
 	basePrompt   string
+
+	// Output buffer for page refresh persistence
+	initOutput []initEntry
+}
+
+// initEntry represents a buffered output entry.
+type initEntry struct {
+	Type    string // "assistant" or "user"
+	Content string
 }
 
 // NewServer creates a new AXIOM web server.
@@ -97,9 +107,45 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set SSE headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "SSE not supported", http.StatusInternalServerError)
+		return
+	}
+
 	s.initMu.Lock()
+
+	// Send buffered output first (for page refresh)
+	for _, entry := range s.initOutput {
+		if entry.Type == "user" {
+			// User message with styling (escape HTML)
+			escaped := template.HTMLEscapeString(entry.Content)
+			data := `<div class="border-t border-gray-700 my-4"></div>` +
+				`<div class="py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200">` +
+				`<span class="font-semibold">You:</span> ` + escaped + `</div>`
+			_, _ = w.Write([]byte("event: message\ndata: " + data + "\n\n"))
+		} else {
+			// Assistant output (already escaped in streamer)
+			_, _ = w.Write([]byte("event: message\ndata: " + entry.Content + "\n\n"))
+		}
+		flusher.Flush()
+	}
+
+	// If already complete, send done event
+	if s.initComplete {
+		_, _ = w.Write([]byte("event: done\ndata: complete\n\n"))
+		flusher.Flush()
+		s.initMu.Unlock()
+		return
+	}
+
+	// Start agent if not started
 	if !s.initStarted {
-		// First time - spawn Ava
 		s.initStarted = true
 		s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
 	}
@@ -118,9 +164,28 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Stream via SSE handler
-	handler := NewSSEHandler(lines, done)
-	handler.ServeHTTP(w, r)
+	// Stream new output and buffer it
+	for chunk := range lines {
+		s.initMu.Lock()
+		s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: chunk})
+		s.initMu.Unlock()
+
+		_, _ = w.Write([]byte("event: message\ndata: " + chunk + "\n\n"))
+		flusher.Flush()
+	}
+
+	// Wait for completion
+	err = <-done
+	s.initMu.Lock()
+	s.initComplete = true
+	s.initMu.Unlock()
+
+	if err != nil {
+		_, _ = w.Write([]byte("event: error\ndata: " + err.Error() + "\n\n"))
+	} else {
+		_, _ = w.Write([]byte("event: done\ndata: complete\n\n"))
+	}
+	flusher.Flush()
 }
 
 // handleInit handles GET /init for project setup.
@@ -157,8 +222,12 @@ func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.initMu.Lock()
-	// Add user message to conversation
+	// Add user message to conversation and buffer
 	s.conversation.AddMessage("user", userMessage)
+	s.initOutput = append(s.initOutput, initEntry{Type: "user", Content: userMessage})
+
+	// Reset complete flag for new response
+	s.initComplete = false
 
 	// Build prompt with history
 	prompt := s.conversation.BuildPromptWithHistory(s.basePrompt)
