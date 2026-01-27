@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 )
 
 // SSEHandler streams text chunks from a channel as Server-Sent Events.
@@ -38,13 +37,13 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Stream text chunks in real-time
 	// Each chunk is a small piece of text (possibly mid-word)
+	// Container uses whitespace-pre-wrap so newlines render correctly
 	for chunk := range h.chunks {
-		// Escape HTML and convert newlines to <br> for display
+		// Escape HTML only (newlines preserved by CSS white-space: pre-wrap)
 		escaped := template.HTMLEscapeString(chunk)
-		escaped = strings.ReplaceAll(escaped, "\n", "<br>")
 
-		// Send as span (inline element since chunks may be partial words)
-		_, _ = fmt.Fprintf(w, "event: message\ndata: <span>%s</span>\n\n", escaped)
+		// Send raw text (no wrapper needed, container handles styling)
+		_, _ = fmt.Fprintf(w, "event: message\ndata: %s\n\n", escaped)
 		flusher.Flush()
 	}
 

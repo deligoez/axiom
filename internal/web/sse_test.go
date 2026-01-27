@@ -41,7 +41,7 @@ func TestSSEHandler_StreamsChunks(t *testing.T) {
 	// Send test chunks (real-time streaming)
 	chunks <- "Hello"
 	chunks <- " World"
-	chunks <- "!"
+	chunks <- "!\n"
 	close(chunks)
 	done <- nil
 	close(done)
@@ -59,7 +59,7 @@ func TestSSEHandler_StreamsChunks(t *testing.T) {
 		t.Errorf("expected 'event: message' in response")
 	}
 
-	// Check for text chunks (wrapped in spans for inline display)
+	// Check for text chunks (raw text, newlines preserved by CSS)
 	expectedChunks := []string{"Hello", " World", "!"}
 	for _, expected := range expectedChunks {
 		if !strings.Contains(body, expected) {
@@ -67,9 +67,9 @@ func TestSSEHandler_StreamsChunks(t *testing.T) {
 		}
 	}
 
-	// Check for span wrapper (inline element for real-time chunks)
-	if !strings.Contains(body, "<span>") {
-		t.Errorf("expected span wrapper in response")
+	// Check data format (raw text without HTML wrappers)
+	if !strings.Contains(body, "data: Hello") {
+		t.Errorf("expected raw text in data field, got: %s", body)
 	}
 }
 
