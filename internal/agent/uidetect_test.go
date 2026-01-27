@@ -134,3 +134,28 @@ func TestClassifyLine_InputPrompt(t *testing.T) {
 		})
 	}
 }
+
+func TestClassifyLine_HeaderBranding(t *testing.T) {
+	// Test: CLI header and branding lines are detected
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"claude code version", "Claude Code v2.1.20"},
+		{"welcome message", "Welcome back Emre!"},
+		{"tips header", "Tips for getting started"},
+		{"recent activity", "Recent activity"},
+		{"no activity", "No recent activity"},
+		{"organization", "ye@deligoz.me's Organization"},
+		{"opus model", "Opus 4.5 · Claude Max"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ClassifyLine(tt.input)
+			if result != LineUIElement {
+				t.Errorf("expected LineUIElement, got %v for %q", result, tt.input)
+			}
+		})
+	}
+}

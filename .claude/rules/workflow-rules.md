@@ -480,3 +480,40 @@ EOF
 ```
 
 **Why:** This ensures no feature is forgotten and implementation is properly planned before coding.
+
+---
+
+## No Print Mode Rule (CRITICAL)
+
+**NEVER use `-p` or `--print` flag when spawning Claude CLI.**
+
+### Why
+
+The `-p`/`--print` flag causes:
+1. **No real-time streaming** - All output arrives at once after CLI completes
+2. **Process exit after response** - Can't maintain persistent conversation
+3. **Poor UX** - Users can't see live agent thinking/output
+
+### Correct Approach
+
+Use **PTY-based interactive mode**:
+- Start Claude without `-p` flag
+- Write messages to stdin via PTY
+- Read output via PTY (real-time, character-by-character)
+- Filter ANSI codes and UI elements using StreamCleaner
+
+### Code Pattern
+
+```go
+// WRONG - spawns new process, no streaming
+args := []string{"-p", message}
+
+// RIGHT - persistent process, real-time streaming
+args := []string{"--dangerously-skip-permissions"}
+// Then use pty.Write(message + "\n") to send messages
+```
+
+### Historical Context
+
+MVP-06 discovered that `--print` mode does NOT provide real-time streaming.
+The solution was PTY-based approach with ANSI/UI filtering (StreamCleaner).

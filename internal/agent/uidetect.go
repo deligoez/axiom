@@ -37,6 +37,22 @@ var (
 		"/ide for",
 		"shift+Tab",
 		"Tab to cycle",
+		"ctrl+g to edit",
+		"IDE disconnected",
+		"Chrome enabled",
+		"/chrome",
+	}
+
+	// CLI header/branding keywords
+	headerKeywords = []string{
+		"Claude Code v",
+		"Welcome back",
+		"Tips for getting",
+		"Recent activity",
+		"No recent activity",
+		"Organization",
+		"Opus 4.5",
+		"Claude Max",
 	}
 
 	// Progress indicator words (with ellipsis)
@@ -84,6 +100,13 @@ func ClassifyLine(line string) LineType {
 
 	// Check for IDE/status keywords
 	for _, keyword := range ideKeywords {
+		if strings.Contains(line, keyword) {
+			return LineUIElement
+		}
+	}
+
+	// Check for CLI header/branding keywords
+	for _, keyword := range headerKeywords {
 		if strings.Contains(line, keyword) {
 			return LineUIElement
 		}
