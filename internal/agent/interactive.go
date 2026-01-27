@@ -161,9 +161,9 @@ func (a *InteractiveAgent) runMessage(message string) {
 		return
 	}
 
-	// Build command args
-	// -p is shorthand for --prompt (sends single prompt, CLI exits after response)
-	// --dangerously-skip-permissions to avoid permission prompts
+	// Build command args for interactive mode
+	// -p (print mode) with single prompt - gives us one response then exits
+	// --dangerously-skip-permissions to avoid prompts
 	args := []string{
 		"--dangerously-skip-permissions",
 	}
