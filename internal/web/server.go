@@ -2,6 +2,7 @@
 package web
 
 import (
+	"bytes"
 	"embed"
 	"html/template"
 	"log"
@@ -296,12 +297,16 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		InitMode: s.initMode,
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err = s.templates.ExecuteTemplate(w, "layout.html", data)
+	// Execute to buffer first to handle errors cleanly
+	var buf bytes.Buffer
+	err = s.templates.ExecuteTemplate(&buf, "layout.html", data)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = buf.WriteTo(w)
 }
 
 // Shutdown gracefully closes the init agent if running.

@@ -42,14 +42,14 @@ func TestServer_GetRoot_ReturnsHTML(t *testing.T) {
 		t.Errorf("got content-type %q, want %q", contentType, "text/html; charset=utf-8")
 	}
 
-	// Check for header
+	// Check for logo/brand
 	if !strings.Contains(body, "AXIOM") {
-		t.Error("response should contain 'AXIOM' in header")
+		t.Error("response should contain 'AXIOM' brand")
 	}
 
-	// Check for footer
-	if !strings.Contains(body, "2025 AXIOM") {
-		t.Error("response should contain '2025 AXIOM' in footer")
+	// Check for navigation items (3-column layout)
+	if !strings.Contains(body, "Dashboard") {
+		t.Error("response should contain 'Dashboard' in navigation")
 	}
 }
 
