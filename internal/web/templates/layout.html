@@ -132,29 +132,22 @@
 
             const output = document.getElementById('ava-output');
 
-            // Add separator
-            const separator = document.createElement('div');
-            separator.className = 'border-t border-gray-700 my-4';
-            output.appendChild(separator);
-
-            // Add user message (styled differently)
-            const userMsg = document.createElement('div');
-            userMsg.className = 'py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200';
-            userMsg.innerHTML = '<span class="font-semibold">You:</span> ' + escapeHtml(message);
-            output.appendChild(userMsg);
-
-            // Add loading indicator
+            // Add loading indicator (user message will come from server replay)
             const loading = document.createElement('div');
             loading.id = 'ava-loading';
             loading.className = 'py-1 text-gray-500 italic';
-            loading.textContent = 'Ava is thinking...';
+            loading.textContent = 'Sending...';
             output.appendChild(loading);
 
             // Scroll to bottom
             output.parentElement.scrollTop = output.parentElement.scrollHeight;
 
-            // Reconnect SSE after a short delay (server needs time to spawn agent)
-            setTimeout(initSSE, 500);
+            // Reconnect SSE after delay - server will replay full history including user message
+            setTimeout(function() {
+                // Clear current output - server will replay everything
+                output.innerHTML = '';
+                initSSE();
+            }, 500);
         }
 
         function escapeHtml(text) {

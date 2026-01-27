@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/deligoez/axiom/internal/agent"
 	casestore "github.com/deligoez/axiom/internal/case"
@@ -118,74 +119,74 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Start agent if not started (first connection)
 	s.initMu.Lock()
-
-	// Send buffered output first (for page refresh)
-	for _, entry := range s.initOutput {
-		if entry.Type == "user" {
-			// User message with styling (escape HTML)
-			escaped := template.HTMLEscapeString(entry.Content)
-			data := `<div class="border-t border-gray-700 my-4"></div>` +
-				`<div class="py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200">` +
-				`<span class="font-semibold">You:</span> ` + escaped + `</div>`
-			_, _ = w.Write([]byte("event: message\ndata: " + data + "\n\n"))
-		} else {
-			// Assistant output (already escaped in streamer)
-			_, _ = w.Write([]byte("event: message\ndata: " + entry.Content + "\n\n"))
-		}
-		flusher.Flush()
-	}
-
-	// If already complete, send done event
-	if s.initComplete {
-		_, _ = w.Write([]byte("event: done\ndata: complete\n\n"))
-		flusher.Flush()
-		s.initMu.Unlock()
-		return
-	}
-
-	// Start agent if not started
 	if !s.initStarted {
 		s.initStarted = true
-		s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
+		lines, done, err := agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
+		s.initLines = lines
+		s.initDone = done
+		s.initErr = err
+		if err == nil {
+			// Start background buffering
+			go s.bufferAgentOutput(lines, done)
+		}
 	}
-	lines := s.initLines
-	done := s.initDone
 	err := s.initErr
 	s.initMu.Unlock()
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		_, _ = w.Write([]byte("event: error\ndata: " + err.Error() + "\n\n"))
+		flusher.Flush()
 		return
 	}
 
-	if lines == nil {
-		http.Error(w, "Init not ready", http.StatusServiceUnavailable)
-		return
-	}
+	// Track how much we've sent
+	sentCount := 0
 
-	// Stream new output and buffer it
-	for chunk := range lines {
+	// Poll buffer and send new content
+	for {
 		s.initMu.Lock()
-		s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: chunk})
+		bufLen := len(s.initOutput)
+		complete := s.initComplete
+
+		// Send any new entries
+		for i := sentCount; i < bufLen; i++ {
+			entry := s.initOutput[i]
+			if entry.Type == "user" {
+				// User message with styling (escape HTML)
+				escaped := template.HTMLEscapeString(entry.Content)
+				data := `<div class="border-t border-gray-700 my-4"></div>` +
+					`<div class="py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200">` +
+					`<span class="font-semibold">You:</span> ` + escaped + `</div>`
+				_, _ = w.Write([]byte("event: message\ndata: " + data + "\n\n"))
+			} else {
+				// Assistant output
+				_, _ = w.Write([]byte("event: message\ndata: " + entry.Content + "\n\n"))
+			}
+		}
+		sentCount = bufLen
 		s.initMu.Unlock()
 
-		_, _ = w.Write([]byte("event: message\ndata: " + chunk + "\n\n"))
 		flusher.Flush()
-	}
 
-	// Wait for completion
-	err = <-done
-	s.initMu.Lock()
-	s.initComplete = true
-	s.initMu.Unlock()
+		// If complete, send done and exit
+		if complete {
+			_, _ = w.Write([]byte("event: done\ndata: complete\n\n"))
+			flusher.Flush()
+			return
+		}
 
-	if err != nil {
-		_, _ = w.Write([]byte("event: error\ndata: " + err.Error() + "\n\n"))
-	} else {
-		_, _ = w.Write([]byte("event: done\ndata: complete\n\n"))
+		// Check if client disconnected
+		select {
+		case <-r.Context().Done():
+			return
+		default:
+		}
+
+		// Small delay before polling again
+		time.Sleep(50 * time.Millisecond)
 	}
-	flusher.Flush()
 }
 
 // handleInit handles GET /init for project setup.
@@ -234,12 +235,34 @@ func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
 
 	// Spawn new agent with conversation context
 	s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, prompt+"\n\nUser's response: "+userMessage)
+
+	// Start background buffering so no chunks are lost while SSE reconnects
+	lines := s.initLines
+	done := s.initDone
 	s.initMu.Unlock()
+
+	go s.bufferAgentOutput(lines, done)
 
 	// Return success - client will reconnect to SSE
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"ok"}`))
+}
+
+// bufferAgentOutput reads all chunks from the agent and buffers them.
+// This ensures no chunks are lost while SSE is disconnected.
+func (s *Server) bufferAgentOutput(lines <-chan string, done <-chan error) {
+	for chunk := range lines {
+		s.initMu.Lock()
+		s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: chunk})
+		s.initMu.Unlock()
+	}
+
+	// Wait for completion
+	<-done
+	s.initMu.Lock()
+	s.initComplete = true
+	s.initMu.Unlock()
 }
 
 // handleRoot handles GET /.
