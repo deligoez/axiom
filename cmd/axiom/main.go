@@ -34,14 +34,13 @@ func main() {
 	server := web.NewServer(caseFile)
 	server.StaticDir("web/static")
 
-	// Enable init mode if first run
+	// Enable init mode if first run (modal will show automatically)
 	if initMode {
 		server.EnableInitMode(promptPath)
-		fmt.Printf("AXIOM server starting on http://localhost%s/init\n", addr)
-		fmt.Println("Open the URL above to complete project setup with Ava.")
-	} else {
-		fmt.Printf("AXIOM server starting on http://localhost%s\n", addr)
+		fmt.Println("First run detected - Ava will help with project setup.")
 	}
+
+	fmt.Printf("AXIOM server starting on http://localhost%s\n", addr)
 
 	if err := http.ListenAndServe(addr, server); err != nil {
 		log.Fatalf("server error: %v", err)

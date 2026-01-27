@@ -26,6 +26,9 @@ type Server struct {
 	initMode   bool
 	promptPath string
 	initOnce   sync.Once
+	initLines  <-chan string
+	initDone   <-chan error
+	initErr    error
 }
 
 // NewServer creates a new AXIOM web server.
@@ -71,7 +74,8 @@ func (s *Server) StaticDir(dir string) {
 
 // PageData holds data passed to templates.
 type PageData struct {
-	Cases []casestore.Case
+	Cases    []casestore.Case
+	InitMode bool
 }
 
 // handleSSEInit handles SSE streaming for Ava during init.
@@ -81,28 +85,23 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Only spawn Ava once
-	var lines <-chan string
-	var done <-chan error
-	var err error
-
+	// Spawn Ava once, store channels on server
 	s.initOnce.Do(func() {
-		lines, done, err = agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
+		s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
 	})
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if s.initErr != nil {
+		http.Error(w, s.initErr.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if lines == nil {
-		// Already spawned in another request
-		http.Error(w, "Init already in progress", http.StatusConflict)
+	if s.initLines == nil {
+		http.Error(w, "Init failed to start", http.StatusInternalServerError)
 		return
 	}
 
 	// Stream via SSE handler
-	handler := NewSSEHandler(lines, done)
+	handler := NewSSEHandler(s.initLines, s.initDone)
 	handler.ServeHTTP(w, r)
 }
 
@@ -125,7 +124,8 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Cases: cases,
+		Cases:    cases,
+		InitMode: s.initMode,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
