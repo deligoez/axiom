@@ -198,6 +198,12 @@
     let currentAssistantText = '';
     let isConnected = false;
 
+    // Typewriter effect state
+    let typewriterQueue = '';      // Characters waiting to be typed
+    let typewriterInterval = null; // Interval ID
+    const TYPEWRITER_SPEED = 15;   // ms per character (adjust for speed)
+    const CHARS_PER_TICK = 2;      // Characters per interval (for faster typing)
+
     marked.setOptions({
         breaks: true,
         gfm: true,
@@ -230,12 +236,16 @@
             }
         }
 
-        // Show streaming text
-        if (currentAssistantText) {
+        // Show streaming text with cursor
+        if (currentAssistantText || typewriterQueue) {
             html += '<div class="flex justify-start">';
             html += '<div class="max-w-[80%] rounded-lg px-4 py-3 text-sm ' + (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-900') + '">';
             html += '<div class="prose prose-sm max-w-none ' + (isDark ? 'prose-invert' : '') + '">';
-            html += DOMPurify.sanitize(marked.parse(currentAssistantText));
+            html += DOMPurify.sanitize(marked.parse(currentAssistantText || ''));
+            // Add blinking cursor while typing
+            if (typewriterQueue) {
+                html += '<span class="animate-pulse">▊</span>';
+            }
             html += '</div></div></div>';
         }
 
@@ -244,6 +254,45 @@
         // Auto-scroll to bottom
         const container = document.getElementById('ava-output-container');
         container.scrollTop = container.scrollHeight;
+    }
+
+    function startTypewriter() {
+        if (typewriterInterval) return; // Already running
+
+        typewriterInterval = setInterval(function() {
+            if (typewriterQueue.length === 0) {
+                // Nothing to type, stop interval
+                clearInterval(typewriterInterval);
+                typewriterInterval = null;
+                renderMessages(); // Final render to remove cursor
+                return;
+            }
+
+            // Type multiple characters per tick for smoother feel
+            const chars = typewriterQueue.substring(0, CHARS_PER_TICK);
+            typewriterQueue = typewriterQueue.substring(CHARS_PER_TICK);
+            currentAssistantText += chars;
+
+            renderMessages();
+        }, TYPEWRITER_SPEED);
+    }
+
+    function addToTypewriterQueue(text) {
+        typewriterQueue += text;
+        startTypewriter();
+    }
+
+    function flushTypewriter() {
+        // Immediately show all remaining text
+        if (typewriterQueue) {
+            currentAssistantText += typewriterQueue;
+            typewriterQueue = '';
+        }
+        if (typewriterInterval) {
+            clearInterval(typewriterInterval);
+            typewriterInterval = null;
+        }
+        renderMessages();
     }
 
     function initSSE() {
@@ -267,7 +316,8 @@
 
             // Check if this is a user message marker from the server
             if (data.includes('bg-blue-900') && data.includes('You:</span>')) {
-                // Save current assistant text if any
+                // Flush typewriter and save current assistant text
+                flushTypewriter();
                 if (currentAssistantText.trim()) {
                     messageBuffer.push({ type: 'assistant', content: currentAssistantText.trim() });
                     currentAssistantText = '';
@@ -277,17 +327,19 @@
                 if (match) {
                     messageBuffer.push({ type: 'user', content: match[1] });
                 }
+                renderMessages();
             } else {
-                // Accumulate assistant response
-                currentAssistantText += data;
+                // Add to typewriter queue for character-by-character display
+                addToTypewriterQueue(data);
             }
-
-            renderMessages();
         });
 
         sseSource.addEventListener('done', function(e) {
             console.log('SSE done event received');
             sseSource.close();
+
+            // Flush any remaining typewriter text
+            flushTypewriter();
 
             // Save final assistant text
             if (currentAssistantText.trim()) {
@@ -311,6 +363,9 @@
         const input = document.getElementById('user-message-input');
         const message = input.value.trim();
         if (!message) return;
+
+        // Flush typewriter before adding user message
+        flushTypewriter();
 
         // Add user message immediately to buffer for instant feedback
         messageBuffer.push({ type: 'user', content: message });
