@@ -13,6 +13,25 @@ Next milestone to be determined. Run `bd ready -n 0` for available tasks.
 
 ---
 
+## Deferred Milestones
+
+### MVP-07: Persistent PTY Agent ⏸️
+- **Goal:** Single persistent Claude process for multi-turn conversation
+- **Status:** DEFERRED - Claude CLI limitation
+- **Problem:**
+  - Claude CLI uses ink-based custom input widget
+  - PTY stdin writes appear but don't submit
+  - This is a fundamental CLI architecture limitation
+- **Workaround:**
+  - Current `-p` mode with `--continue` works
+  - Real-time streaming via PTY ✓
+  - Each message spawns new process (context preserved via `--continue`)
+- **Unblock condition:**
+  - Claude CLI adds proper stdin API or
+  - Alternative input method discovered
+
+---
+
 ## Completed Milestones
 
 ### MVP-06: Interactive Agent Mode ✓
