@@ -59,12 +59,17 @@ func TestSSEHandler_StreamsLines(t *testing.T) {
 		t.Errorf("expected 'event: message' in response")
 	}
 
-	// Check for data lines
-	expectedData := []string{"data: Hello", "data: World", "data: Done"}
+	// Check for data lines (wrapped in divs for display)
+	expectedData := []string{"Hello", "World", "Done"}
 	for _, expected := range expectedData {
 		if !strings.Contains(body, expected) {
 			t.Errorf("expected %q in response, got: %s", expected, body)
 		}
+	}
+
+	// Check for div wrapper
+	if !strings.Contains(body, "<div class=\"py-1\">") {
+		t.Errorf("expected div wrapper in response")
 	}
 }
 

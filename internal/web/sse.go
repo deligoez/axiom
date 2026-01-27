@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 )
 
@@ -35,8 +36,11 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Stream lines with explicit event name for htmx
+	// Wrap each line in a div for proper display
 	for line := range h.lines {
-		_, _ = fmt.Fprintf(w, "event: message\ndata: %s\n\n", line)
+		// Escape HTML and wrap in div
+		escapedLine := template.HTMLEscapeString(line)
+		_, _ = fmt.Fprintf(w, "event: message\ndata: <div class=\"py-1\">%s</div>\n\n", escapedLine)
 		flusher.Flush()
 	}
 
