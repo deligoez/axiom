@@ -9,41 +9,46 @@
 
 ## Current Work
 
-**MVP-06: Interactive Agent Mode**
-
-Goal: Real-time streaming for agent output (character-by-character)
-
-Problem discovered:
-- `--print` mode gives clean JSON but NO real-time streaming
-- All output arrives at once after CLI completes
-- This breaks "live output" UX for multi-agent orchestration
-
-Solution:
-- Use full interactive mode (PTY) with output filtering
-- Filter out CLI UI garbage (status bars, ANSI codes, etc.)
-- Keep real-time character streaming
-
-Next steps:
-1. Create atomic tasks for interactive mode implementation
-2. Implement PTY-based agent with filtering
-3. Test with Ava and longer-running agents
+Next milestone to be determined. Run `bd ready -n 0` for available tasks.
 
 ---
 
 ## Completed Milestones
 
-### MVP-05: Init Mode Web UI ⚠️
+### MVP-06: Interactive Agent Mode ✓
+- **Goal:** Real-time streaming for agent output (character-by-character)
+- **Status:** DONE
+- **Problem solved:**
+  - `--print` mode had no real-time streaming (all output at once)
+  - Switched to PTY-based approach with output filtering
+- **What was built:**
+  - PTYAgent: Process management with pseudo-terminal (internal/agent/pty.go)
+  - ANSI Filter: Strip escape sequences (internal/agent/ansi.go)
+  - UI Detector: Classify CLI UI elements vs content (internal/agent/uidetect.go)
+  - StreamCleaner: Combine filters for clean output (internal/agent/cleaner.go)
+  - InteractiveAgent rewrite: PTY + StreamCleaner integration
+- **Tasks completed:**
+  - ax-7or.1: F01: PTY Agent Spawn
+  - ax-7or.2: F02: ANSI Filter
+  - ax-7or.3: F03: CLI UI Detector
+  - ax-7or.4: F04: Stream Cleaner
+  - ax-7or.5: F05: SSE Integration
+  - ax-7or.6: F06: Multi-turn Support
+- **Key files:**
+  - internal/agent/pty.go (PTY process management)
+  - internal/agent/ansi.go (ANSI escape stripping)
+  - internal/agent/uidetect.go (UI element detection)
+  - internal/agent/cleaner.go (stream cleaning)
+  - internal/agent/interactive.go (rewritten for PTY)
+
+### MVP-05: Init Mode Web UI ✓
 - **Goal:** Ava runs in browser with streaming output
-- **Status:** PARTIAL - UI works, but no real-time streaming
+- **Status:** DONE (streaming fixed in MVP-06)
 - **What was built:**
   - SSE infrastructure for agent output
-  - InteractiveAgent with --print mode (batch output)
   - Init Mode UI (/init page with Ava modal)
   - Config state detection (new/incomplete/complete)
   - Session-based logging (.axiom/agents/ava/logs/)
-- **Issue discovered:**
-  - `--print` mode gives all output at once, not streamed
-  - Real-time streaming requires interactive mode + filtering
 - **Key files:**
   - internal/agent/interactive.go
   - internal/web/server.go
