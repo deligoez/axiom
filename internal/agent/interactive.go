@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/creack/pty"
 )
 
 // SessionLogger handles session-based logging for agent conversations.
@@ -63,25 +64,26 @@ func (l *SessionLogger) Close() error {
 	return l.logFile.Close()
 }
 
-// InteractiveAgent maintains a persistent Claude CLI process for multi-turn conversations.
-// Unlike SpawnStreaming which creates a new process per message, this keeps one process
-// running and sends messages via stdin.
+// InteractiveAgent manages a persistent Claude CLI session using PTY.
+// This runs Claude in true interactive mode, maintaining conversation context.
 type InteractiveAgent struct {
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
-	stdout io.ReadCloser
-	mu     sync.Mutex
+	ptyFile *os.File
+	cmd     *exec.Cmd
+	mu      sync.Mutex
 
 	// Output streaming
-	chunks        chan string
-	done          chan error
-	currentOutput strings.Builder
+	chunks chan string
+	done   chan error
+
+	// Response tracking
+	currentResponse strings.Builder
+	responseReady   chan struct{}
 
 	// Logging
 	logger *SessionLogger
 }
 
-// NewInteractiveAgent creates and starts a persistent Claude CLI agent.
+// NewInteractiveAgent creates and starts a persistent Claude CLI agent using PTY.
 func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, error) {
 	// Read prompt file
 	content, err := os.ReadFile(promptPath)
@@ -101,40 +103,27 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
 
-	// Build command for interactive mode (no --print = stays alive)
-	// Using --output-format stream-json for real-time streaming
+	// Build command for interactive mode (NO --print!)
 	cmd := exec.Command(binPath,
 		"--verbose",
-		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 		"--system-prompt", string(content),
-		initialMessage, // First message as argument
 	)
 
-	stdin, err := cmd.StdinPipe()
+	// Start with PTY
+	ptyFile, err := pty.Start(cmd)
 	if err != nil {
 		_ = logger.Close()
-		return nil, fmt.Errorf("creating stdin pipe: %w", err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		_ = logger.Close()
-		return nil, fmt.Errorf("creating stdout pipe: %w", err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		_ = logger.Close()
-		return nil, fmt.Errorf("starting agent: %w", err)
+		return nil, fmt.Errorf("starting pty: %w", err)
 	}
 
 	agent := &InteractiveAgent{
-		cmd:    cmd,
-		stdin:  stdin,
-		stdout: stdout,
-		chunks: make(chan string, 100),
-		done:   make(chan error, 1),
-		logger: logger,
+		ptyFile:       ptyFile,
+		cmd:           cmd,
+		chunks:        make(chan string, 100),
+		done:          make(chan error, 1),
+		responseReady: make(chan struct{}),
+		logger:        logger,
 	}
 
 	// Log initial message
@@ -143,12 +132,27 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 	// Start reading output in background
 	go agent.readOutput()
 
+	// Send initial message after a short delay for CLI to initialize
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		agent.sendToAgent(initialMessage)
+	}()
+
 	return agent, nil
 }
 
+// sendToAgent sends a message to the Claude CLI via PTY.
+func (a *InteractiveAgent) sendToAgent(message string) {
+	a.mu.Lock()
+	// Reset response tracking
+	a.currentResponse.Reset()
+	a.mu.Unlock()
+
+	// Send message followed by Enter
+	_, _ = a.ptyFile.WriteString(message + "\n")
+}
+
 // SendMessage sends a message to the agent and returns channels for streaming response.
-// The chunks channel receives text as it's generated.
-// The done channel receives nil on success or an error.
 //
 //nolint:gocritic // named results would conflict with channel direction
 func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan error) {
@@ -157,29 +161,19 @@ func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan er
 	// Log user message
 	a.logger.Log("user", message)
 
-	// Reset output builder for new message
-	a.currentOutput.Reset()
-
 	// Create fresh channels for this message
 	a.chunks = make(chan string, 100)
 	a.done = make(chan error, 1)
 
 	a.mu.Unlock()
 
-	// Send message to agent via stdin (with newline to submit)
-	_, err := fmt.Fprintln(a.stdin, message)
-	if err != nil {
-		a.mu.Lock()
-		a.done <- fmt.Errorf("sending message: %w", err)
-		close(a.chunks)
-		close(a.done)
-		a.mu.Unlock()
-	}
+	// Send message to agent
+	a.sendToAgent(message)
 
 	return a.chunks, a.done
 }
 
-// GetChunks returns the current chunks channel for initial message streaming.
+// GetChunks returns the current chunks channel for streaming.
 //
 //nolint:gocritic // named results would conflict with channel direction
 func (a *InteractiveAgent) GetChunks() (<-chan string, <-chan error) {
@@ -188,57 +182,59 @@ func (a *InteractiveAgent) GetChunks() (<-chan string, <-chan error) {
 	return a.chunks, a.done
 }
 
-// readOutput continuously reads from stdout and parses stream events.
+// readOutput reads from the PTY and streams text to the chunks channel.
 func (a *InteractiveAgent) readOutput() {
-	scanner := bufio.NewScanner(a.stdout)
-	buf := make([]byte, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
+	reader := bufio.NewReader(a.ptyFile)
 
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	for {
+		// Read character by character for real-time streaming
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			break
+		}
 
-		var event streamEvent
-		if err := json.Unmarshal(line, &event); err != nil {
+		char := string(r)
+
+		// Skip ANSI escape sequences (terminal formatting)
+		if r == '\x1b' {
+			// Read until end of escape sequence
+			for {
+				next, _, err := reader.ReadRune()
+				if err != nil {
+					break
+				}
+				// Escape sequences typically end with a letter
+				if (next >= 'A' && next <= 'Z') || (next >= 'a' && next <= 'z') {
+					break
+				}
+			}
 			continue
 		}
 
-		// Extract text from text_delta events
-		if event.Type == "stream_event" &&
-			event.Event != nil &&
-			event.Event.Type == "content_block_delta" &&
-			event.Event.Delta != nil &&
-			event.Event.Delta.Type == "text_delta" &&
-			event.Event.Delta.Text != "" {
-			a.mu.Lock()
-			text := event.Event.Delta.Text
-			a.currentOutput.WriteString(text)
-			if a.chunks != nil {
-				a.chunks <- text
-			}
-			a.mu.Unlock()
+		// Skip control characters except newlines
+		if r < 32 && r != '\n' && r != '\r' {
+			continue
 		}
 
-		// Check for message completion
-		if event.Type == "stream_event" && event.Event != nil && event.Event.Type == "message_stop" {
-			a.mu.Lock()
-			// Log complete assistant response
-			if a.currentOutput.Len() > 0 {
-				a.logger.Log("assistant", a.currentOutput.String())
+		// Track response and send to channel
+		a.mu.Lock()
+		a.currentResponse.WriteString(char)
+		if a.chunks != nil {
+			select {
+			case a.chunks <- char:
+			default:
+				// Channel full, skip
 			}
-			if a.chunks != nil {
-				close(a.chunks)
-				a.done <- nil
-				close(a.done)
-				// Prepare for next message
-				a.chunks = make(chan string, 100)
-				a.done = make(chan error, 1)
-			}
-			a.mu.Unlock()
 		}
+		a.mu.Unlock()
 	}
 
 	// Process ended
 	a.mu.Lock()
+	response := a.currentResponse.String()
+	if response != "" {
+		a.logger.Log("assistant", response)
+	}
 	if a.chunks != nil {
 		close(a.chunks)
 		a.done <- a.cmd.Wait()
@@ -250,7 +246,7 @@ func (a *InteractiveAgent) readOutput() {
 
 // Close terminates the agent process.
 func (a *InteractiveAgent) Close() error {
-	_ = a.stdin.Close()
+	_ = a.ptyFile.Close()
 	err := a.cmd.Wait()
 	_ = a.logger.Close()
 	return err
