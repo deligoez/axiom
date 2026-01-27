@@ -9,36 +9,46 @@
 
 ## Current Work
 
-**No active tasks** - Clean slate!
+**MVP-06: Interactive Agent Mode**
 
-Next steps to consider:
-- Test Init Mode end-to-end (manual integration test)
-- Implement Axel (planning agent)
-- Implement Echo (implementation agent)
+Goal: Real-time streaming for agent output (character-by-character)
+
+Problem discovered:
+- `--print` mode gives clean JSON but NO real-time streaming
+- All output arrives at once after CLI completes
+- This breaks "live output" UX for multi-agent orchestration
+
+Solution:
+- Use full interactive mode (PTY) with output filtering
+- Filter out CLI UI garbage (status bars, ANSI codes, etc.)
+- Keep real-time character streaming
+
+Next steps:
+1. Create atomic tasks for interactive mode implementation
+2. Implement PTY-based agent with filtering
+3. Test with Ava and longer-running agents
 
 ---
 
 ## Completed Milestones
 
-### MVP-05: Init Mode Web UI ✓
+### MVP-05: Init Mode Web UI ⚠️
 - **Goal:** Ava runs in browser with streaming output
-- **Status:** DONE
+- **Status:** PARTIAL - UI works, but no real-time streaming
 - **What was built:**
-  - SSE infrastructure for agent streaming
-  - Agent streamer (non-blocking spawn with channels)
-  - Init Mode UI (/init page with Ava chat)
-  - Updated startup flow (server first, then SSE)
-- **Tasks completed:**
-  - ax-81w: PLAN - Init Mode Web UI Architecture
-  - ax-q03: Agent Streamer (non-blocking spawn)
-  - ax-s1o: SSE infrastructure for agent streaming
-  - ax-cju: Init Mode UI (Ava chat interface)
-  - ax-v50: Update startup flow for Init Mode UI
+  - SSE infrastructure for agent output
+  - InteractiveAgent with --print mode (batch output)
+  - Init Mode UI (/init page with Ava modal)
+  - Config state detection (new/incomplete/complete)
+  - Session-based logging (.axiom/agents/ava/logs/)
+- **Issue discovered:**
+  - `--print` mode gives all output at once, not streamed
+  - Real-time streaming requires interactive mode + filtering
 - **Key files:**
-  - internal/agent/streamer.go
-  - internal/web/sse.go
-  - internal/web/templates/init.html
-  - cmd/axiom/main.go
+  - internal/agent/interactive.go
+  - internal/web/server.go
+  - internal/web/templates/layout.html
+  - internal/scaffold/scaffold.go
 
 ### MVP-04: Ava Init System ✓
 - **Goal:** First run spawns Ava for project setup
