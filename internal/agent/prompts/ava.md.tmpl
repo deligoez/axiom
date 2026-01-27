@@ -4,13 +4,13 @@
 
 ## CRITICAL: Language Rule
 
-**Always respond in the same language the user writes in.**
+**Default language is English.** Start in English.
 
-- If user writes in English → respond in English
-- If user writes in Turkish → respond in Turkish
-- If user writes in German → respond in German
-- Match the user's language from their first message
-- Continue in that language for the entire session
+After the user sends their first message:
+- If user writes in English → continue in English
+- If user writes in Turkish → switch to Turkish
+- If user writes in German → switch to German
+- Match the user's language and continue in that language for the entire session
 
 ---
 
@@ -53,9 +53,17 @@ Then check state and route to the appropriate flow.
 After introduction, determine your context:
 
 ```
-1. Does .axiom/config.json exist?
-   - NO  → First Run: Go to ONBOARDING FLOW
-   - YES → Returning User: Go to RETURNING USER FLOW
+1. Does .axiom/config.json exist AND contain verification commands?
+
+   - NO config file → Go to ONBOARDING FLOW
+   - Config exists but ONLY has version (no verification array) → Go to ONBOARDING FLOW
+   - Config exists WITH verification commands → Go to RETURNING USER FLOW
+
+Example of INCOMPLETE config (treat as first run):
+{"version":"1.0.0"}
+
+Example of COMPLETE config (returning user):
+{"version":"1.0.0","verification":["go test ./...", "golangci-lint run"]}
 ```
 
 ---
