@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AXIOM</title>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/sse.js"></script>
+    <script src="/static/js/htmx.min.js"></script>
+    <script src="/static/js/htmx-sse.js"></script>
+    <script src="/static/js/marked.js"></script>
+    <script src="/static/js/purify.min.js"></script>
     <link rel="stylesheet" href="/static/css/output.css">
 </head>
 <body class="min-h-screen flex flex-col bg-gray-50">
@@ -96,27 +98,88 @@
     </div>
     <script>
         let sseSource = null;
+        let messageBuffer = [];  // Buffer for accumulating messages
+        let currentAssistantText = '';  // Current assistant message being built
+
+        // Configure marked for safe rendering
+        marked.setOptions({
+            breaks: true,  // Convert \n to <br>
+            gfm: true,     // GitHub Flavored Markdown
+        });
+
+        function renderMessages() {
+            const output = document.getElementById('ava-output');
+            let html = '';
+
+            for (const msg of messageBuffer) {
+                if (msg.type === 'user') {
+                    html += '<div class="border-t border-gray-700 my-4"></div>';
+                    html += '<div class="py-2 px-3 bg-blue-900 bg-opacity-50 rounded-lg mb-4 text-blue-200">';
+                    html += '<span class="font-semibold">You:</span> ' + DOMPurify.sanitize(msg.content);
+                    html += '</div>';
+                } else {
+                    // Render markdown for assistant messages
+                    const rendered = DOMPurify.sanitize(marked.parse(msg.content));
+                    html += '<div class="prose prose-invert prose-sm max-w-none">' + rendered + '</div>';
+                }
+            }
+
+            // Add current streaming text (render as markdown too)
+            if (currentAssistantText) {
+                const rendered = DOMPurify.sanitize(marked.parse(currentAssistantText));
+                html += '<div class="prose prose-invert prose-sm max-w-none">' + rendered + '</div>';
+            }
+
+            output.innerHTML = html;
+            output.parentElement.scrollTop = output.parentElement.scrollHeight;
+        }
 
         function initSSE() {
             if (sseSource) {
                 sseSource.close();
             }
 
+            // Reset state for fresh connection
+            messageBuffer = [];
+            currentAssistantText = '';
+
             sseSource = new EventSource('/sse/init');
-            const output = document.getElementById('ava-output');
 
             sseSource.addEventListener('message', function(e) {
                 // Remove loading indicator
                 const loading = document.getElementById('ava-loading');
                 if (loading) loading.remove();
 
-                // Append new content
-                output.insertAdjacentHTML('beforeend', e.data);
-                output.parentElement.scrollTop = output.parentElement.scrollHeight;
+                const data = e.data;
+
+                // Check if this is a user message (has special HTML structure from server)
+                if (data.includes('bg-blue-900') && data.includes('You:</span>')) {
+                    // Finalize current assistant text if any
+                    if (currentAssistantText) {
+                        messageBuffer.push({ type: 'assistant', content: currentAssistantText });
+                        currentAssistantText = '';
+                    }
+                    // Extract user message text from the HTML
+                    const match = data.match(/You:<\/span>\s*(.+?)<\/div>/);
+                    if (match) {
+                        messageBuffer.push({ type: 'user', content: match[1] });
+                    }
+                } else {
+                    // Assistant text chunk - accumulate it
+                    currentAssistantText += data;
+                }
+
+                renderMessages();
             });
 
             sseSource.addEventListener('done', function(e) {
                 sseSource.close();
+                // Finalize any remaining text
+                if (currentAssistantText) {
+                    messageBuffer.push({ type: 'assistant', content: currentAssistantText });
+                    currentAssistantText = '';
+                    renderMessages();
+                }
                 document.getElementById('init-complete').classList.remove('hidden');
             });
 
@@ -132,7 +195,7 @@
 
             const output = document.getElementById('ava-output');
 
-            // Add loading indicator (user message will come from server replay)
+            // Add loading indicator
             const loading = document.createElement('div');
             loading.id = 'ava-loading';
             loading.className = 'py-1 text-gray-500 italic';
@@ -142,18 +205,10 @@
             // Scroll to bottom
             output.parentElement.scrollTop = output.parentElement.scrollHeight;
 
-            // Reconnect SSE after delay - server will replay full history including user message
+            // Reconnect SSE after delay - server will replay full history
             setTimeout(function() {
-                // Clear current output - server will replay everything
-                output.innerHTML = '';
                 initSSE();
             }, 500);
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         // Initialize SSE on page load

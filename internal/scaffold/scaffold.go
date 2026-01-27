@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/deligoez/axiom/internal/agent"
 )
@@ -52,4 +53,43 @@ func WriteAvaPrompt(axiomDir string) error {
 	}
 
 	return nil
+}
+
+// ConfigState represents the state of AXIOM configuration.
+type ConfigState int
+
+const (
+	// ConfigNew means no .axiom/ directory exists.
+	ConfigNew ConfigState = iota
+	// ConfigIncomplete means .axiom/ exists but config lacks verification commands.
+	ConfigIncomplete
+	// ConfigComplete means config has verification commands.
+	ConfigComplete
+)
+
+// CheckConfigState determines the configuration state for Ava's initial prompt.
+func CheckConfigState(projectDir string) ConfigState {
+	axiomDir := filepath.Join(projectDir, ".axiom")
+	configPath := filepath.Join(axiomDir, "config.json")
+
+	// Check if .axiom/ exists
+	if _, err := os.Stat(axiomDir); os.IsNotExist(err) {
+		return ConfigNew
+	}
+
+	// Check if config.json exists
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return ConfigIncomplete
+	}
+
+	// Check if config has verification commands (simple check for "verification" key with array)
+	// A complete config has: {"version":"1.0.0","verification":["go test ./...",...]}
+	// An incomplete config has: {"version":"1.0.0"} (only version)
+	configStr := string(data)
+	if !strings.Contains(configStr, `"verification"`) {
+		return ConfigIncomplete
+	}
+
+	return ConfigComplete
 }

@@ -14,10 +14,12 @@ func main() {
 	addr := ":8080"
 	caseFile := ".axiom/cases.jsonl"
 	promptPath := ".axiom/agents/ava/prompt.md"
-	initMode := false
+
+	// Check config state before scaffolding
+	configState := scaffold.CheckConfigState(".")
 
 	// Scaffold .axiom/ directory if it doesn't exist
-	if !scaffold.Exists(".") {
+	if configState == scaffold.ConfigNew {
 		if err := scaffold.Scaffold("."); err != nil {
 			log.Fatalf("scaffold error: %v", err)
 		}
@@ -28,16 +30,22 @@ func main() {
 			log.Fatalf("prompt error: %v", err)
 		}
 		fmt.Println("Created .axiom/ directory")
-		initMode = true
 	}
 
 	server := web.NewServer(caseFile)
 	server.StaticDir("web/static")
 
-	// Enable init mode if first run (modal will show automatically)
-	if initMode {
-		server.EnableInitMode(promptPath)
+	// Enable init mode based on config state
+	switch configState {
+	case scaffold.ConfigNew:
+		server.EnableInitMode(promptPath, configState)
 		fmt.Println("First run detected - Ava will help with project setup.")
+	case scaffold.ConfigIncomplete:
+		server.EnableInitMode(promptPath, configState)
+		fmt.Println("Incomplete config detected - Ava will complete setup.")
+	case scaffold.ConfigComplete:
+		// Don't show init modal for returning users with complete config
+		fmt.Println("AXIOM configured - ready to use.")
 	}
 
 	fmt.Printf("AXIOM server starting on http://localhost%s\n", addr)

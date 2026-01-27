@@ -12,6 +12,7 @@ import (
 
 	"github.com/deligoez/axiom/internal/agent"
 	casestore "github.com/deligoez/axiom/internal/case"
+	"github.com/deligoez/axiom/internal/scaffold"
 )
 
 //go:embed templates/*.html
@@ -27,6 +28,7 @@ type Server struct {
 	// Init mode state
 	initMode     bool
 	promptPath   string
+	configState  scaffold.ConfigState
 	initMu       sync.Mutex
 	initStarted  bool
 	initLines    <-chan string
@@ -77,9 +79,11 @@ func (s *Server) routes() {
 }
 
 // EnableInitMode enables Init Mode for first-time project setup.
-func (s *Server) EnableInitMode(promptPath string) {
+// configState tells Ava whether this is a new project, incomplete config, or returning user.
+func (s *Server) EnableInitMode(promptPath string, configState scaffold.ConfigState) {
 	s.initMode = true
 	s.promptPath = promptPath
+	s.configState = configState
 	s.conversation = agent.NewConversation()
 
 	// Load base prompt for conversation history
@@ -123,7 +127,18 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 	s.initMu.Lock()
 	if !s.initStarted {
 		s.initStarted = true
-		lines, done, err := agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
+		// Build initial message based on config state
+		// CRITICAL: Enforce English language in the initial message
+		var initialMessage string
+		switch s.configState {
+		case scaffold.ConfigNew:
+			initialMessage = "LANGUAGE: English (mandatory until user writes in another language)\n\nThis is a FIRST RUN - no .axiom/ directory existed. Follow the ONBOARDING FLOW. Introduce yourself and explain what you'll do. Write in English."
+		case scaffold.ConfigIncomplete:
+			initialMessage = "LANGUAGE: English (mandatory until user writes in another language)\n\nThe .axiom/ directory exists but config.json only has version (no verification commands). Treat this as FIRST RUN - follow the ONBOARDING FLOW. Introduce yourself and explain what you'll do. Write in English."
+		case scaffold.ConfigComplete:
+			initialMessage = "LANGUAGE: English (mandatory until user writes in another language)\n\nThis is a RETURNING USER - config.json has verification commands. Follow the RETURNING USER FLOW. Introduce yourself and offer help options. Write in English."
+		}
+		lines, done, err := agent.SpawnStreaming(s.promptPath, initialMessage)
 		s.initLines = lines
 		s.initDone = done
 		s.initErr = err

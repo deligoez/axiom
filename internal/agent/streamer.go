@@ -69,8 +69,8 @@ func SpawnStreaming(promptPath, message string) (<-chan string, <-chan error, er
 		return nil, nil, fmt.Errorf("starting agent: %w", err)
 	}
 
-	// 6. Create channels
-	chunks := make(chan string)
+	// 6. Create channels (buffered to avoid race conditions)
+	chunks := make(chan string, 100)
 	done := make(chan error, 1)
 
 	// 7. Read and parse JSON stream in goroutine
