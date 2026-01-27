@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -169,8 +170,10 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 					`<span class="font-semibold">You:</span> ` + escaped + `</div>`
 				_, _ = w.Write([]byte("event: message\ndata: " + data + "\n\n"))
 			} else {
-				// Assistant output
-				_, _ = w.Write([]byte("event: message\ndata: " + entry.Content + "\n\n"))
+				// Assistant output - SSE requires each line to have "data: " prefix
+				// Replace newlines with SSE-compatible format
+				content := strings.ReplaceAll(entry.Content, "\n", "\ndata: ")
+				_, _ = w.Write([]byte("event: message\ndata: " + content + "\n\n"))
 			}
 		}
 		sentCount = bufLen
