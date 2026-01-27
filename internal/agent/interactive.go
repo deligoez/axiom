@@ -205,7 +205,9 @@ func (a *InteractiveAgent) runMessage(message string) {
 	// Poll for response using marker-based detection
 	pollInterval := 200 * time.Millisecond
 	noChangeCount := 0
-	maxNoChangeCount := 25 // 5 seconds of no response change = done
+	maxNoChangeCount := 25        // 5 seconds of no content change = done
+	maxWaitForResponse := 60 * 5  // 60 seconds max wait for first response marker (60s / 200ms = 300 polls)
+	waitForResponseCount := 0
 	lastExtractedLen := 0
 
 	for {
@@ -220,9 +222,10 @@ func (a *InteractiveAgent) runMessage(message string) {
 		// This is the start of the current message's response
 		newResponseStart := findNthMarkerPosition(output, "⏺", a.baselineResponseCount+1)
 		if newResponseStart == -1 {
-			// No new response yet
-			noChangeCount++
-			if noChangeCount >= maxNoChangeCount {
+			// No new response yet - wait longer for first response
+			waitForResponseCount++
+			if waitForResponseCount >= maxWaitForResponse {
+				// Timeout waiting for response to start
 				break
 			}
 			time.Sleep(pollInterval)
