@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -95,6 +96,7 @@ func (s *Server) StaticDir(dir string) {
 type PageData struct {
 	Cases    []casestore.Case
 	InitMode bool
+	WorkDir  string
 }
 
 // buildInitialMessage creates the initial message based on config state.
@@ -292,15 +294,18 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		cases = []casestore.Case{}
 	}
 
+	workDir, _ := os.Getwd()
 	data := PageData{
 		Cases:    cases,
 		InitMode: s.initMode,
+		WorkDir:  workDir,
 	}
 
 	// Execute to buffer first to handle errors cleanly
 	var buf bytes.Buffer
 	err = s.templates.ExecuteTemplate(&buf, "layout.html", data)
 	if err != nil {
+		log.Printf("Template error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
