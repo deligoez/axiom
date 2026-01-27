@@ -159,3 +159,30 @@ func TestClassifyLine_HeaderBranding(t *testing.T) {
 		})
 	}
 }
+
+func TestClassifyLine_NewIDEPatterns(t *testing.T) {
+	// Test: New IDE and status patterns are detected
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"phpstorm hint", "◯ /ide for PhpStorm"},
+		{"phpstorm keyword", "PhpStorm"},
+		{"vscode", "VSCode integration"},
+		{"cursor", "Cursor IDE"},
+		{"bypass symbol", "⏵⏵ bypass permissions on"},
+		{"edit hint", "Press up to edit queued messages"},
+		{"interrupt hint", "esc to interrupt"},
+		{"boogieing", "✶ Boogieing… (esc to interrupt)"},
+		{"thinking hint", "thinking"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ClassifyLine(tt.input)
+			if result != LineUIElement {
+				t.Errorf("expected LineUIElement, got %v for %q", result, tt.input)
+			}
+		})
+	}
+}

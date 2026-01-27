@@ -90,10 +90,143 @@ func TestStreamCleaner_FlushesRemaining(t *testing.T) {
 	// Partial line without newline
 	_ = cleaner.Process("Partial content")
 
-	// Flush should return it
+	// Flush should return it (filterUILines adds newline)
 	result := cleaner.Flush()
-	if result != "Partial content" {
-		t.Errorf("expected 'Partial content', got %q", result)
+	if result != "Partial content\n" {
+		t.Errorf("expected 'Partial content\\n', got %q", result)
+	}
+}
+
+func TestStreamCleaner_ResponseExtraction(t *testing.T) {
+	// Test: Response extraction with ⏺ marker
+	cleaner := NewStreamCleanerWithResponseExtraction()
+
+	input := "⏺ Hello, this is my response.\n" +
+		"Some follow-up content.\n" +
+		"❯ \n" + // Prompt marker ends response
+		"More text outside response.\n"
+
+	result := cleaner.Process(input)
+
+	// Should include response content
+	if !strings.Contains(result, "Hello, this is my response.") {
+		t.Errorf("expected response content, got %q", result)
+	}
+	if !strings.Contains(result, "Some follow-up content.") {
+		t.Errorf("expected follow-up content, got %q", result)
+	}
+	// Should NOT include text after prompt marker
+	if strings.Contains(result, "More text outside response") {
+		t.Errorf("should not include text after prompt marker, got %q", result)
+	}
+}
+
+func TestStreamCleaner_GetFullResponse(t *testing.T) {
+	// Test: GetFullResponse accumulates all response content
+	cleaner := NewStreamCleanerWithResponseExtraction()
+
+	// First chunk
+	_ = cleaner.Process("⏺ First part.\n")
+	// Second chunk
+	_ = cleaner.Process("Second part.\n")
+
+	full := cleaner.GetFullResponse()
+	if !strings.Contains(full, "First part.") {
+		t.Errorf("expected 'First part.' in full response, got %q", full)
+	}
+	if !strings.Contains(full, "Second part.") {
+		t.Errorf("expected 'Second part.' in full response, got %q", full)
+	}
+}
+
+func TestStreamCleaner_Reset(t *testing.T) {
+	// Test: Reset clears all buffers
+	cleaner := NewStreamCleanerWithResponseExtraction()
+
+	_ = cleaner.Process("⏺ Some response.\n")
+	if cleaner.GetFullResponse() == "" {
+		t.Error("response should not be empty before reset")
+	}
+
+	cleaner.Reset()
+
+	if cleaner.GetFullResponse() != "" {
+		t.Errorf("response should be empty after reset, got %q", cleaner.GetFullResponse())
+	}
+}
+
+func TestStreamCleaner_CustomStages(t *testing.T) {
+	// Test: Custom stages work correctly
+	cleaner := NewStreamCleanerWithStages(strings.ToUpper)
+
+	result := cleaner.Process("hello world\n")
+	if result != "HELLO WORLD\n" {
+		t.Errorf("expected uppercase, got %q", result)
+	}
+}
+
+func TestStreamCleaner_AddStage(t *testing.T) {
+	// Test: Adding stages dynamically
+	cleaner := NewStreamCleaner()
+
+	// Add a stage that prefixes each line
+	prefixStage := func(input string) string {
+		lines := strings.Split(input, "\n")
+		var result strings.Builder
+		for _, line := range lines {
+			if line != "" {
+				result.WriteString("[PREFIX] " + line + "\n")
+			}
+		}
+		return result.String()
+	}
+
+	cleaner.AddStage(prefixStage)
+
+	result := cleaner.Process("test line\n")
+	if !strings.Contains(result, "[PREFIX]") {
+		t.Errorf("expected prefix, got %q", result)
+	}
+}
+
+func TestNormalizeWhitespace(t *testing.T) {
+	input := "  hello    world  \n  foo   bar  \n"
+	result := NormalizeWhitespace(input)
+
+	if strings.Contains(result, "    ") {
+		t.Errorf("should collapse multiple spaces, got %q", result)
+	}
+	if strings.HasPrefix(result, " ") || strings.HasSuffix(strings.TrimRight(result, "\n"), " ") {
+		t.Errorf("should trim leading/trailing spaces from lines, got %q", result)
+	}
+}
+
+func TestRemoveDuplicateLines(t *testing.T) {
+	input := "line1\nline1\nline2\nline2\nline2\nline3\n"
+	result := RemoveDuplicateLines(input)
+
+	// Function adds trailing newline after last non-empty line
+	if !strings.Contains(result, "line1\nline2\nline3") {
+		t.Errorf("expected deduplicated lines, got %q", result)
+	}
+	// Check that duplicates are removed
+	if strings.Count(result, "line1") != 1 {
+		t.Errorf("expected single line1, got %q", result)
+	}
+	if strings.Count(result, "line2") != 1 {
+		t.Errorf("expected single line2, got %q", result)
+	}
+}
+
+func TestTrimTerminalArtifacts(t *testing.T) {
+	input := "hello\x1b[2Aworld\r\ntest\r"
+	result := TrimTerminalArtifacts(input)
+
+	if strings.Contains(result, "\x1b") {
+		t.Errorf("should remove ANSI cursor commands, got %q", result)
+	}
+	if strings.Contains(result, "\r") {
+		t.Errorf("should remove carriage returns, got %q", result)
 	}
 }
 

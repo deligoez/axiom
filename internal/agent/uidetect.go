@@ -41,6 +41,15 @@ var (
 		"IDE disconnected",
 		"Chrome enabled",
 		"/chrome",
+		"PhpStorm",
+		"VSCode",
+		"Cursor",
+		"◯",
+		"⏵⏵",
+		"Press up to edit",
+		"esc to interrupt",
+		"thinking",
+		"Boogieing",
 	}
 
 	// CLI header/branding keywords

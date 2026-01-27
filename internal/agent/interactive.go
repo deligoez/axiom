@@ -117,7 +117,7 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 		chunks:       make(chan string, 100),
 		done:         make(chan error, 1),
 		logger:       logger,
-		cleaner:      NewStreamCleaner(),
+		cleaner:      NewStreamCleanerWithResponseExtraction(),
 	}
 
 	// Log initial message
@@ -172,7 +172,7 @@ func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan er
 	a.done = make(chan error, 1)
 
 	// Reset cleaner for new message
-	a.cleaner = NewStreamCleaner()
+	a.cleaner = NewStreamCleanerWithResponseExtraction()
 
 	a.mu.Unlock()
 
