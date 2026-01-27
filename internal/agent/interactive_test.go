@@ -143,6 +143,7 @@ func TestPTYAgent_Write(t *testing.T) {
 
 func TestInteractiveAgent_IsPromptReady(t *testing.T) {
 	// Test the prompt detection logic
+	// Note: isPromptReady requires a ⏺ marker before the prompt
 	agent := &InteractiveAgent{}
 
 	tests := []struct {
@@ -156,18 +157,28 @@ func TestInteractiveAgent_IsPromptReady(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:     "prompt ready",
-			output:   "Some response\n❯ ",
+			name:     "prompt ready with response marker",
+			output:   "⏺ Some response\n❯ ",
 			expected: true,
 		},
 		{
+			name:     "prompt without response marker",
+			output:   "Some response\n❯ ",
+			expected: false, // No ⏺ marker means not ready
+		},
+		{
 			name:     "prompt with thinking",
-			output:   "Some response\n❯ Thinking...",
+			output:   "⏺ Some response\n❯ Thinking...",
 			expected: false,
 		},
 		{
 			name:     "no prompt",
-			output:   "Some response\nMore text",
+			output:   "⏺ Some response\nMore text",
+			expected: false,
+		},
+		{
+			name:     "response marker but no prompt yet",
+			output:   "⏺ Working on it...",
 			expected: false,
 		},
 	}

@@ -79,9 +79,11 @@ type InteractiveAgent struct {
 	// Logging
 	logger *SessionLogger
 
-	// Output tracking for incremental capture
-	lastOutputLen int
-	cleaner       *StreamCleaner
+	// Stream cleaner for response extraction
+	cleaner *StreamCleaner
+
+	// Number of response markers (⏺) seen before current message
+	baselineResponseCount int
 }
 
 // NewInteractiveAgent creates a new agent for multi-turn conversations.
@@ -136,10 +138,6 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 		return nil, fmt.Errorf("waiting for claude prompt: %w", err)
 	}
 
-	// Capture initial state
-	initialOutput, _ := agent.session.GetFullOutput()
-	agent.lastOutputLen = len(initialOutput)
-
 	// Send initial message
 	go agent.runMessage(initialMessage)
 
@@ -193,45 +191,63 @@ func (a *InteractiveAgent) GetChunks() (<-chan string, <-chan error) {
 
 // runMessage sends a message to Claude via tmux and streams the response.
 func (a *InteractiveAgent) runMessage(message string) {
+	// Count response markers (⏺) BEFORE sending message
+	// This helps us identify only NEW responses
+	baselineOutput, _ := a.session.GetFullOutput()
+	a.baselineResponseCount = strings.Count(baselineOutput, "⏺")
+
 	// Send message via tmux
 	if err := a.session.SendMessage(message); err != nil {
 		a.sendError(fmt.Errorf("sending message: %w", err))
 		return
 	}
 
-	// Poll for output changes and stream them
-	var fullResponse strings.Builder
-	pollInterval := 100 * time.Millisecond
+	// Poll for response using marker-based detection
+	pollInterval := 200 * time.Millisecond
 	noChangeCount := 0
-	maxNoChangeCount := 50 // 5 seconds of no change = done
+	maxNoChangeCount := 25 // 5 seconds of no response change = done
+	lastExtractedLen := 0
 
 	for {
-		// Capture current pane content
+		// Capture current pane content (full history)
 		output, err := a.session.GetFullOutput()
 		if err != nil {
 			a.sendError(fmt.Errorf("capturing output: %w", err))
 			return
 		}
 
-		// Check for new content
-		if len(output) > a.lastOutputLen {
-			newContent := output[a.lastOutputLen:]
-			a.lastOutputLen = len(output)
-
-			// Clean the new content (strip ANSI, filter UI elements)
-			cleaned := a.cleaner.Process(newContent)
-			if cleaned != "" {
-				fullResponse.WriteString(cleaned)
-				a.sendChunk(cleaned)
+		// Find the position of the Nth+1 response marker (the new one)
+		// This is the start of the current message's response
+		newResponseStart := findNthMarkerPosition(output, "⏺", a.baselineResponseCount+1)
+		if newResponseStart == -1 {
+			// No new response yet
+			noChangeCount++
+			if noChangeCount >= maxNoChangeCount {
+				break
 			}
+			time.Sleep(pollInterval)
+			continue
+		}
 
+		// Extract content from the new response only
+		newOutput := output[newResponseStart:]
+		a.cleaner.Reset()
+		_ = a.cleaner.Process(newOutput)
+		extracted := a.cleaner.GetFullResponse()
+
+		// Check if we have new extracted content
+		if len(extracted) > lastExtractedLen {
+			newContent := extracted[lastExtractedLen:]
+			lastExtractedLen = len(extracted)
+
+			a.sendChunk(newContent)
 			noChangeCount = 0
 		} else {
 			noChangeCount++
 		}
 
-		// Check if Claude is done (prompt appeared again)
-		if a.isPromptReady(output) && noChangeCount > 5 {
+		// Check if Claude is done (response marker + prompt after it)
+		if a.isPromptReady(output) && lastExtractedLen > 0 && noChangeCount > 5 {
 			break
 		}
 
@@ -243,15 +259,12 @@ func (a *InteractiveAgent) runMessage(message string) {
 		time.Sleep(pollInterval)
 	}
 
-	// Flush any remaining content
-	if remaining := a.cleaner.Flush(); remaining != "" {
-		fullResponse.WriteString(remaining)
-		a.sendChunk(remaining)
-	}
+	// Get the complete extracted response
+	fullResponse := a.cleaner.GetFullResponse()
 
 	// Log complete response
-	if fullResponse.Len() > 0 {
-		a.logger.Log("assistant", fullResponse.String())
+	if fullResponse != "" {
+		a.logger.Log("assistant", fullResponse)
 	}
 
 	// Signal completion
@@ -269,17 +282,50 @@ func (a *InteractiveAgent) runMessage(message string) {
 	a.mu.Unlock()
 }
 
-// isPromptReady checks if the Claude prompt (❯) is visible and ready for input.
-func (a *InteractiveAgent) isPromptReady(output string) bool {
-	lines := strings.Split(output, "\n")
-	if len(lines) < 2 {
-		return false
+// findNthMarkerPosition finds the position of the Nth occurrence of a marker.
+// Returns -1 if not found.
+func findNthMarkerPosition(s, marker string, n int) int {
+	if n <= 0 {
+		return -1
 	}
 
-	// Look for prompt in last few lines
-	for i := len(lines) - 1; i >= 0 && i >= len(lines)-5; i-- {
-		line := strings.TrimSpace(lines[i])
-		if strings.HasPrefix(line, "❯") && !strings.Contains(line, "...") {
+	pos := 0
+	count := 0
+	for {
+		idx := strings.Index(s[pos:], marker)
+		if idx == -1 {
+			return -1
+		}
+		count++
+		if count == n {
+			return pos + idx
+		}
+		pos += idx + len(marker)
+	}
+}
+
+// isPromptReady checks if Claude has finished responding.
+// It looks for the response marker (⏺) followed by a new prompt (❯).
+func (a *InteractiveAgent) isPromptReady(output string) bool {
+	// Must have seen response marker before checking for ending prompt
+	responseIdx := strings.LastIndex(output, "⏺")
+	if responseIdx == -1 {
+		return false // No response yet
+	}
+
+	// Look for prompt AFTER the response marker
+	afterResponse := output[responseIdx:]
+	promptIdx := strings.Index(afterResponse, "❯")
+	if promptIdx == -1 {
+		return false // No prompt after response
+	}
+
+	// The prompt must be on its own line (empty or just whitespace after it)
+	lines := strings.Split(afterResponse[promptIdx:], "\n")
+	if len(lines) > 0 {
+		firstLine := strings.TrimSpace(lines[0])
+		// Prompt line should be just "❯" or "❯ " (empty prompt)
+		if firstLine == "❯" || firstLine == "❯ " || strings.HasPrefix(firstLine, "❯") && strings.TrimSpace(strings.TrimPrefix(firstLine, "❯")) == "" {
 			return true
 		}
 	}

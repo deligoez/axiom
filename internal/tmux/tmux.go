@@ -112,6 +112,12 @@ func (t *Tmux) CapturePaneHistory(session string, lines int) (string, error) {
 	return t.run("capture-pane", "-t", session, "-p", "-S", fmt.Sprintf("-%d", lines))
 }
 
+// CapturePaneFullHistory captures the entire history from the start.
+// This includes all scrollback, not just the visible pane.
+func (t *Tmux) CapturePaneFullHistory(session string) (string, error) {
+	return t.run("capture-pane", "-t", session, "-p", "-S", "-")
+}
+
 // ClaudeSession manages a Claude CLI session in tmux.
 type ClaudeSession struct {
 	tmux        *Tmux
@@ -196,12 +202,12 @@ func (s *ClaudeSession) GetNewOutput() (string, error) {
 	return "", nil
 }
 
-// GetFullOutput returns the complete pane content.
+// GetFullOutput returns the complete pane content including scrollback history.
 func (s *ClaudeSession) GetFullOutput() (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.tmux.CapturePaneContent(s.sessionName)
+	return s.tmux.CapturePaneFullHistory(s.sessionName)
 }
 
 // IsRunning checks if the session is still running.
