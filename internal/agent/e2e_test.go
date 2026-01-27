@@ -24,11 +24,8 @@ func TestInteractiveAgent_E2E(t *testing.T) {
 		t.Skip("tmux not available")
 	}
 
-	// Create temp workspace (use fixed path for debugging)
-	tmpDir := "/tmp/axiom-e2e-test"
-	_ = os.RemoveAll(tmpDir)
-	_ = os.MkdirAll(tmpDir, 0o755)
-	t.Logf("Test dir: %s", tmpDir)
+	// Create temp workspace
+	tmpDir := t.TempDir()
 	promptPath := filepath.Join(tmpDir, "test_prompt.md")
 	if err := os.WriteFile(promptPath, []byte("You are a test assistant. Be very brief. Max 10 words per response."), 0o644); err != nil {
 		t.Fatalf("failed to create prompt file: %v", err)
