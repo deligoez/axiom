@@ -72,14 +72,37 @@
                 </div>
             </div>
 
-            <!-- Modal Footer (shown on completion) -->
-            <div id="init-complete" class="hidden border-t border-gray-700 p-6 flex justify-center gap-4">
-                <button
-                    onclick="document.getElementById('init-modal').remove()"
-                    class="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-lg font-medium text-lg"
-                >
-                    Continue to AXIOM
-                </button>
+            <!-- Modal Footer - Input and Actions -->
+            <div class="border-t border-gray-700 p-4">
+                <!-- User Input Form -->
+                <form id="init-input-form" class="flex gap-3 mb-3"
+                    hx-post="/api/init/respond"
+                    hx-swap="none"
+                    hx-on::after-request="this.reset(); document.getElementById('ava-output').innerHTML = ''; htmx.trigger('#sse-container', 'htmx:load')">
+                    <input
+                        type="text"
+                        name="message"
+                        placeholder="Type your response..."
+                        class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        autocomplete="off"
+                    />
+                    <button
+                        type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium"
+                    >
+                        Send
+                    </button>
+                </form>
+
+                <!-- Continue Button (shown on completion) -->
+                <div id="init-complete" class="hidden flex justify-center">
+                    <button
+                        onclick="document.getElementById('init-modal').remove()"
+                        class="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-lg font-medium text-lg"
+                    >
+                        Continue to AXIOM
+                    </button>
+                </div>
             </div>
         </div>
     </div>

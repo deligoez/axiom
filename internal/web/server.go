@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/deligoez/axiom/internal/agent"
@@ -23,12 +24,15 @@ type Server struct {
 	caseFile  string
 
 	// Init mode state
-	initMode   bool
-	promptPath string
-	initOnce   sync.Once
-	initLines  <-chan string
-	initDone   <-chan error
-	initErr    error
+	initMode     bool
+	promptPath   string
+	initMu       sync.Mutex
+	initStarted  bool
+	initLines    <-chan string
+	initDone     <-chan error
+	initErr      error
+	conversation *agent.Conversation
+	basePrompt   string
 }
 
 // NewServer creates a new AXIOM web server.
@@ -58,12 +62,20 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/", s.handleRoot)
 	s.mux.HandleFunc("/init", s.handleInit)
 	s.mux.HandleFunc("/sse/init", s.handleSSEInit)
+	s.mux.HandleFunc("/api/init/respond", s.handleInitRespond)
 }
 
 // EnableInitMode enables Init Mode for first-time project setup.
 func (s *Server) EnableInitMode(promptPath string) {
 	s.initMode = true
 	s.promptPath = promptPath
+	s.conversation = agent.NewConversation()
+
+	// Load base prompt for conversation history
+	content, err := os.ReadFile(promptPath)
+	if err == nil {
+		s.basePrompt = string(content)
+	}
 }
 
 // StaticDir sets the directory for serving static files.
@@ -85,23 +97,29 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Spawn Ava once, store channels on server
-	s.initOnce.Do(func() {
+	s.initMu.Lock()
+	if !s.initStarted {
+		// First time - spawn Ava
+		s.initStarted = true
 		s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, "Analyze this project and configure AXIOM.")
-	})
+	}
+	lines := s.initLines
+	done := s.initDone
+	err := s.initErr
+	s.initMu.Unlock()
 
-	if s.initErr != nil {
-		http.Error(w, s.initErr.Error(), http.StatusInternalServerError)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if s.initLines == nil {
-		http.Error(w, "Init failed to start", http.StatusInternalServerError)
+	if lines == nil {
+		http.Error(w, "Init not ready", http.StatusServiceUnavailable)
 		return
 	}
 
 	// Stream via SSE handler
-	handler := NewSSEHandler(s.initLines, s.initDone)
+	handler := NewSSEHandler(lines, done)
 	handler.ServeHTTP(w, r)
 }
 
@@ -113,6 +131,46 @@ func (s *Server) handleInit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+}
+
+// handleInitRespond handles POST /api/init/respond for user messages.
+func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !s.initMode {
+		http.Error(w, "Not in init mode", http.StatusBadRequest)
+		return
+	}
+
+	// Parse user message
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+	userMessage := r.FormValue("message")
+	if userMessage == "" {
+		http.Error(w, "Message required", http.StatusBadRequest)
+		return
+	}
+
+	s.initMu.Lock()
+	// Add user message to conversation
+	s.conversation.AddMessage("user", userMessage)
+
+	// Build prompt with history
+	prompt := s.conversation.BuildPromptWithHistory(s.basePrompt)
+
+	// Spawn new agent with conversation context
+	s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, prompt+"\n\nUser's response: "+userMessage)
+	s.initMu.Unlock()
+
+	// Return success - client will reconnect to SSE
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
 // handleRoot handles GET /.
