@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
 )
 
-// SSEHandler streams lines from a channel as Server-Sent Events.
+// SSEHandler streams text chunks from a channel as Server-Sent Events.
 type SSEHandler struct {
-	lines <-chan string
-	done  <-chan error
+	chunks <-chan string
+	done   <-chan error
 }
 
 // NewSSEHandler creates an SSE handler that streams from the given channels.
-// The lines channel provides content to stream, done signals completion.
-func NewSSEHandler(lines <-chan string, done <-chan error) *SSEHandler {
+// The chunks channel provides text fragments to stream, done signals completion.
+func NewSSEHandler(chunks <-chan string, done <-chan error) *SSEHandler {
 	return &SSEHandler{
-		lines: lines,
-		done:  done,
+		chunks: chunks,
+		done:   done,
 	}
 }
 
@@ -35,12 +36,15 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Stream lines with explicit event name for htmx
-	// Wrap each line in a div for proper display
-	for line := range h.lines {
-		// Escape HTML and wrap in div
-		escapedLine := template.HTMLEscapeString(line)
-		_, _ = fmt.Fprintf(w, "event: message\ndata: <div class=\"py-1\">%s</div>\n\n", escapedLine)
+	// Stream text chunks in real-time
+	// Each chunk is a small piece of text (possibly mid-word)
+	for chunk := range h.chunks {
+		// Escape HTML and convert newlines to <br> for display
+		escaped := template.HTMLEscapeString(chunk)
+		escaped = strings.ReplaceAll(escaped, "\n", "<br>")
+
+		// Send as span (inline element since chunks may be partial words)
+		_, _ = fmt.Fprintf(w, "event: message\ndata: <span>%s</span>\n\n", escaped)
 		flusher.Flush()
 	}
 

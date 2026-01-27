@@ -2,16 +2,32 @@ package agent
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 )
 
-// SpawnStreaming starts a Claude CLI agent and streams its output line-by-line.
+// streamEvent represents the JSON structure from Claude CLI stream-json output.
+type streamEvent struct {
+	Type  string `json:"type"`
+	Event *struct {
+		Type  string `json:"type"`
+		Delta *struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"delta"`
+	} `json:"event"`
+}
+
+// SpawnStreaming starts a Claude CLI agent and streams its output in real-time.
 // Unlike Spawn(), this function is non-blocking and returns immediately.
 //
+// Uses Claude CLI's stream-json format to get real-time text deltas instead of
+// waiting for the entire response.
+//
 // Returns:
-//   - lines: channel that receives each line of output
+//   - lines: channel that receives each text chunk as it's generated
 //   - done: channel that closes when the process completes (receive to get exit error)
 //   - err: immediate error (prompt not found, claude not in PATH)
 //
@@ -31,9 +47,12 @@ func SpawnStreaming(promptPath, message string) (<-chan string, <-chan error, er
 		return nil, nil, fmt.Errorf("claude CLI not found: %w\n\nInstall: npm install -g @anthropic-ai/claude-code", err)
 	}
 
-	// 3. Build command
+	// 3. Build command with streaming flags
 	cmd := exec.Command(binPath,
 		"--print",
+		"--verbose",
+		"--output-format", "stream-json",
+		"--include-partial-messages",
 		"--dangerously-skip-permissions",
 		"--system-prompt", string(content),
 		message,
@@ -51,16 +70,36 @@ func SpawnStreaming(promptPath, message string) (<-chan string, <-chan error, er
 	}
 
 	// 6. Create channels
-	lines := make(chan string)
+	chunks := make(chan string)
 	done := make(chan error, 1)
 
-	// 7. Read stdout in goroutine
+	// 7. Read and parse JSON stream in goroutine
 	go func() {
 		scanner := bufio.NewScanner(stdout)
+		// Increase buffer for large JSON lines
+		buf := make([]byte, 64*1024)
+		scanner.Buffer(buf, 1024*1024)
+
 		for scanner.Scan() {
-			lines <- scanner.Text()
+			line := scanner.Bytes()
+
+			// Parse JSON line
+			var event streamEvent
+			if err := json.Unmarshal(line, &event); err != nil {
+				continue // Skip malformed JSON
+			}
+
+			// Extract text from stream_event with text_delta
+			if event.Type == "stream_event" &&
+				event.Event != nil &&
+				event.Event.Type == "content_block_delta" &&
+				event.Event.Delta != nil &&
+				event.Event.Delta.Type == "text_delta" &&
+				event.Event.Delta.Text != "" {
+				chunks <- event.Event.Delta.Text
+			}
 		}
-		close(lines)
+		close(chunks)
 
 		// Wait for process to exit and send result
 		err := cmd.Wait()
@@ -68,5 +107,5 @@ func SpawnStreaming(promptPath, message string) (<-chan string, <-chan error, er
 		close(done)
 	}()
 
-	return lines, done, nil
+	return chunks, done, nil
 }

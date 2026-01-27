@@ -34,19 +34,19 @@ func TestSSEHandler_ContentType(t *testing.T) {
 	}
 }
 
-func TestSSEHandler_StreamsLines(t *testing.T) {
-	lines := make(chan string, 3)
+func TestSSEHandler_StreamsChunks(t *testing.T) {
+	chunks := make(chan string, 3)
 	done := make(chan error, 1)
 
-	// Send test lines
-	lines <- "Hello"
-	lines <- "World"
-	lines <- "Done"
-	close(lines)
+	// Send test chunks (real-time streaming)
+	chunks <- "Hello"
+	chunks <- " World"
+	chunks <- "!"
+	close(chunks)
 	done <- nil
 	close(done)
 
-	handler := NewSSEHandler(lines, done)
+	handler := NewSSEHandler(chunks, done)
 	req := httptest.NewRequest(http.MethodGet, "/sse/init", http.NoBody)
 	rec := httptest.NewRecorder()
 
@@ -54,22 +54,22 @@ func TestSSEHandler_StreamsLines(t *testing.T) {
 
 	body := rec.Body.String()
 
-	// Check for explicit event names (htmx format)
+	// Check for explicit event names
 	if !strings.Contains(body, "event: message") {
 		t.Errorf("expected 'event: message' in response")
 	}
 
-	// Check for data lines (wrapped in divs for display)
-	expectedData := []string{"Hello", "World", "Done"}
-	for _, expected := range expectedData {
+	// Check for text chunks (wrapped in spans for inline display)
+	expectedChunks := []string{"Hello", " World", "!"}
+	for _, expected := range expectedChunks {
 		if !strings.Contains(body, expected) {
 			t.Errorf("expected %q in response, got: %s", expected, body)
 		}
 	}
 
-	// Check for div wrapper
-	if !strings.Contains(body, "<div class=\"py-1\">") {
-		t.Errorf("expected div wrapper in response")
+	// Check for span wrapper (inline element for real-time chunks)
+	if !strings.Contains(body, "<span>") {
+		t.Errorf("expected span wrapper in response")
 	}
 }
 
