@@ -48,16 +48,14 @@
             </div>
 
             <!-- Modal Body (scrollable) -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="flex-1 overflow-y-auto p-6" hx-ext="sse" sse-connect="/sse/init">
                 <div class="mb-4">
                     <p class="text-gray-300">Analyzing your project...</p>
                 </div>
 
-                <!-- SSE Output Container -->
+                <!-- SSE Output Container (single connection, multiple event handlers) -->
                 <div
                     id="ava-output"
-                    hx-ext="sse"
-                    sse-connect="/sse/init"
                     sse-swap="message"
                     hx-swap="beforeend"
                     class="font-mono text-sm text-gray-300 space-y-1"
@@ -65,13 +63,11 @@
                     <!-- Streamed content appears here -->
                 </div>
 
-                <!-- Done event listener -->
+                <!-- Done event listener (same connection) -->
                 <div
-                    hx-ext="sse"
-                    sse-connect="/sse/init"
                     sse-swap="done"
                     hx-swap="none"
-                    hx-on::sse-message="document.getElementById('init-complete').classList.remove('hidden')"
+                    hx-on:htmx:sse-message="document.getElementById('init-complete').classList.remove('hidden')"
                 >
                 </div>
             </div>

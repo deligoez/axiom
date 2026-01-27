@@ -34,9 +34,9 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Stream lines
+	// Stream lines with explicit event name for htmx
 	for line := range h.lines {
-		_, _ = fmt.Fprintf(w, "data: %s\n\n", line)
+		_, _ = fmt.Fprintf(w, "event: message\ndata: %s\n\n", line)
 		flusher.Flush()
 	}
 

@@ -1,7 +1,6 @@
 package web
 
 import (
-	"bufio"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -54,26 +53,18 @@ func TestSSEHandler_StreamsLines(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	body := rec.Body.String()
-	scanner := bufio.NewScanner(strings.NewReader(body))
 
-	expectedLines := []string{"data: Hello", "data: World", "data: Done"}
-	idx := 0
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue // Skip empty lines (SSE format)
-		}
-		if idx < len(expectedLines) {
-			if line != expectedLines[idx] {
-				t.Errorf("line %d: expected %q, got %q", idx, expectedLines[idx], line)
-			}
-			idx++
-		}
+	// Check for explicit event names (htmx format)
+	if !strings.Contains(body, "event: message") {
+		t.Errorf("expected 'event: message' in response")
 	}
 
-	if idx != len(expectedLines) {
-		t.Errorf("expected %d lines, got %d", len(expectedLines), idx)
+	// Check for data lines
+	expectedData := []string{"data: Hello", "data: World", "data: Done"}
+	for _, expected := range expectedData {
+		if !strings.Contains(body, expected) {
+			t.Errorf("expected %q in response, got: %s", expected, body)
+		}
 	}
 }
 
