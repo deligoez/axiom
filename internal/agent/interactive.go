@@ -1,31 +1,14 @@
 package agent
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 )
-
-// cliEvent represents the JSON structure from Claude CLI --print --verbose --output-format stream-json.
-// The main event types are:
-// - "assistant": contains the response in message.content[].text
-// - "result": indicates completion
-type cliEvent struct {
-	Type    string `json:"type"`
-	Message *struct {
-		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-		} `json:"content"`
-	} `json:"message"`
-	Result string `json:"result"` // For "result" type events
-}
 
 // SessionLogger handles session-based logging for agent conversations.
 type SessionLogger struct {
@@ -77,12 +60,15 @@ func (l *SessionLogger) Close() error {
 	return l.logFile.Close()
 }
 
-// InteractiveAgent manages multi-turn conversations with Claude CLI.
-// Uses --print for clean JSON output and --continue to maintain conversation context.
+// InteractiveAgent manages multi-turn conversations with Claude CLI using PTY.
+// Uses full interactive mode with output filtering for real-time streaming.
 type InteractiveAgent struct {
 	systemPrompt string
 	mu           sync.Mutex
 	isFirstCall  bool
+
+	// PTY agent for process management
+	pty *PTYAgent
 
 	// Output streaming for current message
 	chunks chan string
@@ -109,6 +95,7 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 	agent := &InteractiveAgent{
 		systemPrompt: string(content),
 		isFirstCall:  true,
+		pty:          NewPTYAgent(),
 		chunks:       make(chan string, 100),
 		done:         make(chan error, 1),
 		logger:       logger,
@@ -123,7 +110,7 @@ func NewInteractiveAgent(promptPath, initialMessage string) (*InteractiveAgent, 
 	return agent, nil
 }
 
-// SendMessage sends a message to the agent using --continue flag.
+// SendMessage sends a message to the agent.
 //
 //nolint:gocritic // named results would conflict with channel direction
 func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan error) {
@@ -150,7 +137,7 @@ func (a *InteractiveAgent) SendMessage(message string) (<-chan string, <-chan er
 
 	a.mu.Unlock()
 
-	// Run message with --continue flag
+	// Run message
 	go a.runMessage(message)
 
 	return a.chunks, a.done
@@ -165,7 +152,7 @@ func (a *InteractiveAgent) GetChunks() (<-chan string, <-chan error) {
 	return a.chunks, a.done
 }
 
-// runMessage executes a single message and streams the response.
+// runMessage executes a single message and streams the response via PTY.
 func (a *InteractiveAgent) runMessage(message string) {
 	// Find claude binary
 	binPath, err := exec.LookPath("claude")
@@ -174,15 +161,10 @@ func (a *InteractiveAgent) runMessage(message string) {
 		return
 	}
 
-	// Build command args
-	// --print gives us clean output (no terminal UI)
-	// --output-format stream-json gives us real-time JSON streaming
-	// --verbose is REQUIRED when using stream-json with --print
-	// --continue maintains conversation context between calls
+	// Build command args for interactive mode
+	// -p (print mode) with single prompt - gives us one response then exits
+	// --dangerously-skip-permissions to avoid prompts
 	args := []string{
-		"--print",
-		"--verbose",
-		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
 
@@ -198,53 +180,42 @@ func (a *InteractiveAgent) runMessage(message string) {
 	}
 	a.mu.Unlock()
 
-	args = append(args, message)
+	// Add -p flag with the message for single-shot mode
+	args = append(args, "-p", message)
 
-	cmd := exec.Command(binPath, args...)
+	// Create cleaner for filtering PTY output
+	cleaner := NewStreamCleaner()
 
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		a.sendError(fmt.Errorf("creating stdout pipe: %w", err))
-		return
-	}
+	// Raw PTY chunks and done channels
+	rawChunks := make(chan string, 1000)
+	rawDone := make(chan error, 1)
 
-	if err := cmd.Start(); err != nil {
-		a.sendError(fmt.Errorf("starting agent: %w", err))
-		return
-	}
+	// Start PTY process
+	go a.pty.RunStreaming(binPath, args, rawChunks, rawDone)
 
-	// Read and stream JSON output
-	var fullResponse strings.Builder
-	scanner := bufio.NewScanner(stdout)
-	buf := make([]byte, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
-
-	for scanner.Scan() {
-		line := scanner.Bytes()
-
-		var event cliEvent
-		if err := json.Unmarshal(line, &event); err != nil {
-			continue
-		}
-
-		// Extract text from assistant events
-		// Format: {"type":"assistant","message":{"content":[{"type":"text","text":"..."}]}}
-		if event.Type == "assistant" && event.Message != nil {
-			for _, content := range event.Message.Content {
-				if content.Type == "text" && content.Text != "" {
-					fullResponse.WriteString(content.Text)
-					a.sendChunk(content.Text)
-				}
-			}
+	// Process and filter output
+	var fullResponse string
+	for chunk := range rawChunks {
+		// Clean the chunk (strip ANSI, filter UI elements)
+		cleaned := cleaner.Process(chunk)
+		if cleaned != "" {
+			fullResponse += cleaned
+			a.sendChunk(cleaned)
 		}
 	}
 
-	// Wait for process to complete
-	cmdErr := cmd.Wait()
+	// Flush any remaining content
+	if remaining := cleaner.Flush(); remaining != "" {
+		fullResponse += remaining
+		a.sendChunk(remaining)
+	}
+
+	// Wait for PTY to complete
+	cmdErr := <-rawDone
 
 	// Log complete response
-	if fullResponse.Len() > 0 {
-		a.logger.Log("assistant", fullResponse.String())
+	if fullResponse != "" {
+		a.logger.Log("assistant", fullResponse)
 	}
 
 	a.mu.Lock()
@@ -291,7 +262,8 @@ func (a *InteractiveAgent) sendError(err error) {
 	}
 }
 
-// Close closes the logger.
+// Close closes the logger and stops any running process.
 func (a *InteractiveAgent) Close() error {
+	_ = a.pty.Stop()
 	return a.logger.Close()
 }
