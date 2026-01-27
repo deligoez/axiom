@@ -14,11 +14,13 @@ import (
 // It creates:
 //   - .axiom/
 //   - .axiom/agents/ava/
+//   - .axiom/agents/ava/logs/
 func Scaffold(projectDir string) error {
 	axiomDir := filepath.Join(projectDir, ".axiom")
 	avaDir := filepath.Join(axiomDir, "agents", "ava")
+	logsDir := filepath.Join(avaDir, "logs")
 
-	if err := os.MkdirAll(avaDir, 0o755); err != nil {
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
 		return fmt.Errorf("create directories: %w", err)
 	}
 

@@ -48,11 +48,12 @@ func SpawnStreaming(promptPath, message string) (<-chan string, <-chan error, er
 	}
 
 	// 3. Build command with streaming flags
+	// Note: --include-partial-messages removed as it can cause text duplication
+	// stream-json with text_delta events already provides incremental updates
 	cmd := exec.Command(binPath,
 		"--print",
 		"--verbose",
 		"--output-format", "stream-json",
-		"--include-partial-messages",
 		"--dangerously-skip-permissions",
 		"--system-prompt", string(content),
 		message,

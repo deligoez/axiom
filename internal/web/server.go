@@ -3,10 +3,14 @@ package web
 
 import (
 	"embed"
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -267,17 +271,57 @@ func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
 // bufferAgentOutput reads all chunks from the agent and buffers them.
 // This ensures no chunks are lost while SSE is disconnected.
 func (s *Server) bufferAgentOutput(lines <-chan string, done <-chan error) {
+	var fullResponse strings.Builder
+
 	for chunk := range lines {
 		s.initMu.Lock()
 		s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: chunk})
 		s.initMu.Unlock()
+		fullResponse.WriteString(chunk)
 	}
 
 	// Wait for completion
 	<-done
 	s.initMu.Lock()
 	s.initComplete = true
+	// Add assistant's full response to conversation history
+	response := fullResponse.String()
+	if response != "" {
+		s.conversation.AddMessage("assistant", response)
+		// Log the conversation to file
+		s.logConversation()
+	}
 	s.initMu.Unlock()
+}
+
+// logConversation writes the conversation history to the agent's log directory.
+func (s *Server) logConversation() {
+	logDir := filepath.Join(".axiom", "agents", "ava", "logs")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		log.Printf("failed to create log directory: %v", err)
+		return
+	}
+
+	// Use timestamp-based log file
+	logFile := filepath.Join(logDir, fmt.Sprintf("init-%s.jsonl", time.Now().Format("2006-01-02")))
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Printf("failed to open log file: %v", err)
+		return
+	}
+	defer func() { _ = f.Close() }()
+
+	// Write each message as a JSON line
+	for _, msg := range s.conversation.Messages {
+		entry := map[string]string{
+			"timestamp": time.Now().Format(time.RFC3339),
+			"role":      msg.Role,
+			"content":   msg.Content,
+		}
+		if data, err := json.Marshal(entry); err == nil {
+			_, _ = f.Write(append(data, '\n'))
+		}
+	}
 }
 
 // handleRoot handles GET /.
