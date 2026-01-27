@@ -3,14 +3,9 @@ package web
 
 import (
 	"embed"
-	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -30,19 +25,17 @@ type Server struct {
 	caseFile  string
 
 	// Init mode state
-	initMode     bool
-	promptPath   string
-	configState  scaffold.ConfigState
-	initMu       sync.Mutex
-	initStarted  bool
-	initLines    <-chan string
-	initDone     <-chan error
+	initMode    bool
+	promptPath  string
+	configState scaffold.ConfigState
+	initMu      sync.Mutex
+
+	// Interactive agent (persistent process)
+	initAgent    *agent.InteractiveAgent
 	initErr      error
 	initComplete bool
-	conversation *agent.Conversation
-	basePrompt   string
 
-	// Output buffer for page refresh persistence
+	// Output buffer for SSE streaming and page refresh persistence
 	initOutput []initEntry
 }
 
@@ -88,13 +81,6 @@ func (s *Server) EnableInitMode(promptPath string, configState scaffold.ConfigSt
 	s.initMode = true
 	s.promptPath = promptPath
 	s.configState = configState
-	s.conversation = agent.NewConversation()
-
-	// Load base prompt for conversation history
-	content, err := os.ReadFile(promptPath)
-	if err == nil {
-		s.basePrompt = string(content)
-	}
 }
 
 // StaticDir sets the directory for serving static files.
@@ -107,6 +93,20 @@ func (s *Server) StaticDir(dir string) {
 type PageData struct {
 	Cases    []casestore.Case
 	InitMode bool
+}
+
+// buildInitialMessage creates the initial message based on config state.
+func (s *Server) buildInitialMessage() string {
+	switch s.configState {
+	case scaffold.ConfigNew:
+		return "LANGUAGE: English (mandatory until user writes in another language)\n\nThis is a FIRST RUN - no .axiom/ directory existed. Follow the ONBOARDING FLOW. Introduce yourself and explain what you'll do. Write in English."
+	case scaffold.ConfigIncomplete:
+		return "LANGUAGE: English (mandatory until user writes in another language)\n\nThe .axiom/ directory exists but config.json only has version (no verification commands). Treat this as FIRST RUN - follow the ONBOARDING FLOW. Introduce yourself and explain what you'll do. Write in English."
+	case scaffold.ConfigComplete:
+		return "LANGUAGE: English (mandatory until user writes in another language)\n\nThis is a RETURNING USER - config.json has verification commands. Follow the RETURNING USER FLOW. Introduce yourself and offer help options. Write in English."
+	default:
+		return "LANGUAGE: English. Introduce yourself and help the user."
+	}
 }
 
 // handleSSEInit handles SSE streaming for Ava during init.
@@ -129,26 +129,15 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 
 	// Start agent if not started (first connection)
 	s.initMu.Lock()
-	if !s.initStarted {
-		s.initStarted = true
-		// Build initial message based on config state
-		// CRITICAL: Enforce English language in the initial message
-		var initialMessage string
-		switch s.configState {
-		case scaffold.ConfigNew:
-			initialMessage = "LANGUAGE: English (mandatory until user writes in another language)\n\nThis is a FIRST RUN - no .axiom/ directory existed. Follow the ONBOARDING FLOW. Introduce yourself and explain what you'll do. Write in English."
-		case scaffold.ConfigIncomplete:
-			initialMessage = "LANGUAGE: English (mandatory until user writes in another language)\n\nThe .axiom/ directory exists but config.json only has version (no verification commands). Treat this as FIRST RUN - follow the ONBOARDING FLOW. Introduce yourself and explain what you'll do. Write in English."
-		case scaffold.ConfigComplete:
-			initialMessage = "LANGUAGE: English (mandatory until user writes in another language)\n\nThis is a RETURNING USER - config.json has verification commands. Follow the RETURNING USER FLOW. Introduce yourself and offer help options. Write in English."
-		}
-		lines, done, err := agent.SpawnStreaming(s.promptPath, initialMessage)
-		s.initLines = lines
-		s.initDone = done
-		s.initErr = err
-		if err == nil {
-			// Start background buffering
-			go s.bufferAgentOutput(lines, done)
+	if s.initAgent == nil && s.initErr == nil {
+		initialMessage := s.buildInitialMessage()
+		agentInstance, err := agent.NewInteractiveAgent(s.promptPath, initialMessage)
+		if err != nil {
+			s.initErr = err
+		} else {
+			s.initAgent = agentInstance
+			// Start buffering the initial response
+			go s.bufferAgentOutput()
 		}
 	}
 	err := s.initErr
@@ -242,86 +231,53 @@ func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.initMu.Lock()
-	// Add user message to conversation and buffer
-	s.conversation.AddMessage("user", userMessage)
+	if s.initAgent == nil {
+		s.initMu.Unlock()
+		http.Error(w, "Agent not initialized", http.StatusInternalServerError)
+		return
+	}
+
+	// Add user message to buffer for display
 	s.initOutput = append(s.initOutput, initEntry{Type: "user", Content: userMessage})
 
 	// Reset complete flag for new response
 	s.initComplete = false
 
-	// Build prompt with history
-	prompt := s.conversation.BuildPromptWithHistory(s.basePrompt)
-
-	// Spawn new agent with conversation context
-	s.initLines, s.initDone, s.initErr = agent.SpawnStreaming(s.promptPath, prompt+"\n\nUser's response: "+userMessage)
-
-	// Start background buffering so no chunks are lost while SSE reconnects
-	lines := s.initLines
-	done := s.initDone
+	// Send message to interactive agent (it handles conversation internally)
+	s.initAgent.SendMessage(userMessage)
 	s.initMu.Unlock()
 
-	go s.bufferAgentOutput(lines, done)
+	// Start buffering the new response
+	go s.bufferAgentOutput()
 
-	// Return success - client will reconnect to SSE
+	// Return success - client will see new content via SSE
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
-// bufferAgentOutput reads all chunks from the agent and buffers them.
-// This ensures no chunks are lost while SSE is disconnected.
-func (s *Server) bufferAgentOutput(lines <-chan string, done <-chan error) {
-	var fullResponse strings.Builder
+// bufferAgentOutput reads chunks from the agent and buffers them for SSE.
+func (s *Server) bufferAgentOutput() {
+	s.initMu.Lock()
+	if s.initAgent == nil {
+		s.initMu.Unlock()
+		return
+	}
+	chunks, done := s.initAgent.GetChunks()
+	s.initMu.Unlock()
 
-	for chunk := range lines {
+	// Read all chunks and buffer them
+	for chunk := range chunks {
 		s.initMu.Lock()
 		s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: chunk})
 		s.initMu.Unlock()
-		fullResponse.WriteString(chunk)
 	}
 
 	// Wait for completion
 	<-done
 	s.initMu.Lock()
 	s.initComplete = true
-	// Add assistant's full response to conversation history
-	response := fullResponse.String()
-	if response != "" {
-		s.conversation.AddMessage("assistant", response)
-		// Log the conversation to file
-		s.logConversation()
-	}
 	s.initMu.Unlock()
-}
-
-// logConversation writes the conversation history to the agent's log directory.
-func (s *Server) logConversation() {
-	logDir := filepath.Join(".axiom", "agents", "ava", "logs")
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
-		log.Printf("failed to create log directory: %v", err)
-		return
-	}
-
-	// Use timestamp-based log file
-	logFile := filepath.Join(logDir, fmt.Sprintf("init-%s.jsonl", time.Now().Format("2006-01-02")))
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		log.Printf("failed to open log file: %v", err)
-		return
-	}
-	defer func() { _ = f.Close() }()
-
-	// Write each message as a JSON line
-	for _, msg := range s.conversation.Messages {
-		entry := map[string]string{
-			"timestamp": time.Now().Format(time.RFC3339),
-			"role":      msg.Role,
-			"content":   msg.Content,
-		}
-		if data, err := json.Marshal(entry); err == nil {
-			_, _ = f.Write(append(data, '\n'))
-		}
-	}
 }
 
 // handleRoot handles GET /.
@@ -342,5 +298,15 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
+	}
+}
+
+// Shutdown gracefully closes the init agent if running.
+func (s *Server) Shutdown() {
+	s.initMu.Lock()
+	defer s.initMu.Unlock()
+	if s.initAgent != nil {
+		_ = s.initAgent.Close()
+		s.initAgent = nil
 	}
 }
