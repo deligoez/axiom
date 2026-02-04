@@ -6,6 +6,31 @@ AXIOM uses the AXIOM Planning Method - an emergent approach where cases refine i
 
 ## Core Concept
 
+**The Spec Canvas: From Black to Green**
+
+AXIOM treats specifications as a **consumable canvas**. Every piece of text in a spec starts as "black" (raw need) and progressively transforms through colors until it becomes "green" (implemented).
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           SPEC CANVAS                                    │
+│                                                                          │
+│  "Users should be able to login with email/password and reset password"  │
+│   ████████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░   │
+│   ↑ green (implemented)                       ↑ black (raw, unprocessed) │
+│                                                                          │
+│  The goal: Turn ALL black into green.                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+Think of it like **highlighting a document with colored markers**:
+- Start reading (black text everywhere)
+- Mark what you're researching (orange)
+- Mark what needs decisions (purple)
+- Mark what you're planning (gray)
+- Mark what's in progress (blue)
+- Mark what's done (green)
+- Strike through what's deferred (red)
+
 **The Emergent Todo List**
 
 Traditional todo lists assume all items are known upfront. AXIOM operates differently: some todo items produce other todo items.
@@ -19,6 +44,14 @@ Traditional:              Emergent:
 ```
 
 You're never blocked because there's always a next action - even if that action is "figure out what to do next."
+
+**Planning = Gap Hunting**
+
+Axel's primary job is to find black (unprocessed) regions in the spec and turn them into colored cases. The planning spiral is essentially:
+
+1. Scan spec for black/gaps
+2. Process the next black region (turn it gray/orange/purple/blue)
+3. Continue until all regions are green or red (deferred)
 
 ---
 
@@ -56,28 +89,59 @@ Discovery cases are **byproducts** of Task execution via discovery signals, not 
 
 ## Case Type Definitions
 
-### ⬛ Directive: Raw Need (The PRD)
+### ⬛ Directive: Raw Need (The Spec Canvas)
 
-The Directive case is the single source of truth. Written in JTBD format:
+The Directive case represents the **entire spec as a canvas to be colored**. It links to a markdown spec file where every character starts as "black" (raw, unprocessed).
 
+**Structure:**
+```
+Directive Case
+├── id: "directive-001"
+├── type: directive
+├── jtbd: "When [situation], I want [motivation], so that [expected outcome]."
+├── specFile: ".axiom/specs/my-feature.md"  ← The canvas
+└── satisfied: false  ← Becomes true when canvas is 100% green+red
+```
+
+**JTBD Format:**
 ```
 "When [situation], I want [motivation], so that [expected outcome]."
 ```
 
-**Example:**
-```
-"When I want to share my technical writings,
-I want a blog under my control,
-so that I can reach readers without depending on Medium."
+**Example Spec File (.axiom/specs/blog-platform.md):**
+```markdown
+# Blog Platform Spec
+<!-- @axiom-directive: directive-001 -->
+
+## Core Requirements
+
+<!--@ax:0-45:black-->Users should be able to write and publish blog posts.<!--/@ax-->
+<!--@ax:0-38:black-->Posts should support markdown formatting.<!--/@ax-->
+<!--@ax:0-42:black-->Users should be able to comment on posts.<!--/@ax-->
+
+## Future Features
+
+<!--@ax:0-35:black-->Analytics dashboard for post views.<!--/@ax-->
+<!--@ax:0-28:black-->Newsletter subscription system.<!--/@ax-->
 ```
 
 **Axel's behavior:**
-1. Writes Directive case in JTBD format
-2. Confirms with user
-3. Asks initial analysis questions
-4. Splits into Draft cases
+1. Creates Directive case with JTBD
+2. Creates spec file with all requirements as black text
+3. Begins planning spiral to turn black → colored
+4. Continues until canvas is fully colored
 
-**When is Directive "realized"?** After each implementation cycle, check: "Is the original need satisfied?"
+**When is Directive "satisfied"?**
+
+```
+satisfied = (coverage.green + coverage.red == 100%)
+```
+
+All text must be either:
+- 🟩 Green (implemented) OR
+- 🟥 Red (explicitly deferred)
+
+No black, gray, orange, purple, or blue remaining.
 
 ---
 
@@ -230,6 +294,192 @@ Discovery cases are always children of the Task that produced them.
 
 ---
 
+## Spec Canvas System
+
+Specs are treated as a **consumable canvas** where every character can be annotated with a color representing its processing state. This enables fine-grained tracking of what has been planned, implemented, or deferred.
+
+> **Color Reference:** Each annotation color maps directly to a case type. See [Case Type Definitions](#case-type-definitions) above for the full color-to-type mapping.
+
+### Character-Range Annotations
+
+Spec text is annotated at the character level using markdown comments:
+
+```markdown
+## User Authentication
+
+<!--@ax:0-52:green:task-001-->Users should be able to login with email/password.<!--/@ax-->
+
+<!--@ax:0-28:green:task-002-->JWT tokens should expire<!--/@ax--><!--@ax:29-48:black--> after 24 hours<!--/@ax--><!--@ax:49-75:blue:op-003--> and refresh automatically.<!--/@ax-->
+
+<!--@ax:0-35:orange:research-001-->OAuth support for Google and GitHub.<!--/@ax-->
+```
+
+**Annotation Format:** `<!--@ax:start-end:color:caseId-->text<!--/@ax-->`
+
+This enables:
+- **Partial sentence coverage**: Part of a sentence can be green while rest is black
+- **Mixed states**: A paragraph can have multiple colors showing progress
+- **Gap visibility**: Black regions inside colored text show what's missing
+
+### Visual Representation
+
+When rendered (e.g., in VitePress or Web UI):
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ## User Authentication                              60% coverage         │
+│ ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                                                          │
+│ Users should be able to login with email/password.        ← 🟩 consumed  │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓                    │
+│                                                                          │
+│ JWT tokens should expire after 24 hours and refresh.      ← 🟦 partial   │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓                    │
+│ ↑ green              ↑ black (gap!)      ↑ blue                          │
+│                                                                          │
+│ OAuth support for Google and GitHub.                      ← 🟧 research  │
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                  │
+│                                                                          │
+│ Admin users can manage other users.                       ← 🟥 deferred  │
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### New Content Rules
+
+When content is added to the spec, its initial color depends on who adds it:
+
+| Added By | Initial Color | Rationale |
+|----------|---------------|-----------|
+| **User** | ⬛ Black | Raw need, must be processed |
+| **Axel** (planning) | ⬜ Gray | Draft, needs further refinement |
+| **Echo** (implementation) | 🟡 Yellow | Discovery, learning from execution |
+| **Bug report** | 🟪 Purple | Blocker, needs attention |
+
+### Spec Completion Criteria
+
+A spec (Directive) is considered **satisfied** when:
+
+```
+coverage.green + coverage.red == 100%
+```
+
+In other words: every character is either implemented (green) or explicitly deferred (red). No black, gray, orange, purple, or blue remaining.
+
+### Gaps and Gap Hunting
+
+**Gaps** are black regions surrounded by colored text. They represent:
+- Forgotten requirements
+- Implicit assumptions not yet addressed
+- Scope that fell through the cracks
+
+```
+"Users can login ████████████ and reset their password"
+                 ↑ gap: "with email" not addressed!
+```
+
+**Gap Hunting** is Axel's core responsibility during the planning spiral:
+1. Scan for gaps (black inside colored regions)
+2. Prioritize gaps by dependency and impact
+3. Process each gap → turn it into a case → assign color
+
+### Spec File Management
+
+Spec files are stored in `.axiom/specs/` with the following conventions:
+
+| Item | Convention |
+|------|------------|
+| **Location** | `.axiom/specs/{directive-id}.md` |
+| **Naming** | Matches directive ID (e.g., `directive-001.md`) |
+| **Header** | Must include `<!-- @axiom-directive: {id} -->` |
+| **Encoding** | UTF-8, LF line endings |
+
+**Creating a new spec:**
+1. User provides JTBD or requirement description
+2. Axel creates Directive case
+3. Axel creates spec file with all text as black (raw)
+4. Planning spiral begins
+
+**Spec Drift Handling:**
+
+When a spec file is modified externally (e.g., user edits directly):
+
+| Scenario | Detection | Action |
+|----------|-----------|--------|
+| Text added | `contentHash` mismatch | New text marked as ⬛ Black |
+| Text removed | `contentHash` mismatch | Orphan annotations cleaned up |
+| Text moved | Character offsets invalid | Re-anchor annotations by text match |
+
+```json
+{
+  "contentHash": "sha256:abc123...",
+  "lastKnownHash": "sha256:def456...",
+  "driftDetected": true,
+  "driftAction": "reanchor"
+}
+```
+
+### Progress Tracking
+
+Progress tracked in `.axiom/specs/progress.json`:
+
+```json
+{
+  "specs": {
+    "directive-001.md": {
+      "directiveId": "directive-001",
+      "contentHash": "sha256:abc123...",
+      "totalChars": 2450,
+      "coverage": {
+        "black": 15.2,
+        "gray": 8.1,
+        "orange": 5.0,
+        "purple": 2.3,
+        "blue": 22.4,
+        "green": 45.0,
+        "red": 2.0
+      },
+      "annotations": [
+        {
+          "start": 0,
+          "end": 52,
+          "state": "green",
+          "caseId": "task-001",
+          "text": "Users should be able to login with email/password."
+        }
+      ],
+      "gaps": [
+        {
+          "start": 82,
+          "end": 100,
+          "context": "JWT expiration section",
+          "suggestion": "Create task for expiration configuration"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Context Window Optimization
+
+For agent context, annotated text can be **collapsed** based on state:
+
+| State | Context Behavior |
+|-------|-----------------|
+| ⬛ Black | Full text visible (needs processing) |
+| ⬜ Gray | Full text visible (being planned) |
+| 🟧 Orange | Full text visible (being researched) |
+| 🟪 Purple | Full text visible (waiting for decision) |
+| 🟦 Blue | Summary visible ("See op-003 for details") |
+| 🟩 Green | Collapsed ("✓ Implemented in task-001") |
+| 🟥 Red | Collapsed ("⊘ Deferred to V2") |
+| 🟡 Yellow | Appended as note |
+
+This reduces context window usage while preserving visibility of unfinished work.
+
+---
+
 ## Two Types of State Changes
 
 ### Transition (same item, type changes)
@@ -297,6 +547,20 @@ The Execution Loop is used **only in Phase 5 (VALIDATE)** where mechanical itera
 | **3. PROPOSE** | Present high-level approach | Approval loop | User approves architecture |
 | **4. DECOMPOSE** | Generate atomic Tasks | One-shot generation | Tasks created |
 | **5. VALIDATE** | Check Tasks against rules | Execution Loop iteration | All Tasks pass |
+
+### Spec Canvas Effects by Phase
+
+Each phase affects the spec canvas annotations differently:
+
+| Phase | Spec Canvas Effect |
+|-------|-------------------|
+| **1. UNDERSTAND** | User may add new ⬛ Black text to spec |
+| **2. ANALYZE** | No annotation changes (code analysis only) |
+| **3. PROPOSE** | ⬛ Black → ⬜ Gray (Draft cases created for spec regions) |
+| **4. DECOMPOSE** | ⬜ Gray → 🟦 Blue (Operations created from Drafts) |
+| **5. VALIDATE** | No annotation changes (validation only) |
+| **Implementation** | 🟦 Blue → 🟩 Green (Tasks completed) |
+| **Debrief** | May add 🟡 Yellow (Discoveries) or 🟥 Red (Deferrals) |
 
 ---
 
@@ -588,31 +852,55 @@ The validation loop converges when:
 
 ## The Planning Spiral
 
-Axel runs a repeated cycle for clarifying Draft cases:
+Axel runs a repeated cycle to **turn black into color**. The spiral's goal is to eliminate all black (raw) regions from the spec by processing them into cases.
 
 ```
-1. Read Directive case and Draft cases
-     ↓
-2. Consistency check
-   • Any contradictions?
-   • Missing connections?
-     ↓
-3. For each Draft case:
-   • Clear enough? → Operation
-   • Research needed? → Research
-   • Decision needed? → Pending
-   • Can split into Operations?
-     ↓
-4. Ask necessary questions to user
-     ↓
-5. Update Draft cases and dependency tree
-     ↓
-6. Are first Operation cases ready?
-   • Yes → Move to implementation
-   • No → Return to step 1
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         PLANNING SPIRAL                                  │
+│                                                                          │
+│  1. SCAN SPEC CANVAS                                                     │
+│     ├── Calculate coverage (% of each color)                             │
+│     ├── Find BLACK regions (unprocessed text)                            │
+│     ├── Find GAPS (black inside colored sections)                        │
+│     └── Identify dependencies between regions                            │
+│           ↓                                                              │
+│  2. PRIORITIZE NEXT REGION                                               │
+│     ├── User priority (what does user want first?)                       │
+│     ├── Dependency order (what blocks what?)                             │
+│     └── Complexity (quick wins vs blockers)                              │
+│           ↓                                                              │
+│  3. PROCESS REGION → ASSIGN COLOR                                        │
+│     ├── Clarification needed? → ⬜ Gray (Draft)                          │
+│     ├── Research needed? → 🟧 Orange (Research)                          │
+│     ├── Decision needed? → 🟪 Purple (Pending)                           │
+│     ├── Ready to implement? → 🟦 Blue (Operation)                        │
+│     └── Out of scope? → 🟥 Red (Deferred)                                │
+│           ↓                                                              │
+│  4. UPDATE ANNOTATIONS                                                   │
+│     ├── Mark processed region with new color                             │
+│     ├── Link to created case                                             │
+│     └── Update progress.json                                             │
+│           ↓                                                              │
+│  5. CHECK EXIT CONDITIONS                                                │
+│     ├── Ready Operations exist? → Move to implementation                 │
+│     ├── All black processed? → Planning complete                         │
+│     ├── All regions blocked? → Wait for user                             │
+│     └── Otherwise → Return to step 1                                     │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Why "spiral" not "loop"?** Each pass produces more refined cases. You're never in the same place twice.
+**Why "spiral" not "loop"?** Each pass produces more refined cases AND reduces black coverage. You're never in the same place twice - the canvas gets more colorful with each iteration.
+
+### Coverage Progression
+
+```
+Iteration 1: ████░░░░░░░░░░░░░░░░░░░░░░░░░░  10% colored
+Iteration 2: ████████████░░░░░░░░░░░░░░░░░░  25% colored
+Iteration 3: ████████████████████░░░░░░░░░░  50% colored
+Iteration 4: ████████████████████████████░░  80% colored
+Iteration 5: ██████████████████████████████  100% colored (no black remaining)
+```
 
 ### Spiral Exit Conditions
 
@@ -1003,103 +1291,6 @@ User notified: "Sprint complete. Run planning for more work."
 
 ---
 
-## Spec Lifecycle
-
-Specs are treated as **consumable resources**. As implementation progresses, spec sections are consumed into Tasks.
-
-### Spec States
-
-```
-   ┌──────────────┐
-   │    draft     │  ← Being discussed with Axel, not finalized
-   └──────┬───────┘
-          │ User approves or defers
-          │
-    ┌─────┴─────┐
-    │           │
-    ▼           ▼
-┌──────────┐  ┌──────────┐
-│ deferred │  │ partial  │  ← Clarified but postponed / Some Tasks created
-└──────────┘  └────┬─────┘
-    │              │ More Tasks created
-    │ User         │
-    │ reactivates  ▼
-    │         ┌──────────┐
-    └────────▶│ consumed │  ← All Tasks created from this section
-              └────┬─────┘
-                   │ All Tasks complete (or section no longer needed)
-                   ▼
-              ┌──────────┐
-              │ archived │  ← Moved to specs/archive/
-              └──────────┘
-```
-
-### State Descriptions
-
-| State | Description | Visibility to Agents |
-|-------|-------------|---------------------|
-| **draft** | Being discussed with Axel | Full content visible |
-| **deferred** | Postponed (not for current sprint) | Hidden from agents |
-| **partial** | Some Tasks created, more content remains | Remaining content visible |
-| **consumed** | All content converted to Tasks | Collapsed reference only |
-| **archived** | Complete or obsolete | Not in context |
-
-### Section Collapsing
-
-When a spec section becomes `consumed`, it is **collapsed** in the agent context:
-
-```markdown
-<!-- BEFORE: Full section visible (draft or partial) -->
-## User Model
-
-The user model should include:
-- id: UUID
-- email: string, unique
-- passwordHash: string
-...
-
-<!-- AFTER: Collapsed (consumed state) -->
-## User Model
-> 📋 **CONSUMED**: See Tasks task-001, task-002 for details.
-```
-
-**Benefits:**
-- Reduces context window usage
-- Prevents agents from re-reading fully-covered sections
-- Partial sections still show remaining uncovered content
-
-### Spec Progress Tracking
-
-Progress tracked in `.axiom/specs/progress.json`:
-
-```json
-{
-  "specs": {
-    "auth-system.md": {
-      "sections": [
-        {
-          "heading": "## User Model",
-          "state": "consumed",
-          "tasks": ["task-001", "task-002"]
-        },
-        {
-          "heading": "## JWT Service",
-          "state": "partial",
-          "tasks": ["task-003"]
-        },
-        {
-          "heading": "## OAuth",
-          "state": "deferred",
-          "deferredReason": "Not needed for MVP"
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
 ## Case Validation Rules
 
 All cases are validated before implementation begins.
@@ -1144,9 +1335,20 @@ Stored in `.axiom/planning-state.json`:
   "chosenMode": "semi-auto",
   "phase": "ready",
   "directiveCase": {
-    "id": "case-001",
+    "id": "directive-001",
     "jtbd": "When I want to share...",
+    "specFile": ".axiom/specs/directive-001.md",
     "satisfied": false
+  },
+  "specCoverage": {
+    "black": 15.2,
+    "gray": 0,
+    "orange": 5.0,
+    "purple": 0,
+    "blue": 22.4,
+    "green": 55.4,
+    "red": 2.0,
+    "completionPercent": 57.4
   },
   "clarifications": [],
   "codebaseContext": {},

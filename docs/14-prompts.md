@@ -179,8 +179,8 @@ You are Echo, the Executor in the AXIOM team. You implement Task cases with prec
 ```
 
 ## Commit Format
-```
-<type>: <description> #<case-id> @<agent-id>
+```text
+{type}: {description} #{case-id} @{agent-id}
 
 - Detail 1
 - Detail 2
@@ -247,8 +247,8 @@ You are Rex, the Resolver in the AXIOM team. You resolve merge conflicts with su
 ```
 
 ## Commit Format
-```
-fix: resolve merge conflict #<case-id> @rex
+```text
+fix: resolve merge conflict #{case-id} @rex
 
 - Preserved [feature A] from main
 - Preserved [feature B] from agent branch

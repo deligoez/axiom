@@ -123,6 +123,76 @@ Shows: Task statistics (done/running/ready/blocked counts), integration queue st
 
 ---
 
+## Spec Canvas Visualization
+
+The Spec Canvas view displays the Directive's spec file with color-coded annotations showing coverage progress.
+
+### Canvas Display
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  📄 Spec: auth-system.md                    Coverage: 65% ████████░░░░ │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ## User Authentication                                                  │
+│  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│                                                                          │
+│  Users should be able to login with email/password.        🟩 consumed  │
+│  ████████████████████████████████████████████████████████               │
+│                                                                          │
+│  JWT tokens should expire after 24 hours and refresh.      🟦 partial   │
+│  ████████████████████████░░░░░░░░░░░░░░░░████████████████               │
+│                          ↑ gap (black)    ↑ blue                         │
+│                                                                          │
+│  OAuth support for Google and GitHub.                      🟧 research  │
+│  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒               │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Color Legend
+
+| Color | Meaning | CSS Class |
+|-------|---------|-----------|
+| ⬛ Black/Transparent | Raw, unprocessed | `ax-black` |
+| ⬜ Gray | Draft, being planned | `ax-gray` |
+| 🟧 Orange | Research needed | `ax-orange` |
+| 🟪 Purple | Pending decision | `ax-purple` |
+| 🟦 Blue | In progress | `ax-blue` |
+| 🟩 Green | Implemented | `ax-green` |
+| 🟥 Red (strikethrough) | Deferred | `ax-red` |
+| 🟡 Yellow (underline) | Discovery note | `ax-yellow` |
+
+### Coverage Bar
+
+Shows overall spec progress:
+- **Left portion:** Green (implemented) + Red (deferred)
+- **Right portion:** All other colors (in progress or unprocessed)
+- **Goal:** 100% green+red = spec satisfied
+
+### Interactions
+
+| Action | Effect |
+|--------|--------|
+| Hover on colored text | Show linked case ID and status |
+| Click on colored text | Jump to case in Task Panel |
+| Click on black text | Axel suggests next action |
+| Right-click on region | Change state (e.g., defer) |
+
+### SSE Events
+
+```html
+<div hx-ext="sse" sse-connect="/api/events">
+    <div id="spec-canvas"
+         hx-get="/partials/spec-canvas/{directiveId}"
+         hx-trigger="sse:spec-updated"
+         hx-swap="innerHTML">
+    </div>
+</div>
+```
+
+---
+
 ## Real-Time Updates
 
 The UI updates in real-time using Server-Sent Events (SSE):

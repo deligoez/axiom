@@ -6,14 +6,23 @@ AXIOM is a web-based orchestrator for multiple AI coding agents working on a sha
 
 ## Core Philosophy
 
-**"Take small steps, learn from each one, update the plan."**
+**"Turn black into green, one region at a time."**
 
-AXIOM uses emergent planning - an approach where some cases produce other cases. Instead of Big Design Up Front:
+AXIOM treats specifications as a **consumable canvas**. Every piece of text in a spec starts as "black" (raw, unprocessed) and progressively transforms through colors until it becomes "green" (implemented).
 
-1. Implement a small slice
-2. Record what you learned
-3. Update the entire plan based on discoveries
-4. Repeat
+```
+Spec Canvas:  ████████░░░░░░░░░░████████████████
+              ↑ green    ↑ black (gap!)  ↑ blue
+              (done)     (unprocessed)   (in progress)
+```
+
+**Emergent Planning:** Some cases produce other cases. Instead of Big Design Up Front:
+
+1. Find black regions in the spec (unprocessed requirements)
+2. Turn them into colored cases (draft/research/operation/task)
+3. Implement tasks → turn blue into green
+4. Record discoveries → update the plan
+5. Repeat until no black remains
 
 ---
 

@@ -11,9 +11,15 @@ hero:
       link: /00-overview
     - theme: alt
       text: View on GitHub
-      link: https://github.com/deligoez/chorus
+      link: https://github.com/deligoez/axiom
 
 features:
+  - icon: 🎨
+    title: Spec Canvas
+    details: Specifications are consumable canvases. Every character starts black (raw) and transforms through colors until green (implemented). Visual progress tracking with colored highlights.
+    link: /03-planning#spec-canvas-system
+    linkText: See the Canvas
+
   - icon: 🎭
     title: 8 Specialized Personas
     details: Each agent has a distinct role — Ava analyzes, Axel plans, Echo implements, Rex resolves conflicts, Cleo curates learnings, Dex orchestrates, Max monitors, Ash audits.
@@ -33,8 +39,8 @@ features:
     linkText: See Integration
 
   - icon: 🗣️
-    title: 5-Phase Planning Dialogue
-    details: Structured human-AI collaboration — Clarify → Scope → Decompose → Validate → Approve. Never start coding without a clear plan.
+    title: Planning Spiral (Gap Hunting)
+    details: Axel hunts for black (unprocessed) regions in specs and turns them colored. The spiral continues until all spec text is green (done) or red (deferred).
     link: /03-planning
     linkText: Learn Planning
 

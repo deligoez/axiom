@@ -91,7 +91,8 @@ Case
 ```
 DirectiveMetadata
 ├── jtbd: string            // "When..., I want..., so that..."
-├── satisfied: boolean      // Is the original need met?
+├── specFile: string        // Path to spec markdown file (the canvas)
+├── satisfied: boolean      // Is the original need met? (coverage.green+red == 100%)
 └── projectContext: object  // Existing project info (for existing projects)
 
 DraftMetadata
@@ -146,6 +147,66 @@ TaskExecution
 ├── codeChanges: { filesChanged, linesAdded, linesRemoved }
 ├── lastError: string
 └── signals: string[]       // ['PROGRESS:50', 'COMPLETE']
+```
+
+---
+
+## Spec-Case Linkage
+
+Every case (except Discovery) links to a **region in the spec canvas**. This bidirectional link enables:
+- Traceability: "Which spec text did this task implement?"
+- Gap detection: "Which spec regions have no cases?"
+- Progress visualization: "What % of the spec is green?"
+
+### Spec Annotation Reference
+
+```
+SpecAnnotation (stored in progress.json)
+├── start: number           // Start character position
+├── end: number             // End character position
+├── state: CaseType         // black, gray, orange, purple, blue, green, red, yellow
+├── caseId: string | null   // Which case covers this region
+└── text: string            // The actual text (for quick reference)
+```
+
+### Case → Spec Link
+
+```
+Case
+├── ...
+└── specRef: {              // Reference to spec region
+      specFile: string,     // Which spec file
+      start: number,        // Start char
+      end: number           // End char
+    } | null
+```
+
+### Color State Transitions
+
+When a case changes status, its linked spec region changes color:
+
+| Case Event | Spec Color Change |
+|------------|------------------|
+| Draft created | ⬛ Black → ⬜ Gray |
+| Research created | ⬛ Black → 🟧 Orange |
+| Pending created | ⬛ Black → 🟪 Purple |
+| Operation created | ⬜ Gray → 🟦 Blue |
+| Task created | 🟦 Blue → 🟦 Blue (no change) |
+| Task completed | 🟦 Blue → 🟩 Green |
+| Case deferred | Any → 🟥 Red |
+| Discovery captured | (Appends 🟡 Yellow note) |
+
+### Orphan Detection
+
+Cases without spec references or spec regions without cases are flagged:
+
+```json
+{
+  "orphanCases": ["task-099"],     // Case has no specRef
+  "orphanRegions": [               // Spec text has no case
+    { "specFile": "auth.md", "start": 150, "end": 200 }
+  ]
+}
 ```
 
 ---

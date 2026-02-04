@@ -8,13 +8,21 @@ export default defineConfig({
     ['link', { rel: 'icon', href: '/favicon.ico' }]
   ],
 
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag === 'axiom'
+      }
+    }
+  },
+
   themeConfig: {
     logo: '/logo.svg',
 
     nav: [
       { text: 'Guide', link: '/00-overview' },
       { text: 'Reference', link: '/13-reference' },
-      { text: 'GitHub', link: 'https://github.com/deligoez/chorus' }
+      { text: 'GitHub', link: 'https://github.com/deligoez/axiom' }
     ],
 
     sidebar: [
@@ -63,7 +71,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/deligoez/chorus' }
+      { icon: 'github', link: 'https://github.com/deligoez/axiom' }
     ],
 
     footer: {

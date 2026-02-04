@@ -571,7 +571,7 @@ performance, testing, debugging, error-handling, patterns, architecture, general
 # Commit Format
 
 ## Required Format
-`<type>: <description> #<task-id> @<agent>`
+`{type}: {description} #{task-id} @{agent}`
 
 ## Format Elements
 - `#task-xxx` - Task reference (grep-friendly)

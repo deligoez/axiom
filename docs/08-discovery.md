@@ -12,6 +12,17 @@ Learnings are stored as **Discovery cases** in the CaseStore, not separate files
 - History and metadata
 - Single source of truth
 
+### Discoveries in the Spec Canvas
+
+Discovery cases are represented as **🟡 Yellow annotations** in the spec canvas. Unlike other colors that consume spec text, discoveries are **appended as notes** to related regions:
+
+```markdown
+<!--@ax:0-45:green:task-001-->Users should be able to login with email/password.<!--/@ax-->
+<!--@ax-discovery:task-001:disc-012-->Note: Safari requires SameSite=None for cookies<!--/@ax-->
+```
+
+This creates a layered view where green (implemented) regions can have yellow (discovery) annotations attached.
+
 | Type | Signal | Discovery Scope | Parent | Injection |
 |------|--------|-----------------|--------|-----------|
 | Local | `DISCOVERY_LOCAL` | `local` | Current Task | Same agent only |

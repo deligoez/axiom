@@ -6,11 +6,77 @@ AXIOM's unique terminology and concepts. This document defines the language of A
 
 ## Core Philosophy
 
+### Spec Canvas
+
+**Definition:** The representation of a specification as a **consumable surface** where every character is annotated with a color representing its processing state.
+
+**Visual metaphor:** Like highlighting a document with colored markers as you read and process it.
+
+```
+Spec Text:    "Users should be able to login and reset password"
+Canvas:        ████████████████████████████░░░░░░░░░░░░░░░░░░░
+               ↑ green (implemented)      ↑ black (unprocessed)
+```
+
+**Goal:** Transform all black (raw) regions into green (implemented) or red (deferred). When `coverage.green + coverage.red == 100%`, the spec is satisfied.
+
+---
+
+### Gap (Spec Gap)
+
+**Definition:** A black (unprocessed) region surrounded by colored text in the spec canvas.
+
+**Why it matters:** Gaps represent forgotten requirements, implicit assumptions, or scope that fell through the cracks. Axel's primary job is **gap hunting** - finding and processing these black regions.
+
+```
+"Users can login ████████████ and reset their password"
+                 ↑ gap: "with email" not addressed!
+```
+
+---
+
+### Color State
+
+**Definition:** The processing state of a spec region, mapped to case types.
+
+| Color | Case Type | Meaning |
+|-------|-----------|---------|
+| ⬛ Black | (raw) | Unprocessed spec text |
+| ⬜ Gray | Draft | Being planned |
+| 🟧 Orange | Research | Investigation required |
+| 🟪 Purple | Pending | Blocked on user decision |
+| 🟦 Blue | Operation | Feature in progress |
+| 🟩 Green | Task (done) | Implemented |
+| 🟥 Red | Deferred | Out of scope |
+| 🟡 Yellow | Discovery | Runtime learning |
+
+---
+
+### Coverage
+
+**Definition:** The percentage of spec text in each color state.
+
+**Example:**
+```json
+{
+  "black": 15.2,
+  "green": 45.0,
+  "blue": 22.4,
+  "red": 17.4
+}
+```
+
+**Completion criteria:** `green + red == 100%` (all text is either implemented or explicitly deferred)
+
+---
+
 ### Emergent Planning
 
 **Definition:** A planning methodology where some cases produce other cases, rather than assuming all work is known upfront.
 
 **Why it's different:** Traditional task management assumes a fixed list. AXIOM embraces uncertainty - you're never blocked because there's always a next action, even if that action is "figure out what to do next."
+
+**In terms of Spec Canvas:** The spec starts all black. Through emergent planning, black regions are progressively colored until no black remains.
 
 **Contrast:**
 | Traditional | Emergent |
@@ -23,17 +89,25 @@ AXIOM's unique terminology and concepts. This document defines the language of A
 
 ### Planning Spiral
 
-**Definition:** The iterative refinement cycle where Architect Axel clarifies Draft cases, never returning to the same state twice.
+**Definition:** The iterative refinement cycle where Architect Axel turns black spec regions into colored cases, progressively increasing coverage.
 
-**Why "spiral" not "loop":** A loop implies returning to the starting point. In AXIOM, each pass produces more refined cases - you're always moving forward, just circling back to earlier concepts with new knowledge.
+**Also known as:** Gap Hunting
+
+**Why "spiral" not "loop":** A loop implies returning to the starting point. In AXIOM, each pass increases coverage - the canvas gets more colorful with each iteration.
 
 ```
-        Pass 1: "Auth system"
-           ↓
-        Pass 2: "Auth system using JWT"
-           ↓
-        Pass 3: "Auth system using JWT with refresh tokens"
+Iteration 1: ████░░░░░░░░░░░░░░░░░░░░░░░░░░  10% colored
+Iteration 2: ████████████░░░░░░░░░░░░░░░░░░  25% colored
+Iteration 3: ████████████████████████████░░  80% colored
+Iteration 4: ██████████████████████████████  100% colored (done!)
 ```
+
+**Spiral steps:**
+1. Scan spec for black/gaps
+2. Prioritize next region (dependencies, user priority)
+3. Process region → assign color (gray/orange/purple/blue/red)
+4. Update annotations
+5. Check exit conditions → repeat or proceed to implementation
 
 ---
 
