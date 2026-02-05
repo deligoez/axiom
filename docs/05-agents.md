@@ -55,7 +55,7 @@ All 8 personas are agents with consistent file structure. Each gets instance num
 ### Architect Axel
 
 Runs the full AXIOM Planning dialogue. Handles:
-- Directive case creation (JTBD format)
+- Black Book case creation (JTBD format)
 - Draft case refinement
 - Research cases (simple investigations)
 - Pending decision facilitation
@@ -64,7 +64,7 @@ Runs the full AXIOM Planning dialogue. Handles:
 - Debrief after Operation completion
 - **Plan rejection handling** (revise, restart, or partial approve)
 
-Axel is the central planning persona, managing the entire case lifecycle from Directive to Task.
+Axel is the central planning persona, managing the entire case lifecycle from Black Book to Task.
 
 **On plan rejection:**
 - With feedback: Revises proposal targeting specific concerns

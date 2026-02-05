@@ -10,7 +10,7 @@ Summary of key concepts and configurations.
 
 | Type | Symbol | Name | Description |
 |------|--------|------|-------------|
-| Directive | `■` | ⬛ | Raw need (JTBD/PRD) |
+| Black Book | `■` | ⬛ | Raw need (JTBD/PRD) |
 | Draft | `□` | ⬜ | Plan draft |
 | Research | `◆` | 🟧 | Research needed |
 | Pending | `◇` | 🟪 | Decision pending |
@@ -341,7 +341,7 @@ axiom --non-interactive --mode autopilot
 ## Refinement Chain
 
 ```
-Directive (Raw Need/PRD)
+Black Book (THE Spec)
      │
      └── SPLIT → Draft (Plan Drafts)
                       │

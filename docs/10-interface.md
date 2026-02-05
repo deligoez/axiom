@@ -53,7 +53,7 @@ The Web UI uses a responsive two-panel layout: Task Panel on the left (30%) and 
 │                    │                                        │
 │   TASK PANEL       │           AGENT GRID                   │
 │                    │                                        │
-│  ■ Directive       │  ┌─────────────┐  ┌─────────────┐     │
+│  ■ Black Book       │  ┌─────────────┐  ┌─────────────┐     │
 │  ▢ Operation       │  │  echo-001   │  │  echo-002   │     │
 │  ▤ Task ●          │  │  task-123   │  │  task-456   │     │
 │  ▤ Task →          │  │  iter: 3    │  │  iter: 1    │     │
@@ -85,7 +85,7 @@ Lists cases organized by type with status indicators. Click to select, double-cl
 
 | Symbol | Color | Type |
 |--------|-------|------|
-| `■` | ⬛ | Directive |
+| `■` | ⬛ | Black Book |
 | `□` | ⬜ | Draft |
 | `◆` | 🟧 | Research |
 | `◇` | 🟪 | Pending |
@@ -125,7 +125,7 @@ Shows: Task statistics (done/running/ready/blocked counts), integration queue st
 
 ## Spec Canvas Visualization
 
-The Spec Canvas view displays the Directive's spec file with color-coded annotations showing coverage progress.
+The Spec Canvas view displays the Black Book's spec file with color-coded annotations showing coverage progress.
 
 ### Canvas Display
 

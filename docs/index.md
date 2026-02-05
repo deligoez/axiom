@@ -28,7 +28,7 @@ features:
 
   - icon: 📦
     title: Case-Driven Architecture
-    details: 8 case types form a complete work hierarchy — from high-level Directives through Operations and Tasks down to atomic Discoveries. Everything is a case.
+    details: 8 case types form a complete work hierarchy — from high-level Black Books through Operations and Tasks down to atomic Discoveries. Everything is a case.
     link: /04-cases
     linkText: Explore Cases
 

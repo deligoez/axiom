@@ -9,7 +9,7 @@ Human review (optional) and automatic Debrief after each Operation completion.
 | System | Trigger | Actor | Purpose |
 |--------|---------|-------|---------|
 | **Review** | Task completion | Human | Quality check, approve/reject |
-| **Debrief** | Operation completion | Axel | Learn, update plan, check Directive |
+| **Debrief** | Operation completion | Axel | Learn, update plan, check Black Book |
 
 ---
 
@@ -298,9 +298,9 @@ Axel triggered for Debrief
 Query Discovery cases from this Operation
      │
      ▼
-Check impact on Directive case
+Check impact on Black Book case
      │
-     ├── Directive satisfied? ──► Project complete 🎉
+     ├── Black Book satisfied? ──► Project complete 🎉
      │
      ├── Partially satisfied ──► Continue to next Operation
      │
@@ -319,7 +319,7 @@ Debrief complete
 ### Axel's Debrief Actions
 
 1. **Query Discovery Cases**: Read all discoveries from this Operation's Tasks
-2. **Check Directive Impact**: Does completed Operation satisfy original need?
+2. **Check Black Book Impact**: Does completed Operation satisfy original need?
 3. **Revise Drafts**: Update remaining Draft cases based on discoveries
 4. **Update Dependencies**: Adjust dependency tree if needed
 5. **Create New Cases**: Add new Drafts if gaps discovered
@@ -362,5 +362,5 @@ on:
   DEBRIEF_START:
     invoke: axelDebrief
   DEBRIEF_DONE:
-    actions: [updateDrafts, checkDirectiveSatisfaction]
+    actions: [updateDrafts, checkBlackBookSatisfaction]
 ```

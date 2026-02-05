@@ -6,6 +6,33 @@ AXIOM's unique terminology and concepts. This document defines the language of A
 
 ## Core Philosophy
 
+### The Black Book
+
+**Definition:** The single, definitive specification document for a project. Contains ALL user requirements, prioritized and organized by Architect Axel.
+
+**Key principle:** ONE Black Book per project, regardless of how many requests the user provides.
+
+**Why "Black Book":**
+- Like a chef's recipe book - THE authoritative source
+- All requirements consolidated in one place
+- Single source of truth for what needs to be built
+
+**Multi-request handling:**
+```
+User: "Add auth and also dark mode and improve performance"
+           ↓
+Axel consolidates into ONE Black Book:
+  1. [P0] User authentication
+  2. [P1] Dark mode support
+  3. [P2] Performance improvements
+```
+
+**Location:** `.axiom/specs/` (single active spec file)
+
+**Also known as:** Directive, Spec
+
+---
+
 ### Spec Canvas
 
 **Definition:** The representation of a specification as a **consumable surface** where every character is annotated with a color representing its processing state.
@@ -171,11 +198,13 @@ AXIOM's signature classification system for cases based on clarity and readiness
 
 | Color | Type | Meaning |
 |-------|------|---------|
-| ⬛ **Black** | Directive | The PRD in JTBD format - the single source of truth |
+| ⬛ **Black** | Black Book | THE single spec document - all requirements consolidated here |
 | ⬜ **Gray** | Draft | Undetailed, needs refinement |
 | 🟧 **Orange** | Research | Requires investigation before proceeding |
 | 🟪 **Purple** | Pending | Waiting for human decision |
 | 🟥 **Red** | Deferred | Out of current scope, preserved for later |
+
+**Note:** There is always exactly ONE Black Book (Black Book) per project. Multiple user requests are consolidated into this single document by Architect Axel.
 
 ### Implementation Types (produce code)
 
@@ -726,17 +755,17 @@ The 5-phase dialogue model (The Briefing):
 - Visual representation in Web UI
 - State machine for transitions
 
-**Why "spectrum":** Cases exist across a spectrum from abstract (Directive) to concrete (Task), each type representing a different state of clarity and readiness.
+**Why "spectrum":** Cases exist across a spectrum from abstract (Black Book) to concrete (Task), each type representing a different state of clarity and readiness.
 
 ---
 
 ### The Type Cascade
 
-**Definition:** The natural flow of cases from abstract (Directive) to concrete (Task).
+**Definition:** The natural flow of cases from abstract (Black Book) to concrete (Task).
 
 ```
 ⬛ → ⬜ → 🟦 → 🟩 → ✓
-Directive → Draft → Operation → Task → Done
+Black Book → Draft → Operation → Task → Done
 ```
 
 **Branches:**
@@ -847,7 +876,7 @@ One Operation = One user-facing capability
 **Definition:** The parent-child relationship between cases.
 
 ```
-Directive (PRD)
+Black Book (THE spec - all requirements)
 └── Draft (Plan section)
     └── Operation (Feature)
         ├── Task (Unit 1)
@@ -865,10 +894,28 @@ Directive (PRD)
 
 ## Quick Reference
 
-### JTBD Format (Directive)
+### JTBD Format (Black Book)
+
+The Black Book uses JTBD (Jobs To Be Done) format for each requirement:
 
 ```
 "When [situation], I want [motivation], so that [outcome]."
+```
+
+**Multiple JTBDs in one Black Book:**
+```markdown
+# The Black Book
+
+## Requirements
+
+### 1. User Authentication [P0]
+When I visit the app, I want to login securely, so that my data is protected.
+
+### 2. Dark Mode [P1]
+When I use the app at night, I want dark mode, so that it's easier on my eyes.
+
+### 3. Performance [P2]
+When I navigate between pages, I want fast load times, so that I don't get frustrated.
 ```
 
 ### INVEST Criteria (Task)

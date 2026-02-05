@@ -58,7 +58,7 @@ Axel's primary job is to find black (unprocessed) regions in the spec and turn t
 ## The Refinement Chain
 
 ```
-⬛ Directive (Raw Need/PRD)
+⬛ Black Book (THE Spec - All Requirements)
      │
      └── SPLIT → ⬜ Draft (Plan Drafts)
                       │
@@ -89,49 +89,57 @@ Discovery cases are **byproducts** of Task execution via discovery signals, not 
 
 ## Case Type Definitions
 
-### ⬛ Directive: Raw Need (The Spec Canvas)
+### ⬛ Black Book: THE Spec (The Spec Canvas)
 
-The Directive case represents the **entire spec as a canvas to be colored**. It links to a markdown spec file where every character starts as "black" (raw, unprocessed).
+The Black Book is the **single, definitive specification document** for the project. It contains ALL user requirements, consolidated and prioritized by Architect Axel. There is exactly ONE Black Book per project.
+
+**Key Principle:** Regardless of how many requests a user provides, they ALL go into the single Black Book. Axel prioritizes and organizes them.
 
 **Structure:**
 ```
-Directive Case
-├── id: "directive-001"
-├── type: directive
+Black Book Case
+├── id: "bb-001"
+├── type: blackbook
 ├── jtbd: "When [situation], I want [motivation], so that [expected outcome]."
-├── specFile: ".axiom/specs/my-feature.md"  ← The canvas
+├── specFile: ".axiom/specs/bb-001.md"  ← The canvas
 └── satisfied: false  ← Becomes true when canvas is 100% green+red
 ```
 
-**JTBD Format:**
+**JTBD Format (for each requirement):**
 ```
 "When [situation], I want [motivation], so that [expected outcome]."
 ```
 
-**Example Spec File (.axiom/specs/blog-platform.md):**
+**Example: User provides multiple requests:**
+```
+User: "I want user auth, dark mode, and better performance"
+```
+
+**Axel consolidates into ONE Black Book (.axiom/specs/bb-001.md):**
 ```markdown
-# Blog Platform Spec
-<!-- @axiom-directive: directive-001 -->
+# Project Spec
+<!-- @axiom-blackbook: bb-001 -->
 
-## Core Requirements
+## Requirements (Prioritized)
 
-<!--@ax:0-45:black-->Users should be able to write and publish blog posts.<!--/@ax-->
-<!--@ax:0-38:black-->Posts should support markdown formatting.<!--/@ax-->
-<!--@ax:0-42:black-->Users should be able to comment on posts.<!--/@ax-->
+### 1. User Authentication [P0]
+<!--@ax:0-52:black-->When I visit the app, I want to login securely, so that my data is protected.<!--/@ax-->
 
-## Future Features
+### 2. Dark Mode [P1]
+<!--@ax:0-48:black-->When I use the app at night, I want dark mode, so that it's easier on my eyes.<!--/@ax-->
 
-<!--@ax:0-35:black-->Analytics dashboard for post views.<!--/@ax-->
-<!--@ax:0-28:black-->Newsletter subscription system.<!--/@ax-->
+### 3. Performance [P2]
+<!--@ax:0-55:black-->When I navigate between pages, I want fast load times, so that I don't get frustrated.<!--/@ax-->
 ```
 
 **Axel's behavior:**
-1. Creates Directive case with JTBD
-2. Creates spec file with all requirements as black text
-3. Begins planning spiral to turn black → colored
-4. Continues until canvas is fully colored
+1. Consolidates ALL user requests into ONE Black Book
+2. Prioritizes requirements (P0, P1, P2...)
+3. Creates spec file with all requirements as black text
+4. Begins planning spiral to turn black → colored
+5. Updates Black Book during emergent planning as needed
 
-**When is Directive "satisfied"?**
+**When is Black Book "satisfied"?**
 
 ```
 satisfied = (coverage.green + coverage.red == 100%)
@@ -358,7 +366,7 @@ When content is added to the spec, its initial color depends on who adds it:
 
 ### Spec Completion Criteria
 
-A spec (Directive) is considered **satisfied** when:
+A spec (Black Book) is considered **satisfied** when:
 
 ```
 coverage.green + coverage.red == 100%
@@ -389,14 +397,14 @@ Spec files are stored in `.axiom/specs/` with the following conventions:
 
 | Item | Convention |
 |------|------------|
-| **Location** | `.axiom/specs/{directive-id}.md` |
-| **Naming** | Matches directive ID (e.g., `directive-001.md`) |
-| **Header** | Must include `<!-- @axiom-directive: {id} -->` |
+| **Location** | `.axiom/specs/{blackbook-id}.md` |
+| **Naming** | Matches Black Book ID (e.g., `bb-001.md`) |
+| **Header** | Must include `<!-- @axiom-blackbook: {id} -->` |
 | **Encoding** | UTF-8, LF line endings |
 
 **Creating a new spec:**
 1. User provides JTBD or requirement description
-2. Axel creates Directive case
+2. Axel creates Black Book case
 3. Axel creates spec file with all text as black (raw)
 4. Planning spiral begins
 
@@ -426,8 +434,8 @@ Progress tracked in `.axiom/specs/progress.json`:
 ```json
 {
   "specs": {
-    "directive-001.md": {
-      "directiveId": "directive-001",
+    "bb-001.md": {
+      "blackBookId": "bb-001",
       "contentHash": "sha256:abc123...",
       "totalChars": 2450,
       "coverage": {
@@ -996,10 +1004,10 @@ After each Operation feature completes (all its Tasks done and merged):
 ```
 Axel runs Debrief:
   1. Query Discovery cases from this Operation's Tasks
-  2. Check: Directive case impact?
+  2. Check: Black Book case impact?
   3. Revise Draft cases based on discoveries
   4. Update dependency tree
-  5. Check: Is Directive satisfied?
+  5. Check: Is Black Book satisfied?
      • Yes → Project complete 🎉
      • Partially → Continue to next Operation
      • No → Add new Drafts if needed
@@ -1038,7 +1046,7 @@ The Research spawns its own mini planning cycle. PoCs are real Tasks that Echo i
 Dependencies form a tree structure:
 
 ```
-⬛ Directive: "I want a technical blog..."
+⬛ Black Book: "I want a technical blog..."
 │
 ├── ⬜ Draft: Blog post system
 │   │
@@ -1103,12 +1111,12 @@ Axel: "I'll frame this as a goal:
      ↓
 User: Confirms
      ↓
-Axel: Creates Directive with project context
+Axel: Creates Black Book with project context
 ```
 
-**Directive with context:**
+**Black Book with context:**
 ```
-Directive {
+BlackBook {
   jtbd: "When..., I want..., so that...",
   projectContext: {
     stack: "Next.js, Prisma, Clerk",
@@ -1334,10 +1342,10 @@ Stored in `.axiom/planning-state.json`:
   "status": "implementation",
   "chosenMode": "semi-auto",
   "phase": "ready",
-  "directiveCase": {
-    "id": "directive-001",
+  "blackBookCase": {
+    "id": "bb-001",
     "jtbd": "When I want to share...",
-    "specFile": ".axiom/specs/directive-001.md",
+    "specFile": ".axiom/specs/bb-001.md",
     "satisfied": false
   },
   "specCoverage": {

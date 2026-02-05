@@ -34,7 +34,7 @@ Cases are categorized by clarity and readiness level:
 
 | Color | Type | Description |
 |-------|------|-------------|
-| ⬛ | Directive | Raw need in JTBD format - the PRD |
+| ⬛ | Black Book | Raw need in JTBD format - the PRD |
 | ⬜ | Draft | Plan draft, needs detailing |
 | 🟧 | Research | Research/spike needed |
 | 🟪 | Pending | Decision pending (user blocker) |
@@ -114,7 +114,7 @@ Init Mode → Planning Mode → Implementation Mode
     ▼            ▼                  ▼
 Analyst Ava   Architect Axel     Executor Echo
 analyzes      refines            instances
-project       Directive → Task   execute Tasks
+project       Black Book → Task   execute Tasks
 ```
 
 1. **Init Mode** - Analyst Ava examines project, suggests configuration, creates `.axiom/`
@@ -175,7 +175,7 @@ Agents communicate via signals embedded in their output:
 ## Case Management
 
 Native CaseStore with:
-- 8 types: Directive, Draft, Research, Pending, Deferred, Operation, Task, Discovery
+- 8 types: Black Book, Draft, Research, Pending, Deferred, Operation, Task, Discovery
 - 4 universal statuses: pending, active, blocked, done
 - Type-specific statuses (Task: failed, timeout, review; Discovery: active, outdated, archived)
 - Parent-child lineage tracking

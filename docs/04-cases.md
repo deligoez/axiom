@@ -12,7 +12,7 @@ Cases are categorized by maturity and type:
 
 | Color | Type | Symbol | Description |
 |-------|------|--------|-------------|
-| ⬛ | Directive | `■` | Raw need (JTBD format) - the PRD |
+| ⬛ | Black Book | `■` | Raw need (JTBD format) - the PRD |
 | ⬜ | Draft | `□` | Plan draft, needs detailing |
 | 🟧 | Research | `◆` | Investigation/spike needed |
 | 🟪 | Pending | `◇` | Decision pending (user blocker) |
@@ -77,7 +77,7 @@ Case
 ├── id: string              // See "Case ID Format" below
 ├── type: CaseType          // directive, draft, research, pending, deferred, operation, task, discovery
 ├── status: Status          // pending, active, blocked, done (+ type-specific statuses)
-├── content: string         // JTBD for Directive, description for others
+├── content: string         // JTBD for Black Book, description for others
 ├── parentId: string | null // Lineage tracking
 ├── childIds: string[]      // Children created from this case
 ├── createdAt: string       // ISO 8601
@@ -89,7 +89,7 @@ Case
 ### Type-Specific Metadata
 
 ```
-DirectiveMetadata
+BlackBookMetadata
 ├── jtbd: string            // "When..., I want..., so that..."
 ├── specFile: string        // Path to spec markdown file (the canvas)
 ├── satisfied: boolean      // Is the original need met? (coverage.green+red == 100%)
@@ -219,7 +219,7 @@ Case IDs follow the pattern: `{type-prefix}-{NNN}`
 
 | Type | Prefix | Example |
 |------|--------|---------|
-| Directive | `dir` | `dir-001` |
+| Black Book | `dir` | `dir-001` |
 | Draft | `draft` | `draft-012` |
 | Research | `res` | `res-003` |
 | Pending | `pend` | `pend-001` |
@@ -314,7 +314,7 @@ HistoryEntry
 Every case knows its ancestry:
 
 ```
-case-001 (Directive: "I want a blog")
+case-001 (Black Book: "I want a blog")
 ├── case-002 (Draft: Blog post system)
 │   ├── case-010 (Research: Markdown parser selection)
 │   │   └── case-015 (Operation: rehype rendering) [transitioned from Research]
@@ -400,8 +400,8 @@ CaseStore provides two types of operations: **mutations** (modify state) and **q
 | `ready(type?)` | Ready for processing |
 | `blocked()` | Blocked cases |
 | `children(id)` | Direct children |
-| `ancestors(id)` | All ancestors to Directive |
-| `lineage(id)` | Full tree from Directive |
+| `ancestors(id)` | All ancestors to Black Book |
+| `lineage(id)` | Full tree from Black Book |
 | `discoveriesByScope(scope)` | Discovery cases by scope (local/global) |
 | `activeDiscoveries(agentId?)` | Active Discovery cases for injection |
 
@@ -743,12 +743,12 @@ assignTasksToAgents(agents, store):
 
 ---
 
-## Directive Satisfaction Check
+## Black Book Satisfaction Check
 
-After each Operation completion, Axel checks if Directive is satisfied:
+After each Operation completion, Axel checks if Black Book is satisfied:
 
 ```
-checkDirectiveSatisfaction(directiveCase):
+checkBlackBookSatisfaction(directiveCase):
   allOperations = descendants(directiveCase).filter(type == 'operation')
 
   doneOperations = allOperations.filter(status == 'done')
