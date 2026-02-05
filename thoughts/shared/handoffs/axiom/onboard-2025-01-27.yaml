@@ -1,0 +1,471 @@
+---
+session: axiom-onboarding
+created: 2025-01-27T15:00:00Z
+agent: onboard
+user_goal: "Learning/understanding - Explore and understand the AXIOM codebase"
+constraints: "Consult always - User wants guidance at each step"
+
+project:
+  name: AXIOM
+  description: "Multi-agent AI coding orchestrator written in Go"
+  path: /Users/deligoez/Developer/github/axiom
+  repository: github.com/deligoez/axiom
+
+tech_stack:
+  language: Go
+  version: "1.25.6"
+  framework: "htmx (server-side rendering)"
+  ui: "Tailwind CSS with dark/light mode"
+  dependencies:
+    - "github.com/creack/pty v1.1.24 (PTY support)"
+  build_command: "go build -o axiom ./cmd/axiom"
+  test_command: "go test ./..."
+  dev_command: "./axiom (starts web server on :8080)"
+
+architecture:
+  philosophy: "Take small steps, learn from each one, update the plan"
+  approach: "Emergent planning - implement small slices, record learnings, update plan"
+
+  core_concepts:
+    case_system:
+      description: "Unit of work tracking system with color-coded types"
+      discovery_cases:
+        - type: "Directive (⬛)"
+          description: "Raw need in JTBD format - the PRD/spec"
+        - type: "Draft (⬜)"
+          description: "Plan draft, needs detailing"
+        - type: "Research (🟧)"
+          description: "Investigation/spike needed"
+        - type: "Pending (🟪)"
+          description: "Decision pending (user blocker)"
+        - type: "Deferred (🟥)"
+          description: "Out of current scope"
+
+      implementation_cases:
+        - type: "Operation (🟦)"
+          description: "Concrete feature (vertical slice)"
+        - type: "Task (🟩)"
+          description: "Atomic case, ready to implement"
+
+      knowledge_cases:
+        - type: "Discovery (🟡)"
+          description: "Learning from implementation"
+
+    agent_personas:
+      - name: "Analyst Ava (🔍)"
+        role: "Project analysis and onboarding"
+        concurrency: "1 at a time"
+        triggers: "First run (automatic), manual via command palette"
+
+      - name: "Architect Axel (📊)"
+        role: "Planning and debrief"
+        concurrency: "1 at a time"
+        responsibilities: "Directive creation, Draft refinement, Operation creation, Task breakdown, Debrief"
+
+      - name: "Executor Echo (⚙️)"
+        role: "Implementation in workspaces"
+        concurrency: "N parallel"
+        notes: "Multiple Echo instances can run simultaneously"
+
+      - name: "Resolver Rex (🔧)"
+        role: "Merge conflict resolution"
+        concurrency: "1 at a time"
+
+      - name: "Curator Cleo (💡)"
+        role: "Discovery case creation from signals"
+        concurrency: "1 at a time"
+
+      - name: "Director Dex (😎)"
+        role: "Orchestration and mode switching"
+        concurrency: "1 at a time"
+
+      - name: "Monitor Max (👁️)"
+        role: "Health monitoring"
+        concurrency: "1 at a time"
+
+      - name: "Auditor Ash (📈)"
+        role: "Metrics and ID assignment"
+        concurrency: "1 at a time"
+
+project_structure:
+  key_directories:
+    - path: "cmd/axiom/"
+      description: "Main entry point, server startup"
+
+    - path: "internal/case/"
+      description: "CaseStore (JSONL-based case storage)"
+      files:
+        - "case.go: Case struct, CaseType, Status constants"
+        - "store.go: JSONL file operations"
+
+    - path: "internal/agent/"
+      description: "Agent spawning and output processing"
+      files:
+        - "interactive.go: InteractiveAgent (tmux-based, multi-turn)"
+        - "pty.go: PTYAgent (pseudo-terminal process management)"
+        - "ansi.go: ANSI escape sequence stripping"
+        - "uidetect.go: CLI UI element detection"
+        - "cleaner.go: StreamCleaner (combines ANSI + UI filters)"
+        - "embed.go: Embedded agent prompts (Ava)"
+
+    - path: "internal/tmux/"
+      description: "Tmux session management for persistent Claude CLI"
+      files:
+        - "tmux.go: Tmux wrapper, ClaudeSession"
+        - "integration_test.go: End-to-end tests"
+      notes: "Production-tested pattern from Gastown, handles ink-based CLI input"
+
+    - path: "internal/web/"
+      description: "Web server and htmx UI"
+      files:
+        - "server.go: HTTP server, routes, SSE for agent streaming"
+        - "sse.go: Server-Sent Events handler"
+        - "templates/layout.html: Main UI template (Tailwind + htmx)"
+
+    - path: "internal/scaffold/"
+      description: "First-run setup system"
+      files:
+        - "scaffold.go: Creates .axiom/, config.json, agent directories"
+
+    - path: "internal/signal/"
+      description: "Signal parser for agent output"
+      format: "<axiom>TYPE:payload</axiom>"
+      examples:
+        - "<axiom>AVA_COMPLETE</axiom>"
+        - "<axiom>DISCOVERY_LOCAL:finding</axiom>"
+
+    - path: "internal/detection/"
+      description: "Project mode detection (greenfield vs brownfield)"
+
+    - path: "docs/"
+      description: "Comprehensive documentation (17 markdown files)"
+      key_files:
+        - "00-overview.md: System introduction"
+        - "01-configuration.md: Config system"
+        - "04-cases.md: Case management"
+        - "05-agents.md: Agent personas"
+        - "10-interface.md: Web UI"
+
+current_state:
+  implemented:
+    - feature: "Scaffold system (.axiom/ directory creation)"
+      status: "✓ DONE"
+      milestone: "m0-bootstrap"
+
+    - feature: "Walking Skeleton (web page with header/footer)"
+      status: "✓ DONE"
+      milestone: "MVP-01"
+
+    - feature: "Task List UI (hardcoded data)"
+      status: "✓ DONE"
+      milestone: "MVP-02"
+
+    - feature: "Tasks from Storage (JSONL CaseStore)"
+      status: "✓ DONE"
+      milestone: "MVP-03"
+
+    - feature: "Task to Case Migration"
+      status: "✓ DONE"
+      notes: "Aligned with docs/04-cases.md"
+
+    - feature: "Ava Init System"
+      status: "✓ DONE"
+      milestone: "MVP-04"
+      components:
+        - "Scaffold (.axiom/, config.json, ava/prompt.md)"
+        - "Agent spawner (claude --print --system-prompt)"
+        - "Signal parser (<axiom>TYPE:payload</axiom>)"
+
+    - feature: "Init Mode Web UI"
+      status: "✓ DONE"
+      milestone: "MVP-05"
+      components:
+        - "SSE infrastructure for agent output"
+        - "/init page with Ava modal"
+        - "Config state detection (new/incomplete/complete)"
+        - "Session-based logging (.axiom/agents/ava/logs/)"
+
+    - feature: "Interactive Agent Mode (Real-time streaming)"
+      status: "✓ DONE"
+      milestone: "MVP-06"
+      problem_solved: "--print mode had no real-time streaming"
+      components:
+        - "PTYAgent: Process management with pseudo-terminal"
+        - "ANSI Filter: Strip escape sequences"
+        - "UI Detector: Classify CLI UI elements vs content"
+        - "StreamCleaner: Combine filters for clean output"
+      notes: "Character-by-character streaming for better UX"
+
+    - feature: "Persistent Tmux Agent"
+      status: "✓ DONE"
+      milestone: "MVP-07"
+      problem_solved:
+        - "Claude CLI uses ink-based custom input widget"
+        - "PTY stdin writes appear but don't submit (ink limitation)"
+      solution: "Use tmux send-keys (based on Gastown's production pattern)"
+      key_insight: "GitHub issue #15553 documents the same problem"
+      pattern: "tmux send-keys -l + debounce (100ms) + Enter"
+      components:
+        - "Tmux package: Session management for Claude CLI"
+        - "ClaudeSession: High-level API for Claude interaction"
+        - "InteractiveAgent rewrite: Tmux-based instead of PTY spawning"
+
+  test_coverage:
+    total_go_files: 33
+    test_files:
+      - "internal/placeholder_test.go"
+      - "internal/agent/*_test.go (7 test files)"
+      - "internal/tmux/*_test.go (2 test files)"
+      - "internal/case/*_test.go (2 test files)"
+      - "internal/web/*_test.go (3 test files)"
+      - "internal/scaffold/*_test.go"
+      - "internal/signal/*_test.go"
+      - "internal/detection/*_test.go"
+
+    status: "All tests passing (go test ./...)"
+
+    test_categories:
+      unit_tests:
+        - "ANSI escape sequence stripping"
+        - "StreamCleaner (ANSI + UI filtering)"
+        - "UI element detection"
+        - "Signal parsing"
+        - "Case creation"
+        - "CaseStore JSONL operations"
+
+      integration_tests:
+        - "PTY agent lifecycle"
+        - "Tmux session management"
+        - "ClaudeSession multi-turn conversation"
+
+      web_tests:
+        - "Server routes (GET /)"
+        - "SSE streaming"
+        - "Init handler"
+
+  not_implemented:
+    - feature: "Workspace Manager (git worktree isolation)"
+      milestone: "m2-workspace"
+      planned: true
+      notes: "Each agent runs in isolated git worktree"
+
+    - feature: "Integration Queue (merge service)"
+      milestone: "m4-integration"
+      planned: true
+      notes: "Auto-merge + conflict detection"
+
+    - feature: "Execution Loop (orchestrator)"
+      milestone: "m5-execution"
+      planned: true
+      notes: "Director Dex spawns agents, manages slots"
+
+    - feature: "Planning Dialogue (5-Phase)"
+      milestone: "m7-planning"
+      planned: true
+      notes: "Architect Axel runs JTBD → Draft → Operation → Task"
+
+    - feature: "Discovery System"
+      milestone: "m8-discovery"
+      planned: true
+      notes: "Curator Cleo creates Discovery cases from signals"
+
+    - feature: "Review System"
+      milestone: "m9-review"
+      planned: true
+      notes: "Human review, debrief after Operations"
+
+    - feature: "Intervention System"
+      milestone: "m10-intervention"
+      planned: true
+      notes: "Pause, rollback, restart mechanisms"
+
+startup_flow:
+  steps:
+    - step: 1
+      action: "Run ./axiom"
+      description: "Binary starts"
+
+    - step: 2
+      action: "Check .axiom/ directory"
+      branches:
+        - condition: "Directory doesn't exist"
+          action: "Scaffold.Scaffold() creates .axiom/, config.json, ava/"
+          next: "Init Mode"
+
+        - condition: "Directory exists"
+          action: "Normal Mode"
+          next: "Server starts on /"
+
+    - step: 3
+      action: "Init Mode"
+      details:
+        - "Server starts on :8080"
+        - "Browser opens /init"
+        - "SSE endpoint spawns Ava (streaming output)"
+        - "User interacts with Ava for project setup"
+        - "Ava emits <axiom>AVA_COMPLETE</axiom>"
+        - "Redirect to /"
+
+key_decisions:
+  - decision: "Use tmux send-keys for Claude CLI interaction"
+    rationale: "ink-based input widget doesn't work with PTY stdin"
+    reference: "GitHub issue #15553, Gastown production pattern"
+    date: "MVP-07 milestone"
+
+  - decision: "JSONL for CaseStore (not SQLite)"
+    rationale: "Simple, human-readable, git-friendly"
+    location: "internal/case/store.go"
+
+  - decision: "htmx for UI (not React/Vue)"
+    rationale: "Server-side rendering, minimal JS, real-time via SSE"
+    location: "internal/web/templates/layout.html"
+
+  - decision: "Tailwind UI for design system"
+    rationale: "Pre-built components, dark/light mode support"
+    reference: ".claude/rules/tailwind-ui.md"
+
+  - decision: "Beads for task tracking (not GitHub Issues)"
+    rationale: "Local CLI tool, integrates with workflow"
+    reference: ".claude/rules/beads-task-tracking.md"
+
+workflow_patterns:
+  tdd:
+    pattern: "RED → GREEN → QUALITY CHECKS → COMMIT"
+    quality_checks:
+      - "go test ./..."
+      - "gofmt -w ."
+      - "golangci-lint run"
+      - "go build ./..."
+    commit_format: "<type>: <description> [task-id]"
+    auto_commit: true
+    notes: "NO permission prompts, NEVER add Co-Authored-By: Claude"
+
+  mvp_approach:
+    pattern: "Vertical Slice > Horizontal Layers"
+    steps:
+      - "Start from UI (what do we want to SEE?)"
+      - "Minimum infrastructure (only what's needed for that UI)"
+      - "Iterate (see it working, then decide next slice)"
+    wrong_approach: "Types → CaseStore → Config → Workspace → ... → UI"
+    right_approach: "I want to see X in UI → Build minimum → See it working → Next"
+
+  task_hierarchy:
+    grey_draft:
+      type: "epic"
+      prefix: "PLAN:"
+      label: "milestone"
+      description: "High-level planning (one at a time)"
+
+    blue_operation:
+      type: "feature"
+      prefix: "F##:"
+      label: "milestone"
+      parent: "Grey ID"
+      description: "Smallest deliverable feature"
+
+    green_task:
+      type: "task"
+      prefix: "F##.#:"
+      label: "milestone"
+      parent: "Blue ID"
+      description: "Smallest TDD step (< 30 min)"
+
+  deliberate_workflow:
+    step1: "Grey Extraction - DISCUSS what first Grey should be"
+    step2: "Grey → Blue Discussion - DISCUSS what Blues come from Grey"
+    step3: "Blue → Green Discussion - DISCUSS what Greens come from Blue"
+    step4: "Green Implementation - Implement ALL Greens (TDD)"
+    step5: "Review - After each Blue, review progress and update PROGRESS.md"
+
+open_questions:
+  - question: "Which milestone to tackle next?"
+    context: "MVP-07 complete, Grey task ax-jik still open"
+    next_steps:
+      - "bd ready -n 0 to see available tasks"
+      - "Discuss with user what to focus on"
+
+  - question: "How to implement Workspace Manager?"
+    context: "Planned for m2-workspace, not yet started"
+    reference: "docs/06-integration.md"
+
+  - question: "What's the priority: UI polish vs core features?"
+    context: "Basic UI works, but orchestration loop not implemented"
+
+codebase_summary: |
+  AXIOM is a multi-agent AI coding orchestrator built with Go and htmx. It manages
+  multiple Claude Code agents working on a shared codebase through:
+
+  1. **Case System**: Color-coded work items (Directive → Draft → Operation → Task)
+     tracked in JSONL files. Discovery cases capture learnings during implementation.
+
+  2. **Agent Personas**: 8 named agents (Ava, Axel, Echo, Rex, Cleo, Dex, Max, Ash)
+     with distinct roles. Only Echo runs in parallel; others are sequential.
+
+  3. **Tmux-Based Agent Spawning**: Persistent Claude CLI sessions via tmux send-keys
+     (workaround for ink-based input widget limitation). Streaming output through
+     ANSI/UI filters provides real-time character-by-character updates.
+
+  4. **Web UI**: Server-side rendered with htmx, Tailwind CSS, and SSE for real-time
+     agent output. Dark/light mode support. Init Mode (/init) for first-run setup.
+
+  5. **Scaffold System**: First run creates .axiom/ directory, config.json, and
+     spawns Ava for project analysis and onboarding.
+
+  Current state: Core infrastructure (Cases, Agents, Web UI, Init Mode) is working.
+  Next phases: Workspace isolation, Integration Queue, Orchestration Loop, Planning
+  Dialogue, Discovery System, Review System, Intervention mechanisms.
+
+  Philosophy: "Take small steps, learn from each one, update the plan." Implements
+  emergent planning through vertical slices rather than Big Design Up Front.
+
+next_steps:
+  immediate:
+    - "Run: bd ready -n 0"
+    - "Review available tasks"
+    - "Discuss with user what to focus on next"
+
+  learning_resources:
+    - "docs/00-overview.md - Start here for high-level understanding"
+    - "docs/05-agents.md - Agent personas and responsibilities"
+    - "docs/04-cases.md - Case type system"
+    - "PROGRESS.md - What's been built, what's planned"
+    - ".claude/rules/workflow-rules.md - Development workflow"
+    - ".claude/rules/beads-task-tracking.md - Task management"
+
+files_to_read_first:
+  - path: "docs/00-overview.md"
+    why: "High-level system introduction"
+
+  - path: "PROGRESS.md"
+    why: "Current state and completed milestones"
+
+  - path: "internal/agent/interactive.go"
+    why: "How agents spawn and stream output (tmux-based)"
+
+  - path: "internal/case/case.go"
+    why: "Core Case struct and type system"
+
+  - path: "cmd/axiom/main.go"
+    why: "Application entry point and startup flow"
+
+useful_commands:
+  build: "go build -o axiom ./cmd/axiom"
+  test: "go test ./..."
+  run: "./axiom (starts server on :8080)"
+  lint: "golangci-lint run"
+  format: "gofmt -w ."
+
+  beads:
+    list_milestones: "bd list -t epic -n 0"
+    list_features: "bd list -t feature -n 0"
+    available_tasks: "bd ready -n 0"
+    start_task: "bd update <id> --status=in_progress"
+    complete_task: "bd close <id>"
+
+notes:
+  - "User is a senior developer learning Go"
+  - "Explanation style: Senior-level depth, focus on Go idioms"
+  - "Communication in Turkish, artifacts (code, docs, tasks, commits) in English"
+  - "Implementation requires explicit user approval (never auto-implement)"
+  - "TLDR-first rule: Use tldr before reading files for token efficiency"
+  - "Quality checks before every commit: test + format + lint + build"
