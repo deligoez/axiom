@@ -9,13 +9,37 @@
 
 ## Current Work
 
-Next milestone to be determined. Run `bd ready -n 0` for available tasks.
+**SDK Migration Complete.** Agent system now uses Go SDK instead of PTY/tmux.
+
+Available tasks:
+- `ax-3kj [P2]` - Add markdown rendering with code highlighting
+- `ax-a04 [P2]` - Handle streaming reconnect gracefully
+
+Run `bd ready -n 0` for full list.
 
 ---
 
 ## Completed Milestones
 
-### MVP-07: Persistent Tmux Agent ✓
+### SDK Migration ✓
+- **Goal:** Replace PTY/tmux approach with Go SDK
+- **Status:** DONE
+- **What was done:**
+  - Migrated from tmux-based agent to `dotcommander/agent-sdk-go`
+  - Created AgentClient wrapper (internal/agent/client.go)
+  - Removed ~2600 lines of dead code (PTY, tmux, detection packages)
+  - Updated web server to use SDK Execute() method
+- **Key files:**
+  - internal/agent/client.go (SDK wrapper)
+  - internal/agent/client_test.go (7 tests)
+  - internal/web/server.go (updated integration)
+- **Removed files:**
+  - internal/agent/pty.go, ansi.go, uidetect.go, cleaner.go
+  - internal/agent/interactive.go, spawner.go
+  - internal/tmux/ (entire package)
+  - internal/detection/ (entire package)
+
+### MVP-07: Persistent Tmux Agent ✓ (Superseded by SDK Migration)
 - **Goal:** Single persistent Claude process for multi-turn conversation
 - **Status:** DONE
 - **Problem solved:**
@@ -142,19 +166,27 @@ Server starts (/)          Browser opens /init
                            AVA_COMPLETE → redirect /
 ```
 
-### Agent Spawning (Tmux-Based)
+### Agent Spawning (SDK-Based)
 ```go
-// Create persistent session
-session := tmux.NewClaudeSession("agent-name", workDir)
-session.Start(systemPrompt)
-session.WaitForPrompt(30 * time.Second)
+// Create agent client
+config := &agent.AgentConfig{
+    SystemPrompt:    systemPrompt,
+    WorkDir:         workDir,
+    SkipPermissions: true,
+}
+client, _ := agent.NewAgentClient(config)
 
-// Send messages (multi-turn, context preserved)
-session.SendMessage("First question")
-session.SendMessage("Follow-up question")
+// Execute prompt (returns channels for streaming)
+ctx := context.Background()
+messages, errors := client.Execute(ctx, "Your prompt here")
+
+// Process streaming output
+for msg := range messages {
+    fmt.Print(msg.Content)
+}
 
 // Cleanup
-session.Stop()
+client.Close()
 ```
 
 ### Signal Format
