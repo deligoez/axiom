@@ -75,7 +75,7 @@ Discovery cases have knowledge-lifecycle statuses:
 ```
 Case
 ├── id: string              // See "Case ID Format" below
-├── type: CaseType          // directive, draft, research, pending, deferred, operation, task, discovery
+├── type: CaseType          // blackbook, draft, research, pending, deferred, operation, task, discovery
 ├── status: Status          // pending, active, blocked, done (+ type-specific statuses)
 ├── content: string         // JTBD for Black Book, description for others
 ├── parentId: string | null // Lineage tracking
@@ -219,7 +219,7 @@ Case IDs follow the pattern: `{type-prefix}-{NNN}`
 
 | Type | Prefix | Example |
 |------|--------|---------|
-| Black Book | `dir` | `dir-001` |
+| Black Book | `bb` | `bb-001` |
 | Draft | `draft` | `draft-012` |
 | Research | `res` | `res-003` |
 | Pending | `pend` | `pend-001` |
@@ -237,7 +237,7 @@ Case IDs follow the pattern: `{type-prefix}-{NNN}`
 
 ```json
 {
-  "dir": 1,
+  "bb": 1,
   "draft": 15,
   "res": 4,
   "pend": 2,
@@ -508,7 +508,7 @@ This ensures CaseStore is the single source of truth for all discoveries.
 Cases persisted to `.axiom/cases.jsonl`:
 
 ```json
-{"id":"case-001","type":"directive","status":"active","content":"When I want to share...","parentId":null,"childIds":["case-002","case-003"],"createdAt":"2026-01-01T00:00:00Z",...}
+{"id":"bb-001","type":"blackbook","status":"active","content":"When I want to share...","parentId":null,"childIds":["case-002","case-003"],"createdAt":"2026-01-01T00:00:00Z",...}
 {"id":"case-002","type":"draft","status":"pending","content":"Blog post system","parentId":"case-001","childIds":[],"createdAt":"2026-01-01T00:01:00Z",...}
 ```
 
@@ -748,14 +748,14 @@ assignTasksToAgents(agents, store):
 After each Operation completion, Axel checks if Black Book is satisfied:
 
 ```
-checkBlackBookSatisfaction(directiveCase):
-  allOperations = descendants(directiveCase).filter(type == 'operation')
+checkBlackBookSatisfaction(blackBookCase):
+  allOperations = descendants(blackBookCase).filter(type == 'operation')
 
   doneOperations = allOperations.filter(status == 'done')
   pendingOperations = allOperations.filter(status != 'done')
 
   if doneOperations covers original need:
-    directiveCase.satisfied = true
+    blackBookCase.satisfied = true
     return 'complete'
 
   if pendingOperations.length > 0:

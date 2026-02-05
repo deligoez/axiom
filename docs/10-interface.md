@@ -184,7 +184,7 @@ Shows overall spec progress:
 ```html
 <div hx-ext="sse" sse-connect="/api/events">
     <div id="spec-canvas"
-         hx-get="/partials/spec-canvas/{directiveId}"
+         hx-get="/partials/spec-canvas/{blackBookId}"
          hx-trigger="sse:spec-updated"
          hx-swap="innerHTML">
     </div>
@@ -711,7 +711,7 @@ Add custom themes to `.axiom/themes/{name}.json`:
     "info": "#60a5fa"
   },
   "caseColors": {
-    "directive": "#1f2937",
+    "blackbook": "#1f2937",
     "draft": "#374151",
     "research": "#f97316",
     "pending": "#a855f7",

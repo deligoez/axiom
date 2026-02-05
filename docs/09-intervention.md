@@ -574,7 +574,7 @@ Planning state is continuously persisted to `.axiom/planning-state.json`:
 {
   "status": "planning",
   "phase": "decompose",
-  "directiveCase": { "id": "case-001", "jtbd": "..." },
+  "blackBookCase": { "id": "bb-001", "jtbd": "..." },
   "clarifications": [...],
   "proposals": [{ "version": 1, "approved": true }, ...],
   "partialCases": {

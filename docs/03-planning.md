@@ -860,6 +860,36 @@ The validation loop converges when:
 
 ## The Planning Spiral
 
+### Relationship to 5-Phase Dialogue
+
+The **5-Phase Dialogue** and **Planning Spiral** operate at different levels:
+
+| Concept | Level | Scope | Purpose |
+|---------|-------|-------|---------|
+| **5-Phase Dialogue** | Per-Goal | Single user request | Structure the conversation for ONE feature request |
+| **Planning Spiral** | Per-Project | Entire spec canvas | Transform ALL black regions into colored cases |
+
+**How they work together:**
+
+```
+Black Book (entire spec)
+     │
+     └── Planning Spiral (project-level loop)
+              │
+              ├── Iteration 1: Process region "auth feature"
+              │         └── 5-Phase Dialogue (UNDERSTAND → ANALYZE → PROPOSE → DECOMPOSE → VALIDATE)
+              │
+              ├── Iteration 2: Process region "blog posts"
+              │         └── 5-Phase Dialogue (for this specific goal)
+              │
+              └── Iteration N: Process remaining regions...
+```
+
+- The **Planning Spiral** scans the spec canvas and selects the next black region to process
+- Each selected region triggers a **5-Phase Dialogue** to refine that specific goal
+- After the dialogue completes, the spiral continues to the next black region
+- The spiral terminates when enough Operations are ready OR all regions are processed
+
 Axel runs a repeated cycle to **turn black into color**. The spiral's goal is to eliminate all black (raw) regions from the spec by processing them into cases.
 
 ```
