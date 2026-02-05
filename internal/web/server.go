@@ -3,6 +3,7 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"html/template"
 	"log"
@@ -33,8 +34,10 @@ type Server struct {
 	configState scaffold.ConfigState
 	initMu      sync.Mutex
 
-	// Interactive agent (persistent process)
-	initAgent    *agent.InteractiveAgent
+	// Interactive agent (SDK-based)
+	initAgent    *agent.AgentClient
+	initCtx      context.Context
+	initCancel   context.CancelFunc
 	initErr      error
 	initComplete bool
 
@@ -135,13 +138,19 @@ func (s *Server) handleSSEInit(w http.ResponseWriter, r *http.Request) {
 	s.initMu.Lock()
 	if s.initAgent == nil && s.initErr == nil {
 		initialMessage := s.buildInitialMessage()
-		agentInstance, err := agent.NewInteractiveAgent(s.promptPath, initialMessage)
+		config := &agent.AgentConfig{
+			Model:           "claude-sonnet-4-20250514",
+			Verbose:         true,
+			SkipPermissions: true,
+		}
+		agentInstance, err := agent.NewAgentClient(config)
 		if err != nil {
 			s.initErr = err
 		} else {
 			s.initAgent = agentInstance
+			s.initCtx, s.initCancel = context.WithCancel(context.Background())
 			// Start buffering the initial response
-			go s.bufferAgentOutput()
+			go s.bufferAgentOutput(initialMessage)
 		}
 	}
 	err := s.initErr
@@ -248,13 +257,10 @@ func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
 
 	// Reset complete flag for new response
 	s.initComplete = false
-
-	// Send message to interactive agent (it handles conversation internally)
-	s.initAgent.SendMessage(userMessage)
 	s.initMu.Unlock()
 
-	// Start buffering the new response
-	go s.bufferAgentOutput()
+	// Start buffering the new response (Execute handles the query)
+	go s.bufferAgentOutput(userMessage)
 
 	// Return success - client will see new content via SSE
 	w.Header().Set("Content-Type", "application/json")
@@ -262,28 +268,48 @@ func (s *Server) handleInitRespond(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
-// bufferAgentOutput reads chunks from the agent and buffers them for SSE.
-func (s *Server) bufferAgentOutput() {
+// bufferAgentOutput reads messages from the agent and buffers them for SSE.
+func (s *Server) bufferAgentOutput(prompt string) {
 	s.initMu.Lock()
 	if s.initAgent == nil {
 		s.initMu.Unlock()
 		return
 	}
-	chunks, done := s.initAgent.GetChunks()
+	agentClient := s.initAgent
+	ctx := s.initCtx
 	s.initMu.Unlock()
 
-	// Read all chunks and buffer them
-	for chunk := range chunks {
-		s.initMu.Lock()
-		s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: chunk})
-		s.initMu.Unlock()
+	// Execute the prompt and stream messages
+	msgChan, errChan := agentClient.Execute(ctx, prompt)
+
+	// Read all messages and buffer them
+	for {
+		select {
+		case msg, ok := <-msgChan:
+			if !ok {
+				// Channel closed, we're done
+				s.initMu.Lock()
+				s.initComplete = true
+				s.initMu.Unlock()
+				return
+			}
+			if msg.Text != "" {
+				s.initMu.Lock()
+				s.initOutput = append(s.initOutput, initEntry{Type: "assistant", Content: msg.Text})
+				s.initMu.Unlock()
+			}
+		case err, ok := <-errChan:
+			if ok && err != nil {
+				s.initMu.Lock()
+				s.initErr = err
+				s.initComplete = true
+				s.initMu.Unlock()
+			}
+			return
+		case <-ctx.Done():
+			return
+		}
 	}
-
-	// Wait for completion
-	<-done
-	s.initMu.Lock()
-	s.initComplete = true
-	s.initMu.Unlock()
 }
 
 // handleRoot handles GET /.
@@ -318,6 +344,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Shutdown() {
 	s.initMu.Lock()
 	defer s.initMu.Unlock()
+	if s.initCancel != nil {
+		s.initCancel()
+	}
 	if s.initAgent != nil {
 		_ = s.initAgent.Close()
 		s.initAgent = nil
