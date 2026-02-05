@@ -37,12 +37,14 @@ Axel consolidates into ONE Black Book:
 
 **Definition:** The representation of a specification as a **consumable surface** where every character is annotated with a color representing its processing state.
 
+**Key insight:** The canvas is a **composition bar, not a progress bar.** Total coverage is always 100% — it starts as 100% black (unprocessed) and the color composition transforms as planning and implementation progress. Nothing is added or removed; black regions are converted into colored regions.
+
 **Visual metaphor:** Like highlighting a document with colored markers as you read and process it.
 
 ```
-Spec Text:    "Users should be able to login and reset password"
-Canvas:        ████████████████████████████░░░░░░░░░░░░░░░░░░░
-               ↑ green (implemented)      ↑ black (unprocessed)
+Start:   [██████████████████████████████████████████████████]  100% black
+Mid:     [████████████████░░░░░░░░░░░░██████████████████████]  green + grey + black = 100%
+End:     [████████████████████████████████████████░░░░░░░░░░]  green + red = 100%
 ```
 
 **Goal:** Transform all black (raw) regions into green (implemented) or red (deferred). When `coverage.green + coverage.red == 100%`, the spec is satisfied.
@@ -51,13 +53,15 @@ Canvas:        █████████████████████�
 
 ### Gap (Spec Gap)
 
-**Definition:** A black (unprocessed) region surrounded by colored text in the spec canvas.
+**Definition:** An unprocessed (black) region in the spec canvas — a **gap in coverage**, not a gap in the spec itself.
 
-**Why it matters:** Gaps represent forgotten requirements, implicit assumptions, or scope that fell through the cracks. Axel's primary job is **gap hunting** - finding and processing these black regions.
+**Key distinction:** The spec text is always 100% present from the start. A gap is not a missing piece — it is a region that hasn't yet been transformed into a colored (planned/implemented/deferred) annotation. The gap exists in our *processing coverage*, not in the specification.
+
+**Why it matters:** Gaps represent forgotten requirements, implicit assumptions, or scope that fell through the cracks. Axel's primary job is **gap hunting** — systematically finding black regions and converting them into colored annotations until no black remains.
 
 ```
 "Users can login ████████████ and reset their password"
-                 ↑ gap: "with email" not addressed!
+                 ↑ coverage gap: "with email" not yet processed
 ```
 
 ---
