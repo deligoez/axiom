@@ -1002,3 +1002,121 @@ See [15-errors.md](./15-errors.md#signal-errors) for complete error code referen
 │blocked││completed││failed│ ← Final
 └──────┘└─────────┘└──────┘
 ```
+
+---
+
+## Agent Spawning
+
+AXIOM spawns Claude Code CLI agents using the [Go Agent SDK](https://github.com/dotcommander/agent-sdk-go). This SDK wraps the Claude Code CLI (not the API) and provides:
+
+- Real-time JSON streaming output
+- Multi-turn conversation sessions
+- Working directory isolation
+- Tool permission management
+- Managed process lifecycle
+
+### Why Go SDK (Not PTY/tmux)
+
+| Approach | Issues |
+|----------|--------|
+| **PTY** | Claude Code's Ink UI doesn't work with raw PTY; complex ANSI filtering |
+| **tmux** | External dependency, hacky workaround, not portable |
+| **Go SDK** | Official headless mode, JSON streaming, built-in buffer management |
+
+### SDK Configuration
+
+```go
+client, _ := claude.NewClient(
+    claude.WithModel("claude-sonnet-4-20250514"),     // Model selection
+    claude.WithSystemPrompt(persona.Prompt),          // Persona prompt
+    claude.WithCWD(workspace),                        // Git worktree path
+    claude.WithAllowedTools("Bash", "Read", "Edit"),  // Auto-approve tools
+    claude.WithTimeout("30m"),                        // Iteration timeout
+    claude.WithCustomArgs(
+        "--verbose",
+        "--include-partial-messages",
+        "--dangerously-skip-permissions",
+    ),
+    claude.WithEnv(map[string]string{
+        "AXIOM_TASK_ID":  taskID,
+        "AXIOM_AGENT_ID": agentID,
+    }),
+)
+```
+
+### Streaming Events
+
+The SDK provides typed message channels:
+
+```go
+msgChan, errChan := client.QueryStream(ctx, prompt)
+
+for {
+    select {
+    case msg, ok := <-msgChan:
+        if !ok { return }
+
+        switch m := msg.(type) {
+        case *claude.AssistantMessage:
+            // Text content (may contain AXIOM signals)
+        case *claude.ToolUseMessage:
+            // Tool invocation
+        case *claude.ResultMessage:
+            // Completion + token usage
+        }
+
+    case err := <-errChan:
+        // Handle error
+    }
+}
+```
+
+### Signal Extraction
+
+AXIOM signals are extracted from `AssistantMessage` text:
+
+```go
+func parseSignal(text string) *Signal {
+    re := regexp.MustCompile(`<axiom>(\w+):?(.*?)</axiom>`)
+    matches := re.FindStringSubmatch(text)
+    if matches == nil {
+        return nil
+    }
+    return &Signal{
+        Type:    matches[1],  // COMPLETE, BLOCKED, PENDING, etc.
+        Payload: matches[2],  // Optional payload
+    }
+}
+```
+
+### Session Management
+
+For multi-turn conversations (iteration loop):
+
+```go
+// Set session ID for tracking
+client.SetSessionID(fmt.Sprintf("%s-%s", agentID, taskID))
+
+// Or resume existing session
+client, _ := claude.NewClient(
+    claude.WithResume(previousSessionID),
+)
+```
+
+### Workspace Isolation
+
+Each Echo agent gets its own git worktree:
+
+```go
+workspace := fmt.Sprintf(".workspaces/%s-%s", agentID, taskID)
+
+client, _ := claude.NewClient(
+    claude.WithCWD(workspace),  // Agent works in isolated worktree
+)
+```
+
+### Reference
+
+- [ADR-001: Agent SDK Migration](./adr/001-agent-sdk-migration.md)
+- [Go SDK Documentation](https://github.com/dotcommander/agent-sdk-go)
+- [Claude Code Headless Docs](https://code.claude.com/docs/en/headless)

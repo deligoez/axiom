@@ -48,7 +48,11 @@ Full documentation is in `/docs`:
 ### Prerequisites
 
 - Go 1.22+
-- Claude Code CLI (`claude`)
+- Claude Code CLI (`claude`) - authenticated
+
+### Key Dependencies
+
+- `github.com/dotcommander/agent-sdk-go` - Claude Code CLI wrapper (headless mode)
 
 ### Build
 
@@ -96,7 +100,7 @@ axiom/
 ├── internal/          # Private packages
 │   ├── case/          # CaseStore
 │   ├── workspace/     # Git worktree management
-│   ├── agent/         # Agent spawning
+│   ├── agent/         # Agent spawning (Go SDK)
 │   ├── integration/   # Merge service
 │   └── ui/            # Web UI (htmx)
 ├── docs/              # Documentation
